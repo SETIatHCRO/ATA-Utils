@@ -8,7 +8,10 @@
 # This script is called via ssh from anaant@antcntl to periodically load the latest new ant
 # feed sensor data.
 
-cmd =  "echo \"LOAD DATA LOCAL INFILE '/home/sonata/sensors/feed_sensors.csv' INTO TABLE ants.feed_sensors FIELDS TERMINATED BY ','\" | mysql ants";
+cmd =  "echo \"LOAD DATA LOCAL INFILE '/home/sonata/ATA-Utils/FeedSensors/feed_sensors.csv' INTO TABLE ants.feed_sensors FIELDS TERMINATED BY ','\" | mysql ants";
+puts cmd;
+`#{cmd}`;
+cmd =  "echo \"LOAD DATA LOCAL INFILE '/home/sonata/ATA-Utils/FeedSensors/feed_sensors.csv' INTO TABLE ants.feed_sensors FIELDS TERMINATED BY ','\" | mysql -h googledb -u jrseti ants";
 puts cmd;
 `#{cmd}`;
 

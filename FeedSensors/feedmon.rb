@@ -1,18 +1,5 @@
 #!/usr/bin/env ruby
 
-# feedmon.rb
-# Jon Richards, SETI Institute
-# June 19, 2018
-#
-# Queries new Antonio feeds for all their sensor data. The data gets stored IN A MYSQL database on
-# sonata1. 
-# All new feeds are queried at the same time, each in its own thread. The results
-# are collated into a CVS text file suitable for the MYSQL LOAD function.
-# Once the file is complete it is copied to the sinata1 computer and ingested with the
-# feed_sensors_load.rb script that resides on sonata1.
-# NOTE: the sonata1 domputer is 10.1.49.80
-
-
 require 'time'
 require 'date'
 require 'thread'
@@ -218,11 +205,11 @@ end
 #it1 = Thread.new{pointBF(1, $obsFreq1)};
 
 #send the file
-cmd = "scp ./feed_sensors.csv sonata@10.1.49.80:sensors";
+cmd = "scp ./feed_sensors.csv sonata@10.1.49.80:/home/sonata/ATA-Utils/FeedSensors";
 puts cmd;
 `#{cmd}`;
 
-cmd = 'ssh sonata@10.1.49.80 "cd /home/sonata/sensors; ./feed_sensors_load.rb"';
+cmd = 'ssh sonata@10.1.49.80 "cd /home/sonata/ATA-Utils/FeedSensors; /home/sonata/ATA-Utils/FeedSensors/feed_sensors_load.rb"';
 puts cmd;
 `#{cmd}`;
 

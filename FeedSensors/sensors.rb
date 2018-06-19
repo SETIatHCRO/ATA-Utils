@@ -17,6 +17,8 @@ $DATADIR = "/home/obs/archive/tempmon/june08/";
 $TABLENAME = "various_sensors";
 $DBASE_NAME = "ants";
 $uniqueHash = Hash.new();
+$SENSORDIR = "/home/sonata/ATA-Utils/FeedSensors/";
+$GOOGLEHOST = "googledb";
 
 # pront help if no command lines
 if(ARGV.length == 0) 
@@ -247,9 +249,11 @@ if(ARGV.length == 2 && ARGV[0].eql?("-d"))
   #puts f;
   $uniqueHash = Hash.new();
   csv = toCSV(f);
-  filename = "/home/sonata/sensors/" + $year.to_s + "_" + $month.to_s + "_" + $day + "_" + "sensors.csv";
+  filename = "#{$SENSORDIR}" + $year.to_s + "_" + $month.to_s + "_" + $day + "_" + "sensors.csv";
   File.open(filename, 'w') { |file| file.write(csv) };
   cmd =  "echo \"LOAD DATA LOCAL INFILE '#{filename}' INTO TABLE ants.#{$TABLENAME} FIELDS TERMINATED BY ',';\" | mysql ants";
+    `#{cmd}`;
+  cmd =  "echo \"LOAD DATA LOCAL INFILE '#{filename}' INTO TABLE ants.#{$TABLENAME} FIELDS TERMINATED BY ',';\" | mysql -u jrseti -h #{$GOOGLEHOST} ants";
 puts cmd;
   `#{cmd}`;
   exit(0);
@@ -288,9 +292,11 @@ if(ARGV.length == 1 && (ARGV[0].start_with?("all")))
     puts f;
     $uniqueHash = Hash.new();
     csv = toCSV(f);
-    filename = "/home/sonata/sensors/" + $year.to_s + "_" + "sensors.csv";
+    filename = "#{$SENSORDIR}" + $year.to_s + "_" + "sensors.csv";
     File.open(filename, 'w') { |file| file.write(csv) };
     cmd =  "echo \"LOAD DATA LOCAL INFILE '#{filename}' INTO TABLE ants.#{$TABLENAME} FIELDS TERMINATED BY ',';\" | mysql ants";
+    `#{cmd}`;
+    cmd =  "echo \"LOAD DATA LOCAL INFILE '#{filename}' INTO TABLE ants.#{$TABLENAME} FIELDS TERMINATED BY ',';\" | mysql -u jrseti -h #{$GOOGLEHOST} ants";
     `#{cmd}`;
   end
   exit(0);
@@ -307,9 +313,11 @@ if(ARGV.length == 1)
   #puts f;
   $uniqueHash = Hash.new();
   csv = toCSV(f);
-  filename = "/home/sonata/sensors/" + $year.to_s + "_" + $month.to_s + "_" + $day + "_" + "sensors.csv";
+  filename = "/home/sonata/ATA-Utils/FeedSensors/" + $year.to_s + "_" + $month.to_s + "_" + $day + "_" + "sensors.csv";
   File.open(filename, 'w') { |file| file.write(csv) };
   cmd =  "echo \"LOAD DATA LOCAL INFILE '#{filename}' INTO TABLE ants.#{$TABLENAME} FIELDS TERMINATED BY ',';\" | mysql ants";
+    `#{cmd}`;
+  cmd =  "echo \"LOAD DATA LOCAL INFILE '#{filename}' INTO TABLE ants.#{$TABLENAME} FIELDS TERMINATED BY ',';\" | mysql -u jrseti -h #{$GOOGLEHOST} ants";
    puts cmd;
   `#{cmd}`;
 #  `rm #{filename}`;

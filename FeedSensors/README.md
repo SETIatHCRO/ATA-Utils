@@ -5,6 +5,7 @@ These utilities aid in gathering sensor data from the dishes and new Antonio Fee
 ## sensors.rb
 
 Reads the historical sensor data, crams it into the database
+Loads into the googledb and sonata1 server MYSQL databases.
 This script is typically run once a day to load the previous day's data.
 Data obtained by "ssh atasys@sonata ls -l /home/obs/archive/tempmon/june08/20*"
 
@@ -21,4 +22,5 @@ NOTE: the sonata1 computer is 10.1.49.80
 ## feed_sensors_load.rb
 
 Called by feedmon.rb to issue the LOAD mysql command to ingest the feed sensor data.
+Loads into the googledb and sonata1 server MYSQL databases.
 
