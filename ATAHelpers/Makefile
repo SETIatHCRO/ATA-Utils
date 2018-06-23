@@ -14,4 +14,5 @@ install:
 	cp atahint.txt /usr/local/bin
 	cp setalarm /usr/local/bin
 	cp getskyfreq /usr/local/bin
+	cp setskyfreq /usr/local/bin
 

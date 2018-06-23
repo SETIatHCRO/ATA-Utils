@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$#" -le 0 ]; then
+    echo " Syntax: $0 <freq in MHz>"
+    exit
+fi
+
+ssh obs@tumulus /hcro/atasys/ata/run/atasetskyfreq a $1
