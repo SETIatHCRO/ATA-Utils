@@ -13,6 +13,8 @@ echo " + antgroups      - list the antenna groups"
 echo " + antreserve     - move ants from groups"
 echo " + pointshift     - point the dishes in group \"bfa\" and optionally offset"
 echo " + getskyfreq     - get the frequency of LOA"
+echo " + setskyfreq     - set the frequency of LOA"
+echo " + park           - park all the dishes"
 echo
 
 fortune
