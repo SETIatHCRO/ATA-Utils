@@ -6,19 +6,33 @@ require 'fileutils'
 
 $results = Hash.new();
 
-#$antlist = "1h,2a,2b,2e,2j,3d,3l,1a";
-$antlist = "2a,2b,2e,3l,1f,5c,4k,4g";
+$antlist = "";
 $lo = "a";
+$GROUPNAME = "bfa";
 
 def doCmd(cmd) 
   puts "cd /home/obs/jrichards; " + cmd;
   `#{cmd}`;
 end
 
+#get the feeds in a group
+def getAntList(group)
+  cmd = "/home/obs/ruby/bin/fxconf.rb sals #{group}";
+  return `#{cmd}`.chomp.gsub(" ", ",");
+end
+
+
 if(ARGV.length != 4)
   puts "pointshift <source> <freq MHz> <az offset deg> <el offset deg>";
+  puts " NOTE: the antennas used must be in group #{$GROUPNAME}";
   puts "  Example: pointshift w3oh 4000.0 10 20";
   exit(0);
+end
+
+$antlist = getAntList($GROUPNAME);
+if($antlist.length < 2)
+  puts "ERROR: There are no antennas in group #{$GROUPNAME}";
+  exit(1);
 end
 
 target = ARGV[0]
