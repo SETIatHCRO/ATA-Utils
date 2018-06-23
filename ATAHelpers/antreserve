@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [ "$#" -le 2 ]; then
+    echo " Syntax: $0 <from group> <to group> <ant list>"
+    exit
+fi
+
+ssh obs@tumulus "/home/obs/ruby/bin/fxconf.rb sagive $@"
+ssh obs@tumulus /home/obs/ruby/bin/fxconf.rb sals

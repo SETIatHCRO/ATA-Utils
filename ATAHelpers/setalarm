@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$#" -le 1 ]; then
+    echo " Syntax: $0 <message>"
+    exit
+fi
+
+ssh obs@tumulus "/hcro/atasys/ata/run/atasetalarm -a -u jrichards -m '$@' "

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+ssh obs@tumulus  /home/obs/ruby/bin/fxconf.rb sals

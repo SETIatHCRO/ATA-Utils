@@ -1,0 +1,3 @@
+#!/bin/bash
+
+ssh obs@tumulus /hcro/atasys/ata/run/ataasciistatus -l 

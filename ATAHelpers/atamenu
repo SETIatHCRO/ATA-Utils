@@ -1,0 +1,20 @@
+#!/bin/bash
+
+echo ""
+echo "                     === ATA Commands Menu ==="
+echo ""
+echo " + atahint        - useful hint(s)."
+echo " + setalarm       - send out an email stating you are using the array."
+echo " + ataasciistatus - get the pointing and status of all the dishes."
+echo " + atacheck       - get the rise/set times and location of an object";
+echo " + getdetpams     - get the PAM dB setting and detector values for a feed"
+echo " + weather        - get the weather station output"
+echo " + antgroups      - list the antenna groups"
+echo " + antreserve     - move ants from groups"
+echo " + pointshift     - point the dishes in group \"bfa\" and optionally offset"
+echo " + getskyfreq     - get the frequency of LOA"
+echo
+
+fortune
+ddate
+echo

@@ -1,0 +1,3 @@
+If you run "pointshift" the antennas you want to use need
+to be in group "bfa". Use "antgroups" and "antreserve" to
+accomplish this.
