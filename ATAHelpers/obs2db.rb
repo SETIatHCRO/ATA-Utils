@@ -8,12 +8,33 @@ require 'fileutils'
 def printHelp() 
 
   puts "Syntax: obs2db.rb <comma sep ant list> <freq MHz> <target name> <az offset, deg> <el offset, deg>";
+  puts " OR: obs2db.rb stop - enters NOW as the stop time into the most recent observation row.";
   puts " OR: obs2db.rb list - will simply list the most 100 recent observations rows.";
   puts "Stores observation records on the \"observations\" database table.";
   puts " Example: ./obs2db.rb 1a,1b 1421.4 casa 0 10";
   puts " Output: The observation id to use for reference to this row.";
   exit(0);
 
+end
+
+if(ARGV.length == 1 && ARGV[0].eql?("stop"))
+
+  # Get the most recent obsevation id
+  id = "?";
+  `echo \"select MAX(id) from observations;\" | mysql ants`.each_line do |line|
+    id = line.chomp;
+  end
+
+  timestamp = Time.now.strftime('%Y-%m-%d %H:%M:%S');
+
+  sql = "UPDATE observations set ts_stop='#{timestamp}' where id=#{id};";
+  puts sql;
+  `echo \"#{sql}\" | mysql ants`
+  `echo \"#{sql}\" | mysql -h 35.233.233.72 -u jrseti ants`
+
+  puts "Stop time #{timestamp} recorder in observations table for row with id=#{id}";
+
+  exit(0);
 end
 
 if(ARGV.length == 1 && ARGV[0].eql?("list"))
