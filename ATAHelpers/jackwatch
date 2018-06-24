@@ -1,0 +1,2 @@
+#!/bin/bash
+ssh obs@tumulus "cd /home/obs/jrichards; jackwatch.rb > /home/obs/jrichards/jackwatch.log"

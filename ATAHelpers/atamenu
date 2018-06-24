@@ -15,6 +15,7 @@ echo " + pointshift     - point the dishes in group \"bfa\" and optionally offse
 echo " + getskyfreq     - get the frequency of LOA"
 echo " + setskyfreq     - set the frequency of LOA"
 echo " + park           - park all the dishes"
+echo " + jackwatch      - print out pointing status every 10 seconds"
 echo
 
 fortune
