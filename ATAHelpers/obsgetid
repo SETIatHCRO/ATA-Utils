@@ -1,0 +1,3 @@
+#!/bin/bash
+
+ssh sonata@10.1.49.80 /home/sonata/ATA-Utils/ATAHelpers/obsGetCurrentId.rb

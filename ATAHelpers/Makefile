@@ -17,4 +17,7 @@ install:
 	cp setskyfreq /usr/local/bin
 	cp park /usr/local/bin
 	cp jackwatch /usr/local/bin
+	cp sefd2db /usr/local/bin
+	cp obs2db /usr/local/bin
+	cp obsgetid /usr/local/bin
 

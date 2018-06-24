@@ -16,6 +16,10 @@ echo " + getskyfreq     - get the frequency of LOA"
 echo " + setskyfreq     - set the frequency of LOA"
 echo " + park           - park all the dishes"
 echo " + jackwatch      - print out pointing status every 10 seconds"
+echo " + sefd2db        - store an SEFD in the database"
+echo " + obs2db         - record an observation in the database"
+echo " + obsgetid       - get the id of the most recent observation id."
+
 echo
 
 fortune
