@@ -8,11 +8,17 @@ require 'fileutils'
 def printHelp() 
 
   puts "Syntax: obs2db.rb <comma sep ant list> <freq MHz> <target name> <az offset, deg> <el offset, deg>";
+  puts " OR: obs2db.rb list - will simply list the most 100 recent observations rows.";
   puts "Stores observation records on the \"observations\" database table.";
   puts " Example: ./obs2db.rb 1a,1b 1421.4 casa 0 10";
   puts " Output: The observation id to use for reference to this row.";
   exit(0);
 
+end
+
+if(ARGV.length == 1 && ARGV[0].eql?("list"))
+  puts `echo \"select * from observations LIMIT 100; \" | mysql ants`;
+  exit(0);
 end
 
 if(ARGV.length != 5) then printHelp(); end
