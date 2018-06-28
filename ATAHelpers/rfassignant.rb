@@ -7,7 +7,7 @@ require 'fileutils'
 
 def printHelp() 
 
-  puts "Syntax: rfassignant.rb <ant> <pol> <switch (0..n)> <port (1..n{8 or 16})>";
+  puts "Syntax: rfassignant <ant> <pol> <switch (0..n)> <port (1..n{8 or 16})>";
   puts "Define and store in the databse the antpol to RF switch port.";
   exit(0);
 

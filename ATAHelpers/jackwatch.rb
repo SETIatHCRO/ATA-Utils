@@ -5,7 +5,7 @@ require 'date'
 require 'fileutils'
 
 def getBFAAnts(group)
-  cmd = "/home/obs/ruby/bin/fxconf.rb sals #{group}";
+  cmd = "/home/obs/ruby/bin/fxconf sals #{group}";
   return `#{cmd}`.chomp.gsub(" ", ",");
 end
 

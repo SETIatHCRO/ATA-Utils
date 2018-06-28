@@ -7,11 +7,11 @@ require 'fileutils'
 
 def printHelp() 
 
-  puts "Syntax: obs2db.rb <comma sep ant list> <freq MHz> <target name> <az offset, deg> <el offset, deg>";
-  puts " OR: obs2db.rb stop - enters NOW as the stop time into the most recent observation row.";
-  puts " OR: obs2db.rb list - will simply list the most 100 recent observations rows.";
+  puts "Syntax: obs2db <comma sep ant list> <freq MHz> <target name> <az offset, deg> <el offset, deg>";
+  puts " OR: obs2db stop - enters NOW as the stop time into the most recent observation row.";
+  puts " OR: obs2db list - will simply list the most 100 recent observations rows.";
   puts "Stores observation records on the \"observations\" database table.";
-  puts " Example: ./obs2db.rb 1a,1b 1421.4 casa 0 10";
+  puts " Example: obs2db 1a,1b 1421.4 casa 0 10";
   puts " Output: The observation id to use for reference to this row.";
   exit(0);
 

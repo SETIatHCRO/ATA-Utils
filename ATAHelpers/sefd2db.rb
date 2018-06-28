@@ -7,13 +7,13 @@ require 'fileutils'
 
 def printHelp() 
 
-  puts "Syntax: sefd2db.rb <ant> <sefd> <obsid>";
-  puts " OR: obs2db.rb list - will simply list the most 100 recent sefd rows.";
+  puts "Syntax: sefd2db <ant> <sefd> <obsid>";
+  puts " OR: obs2db list - will simply list the most 100 recent sefd rows.";
   puts "Stores SEFD records in the \"sefd\" database table.";
   puts "The obsid is the id of this observation as stored in the observations table";
   puts "The time and freq, target, etc. can be derived using the obsid to query";
   puts "  observations table.";
-  puts " Example: ./sefd2db.rb 1a 1654.7 3";
+  puts " Example: sefd2db 1a 1654.7 3";
   exit(0);
 
 end

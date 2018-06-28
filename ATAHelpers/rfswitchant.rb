@@ -7,7 +7,7 @@ require 'fileutils'
 
 def printHelp() 
 
-  puts "Syntax: rfswitchant.rb <ant> <pol>";
+  puts "Syntax: rfswitchant <ant> <pol>";
   puts "Switch the rfswitch to an antpol. ";
   exit(0);
 
