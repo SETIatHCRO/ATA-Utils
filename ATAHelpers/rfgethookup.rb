@@ -10,6 +10,7 @@ def printHelp()
   puts "Syntax: rfgethookup [<ant> <pol> | all]";
   puts "Get the rf switch port and switch number for a given pol. ";
   puts "If \"all\" specified, all hookups will be reported.";
+  puts "returns: switch,port,antpol,time";
   exit(0);
 
 end
@@ -38,9 +39,10 @@ if(ARGV.length == 1 && (ARGV[0].eql?("all"))) #all
     count = count + 1;
   end
 
-  puts "switch port antpol time";
+  #puts "switch port antpol time";
   results.sort.each do |r|
-    puts r[0] + "      " + r[1] + "    " + r[2] + r[3] + "    " + r[4] + "," + r[5];
+    #puts r[0] + "      " + r[1] + "    " + r[2] + r[3] + "    " + r[4] + "," + r[5];
+    puts r[0] + "," + r[1] + "," + r[2] + r[3] + "," + r[4] + " " + r[5];
   end
 
   exit(0);
@@ -58,13 +60,14 @@ elsif(ARGV.length == 2 || ARGV.length == 1) #ant, pol
   end
 
   cmd = "SELECT ant, pol, switch, port, ts from rfswitch where ant='#{ant}' and pol='#{pol}' ORDER BY ts DESC LIMIT 1";
-  puts "switch port antpol time";
+  #puts "switch port antpol time";
   count = 0;
   result = `echo \"#{cmd}\" | mysql ants`;
   result.each_line do | line|
     if(count == 0) then count = 1; next; end
-    parts = line.chomp.split(/\s+/);
-    puts parts[2] + "      " + parts[3] + "    " + parts[0]+parts[1] + "    " + parts[4] + " " + parts[5];
+    r = line.chomp.split(/\s+/);
+    #puts parts[2] + "      " + parts[3] + "    " + parts[0]+parts[1] + "    " + parts[4] + " " + parts[5];
+    puts r[2] + "," + r[3] + "," + r[0] + r[1] + "," + r[4] + " " + r[5];
   end
   exit(0);
 
