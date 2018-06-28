@@ -13,11 +13,11 @@
 #  ATA_CONTROL_USERANDHOST defines the user@server where the atacmds are run.
 #    export ATA_CONTROL_USERANDHOST=""
 
-cmd="/hcro/atasys/ata/run/ataasciistatus"
+cmd="/hcro/atasys/ata/run/ataasciistatus -l"
 
 if [[ -z "${ATA_CONTROL_USERANDHOST}" ]]; then
-    $ATA_COMMAND_PORTAL_HOST_SSH "ataasciistatus" 2>/dev/null
+    $ATA_COMMAND_PORTAL_HOST_SSH "ataasciistatus $@" 2>/dev/null
 else
-    $ATA_CONTROL_USERANDHOST "$cmd \"-l\"" 2>/dev/null
+    $ATA_CONTROL_USERANDHOST "$cmd $@" 2>/dev/null
 fi
 
