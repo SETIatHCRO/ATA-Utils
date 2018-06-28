@@ -51,6 +51,9 @@ File.open("temp.ephem", "w+") do |fout|
   end
 end
 
+cmd = "/hcro/atasys/ata/run/atalnaon \"#{$antlist}\"";
+doCmd(cmd);
+
 cmd = "/hcro/atasys/ata/run/atasetfocus \"#{$antlist} #{freq}\"";
 doCmd(cmd);
 
