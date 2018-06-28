@@ -1,3 +1,27 @@
 #!/bin/bash
 
-ssh obs@tumulus /home/obs/bin/park.csh
+# If running this command remotely the following environment variable
+# should be set:
+#  export ATA_COMMAND_PORTAL_HOST_SSH="ssh NSG-head"
+# The value assigned is the SSH command that tunnels into the ATA
+# computer that is the portal for ATA commands.
+# Change the ssh command appropriatly for your computer to tunnel in.
+#
+# If running from the ATA commands portal, set these in the .bashrc:
+#  The ATAHelper commands path should be set:
+#  PATH="/usr/local/bin:$PATH"
+#  ATA_CONTROL_USERANDHOST defines the user@server where the atacmds are run.
+#    export ATA_CONTROL_USERANDHOST=""
+
+
+if [[ -z "${ATA_CONTROL_USERANDHOST}" ]]; then
+
+  $ATA_COMMAND_PORTAL_HOST_SSH "park $@" 2>/dev/null
+
+else
+
+  cmd="/home/obs/bin/park.csh"
+  $ATA_CONTROL_USERANDHOST "$cmd $@" 2>/dev/null
+
+fi
+
