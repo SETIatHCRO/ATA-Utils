@@ -1,3 +1,29 @@
 #!/bin/bash
+  
+# If running this command remotely the following environment variable
+# should be set:
+#  export ATA_COMMAND_PORTAL_HOST_SSH="ssh NSG-head"
+# The value assigned is the SSH command that tunnels into the ATA
+# computer that is the portal for ATA commands.
+# Change the ssh command appropriatly for your computer to tunnel in.
+#
+# If running from the ATA commands portal, set these in the .bashrc:
+#  The ATAHelper commands path should be set:
+#  PATH="/usr/local/bin:$PATH"
+#  ATA_CONTROL_USERANDHOST defines the user@server where the atacmds are run.
+#    export ATA_CONTROL_USERANDHOST=""
+#  ATA_ANTS_DB_USERANDHOST is user@server where the ants database resides
+#    export ATA_ANTS_DB_USERANDHOST=""
 
-ssh sonata@10.1.49.80 /home/sonata/ATA-Utils/ATAHelpers/rfgethookup.rb "$@"
+cmd="rfgethookup"
+
+if [[ -z "${ATA_COMMAND_PORTAL_HOST_SSH}" ]]; then
+
+  cmd="${cmd}.rb"
+  $ATA_ANTS_DB_USERANDHOST "$cmd $@" 2>/dev/null
+
+else
+
+  $ATA_COMMAND_PORTAL_HOST_SSH "$cmd $@" 2>/dev/null
+
+fi

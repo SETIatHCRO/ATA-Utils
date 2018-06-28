@@ -23,3 +23,12 @@ install:
 	cp rfassignant /usr/local/bin
 	cp rfgethookup /usr/local/bin
 	cp rfswitchant /usr/local/bin
+	cp getdetpams.rb  /usr/local/bin
+	cp obs2db.rb	   /usr/local/bin
+	cp pointshift.rb   /usr/local/bin
+	cp rfgethookup.rb  /usr/local/bin
+	cp sefd2db.rb /usr/local/bin
+	cp jackwatch.rb   /usr/local/bin
+	cp obsGetCurrentId.rb  /usr/local/bin
+	cp rfassignant.rb  /usr/local/bin
+	cp rfswitchant.rb /usr/local/bin
