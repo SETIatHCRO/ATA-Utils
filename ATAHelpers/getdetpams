@@ -17,11 +17,11 @@ cmd="getdetpams"
 
 if [[ -z "${ATA_CONTROL_USERANDHOST}" ]]; then
 
-  $ATA_COMMAND_PORTAL_HOST_SSH "$cmd $@"
+  $ATA_COMMAND_PORTAL_HOST_SSH "$cmd $@" 2>/dev/null
 
 else
 
-  $ATA_CONTROL_USERANDHOST "cd /home/obs/jrichards; getdetpams.rb $@"
+  $ATA_CONTROL_USERANDHOST "cd /home/obs/jrichards; getdetpams.rb $@" 2>/dev/null
 
 fi
 
