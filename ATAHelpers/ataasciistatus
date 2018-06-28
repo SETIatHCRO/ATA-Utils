@@ -16,8 +16,8 @@
 cmd="/hcro/atasys/ata/run/ataasciistatus"
 
 if [[ -z "${ATA_CONTROL_USERANDHOST}" ]]; then
-    $ATA_COMMAND_PORTAL_HOST_SSH "ataasciistatus -l" 2>/dev/null
+    $ATA_COMMAND_PORTAL_HOST_SSH "ataasciistatus" 2>/dev/null
 else
-    $ATA_CONTROL_USERANDHOST "$cmd $@" 2>/dev/null
+    $ATA_CONTROL_USERANDHOST "$cmd \"-l\"" 2>/dev/null
 fi
 
