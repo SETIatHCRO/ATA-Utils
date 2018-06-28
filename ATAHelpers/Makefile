@@ -20,4 +20,6 @@ install:
 	cp sefd2db /usr/local/bin
 	cp obs2db /usr/local/bin
 	cp obsgetid /usr/local/bin
-
+	cp rfassignant /usr/local/bin
+	cp rfgethookup /usr/local/bin
+	cp rfswitchant /usr/local/bin

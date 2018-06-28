@@ -19,6 +19,9 @@ echo " + jackwatch      - print out pointing status every 10 seconds"
 echo " + sefd2db        - store an SEFD in the database"
 echo " + obs2db         - record an observation in the database"
 echo " + obsgetid       - get the id of the most recent observation id."
+echo " + rfassignant    - assign an antenna pol to an RF switch input, store in db.";
+echo " + rfgethookup    - get the RF switch port and antenna pol is hooked to. Queries db.";
+echo " + rfswitchant    - actually switch the RF switch on an antenna pol input.";
 
 echo
 
