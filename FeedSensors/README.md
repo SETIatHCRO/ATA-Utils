@@ -24,3 +24,8 @@ NOTE: the sonata1 computer is 10.1.49.80
 Called by feedmon.rb to issue the LOAD mysql command to ingest the feed sensor data.
 Loads into the googledb and sonata1 server MYSQL databases.
 
+
+## ants.sql 
+
+This is the datavase schema for the ants database. 
+Created with: "mysqldump  -d -B --events --routines --triggers ants > ants.sql"

@@ -113,6 +113,22 @@ CREATE TABLE `observations` (
   `freq` float NOT NULL,
   `target` varchar(32) NOT NULL,
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `rfswitch`
+--
+
+DROP TABLE IF EXISTS `rfswitch`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `rfswitch` (
+  `ts` datetime NOT NULL,
+  `ant` varchar(3) NOT NULL,
+  `switch` int(11) DEFAULT '0',
+  `port` int(11) DEFAULT '0',
+  PRIMARY KEY (`ts`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -130,7 +146,7 @@ CREATE TABLE `sefd` (
   `sefd` float NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx` (`obsid`,`ant`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -182,4 +198,4 @@ CREATE TABLE `various_sensors` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2018-06-24 14:42:04
+-- Dump completed on 2018-06-24 21:40:24
