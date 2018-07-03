@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$#" -le 1 ]; then
+if [ "$#" -le 0 ]; then
     echo " Syntax: $0 <message>"
     exit
 fi
@@ -26,7 +26,7 @@ if [[ -z "${ATA_CONTROL_USERANDHOST}" ]]; then
 
 else
 
-  $ATA_CONTROL_USERANDHOST "$cmd $@" 2>/dev/null
+  $ATA_CONTROL_USERANDHOST "$cmd" 2>/dev/null
 
 fi
 
