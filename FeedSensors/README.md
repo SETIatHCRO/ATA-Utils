@@ -29,3 +29,7 @@ Loads into the googledb and sonata1 server MYSQL databases.
 
 This is the datavase schema for the ants database. 
 Created with: "mysqldump  -d -B --events --routines --triggers ants > ants.sql"
+
+## sweepdetpams.rb
+
+Sweep the full range of PAM settings, saving the detx and detx values for further analysis. Creates a file named db_pams_dets.json
