@@ -10,6 +10,13 @@ import matplotlib.patches as mpatches
 
 #print os.listdir('.')
 
+#Should add rest of antennas
+
+#this code should be refactored to produce an SEFD from a single on/off sequence at one frequency
+#SEFDcalc.py <wild_card_for_on_off_sequence>
+#code will read in data, calculate average SEFD, output one value for X and one value for Y
+
+
 antennas = ["1e",
             "1f",
             "1h",
