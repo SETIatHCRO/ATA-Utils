@@ -13,6 +13,7 @@
 require 'time'
 require 'date'
 require 'thread'
+require 'json'
 
 $LOCK  = Mutex.new;
 
@@ -136,7 +137,7 @@ $TABLES.each do |tableName|
 
 end
 
-s =  "sensor_data(" + results.to_s + ")";
+s =  "sensor_data(" + results.to_json + ")";
 
 File.write('./ant_sensors.jsonp', s);
 
