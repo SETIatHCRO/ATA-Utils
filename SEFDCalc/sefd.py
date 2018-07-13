@@ -54,10 +54,10 @@ tunings = ["1000.00",
 
 
 #tunings = ["3000.00"]
-#sources = ["moon",
-#        "casa",
-#        "vira",
-#        "taua"]
+sources = ["moon",
+        "casa",
+        "vira",
+        "taua"]
 
 #sources = ["moon"]
 
@@ -108,11 +108,12 @@ symbols = [r'$\bigotimes$',
         r'$\bigstar$']
 
 
-
+"""
 fig, ax = plt.subplots()
 ax.set_xlim((1000,8000))
 ax.set_ylim((100,1000000))
 ax.set_yscale("log", nonposy='clip')
+"""
 
 for antenna in antennas:
 
@@ -124,14 +125,14 @@ for antenna in antennas:
 
                 for tuning in tunings:	
 
-                        print antenna
-                        print source
-                        print tuning
+                        #print antenna
+                        #print source
+                        #print tuning
 
 
                         #mylist = sorted([f for f in glob.glob("*moon*" + antenna +"*" + tuning +"*obsid199.pkl")])
                         mylist = sorted([f for f in glob.glob("*"+source+"*" + antenna +"*" + tuning +"*.pkl")])		
-                        print mylist
+                        #print mylist
                         z = range(len(mylist))
                         power0 = np.zeros(1);
                         power1 = np.zeros(1);
@@ -144,12 +145,15 @@ for antenna in antennas:
                                 try:
                                     dataon = pickle.load(open(mylist[i],'r'))
                                     dataoff = pickle.load(open(mylist[i+1],'r'))
+                                    """
                                     print mylist[i] 
                                     print mylist[i+1]
                                     print " "
+                                    """
                                 except:
                                     continue
 
+                                """
                                 if (dataon['adc0_stats']['dev'] <= 30. and dataon['adc0_stats']['dev'] >= 5.):
                                         print "Good stddev for adc0: ", mylist[i], dataon['adc0_stats']
                                 else:
@@ -169,6 +173,7 @@ for antenna in antennas:
                                         print "Good stddev for adc1: ", mylist[i+1], dataoff['adc1_stats']
                                 else:
                                         print "Bad stddev for adc1: ", mylist[i+1], dataoff['adc1_stats']		
+                                """
 
                                 if dataon['adc0_stats']['dev'] >= 2.:
                                     frange = dataon['frange'][768:1700]
@@ -225,20 +230,23 @@ for antenna in antennas:
                                 if 1/ratio < 0.01:
                                     ratio = 0.0
                                 
+                                """ 
                                 plt.figure()
                                 plt.plot(power0)
                                 
                                 ptitle = "Antenna: "+ antenna+ "X Frequency: "+ tuning+ " MHz SEFD: "+ str(ratio * sourceflux)+ " Jy"
-                                
                                 plt.title(ptitle)
+                                """ 
                                 
                                 #print "Antenna: ", antenna, "X Frequency: ", tuning, " MHz SEFD: ", ratio * sourceflux, " Jy", "ratio: ", ratio
                                 #print source,antenna,tuning,ratio * sourceflux,ratio
                                 #print source,",",antenna,",x,",tuning,",",ratio * sourceflux,",",ratio
                                 print("%s,%s,x,%s,%f,%f" % (source, antenna, tuning, ratio * sourceflux, ratio));
                                 
+                                """
                                 plt.savefig(antenna+"X"+tuning+".png")
                                 plt.close()				
+                                """
                                
                                 freqlist.append(float(tuning))
                                 antennalist.append(colors[antennas.index(antenna) * 2 + 0])
@@ -251,32 +259,39 @@ for antenna in antennas:
                                 if 1/ratio < 0.01:
                                     ratio = 0.0
                                 
+                                """ 
                                 plt.figure()
                                 plt.plot(power1)
                                 
                                 ptitle = "Antenna: "+ antenna+ "Y Frequency: "+ tuning+ " MHz SEFD: "+ str(ratio * sourceflux)+ " Jy"
                                 
                                 plt.title(ptitle)
+                                """ 
                                 
                                 #print "Antenna: ", antenna, "Y Frequency: ", tuning, " MHz SEFD: ", ratio * sourceflux, " Jy", "ratio: ", ratio
                                 print("%s,%s,y,%s,%f,%f" % (source, antenna, tuning, ratio * sourceflux, ratio));
                                 #print source,",",antenna,",y,",tuning,ratio * sourceflux,",",ratio
                                 
+                                """ 
                                 plt.savefig(antenna+"Y"+tuning+".png")
                                 plt.close()				
+                                """ 
                                 
                                 freqlist.append(float(tuning))
                                 antennalist.append(colors[antennas.index(antenna) * 2 + 1])
                                 sefdlist.append(ratio * sourceflux)
 
                 
+                """
                 try: 
                     ax.scatter(freqlist, sefdlist, color=antennalist, s=50, marker=symbols[sources.index(source)], alpha=.4)
                 except:
                     print source, "Exception"
+                """
                 
 
 
+""" 
 labelnames = []
 labelcolors = []
 for antenna in antennas:
@@ -299,6 +314,7 @@ plt.savefig("complete.png")
 #whatever_data=pickle.load( open( sys.argv[1], "rb" ) )
 #print whatever_data.keys()
 #print sys.argv[1]
+""" 
 
 
 
