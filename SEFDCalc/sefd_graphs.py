@@ -12,6 +12,7 @@ import matplotlib.patches as mpatches
 import json
 #from subprocess import Popen, PIPE
 import plumbum
+import math
 
 #print os.listdir('.')
 
@@ -35,7 +36,7 @@ antennas = ["1e",
         "3d",
         "3l",
         "4j",
-        "4k",
+        "4l",
         "4g",            
         "5c"]
 
@@ -49,7 +50,8 @@ tunings = ["1000.00",
         "7000.00",
         "8000.00",
         "9000.00",
-        "10000.00"]                      
+        "10000.00",
+        "4001.00"]                      
 
 #antennas = ["1f"];
 #tunings = ["4001.00"];
@@ -119,12 +121,18 @@ ax.set_yscale("log", nonposy='clip')
 
 if(len(sys.argv) == 1):
     print "Syntax: source freq obsid"
-    print("Example: %s moon 4000 192" % sys.argv[0])
+    print("Example: %s moon 4000 192 [<start obs> <num>]" % sys.argv[0])
     sys.exit(0)
 
 sources = [sys.argv[1]]
-tunings = [sys.argv[2]]
-myObsid = sys.argv[3]
+#tunings = [sys.argv[2]]
+myObsid = sys.argv[2]
+startObs = -1
+numObs = -1
+if(len(sys.argv) == 5):
+    startObs = int(sys.argv[3]);
+    numObs = int(sys.argv[4]);
+    print "Processing %d starting at on/off %d" % (numObs, startObs)
 
 for antenna in antennas:
 
@@ -152,19 +160,32 @@ for antenna in antennas:
                         goodcnt0 = 0;
                         goodcnt1 = 0;
 
+                        j = 0
                         for i in z[::2]:
 
-                                if(i > 44):
+                                if(i < startObs*2 or i > (startObs+numObs)*2):
+                                    j += 2
                                     continue
 
                                 try:
-                                    dataon = pickle.load(open(mylist[i],'r'))
-                                    dataoff = pickle.load(open(mylist[i+1],'r'))
-                                    print mylist[i] 
-                                    print mylist[i+1]
-                                    print " "
+                                    if "_on_" not in mylist[j]:
+                                        j = j + 1;
+                                        print "skip"
+                                        continue
+                                    if "_off_" not in mylist[j+1]:
+                                        j = j + 1
+                                        print "skip"
+                                        continue
+                                    dataon = pickle.load(open(mylist[j],'r'))
+                                    dataoff = pickle.load(open(mylist[j+1],'r'))
+                                    print mylist[j] 
+                                    print mylist[j+1]
+                                    #print " "
                                 except:
+
                                     continue
+
+                                j = j + 2
 
                                 """
                                 if (dataon['adc0_stats']['dev'] <= 30. and dataon['adc0_stats']['dev'] >= 5.):
@@ -187,6 +208,18 @@ for antenna in antennas:
                                 else:
                                         print "Bad stddev for adc1: ", mylist[i+1], dataoff['adc1_stats']		
                                 """
+                                if(antenna == '4l'):
+                                    if (dataon['adc0_stats']['dev'] > 30. or dataon['adc0_stats']['dev'] < 5.):
+                                        print "Bad stddev for adc0: ", mylist[i], dataon['adc0_stats']		
+
+                                    if (dataoff['adc0_stats']['dev'] > 30. or dataoff['adc0_stats']['dev'] < 5.):
+                                        print "Bad stddev for adc0: ", mylist[i+1], dataoff['adc0_stats']		
+
+                                    if (dataon['adc1_stats']['dev'] > 30. or dataon['adc1_stats']['dev'] < 5.):
+                                        print "Bad stddev for adc1: ", mylist[i], dataon['adc1_stats']
+
+                                    if (dataoff['adc1_stats']['dev'] > 30. or dataoff['adc1_stats']['dev'] < 5.):
+                                        print "Bad stddev for adc1: ", mylist[i+1], dataoff['adc1_stats']		
 
                                 if dataon['adc0_stats']['dev'] >= 2.:
                                     frange = dataon['frange'][768:1700]
@@ -200,6 +233,7 @@ for antenna in antennas:
                                     #print onpower
                                     #print offpower
                                     ratio0 += (onpower / offpower - 1.0)
+                                    print "adc0: Power on: %s, Power off: %f, ratio1:%f" % (onpower, offpower, ratio0)
                                     goodcnt0 += 1
 
                                 if dataon['adc1_stats']['dev'] >= 2.:
@@ -213,9 +247,8 @@ for antenna in antennas:
 
                                     onpower = np.mean(np.array(dataon['auto1'])[:,768:1700])
                                     offpower = np.mean(np.array(dataoff['auto1'])[:,768:1700])
-                                    #print onpower
-                                    #print offpower
                                     ratio1 += (onpower / offpower - 1.0)
+                                    print "adc1: Power on: %s, Power off: %f, ratio1:%f" % (onpower, offpower, ratio1)
                                     goodcnt1 += 1
 
 
@@ -237,9 +270,10 @@ for antenna in antennas:
                         #print sourceflux
 
                         if len(power0) > 2:
-                            #print ratio0
+                                #print ratio0
                                 ratio = 1/(ratio0 / (float(goodcnt0)))
                                 #print ratio
+                                print "adc0: ratio1: %f, ratio: %f" % (ratio1, ratio)
                                 if 1/ratio < 0.01:
                                     ratio = 0.0
                                 
@@ -272,9 +306,9 @@ for antenna in antennas:
                                 sefdlist.append(ratio * sourceflux)
 
                         if len(power1) > 2:
-                                #print ratio1
                                 ratio = 1/(ratio1 / (float(goodcnt1)))
-                                #print ratio
+                                ratio = math.fabs(ratio);
+                                print "adc1: ratio1: %f, ratio: %f" % (ratio1, ratio)
                                 if 1/ratio < 0.01:
                                     ratio = 0.0
                                 
