@@ -10,20 +10,17 @@ import glob
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import json
-#from subprocess import Popen, PIPE
 import plumbum
 import math
 
-#print os.listdir('.')
-
-#Should add rest of antennas
-
-#this code should be refactored to produce an SEFD from a single on/off sequence at one frequency
-#SEFDcalc.py <wild_card_for_on_off_sequence>
+#sefd_graphs.py
 #code will read in data, calculate average SEFD, output one value for X and one value for Y
+# and also the png filename. This CVS data is then appropriate for converting to JSON.
+# The png files are scp'd to the server
 
 
-antennas = ["1e",
+antennas = ["1d",
+        "1e",
         "1f",
         "1h",
         "1k",
@@ -32,14 +29,19 @@ antennas = ["1e",
         "2e",
         "2h",
         "2j",
+        "2d",
+        "2f",
         "2m",
         "3d",
+        "3e",
         "3l",
+        "3j",
         "4j",
         "4l",
         "4g",            
-        "5c"]
-
+        "4k",            
+        "5c",
+        "5h"]
 
 tunings = ["1000.00",
         "2000.00",
@@ -53,94 +55,18 @@ tunings = ["1000.00",
         "10000.00",
         "4001.00"]                      
 
-#antennas = ["1f"];
-#tunings = ["4001.00"];
-
-
-#tunings = ["3000.00"]
 sources = ["moon",
         "casa",
         "vira",
         "taua"]
 
-#sources = ["moon"]
-
-colors = ['rosybrown',
-        'royalblue',
-        'saddlebrown',
-        'salmon',
-        'sandybrown',
-        'seagreen',
-        'seashell',
-        'sienna',
-        'skyblue',
-        'slateblue',
-        'slategray',
-        'springgreen',
-        'steelblue',
-        'tan',
-        'teal',
-        'thistle',
-        'tomato',
-        'turquoise',
-        'violet',
-        'wheat',
-        'deepskyblue',
-        'dodgerblue',
-        'firebrick',
-        'floralwhite',
-        'forestgreen',
-        'fuchsia',
-        'gainsboro',
-        'gold',
-        'goldenrod',
-        'gray',
-        'green',
-        'greenyellow',
-        'honeydew',
-        'hotpink',
-        'indianred',
-        'indigo',
-        'ivory',
-        'khaki',
-        'lavender',
-        'lavenderblush',
-        'lawngreen',
-        'lemonchiffon']
-
-symbols = [r'$\bigotimes$',
-        r'$\bigstar$']
-
-
-""
-fig, ax = plt.subplots()
-ax.set_xlim((1000,8000))
-ax.set_ylim((100,1000000))
-ax.set_yscale("log", nonposy='clip')
-""
-
-if(len(sys.argv) == 1):
-    print "Syntax: source freq obsid"
-    print("Example: %s moon 4000 192 [<start obs> <num>]" % sys.argv[0])
-    sys.exit(0)
-
-sources = [sys.argv[1]]
-#tunings = [sys.argv[2]]
-myObsid = sys.argv[2]
-startObs = -1
-numObs = -1
-if(len(sys.argv) == 5):
-    startObs = int(sys.argv[3]);
-    numObs = int(sys.argv[4]);
-    print "Processing %d starting at on/off %d" % (numObs, startObs)
+fig = plt.subplots()
 
 for antenna in antennas:
 
         for source in sources:
 
-                freqlist = []
-                antennalist = []
-                sefdlist = []
+
 
                 for tuning in tunings:	
 
@@ -149,8 +75,8 @@ for antenna in antennas:
                         #print tuning
 
 
-                        mylist = sorted([f for f in glob.glob("*"+ source + "*" + antenna +"*" + tuning +"*obsid" + myObsid +".pkl")])
-                        #mylist = sorted([f for f in glob.glob("*"+source+"*" + antenna +"*" + tuning +"*.pkl")])		
+                        #mylist = sorted([f for f in glob.glob("*"+ source + "*" + antenna +"*" + tuning +"*obsid" + myObsid +".pkl")])
+                        mylist = sorted([f for f in glob.glob("*"+source+"*" + antenna +"*" + tuning +"*.pkl")])		
                         #print mylist
                         z = range(len(mylist))
                         power0 = np.zeros(1);
@@ -160,26 +86,32 @@ for antenna in antennas:
                         goodcnt0 = 0;
                         goodcnt1 = 0;
 
+                        lastObsid = "-1"
+                        thisObsid = "-1"
+                        markers = [];
+
+
                         j = 0
                         for i in z[::2]:
-
-                                if(i < startObs*2 or i > (startObs+numObs)*2):
-                                    j += 2
-                                    continue
 
                                 try:
                                     if "_on_" not in mylist[j]:
                                         j = j + 1;
-                                        print "skip"
+                                        print "skip1, %s,%s" % ( mylist[j],  mylist[j+1])
                                         continue
                                     if "_off_" not in mylist[j+1]:
                                         j = j + 1
-                                        print "skip"
+                                        print "skip2, %s,%s" % ( mylist[j],  mylist[j+1])
                                         continue
                                     dataon = pickle.load(open(mylist[j],'r'))
                                     dataoff = pickle.load(open(mylist[j+1],'r'))
-                                    print mylist[j] 
-                                    print mylist[j+1]
+
+                                    #Keep track of the obsId for drawing the markers
+                                    thisObsid = mylist[j+1].split("_")[-1].split(".")[0][5:]
+                                    if(lastObsid == "-1"):
+                                        lastObsid = thisObsid;
+                                    #print mylist[j] 
+                                    #print mylist[j+1]
                                     #print " "
                                 except:
 
@@ -208,6 +140,7 @@ for antenna in antennas:
                                 else:
                                         print "Bad stddev for adc1: ", mylist[i+1], dataoff['adc1_stats']		
                                 """
+                                """
                                 if(antenna == '4l'):
                                     if (dataon['adc0_stats']['dev'] > 30. or dataon['adc0_stats']['dev'] < 5.):
                                         print "Bad stddev for adc0: ", mylist[i], dataon['adc0_stats']		
@@ -220,21 +153,24 @@ for antenna in antennas:
 
                                     if (dataoff['adc1_stats']['dev'] > 30. or dataoff['adc1_stats']['dev'] < 5.):
                                         print "Bad stddev for adc1: ", mylist[i+1], dataoff['adc1_stats']		
+                                """
 
                                 if dataon['adc0_stats']['dev'] >= 2.:
                                     frange = dataon['frange'][768:1700]
                                     specon = np.mean(dataon['auto0'], axis=0)[768:1700]
                                     specoff = np.mean(dataoff['auto0'], axis=0)[768:1700]
 
+                                    if(lastObsid != thisObsid):
+                                        markers.append([len(power0)-1, lastObsid])
+                                        lastObsid = thisObsid
+
                                     power0 = np.append(power0, np.mean(np.array(dataon['auto0'])[:,768:1700], axis=1))
                                     power0 = np.append(power0, np.mean(np.array(dataoff['auto0'])[:,768:1700], axis=1))   
                                     onpower = np.mean(np.array(dataon['auto0'])[:,768:1700])
                                     offpower = np.mean(np.array(dataoff['auto0'])[:,768:1700])
-                                    #print onpower
-                                    #print offpower
                                     ratio0 += (onpower / offpower - 1.0)
-                                    print "adc0: Power on: %s, Power off: %f, ratio1:%f" % (onpower, offpower, ratio0)
                                     goodcnt0 += 1
+
 
                                 if dataon['adc1_stats']['dev'] >= 2.:
                                     frange = dataon['frange'][768:1700]
@@ -248,17 +184,10 @@ for antenna in antennas:
                                     onpower = np.mean(np.array(dataon['auto1'])[:,768:1700])
                                     offpower = np.mean(np.array(dataoff['auto1'])[:,768:1700])
                                     ratio1 += (onpower / offpower - 1.0)
-                                    print "adc1: Power on: %s, Power off: %f, ratio1:%f" % (onpower, offpower, ratio1)
                                     goodcnt1 += 1
 
+                        markers.append([len(power0)-1, thisObsid])
 
-                                        # We have on and off data for this antenna. Plot a spectrum at 3 GHz with the ratio.
-                                #plt.figure()
-                                #plt.plot(frange, specon / specoff)
-                                #plt.title(mylist[i])
-                                #plt.show()
-                        #print len(power0)
-                        #print len(power1)
                         if source == "moon":
                             sourceflux = 1.38 * 10**-23 * 270 / ((3 * 10**8) / (float(tuning) * 10**6))**2 * (6.67*10**-5)/ (10**-26)
                         if source == "casa":
@@ -267,115 +196,63 @@ for antenna in antennas:
                             sourceflux = 39810.7 * float(tuning)**-0.75
                         if source == "taua":
                             sourceflux = 6309.6 * float(tuning)**-0.25
-                        #print sourceflux
 
                         if len(power0) > 2:
-                                #print ratio0
                                 ratio = 1/(ratio0 / (float(goodcnt0)))
-                                #print ratio
-                                print "adc0: ratio1: %f, ratio: %f" % (ratio1, ratio)
+                                ratio = math.fabs(ratio);
                                 if 1/ratio < 0.01:
                                     ratio = 0.0
                                 
-                                "" 
+                                # Finish up the plot
                                 plt.figure()
                                 plt.plot(power0)
-                                
                                 ptitle = "Antenna: "+ antenna+ "X Frequency: "+ tuning+ " MHz SEFD: "+ str(ratio * sourceflux)+ " Jy"
                                 plt.title(ptitle)
-                                "" 
-                                
-                                #print "Antenna: ", antenna, "X Frequency: ", tuning, " MHz SEFD: ", ratio * sourceflux, " Jy", "ratio: ", ratio
-                                #print source,antenna,tuning,ratio * sourceflux,ratio
-                                #print source,",",antenna,",x,",tuning,",",ratio * sourceflux,",",ratio
-                                print("%s,%s,x,%s,%f,%f" % (source, antenna, tuning, ratio * sourceflux, ratio));
-                                
-                                ""
-                                fname = antenna+"x_"+tuning+"_"+source+"_obs"+myObsid+".png"
+                                for m in markers:
+                                  plt.axvline(x=m[0], color='grey', linestyle='--')
+                                  plt.text(m[0]-1, 0, m[1], horizontalalignment='right');
+                                fname = antenna+"x_"+tuning+"_"+source+".png"
                                 plt.savefig(fname)
                                 plt.close()				
-                                ""
+
+                                #Output CSV line
+                                print("%s,%s,x,%s,%f,%f,%s" % (source, antenna, tuning, ratio * sourceflux, ratio, fname));
+                                # SSH to server
+                                """
                                 r = plumbum.machines.SshMachine("antfeeds.setiquest.info")
                                 fro = plumbum.local.path(fname)
                                 to =  r.path("www/sefd")
                                 plumbum.path.utils.copy(fro, to);
-                                print("http://antfeeds.setiquest.info/sefd/" + fname);
+                                """
                                
-                                freqlist.append(float(tuning))
-                                antennalist.append(colors[antennas.index(antenna) * 2 + 0])
-                                sefdlist.append(ratio * sourceflux)
 
                         if len(power1) > 2:
                                 ratio = 1/(ratio1 / (float(goodcnt1)))
                                 ratio = math.fabs(ratio);
-                                print "adc1: ratio1: %f, ratio: %f" % (ratio1, ratio)
                                 if 1/ratio < 0.01:
                                     ratio = 0.0
                                 
-                                "" 
+                                # Finish up the plot
                                 plt.figure()
                                 plt.plot(power1)
-                                
                                 ptitle = "Antenna: "+ antenna+ "Y Frequency: "+ tuning+ " MHz SEFD: "+ str(ratio * sourceflux)+ " Jy"
-                                
                                 plt.title(ptitle)
-                                "" 
-                                
-                                #print "Antenna: ", antenna, "Y Frequency: ", tuning, " MHz SEFD: ", ratio * sourceflux, " Jy", "ratio: ", ratio
-                                print("%s,%s,y,%s,%f,%f" % (source, antenna, tuning, ratio * sourceflux, ratio));
-                                #print source,",",antenna,",y,",tuning,ratio * sourceflux,",",ratio
-                                
-                                "" 
-                                fname = antenna+"y_"+tuning+"_"+source+"_obs"+myObsid+".png"
+                                for m in markers:
+                                  plt.axvline(x=m[0], color='grey', linestyle='--')
+                                  plt.text(m[0]-1, 10, m[1], horizontalalignment='right');
+                                fname = antenna+"y_"+tuning+"_"+source+".png"
                                 plt.savefig(fname)
                                 plt.close()				
-                                "" 
+                                
+                                #Output CSV line
+                                print("%s,%s,y,%s,%f,%f,%s" % (source, antenna, tuning, ratio * sourceflux, ratio,fname));
+
+                                # SSH to server
+                                """
                                 r = plumbum.machines.SshMachine("antfeeds.setiquest.info")
                                 fro = plumbum.local.path(fname)
                                 to =  r.path("www/sefd")
                                 plumbum.path.utils.copy(fro, to);
-
-                                print("http://antfeeds.setiquest.info/sefd/" + fname);
-
-                                
-                                freqlist.append(float(tuning))
-                                antennalist.append(colors[antennas.index(antenna) * 2 + 1])
-                                sefdlist.append(ratio * sourceflux)
-
-                
-                """
-                try: 
-                    ax.scatter(freqlist, sefdlist, color=antennalist, s=50, marker=symbols[sources.index(source)], alpha=.4)
-                except:
-                    print source, "Exception"
-                """
-                
-
-
-""" 
-labelnames = []
-labelcolors = []
-for antenna in antennas:
-        labelnames.append(antenna + '-X')
-        labelcolors.append(colors[antennas.index(antenna) * 2 + 0])
-        labelnames.append(antenna + '-Y')
-        labelcolors.append(colors[antennas.index(antenna) * 2 + 1])
-
-patches = [ plt.plot([],[], marker="o", ms=10, ls="", mec=None, color=labelcolors[i], 
-            label="{:s}".format(labelnames[i]) )[0]  for i in range(len(labelnames)) ]
-
-plt.legend(handles=patches, 
-           loc='upper center', ncol=5, numpoints=1 )
-
-#plt.show()
-
-plt.savefig("complete.png")
-
-
-#whatever_data=pickle.load( open( sys.argv[1], "rb" ) )
-#print whatever_data.keys()
-#print sys.argv[1]
-""" 
-
+                                """
 
 
