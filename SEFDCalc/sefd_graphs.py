@@ -217,12 +217,10 @@ for antenna in antennas:
                                 #Output CSV line
                                 print("%s,%s,x,%s,%f,%f,%s" % (source, antenna, tuning, ratio * sourceflux, ratio, fname));
                                 # SSH to server
-                                """
                                 r = plumbum.machines.SshMachine("antfeeds.setiquest.info")
                                 fro = plumbum.local.path(fname)
                                 to =  r.path("www/sefd")
                                 plumbum.path.utils.copy(fro, to);
-                                """
                                
 
                         if len(power1) > 2:
@@ -238,7 +236,7 @@ for antenna in antennas:
                                 plt.title(ptitle)
                                 for m in markers:
                                   plt.axvline(x=m[0], color='grey', linestyle='--')
-                                  plt.text(m[0]-1, 10, m[1], horizontalalignment='right');
+                                  plt.text(m[0]-1, 0, m[1], horizontalalignment='right');
                                 fname = antenna+"y_"+tuning+"_"+source+".png"
                                 plt.savefig(fname)
                                 plt.close()				
@@ -247,11 +245,9 @@ for antenna in antennas:
                                 print("%s,%s,y,%s,%f,%f,%s" % (source, antenna, tuning, ratio * sourceflux, ratio,fname));
 
                                 # SSH to server
-                                """
                                 r = plumbum.machines.SshMachine("antfeeds.setiquest.info")
                                 fro = plumbum.local.path(fname)
                                 to =  r.path("www/sefd")
                                 plumbum.path.utils.copy(fro, to);
-                                """
 
 
