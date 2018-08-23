@@ -25,6 +25,8 @@ To build the program:
 Must be run as root. Help is available by runiing rfswitch or atten without
 command line arguments.
 
+When antenna port assignments change on the RF switches, or more are added, edit antassign.h with the changes.
+
 **rfswitch**
 
 Minicircuits rf switch controller. PN: USB-1SP8T-63H
