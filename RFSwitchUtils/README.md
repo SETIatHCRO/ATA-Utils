@@ -30,34 +30,44 @@ command line arguments.
 Minicircuits rf switch controller. PN: USB-1SP8T-63H
 
 ```
-rfswitch <state> <rf switch number>
-  state = 
-    -1 to print out the serial number and part number only, then exits.
-    -2 to print out the switch number that is active, then exits.
-    1 .. 8, turn on a switch, turn the others off
-  rf switch number (as of June 06, 2018)
-    0 == left unit, SN: 1180422005
-    1 == right unit, SN: 1180422007
-    (they are labeled below each unit)
-Will print OK\n of successful. Otherwise an error will be reported.
+Minicircuits rf switch controller control.
+
+rfswitch <ant|antPol>
+ switches the RF switch to the specified ant (does bot pols) or single ant pol.
+ or
+rfswitch -info <ant|antPol>
+ -info <ant|antpol>  will print out the RF switch hookup for an ant or antpol.
+ -info all will print out all hookup info.
+Will print OK\n if successful. Otherwise an error will be reported.
 **REMEMBER to run as root!!**
 ```
+
+Example: sudo ./rfswitch 1fx (selects just 1fx)
+
+Example: sudo ./rfswitch 1f (selects 1fx and 1fx)
+
+Example: sudo ./rfswitch -info 1f 
+
+Example: sudo ./rfswitch -info all 
 
 **atten**
 
 ```
-Minicircuits attenuator. PN: RUDAT-6000-30
+Minicircuits attenuator control.
 
-atten <db> <rf switch number>
-  attenuation, in db 0.0 to 31.75
+atten <dB> <ant|antPol>
+  attenuation, in dB 0.0 to 31.75
     -1 will print out the part number and serial number then exit.
-  attenuator number (as of June 06, 2018)
-    0 == left unit, SN: 11803290005
-    1 == right unit, SN: 11803290019
-    (they are labeled below each unit)
-Will print OK,<atten level read from unit>\n if successful. Otherwise an error will be reported.
+   or
+atten -discover
+  discover all attenuators on the USB bus
+Will print OK\n if successful. Otherwise an error will be reported.
 **REMEMBER to run as root!!**
 ```
+
+Example: sudo ./atten 20.5 1fx (for just the one pol)
+
+Example: sudo ./atten 20.5 1f (for both pols)
 
 
 
