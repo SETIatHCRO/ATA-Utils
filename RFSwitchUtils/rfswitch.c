@@ -227,7 +227,7 @@ void printHookup(char *ant) {
 
 	if(!strcmp(ant, "all")) {
 		for(int i = 0; i<NUM_RF_SWITCHES; i++) {
-			for(int j = 2; j<(MAX_POLS_PER_SWITCH+1); j++) {
+			for(int j = 2; j<(MAX_POLS_PER_SWITCH+2); j++) {
 				if((int)strlen(ports[i][j]) == 0) continue;
 				deviceHookup = getantPolHookup(ports[i][j], false);
 				printDeviceHookup(deviceHookup);
