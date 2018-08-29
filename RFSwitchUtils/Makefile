@@ -24,6 +24,9 @@ atten.o: atten.c
 
 install:
 	cp ./rfswitch /usr/local/bin
+	cp ./atten /usr/local/bin
+	chmod u+s /usr/local/bin/rfswitch
+	chmod u+s /usr/local/bin/atten
 
 clean:
 	rm -f *~ *.o $(RFEXE)
