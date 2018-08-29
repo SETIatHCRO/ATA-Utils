@@ -21,12 +21,14 @@ typedef struct {
 	char antPol[4]; //Max ant pol name would be 4 characters (includes null terminator)
         char rf_switch_sn[12];
         char atten_sn[12];
-        int switchIndex; //Starts at 0
-        int portNum; //Starts at 1
+        int  switchIndex; //Starts at 0
+        int  portNum; //Starts at 1
+	bool isValid;
 } DeviceHookup;
 
 typedef struct {
 	int num;
+	int numValid;
 	DeviceHookup **deviceHookups;
 } DeviceHookups;
 
@@ -51,7 +53,7 @@ char *pn_sn[NUM_ALL_DEVICES][2] = {
   { "RUDAT-6000-30", "11803290005" }
 };
 
-DeviceHookup *getantPolHookup(char *antPol) {
+DeviceHookup *getantPolHookup(char *antPol, bool ignoreNoAtten) {
 
         DeviceHookup *deviceHookup = (DeviceHookup *)calloc(1, sizeof(DeviceHookup));
         strcpy(deviceHookup->antPol, antPol);
@@ -61,6 +63,12 @@ DeviceHookup *getantPolHookup(char *antPol) {
         for(int i = 0; i<NUM_RF_SWITCHES; i++) {
                 for(int j = 2; j<(MAX_POLS_PER_SWITCH+2); j++) {
                         if(!strcmp(ports[i][j], antPol)) {
+
+				//If no atten_sn and ignoreNoAtten==true, ignore
+				if(ignoreNoAtten == true && (int)strlen(ports[i][ATTEN_SN_INDEX]) == 0) {
+					continue;
+				}
+				deviceHookup->isValid = true;
 				
 				strcpy(deviceHookup->rf_switch_sn, ports[i][RF_SWITCH_SN_INDEX]);
 				strcpy(deviceHookup->atten_sn, ports[i][ATTEN_SN_INDEX]);
@@ -76,7 +84,7 @@ DeviceHookup *getantPolHookup(char *antPol) {
 }
 
 
-DeviceHookups *getDeviceHookups(char *ant) {
+DeviceHookups *getDeviceHookups(char *ant, bool ignoreNoAtten) {
 
 
         if((int)strlen(ant) == 2) {
@@ -87,10 +95,12 @@ DeviceHookups *getDeviceHookups(char *ant) {
 
                 char antName[4];
                 sprintf(antName, "%sx", ant);
-                deviceHookups->deviceHookups[0] = getantPolHookup(antName);
+                deviceHookups->deviceHookups[0] = getantPolHookup(antName, ignoreNoAtten);
+		if(deviceHookups->deviceHookups[0]->isValid == true) deviceHookups->numValid++;
 
                 sprintf(antName, "%sy", ant);
-                deviceHookups->deviceHookups[1] = getantPolHookup(antName);
+                deviceHookups->deviceHookups[1] = getantPolHookup(antName, ignoreNoAtten);
+		if(deviceHookups->deviceHookups[1]->isValid == true) deviceHookups->numValid++;
 
                 return deviceHookups;
         }
@@ -99,7 +109,8 @@ DeviceHookups *getDeviceHookups(char *ant) {
                 deviceHookups->num = 1;
                 deviceHookups->deviceHookups = (DeviceHookup **)calloc(1, sizeof(DeviceHookup *));
 
-                deviceHookups->deviceHookups[0] = getantPolHookup(ant);
+                deviceHookups->deviceHookups[0] = getantPolHookup(ant, ignoreNoAtten);
+		if(deviceHookups->deviceHookups[0]->isValid == true) deviceHookups->numValid++;
                 return deviceHookups;
         }
 

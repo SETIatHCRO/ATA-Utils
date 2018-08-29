@@ -98,7 +98,7 @@ void Get_PN (char* PNstr)
 	PACKET[0]=40; // PN code
 	ret = hid_interrupt_write(hid, 0x01, PACKET, SEND_PACKET_LEN,1000);
 	if (ret != HID_RET_SUCCESS) {
-		fprintf(stderr, "hid_interrupt_write failed with return code %d\n", ret);
+		fprintf(stderr, "1hid_interrupt_write failed with return code %d\n", ret);
 	}
 	ret = hid_interrupt_read(hid, 0x01, PACKETreceive, SEND_PACKET_LEN,1000);
 	if (ret == HID_RET_SUCCESS) {
@@ -109,7 +109,7 @@ void Get_PN (char* PNstr)
 		PNstr[i]='\0';
 	}
 	if (ret != HID_RET_SUCCESS) {
-		fprintf(stderr, "hid_interrupt_read failed with return code %d\n", ret); }
+		fprintf(stderr, "2hid_interrupt_read failed with return code %d\n", ret); }
 }
 void Get_SN (char* SNstr)
 {
@@ -118,7 +118,7 @@ void Get_SN (char* SNstr)
 	PACKET[0]=41; // SN Code
 	ret = hid_interrupt_write(hid, 0x01, PACKET, SEND_PACKET_LEN,1000);
 	if (ret != HID_RET_SUCCESS) {
-		fprintf(stderr, "hid_interrupt_write failed with return code %d\n", ret);
+		fprintf(stderr, "3id_interrupt_write failed with return code %d\n", ret);
 	}
 	ret = hid_interrupt_read(hid, 0x01, PACKETreceive, SEND_PACKET_LEN,1000);
 	if (ret == HID_RET_SUCCESS) {
@@ -129,7 +129,7 @@ void Get_SN (char* SNstr)
 		SNstr[i]='\0';
 	}
 	if (ret != HID_RET_SUCCESS) {
-		fprintf(stderr, "hid_interrupt_read failed with return code %d\n", ret); }
+		fprintf(stderr, "4hid_interrupt_read failed with return code %d\n", ret); }
 }
 void ReadAtt (char* AttStr)
 {
@@ -139,7 +139,7 @@ void ReadAtt (char* AttStr)
 	PACKET[0]=18; // Ruturn attenuation code
 	ret = hid_interrupt_write(hid, 0x01, PACKET, SEND_PACKET_LEN,1000);
 	if (ret != HID_RET_SUCCESS) {
-		fprintf(stderr, "hid_interrupt_write failed with return code %d\n", ret);
+		fprintf(stderr, "5hid_interrupt_write failed with return code %d\n", ret);
 	}
 	ret = hid_interrupt_read(hid, 0x01, PACKETreceive, SEND_PACKET_LEN,1000);
 	if (ret == HID_RET_SUCCESS) {
@@ -151,7 +151,7 @@ void ReadAtt (char* AttStr)
 	}
 
 	if (ret != HID_RET_SUCCESS) {
-		fprintf(stderr, "hid_interrupt_read failed with return code %d\n", ret); }
+		fprintf(stderr, "6hid_interrupt_read failed with return code %d\n", ret); }
 }
 
 void Set_Attenuation (unsigned char **AttValue)
@@ -164,20 +164,21 @@ void Set_Attenuation (unsigned char **AttValue)
 	PACKET[2]= (int) ((t1-PACKET[1])*4);
 	ret = hid_interrupt_write(hid, 0x01, PACKET, SEND_PACKET_LEN,1000);
 	if (ret != HID_RET_SUCCESS) {
-		fprintf(stderr, "hid_interrupt_write failed with return code %d\n", ret);
+		fprintf(stderr, "7hid_interrupt_write failed with return code %d\n", ret);
 	}
 	ret = hid_interrupt_read(hid, 0x01, PACKETreceive, SEND_PACKET_LEN,1000);
 	// Read packet Packetreceive[0]=1
 	if (ret != HID_RET_SUCCESS) {
-		fprintf(stderr, "hid_interrupt_read failed with return code %d\n", ret); }
+		fprintf(stderr, "4hid_interrupt_read failed with return code %d\n", ret); }
 }
 
 IndexAndPort **getMatcherIndexes(char *ant, int *numIndexes) {
 
         int nextInsertPos = 0;
 
-        DeviceHookups *deviceHookups = getDeviceHookups(ant);
+        DeviceHookups *deviceHookups = getDeviceHookups(ant, true);
         if(deviceHookups == NULL) return NULL;
+        if(deviceHookups->numValid == 0) return NULL;
 
         IndexAndPort **indexAndPort = (IndexAndPort **)calloc(deviceHookups->num, sizeof(IndexAndPort *));
         for(int i = 0; i<deviceHookups->num; i++) {
@@ -321,8 +322,14 @@ int main( int argc, unsigned char **argv)
 
 	int numIndexes = -1;
 	IndexAndPort **matcherIndexes = getMatcherIndexes(argv[2], &numIndexes);
+	if(matcherIndexes == NULL) {
+		printf("error: no attenuator for %s\n", argv[2]);
+		exit(1);
+	}
+
 	//printf("NUM=%d\n", numIndexes);
 	for(int i = 0; i<numIndexes; i++) {
+
  		matcher_try_count = 0;
                 matcher_index = matcherIndexes[i]->matcherIndex;
 

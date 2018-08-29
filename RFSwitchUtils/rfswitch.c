@@ -227,9 +227,9 @@ void printHookup(char *ant) {
 
 	if(!strcmp(ant, "all")) {
 		for(int i = 0; i<NUM_RF_SWITCHES; i++) {
-			for(int j = 1; j<(MAX_POLS_PER_SWITCH+1); j++) {
+			for(int j = 2; j<(MAX_POLS_PER_SWITCH+1); j++) {
 				if((int)strlen(ports[i][j]) == 0) continue;
-				deviceHookup = getantPolHookup(ports[i][j]);
+				deviceHookup = getantPolHookup(ports[i][j], false);
 				printDeviceHookup(deviceHookup);
 				free(deviceHookup);
 			}
@@ -237,7 +237,7 @@ void printHookup(char *ant) {
 		return;
 	}
 
-	DeviceHookups *deviceHookups = getDeviceHookups(ant);
+	DeviceHookups *deviceHookups = getDeviceHookups(ant, false);
 
 	if(deviceHookups == NULL) return;
 
@@ -304,7 +304,7 @@ IndexAndPort **getMatcherIndexes(char *ant, int *numIndexes) {
 
 	int nextInsertPos = 0;
 
-	DeviceHookups *deviceHookups = getDeviceHookups(ant);
+	DeviceHookups *deviceHookups = getDeviceHookups(ant, false);
 	if(deviceHookups == NULL) return NULL;
 
 	IndexAndPort **indexAndPort = (IndexAndPort **)calloc(deviceHookups->num, sizeof(IndexAndPort *));
