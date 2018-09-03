@@ -36,12 +36,14 @@ bool usb_defined_already = false;
 void printHelp() {
 
 	fprintf(stderr, "Minicircuits rf switch controller control.\n\n");
-	fprintf(stderr, "rfswitch <comma sep list of ant pols>\n");
-	fprintf(stderr, " switches the RF switch to the specified ant (does bot pols) or single ant pol.\n");
-	fprintf(stderr, " or\n");
+	fprintf(stderr, "rfswitch <comma sep list of ant pols or ants>\n");
+	fprintf(stderr, " switches the RF switch to the specified ant (does both pols) or single ant pol.\n");
+	fprintf(stderr, " Example: \"rfswitch 2a,2jx\n");
+	fprintf(stderr, "or\n");
 	fprintf(stderr, "rfswitch -info <ant|antPol>\n");
 	fprintf(stderr, " -info <ant|antpol>  will print out the RF switch hookup for an ant or antpol.\n");
 	fprintf(stderr, " -info all will print out all hookup info.\n");
+	fprintf(stderr, " -d will discover all rf switches.\n");
 	fprintf(stderr, "Will print OK\\n if successful. Otherwise an error will be reported.\n");
 	fprintf(stderr, "**REMEMBER to run as root!!**\n");
 	exit(0);

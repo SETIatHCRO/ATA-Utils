@@ -25,39 +25,49 @@ To build the program:
 Must be run as root. Help is available by runiing rfswitch or atten without
 command line arguments.
 
+NOTE: "sudo make install" does
+
+'''
+cp ./rfswitch /usr/local/bin
+cp ./atten /usr/local/bin
+chmod u+s /usr/local/bin/rfswitch
+chmod u+s /usr/local/bin/atten
+'''
+
+Which puts the programs into ./usr/local/bin and sets the SUID/SUID so when you run these programs they run as root.
+
 When antenna port assignments change on the RF switches, or more are added, edit antassign.h with the changes.
 
 **rfswitch**
 
-Minicircuits rf switch controller. PN: USB-1SP8T-63H
-
 ```
+
 Minicircuits rf switch controller control.
 
-rfswitch <ant|antPol>
- switches the RF switch to the specified ant (does bot pols) or single ant pol.
- or
+rfswitch <comma sep list of ant pols or ants>
+ switches the RF switch to the specified ant (does both pols) or single ant pol.
+ Example: "rfswitch 2a,2jx
+or
 rfswitch -info <ant|antPol>
  -info <ant|antpol>  will print out the RF switch hookup for an ant or antpol.
  -info all will print out all hookup info.
+ -d will discover all rf switches.
 Will print OK\n if successful. Otherwise an error will be reported.
-**REMEMBER to run as root!!**
+
 ```
 
-Example: sudo ./rfswitch 1fx (selects just 1fx)
+Example: rfswitch 1fx (selects just 1fx)
 
-Example: sudo ./rfswitch 1f (selects 1fx and 1fx)
+Example: rfswitch 1fx,1fy (selects both pol switches)
 
-Example: sudo ./rfswitch -info 1f 
-
-Example: sudo ./rfswitch -info all 
+Example: rfswitch -info all 
 
 **atten**
 
 ```
 Minicircuits attenuator control.
 
-atten <dB> <ant|antPol>
+atten <comma sep list of db> <comma sep list of ant pols>
   attenuation, in dB 0.0 to 31.75
     -1 will print out the part number and serial number then exit.
    or
@@ -65,11 +75,12 @@ atten -discover
   discover all attenuators on the USB bus
 Will print OK\n if successful. Otherwise an error will be reported.
 **REMEMBER to run as root!!**
+
 ```
 
-Example: sudo ./atten 20.5 1fx (for just the one pol)
+Example: atten 20.5 1fx (for just the one pol)
 
-Example: sudo ./atten 20.5 1f (for both pols)
+Example: atten 20.5,15.5 1fx,1fy (for both pols)
 
 
 
