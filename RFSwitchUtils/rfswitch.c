@@ -461,7 +461,7 @@ int main( int argc, unsigned char **argv)
 
 	hid_delete_HIDInterface(&hid);
 	hid_cleanup();
-	printf("OK\n");
+	fprintf(stderr, "OK\n");
 	return 0;
 }
 
