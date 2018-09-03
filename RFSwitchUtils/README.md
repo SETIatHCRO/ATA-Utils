@@ -27,12 +27,12 @@ command line arguments.
 
 NOTE: "sudo make install" does
 
-'''
+```
 cp ./rfswitch /usr/local/bin
 cp ./atten /usr/local/bin
 chmod u+s /usr/local/bin/rfswitch
 chmod u+s /usr/local/bin/atten
-'''
+```
 
 Which puts the programs into ./usr/local/bin and sets the SUID/SUID so when you run these programs they run as root.
 
