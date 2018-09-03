@@ -417,7 +417,7 @@ int main( int argc, unsigned char **argv)
 
 	int numAntPols = 0;
         char **antPolList = commaSepListStringToStringArray(argv[1], &numAntPols);
-	printArrayValues("Ant pols", antPolList, numAntPols);
+	//printArrayValues("Ant pols", antPolList, numAntPols);
 
 	int numIndexes = -1;
 	//IndexAndPort **matcherIndexes = getMatcherIndexes(argv[1], &numIndexes);
