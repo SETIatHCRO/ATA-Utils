@@ -31,10 +31,12 @@ static const unsigned int serial_numbers[] = { 0x00, 0x00 };
 static int matcher_try_count = 0;
 static int matcher_index = 0;
 
+bool usb_defined_already = false;
+
 void printHelp() {
 
 	fprintf(stderr, "Minicircuits rf switch controller control.\n\n");
-	fprintf(stderr, "rfswitch <ant|antPol>\n");
+	fprintf(stderr, "rfswitch <comma sep list of ant pols>\n");
 	fprintf(stderr, " switches the RF switch to the specified ant (does bot pols) or single ant pol.\n");
 	fprintf(stderr, " or\n");
 	fprintf(stderr, "rfswitch -info <ant|antPol>\n");
@@ -249,23 +251,31 @@ void printHookup(char *ant) {
 
 }
 
+void initDevice() {
+
+        if(usb_defined_already == true) return;
+//      if(usb_defined_already == false) return;
+        usb_dev = device_init();
+        if (usb_dev == NULL)
+        {
+                fprintf(stdout, "USB, cannot init!\n");
+                exit(-1);
+        }
+        usb_handle = usb_open(usb_dev);
+        int drstatus = usb_get_driver_np(usb_handle, 0, kdname, sizeof(kdname));
+        if (kdname != NULL && strlen(kdname) > 0) {
+                usb_detach_kernel_driver_np(usb_handle, 0);
+        }
+
+        usb_reset(usb_handle);
+        usb_close(usb_handle);
+        usb_defined_already = true;
+}
+
 void discoverPorts() {
 
 	int matcherIndex = 0;
-	usb_dev = device_init();
-	if (usb_dev == NULL)
-	{
-		fprintf(stdout, "USB, cannot init!\n");
-		exit(-1);
-	}
-	usb_handle = usb_open(usb_dev);
-	int drstatus = usb_get_driver_np(usb_handle, 0, kdname, sizeof(kdname));
-	if (kdname != NULL && strlen(kdname) > 0) {
-		usb_detach_kernel_driver_np(usb_handle, 0);
-	}
-
-	usb_reset(usb_handle);
-	usb_close(usb_handle);
+	initDevice();
 	HIDInterfaceMatcher matcher = { VENDOR_ID, PRODUCT_ID, custom_matcher, NULL, 0 };
 	ret = hid_init();
 	if (ret != HID_RET_SUCCESS) {
@@ -300,18 +310,22 @@ void discoverPorts() {
 
 }
 
-IndexAndPort **getMatcherIndexes(char *ant, int *numIndexes) {
+//IndexAndPort **getMatcherIndexes(char *ant, int *numIndexes) {
+IndexAndPort **getMatcherIndexes(char **antPols, int numAntPols, int *numIndexes) {
 
 	int nextInsertPos = 0;
 
-	DeviceHookups *deviceHookups = getDeviceHookups(ant, false);
+	//DeviceHookups *deviceHookups = getDeviceHookups(ant, false);
+	DeviceHookups *deviceHookups = getDeviceHookupsFromAntpolList(antPols, numAntPols, true);
 	if(deviceHookups == NULL) return NULL;
 
 	IndexAndPort **indexAndPort = (IndexAndPort **)calloc(deviceHookups->num, sizeof(IndexAndPort *));
+
 	for(int i = 0; i<deviceHookups->num; i++) {
                 indexAndPort[i] = (IndexAndPort *)calloc(1, sizeof(IndexAndPort));
 		indexAndPort[i]->matcherIndex = -4;
 		indexAndPort[i]->switchPortNum = -4;
+		indexAndPort[nextInsertPos]->origListIndex = deviceHookups->deviceHookups[i]->origListIndex;
 	}
 	*numIndexes = deviceHookups->num;
 
@@ -324,20 +338,7 @@ IndexAndPort **getMatcherIndexes(char *ant, int *numIndexes) {
 	*/
 
 	int matcherIndex = 0;
-	usb_dev = device_init();
-	if (usb_dev == NULL)
-	{
-		fprintf(stdout, "USB, cannot init!\n");
-		exit(-1);
-	}
-	usb_handle = usb_open(usb_dev);
-	int drstatus = usb_get_driver_np(usb_handle, 0, kdname, sizeof(kdname));
-	if (kdname != NULL && strlen(kdname) > 0) {
-		usb_detach_kernel_driver_np(usb_handle, 0);
-	}
-
-	usb_reset(usb_handle);
-	usb_close(usb_handle);
+	initDevice();
 	HIDInterfaceMatcher matcher = { VENDOR_ID, PRODUCT_ID, custom_matcher, NULL, 0 };
 	ret = hid_init();
 	if (ret != HID_RET_SUCCESS) {
@@ -412,8 +413,13 @@ int main( int argc, unsigned char **argv)
 		if(argc != 2) printHelp(); //will exit
 	}
 
+	int numAntPols = 0;
+        char **antPolList = commaSepListStringToStringArray(argv[1], &numAntPols);
+	printArrayValues("Ant pols", antPolList, numAntPols);
+
 	int numIndexes = -1;
-	IndexAndPort **matcherIndexes = getMatcherIndexes(argv[1], &numIndexes);
+	//IndexAndPort **matcherIndexes = getMatcherIndexes(argv[1], &numIndexes);
+	IndexAndPort **matcherIndexes = getMatcherIndexes(antPolList, numAntPols, &numIndexes);
 	//printf("NUM=%d\n", numIndexes);
 	for(int i = 0; i<numIndexes; i++) {
 		//printf("Index %d = %d, portnum = %d\n", i, matcherIndexes[i]->matcherIndex, matcherIndexes[i]->switchPortNum);
@@ -421,23 +427,7 @@ int main( int argc, unsigned char **argv)
 		matcher_index = matcherIndexes[i]->matcherIndex;
 		int switchPortNum = matcherIndexes[i]->switchPortNum;
 		//printf("switchPortNum=%d\n", switchPortNum);
-		usb_dev = device_init();
-		if (usb_dev == NULL)
-		{
-			fprintf(stdout, "device not found!\n");
-			exit(-1);
-		}
-		if (usb_dev != NULL)
-		{
-			usb_handle = usb_open(usb_dev);
-			int drstatus = usb_get_driver_np(usb_handle, 0, kdname, sizeof(kdname));
-			if (kdname != NULL && strlen(kdname) > 0) {
-				usb_detach_kernel_driver_np(usb_handle, 0);
-			}
-		}
-
-		usb_reset(usb_handle);
-		usb_close(usb_handle);
+		initDevice();
 		HIDInterfaceMatcher matcher = { VENDOR_ID, PRODUCT_ID, custom_matcher, NULL, 0 };
 
 		ret = hid_force_open(hid, 0, &matcher, 3);

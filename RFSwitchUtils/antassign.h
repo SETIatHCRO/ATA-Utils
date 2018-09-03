@@ -1,6 +1,9 @@
 #ifndef ANTASSIGN
 #define ANTASSIGN
 
+#include <string.h>
+#include <stdio.h>
+
 #define NUM_RF_SWITCHES 5
 #define MAX_POLS_PER_SWITCH 16
 #define RF_SWITCH_SN_INDEX 0
@@ -24,6 +27,7 @@ typedef struct {
         int  switchIndex; //Starts at 0
         int  portNum; //Starts at 1
 	bool isValid;
+	int origListIndex;
 } DeviceHookup;
 
 typedef struct {
@@ -38,6 +42,7 @@ typedef struct {
         int switchPortNum;
         char pn[17];
         char sn[12];
+	int origListIndex;
 } IndexAndPort;
 
 #define NUM_ALL_DEVICES 9
@@ -117,6 +122,75 @@ DeviceHookups *getDeviceHookups(char *ant, bool ignoreNoAtten) {
         return NULL;
 }
 
+DeviceHookups *getDeviceHookupsFromAntpolList(char **antPols, int numAntPols, bool ignoreNoAtten) {
+
+	DeviceHookups *deviceHookups = (DeviceHookups *)calloc(1, sizeof(DeviceHookups));
+	deviceHookups->num = numAntPols;
+	deviceHookups->deviceHookups = (DeviceHookup **)calloc(deviceHookups->num, sizeof(DeviceHookup *));
+
+	int i = 0;
+	for(i = 0; i<deviceHookups->num; i++) {
+		deviceHookups->deviceHookups[i] = getantPolHookup(antPols[i], ignoreNoAtten);
+                if(deviceHookups->deviceHookups[i]->isValid == true) deviceHookups->numValid++;
+		deviceHookups->deviceHookups[i]->origListIndex = i;
+	}
+	return deviceHookups;
+	
+
+}
+
+char **commaSepListStringToStringArray(char *string, int *resultLen) {
+
+	char *token;
+	int count = 0;
+	char *stringCopy = (char *)calloc(strlen(string)+1, sizeof(char));
+	memcpy(stringCopy, string, strlen(string));
+	char delim[2] = ",";
+
+	token = strtok(stringCopy, delim);
+	while(token != NULL) {
+		count++;
+		if(strlen(token) == 2) count++;
+		token = strtok(NULL, delim);
+	}
+
+	int i = 0;
+	int len = 0;
+	memcpy(stringCopy, string, strlen(string));
+	char **resultArray = (char **)calloc(count, sizeof(char *));
+	token = strtok(stringCopy, delim);
+        while(token != NULL) {
+		resultArray[i] = (char *)calloc(4, sizeof(char));
+		strcpy(resultArray[i], token);
+                if(strlen(token) == 2) {
+			resultArray[i][2] = 'x';
+			i++;
+			resultArray[i] = (char *)calloc(4, sizeof(char));
+                	strcpy(resultArray[i], token);
+			resultArray[i][2] = 'y';
+		}
+		i++;
+                token = strtok(NULL, delim);
+        }
+
+	*resultLen = i;
+
+	return resultArray;
+
+}
+
+void printArrayValues(char *preamble, char **stringArray, int numValues) {
+
+	fprintf(stdout, "%s(%d) = ", preamble, numValues);
+	int i = 0;
+	for(i = 0; i<numValues; i++) {
+		if(i == (numValues-1))
+			fprintf(stdout, "%s\n", stringArray[i]);
+		else
+			fprintf(stdout, "%s,", stringArray[i]);
+	}
+
+}
 
 #endif //ANTASSIGN
 
