@@ -25,39 +25,62 @@ To build the program:
 Must be run as root. Help is available by runiing rfswitch or atten without
 command line arguments.
 
+NOTE: "sudo make install" does
+
+```
+cp ./rfswitch /usr/local/bin
+cp ./atten /usr/local/bin
+chmod u+s /usr/local/bin/rfswitch
+chmod u+s /usr/local/bin/atten
+```
+
+Which puts the programs into ./usr/local/bin and sets the SUID/SUID so when you run these programs they run as root.
+
+When antenna port assignments change on the RF switches, or more are added, edit antassign.h with the changes.
+
 **rfswitch**
 
-Minicircuits rf switch controller. PN: USB-1SP8T-63H
+```
+
+Minicircuits rf switch controller control.
+
+rfswitch <comma sep list of ant pols or ants>
+ switches the RF switch to the specified ant (does both pols) or single ant pol.
+ Example: "rfswitch 2a,2jx
+or
+rfswitch -info <ant|antPol>
+ -info <ant|antpol>  will print out the RF switch hookup for an ant or antpol.
+ -info all will print out all hookup info.
+ -d will discover all rf switches.
+Will print OK\n if successful. Otherwise an error will be reported.
 
 ```
-rfswitch <state> <rf switch number>
-  state = 
-    -1 to print out the serial number and part number only, then exits.
-    -2 to print out the switch number that is active, then exits.
-    1 .. 8, turn on a switch, turn the others off
-  rf switch number (as of June 06, 2018)
-    0 == left unit, SN: 1180422005
-    1 == right unit, SN: 1180422007
-    (they are labeled below each unit)
-Will print OK\n of successful. Otherwise an error will be reported.
-**REMEMBER to run as root!!**
-```
+
+Example: rfswitch 1fx (selects just 1fx)
+
+Example: rfswitch 1fx,1fy (selects both pol switches)
+
+Example: rfswitch -info all 
 
 **atten**
 
 ```
-Minicircuits attenuator. PN: RUDAT-6000-30
+Minicircuits attenuator control.
 
-atten <db> <rf switch number>
-  attenuation, in db 0.0 to 31.75
+atten <comma sep list of db> <comma sep list of ant pols>
+  attenuation, in dB 0.0 to 31.75
     -1 will print out the part number and serial number then exit.
-  attenuator number (as of June 06, 2018)
-    0 == left unit, SN: 11803290005
-    1 == right unit, SN: 11803290019
-    (they are labeled below each unit)
-Will print OK,<atten level read from unit>\n if successful. Otherwise an error will be reported.
+   or
+atten -discover
+  discover all attenuators on the USB bus
+Will print OK\n if successful. Otherwise an error will be reported.
 **REMEMBER to run as root!!**
+
 ```
+
+Example: atten 20.5 1fx (for just the one pol)
+
+Example: atten 20.5,15.5 1fx,1fy (for both pols)
 
 
 
