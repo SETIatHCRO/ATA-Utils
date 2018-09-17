@@ -3,11 +3,18 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <sys/file.h>
+#include <fcntl.h>
+#include <errno.h>
 
 #define NUM_RF_SWITCHES 5
 #define MAX_POLS_PER_SWITCH 16
 #define RF_SWITCH_SN_INDEX 0
 #define ATTEN_SN_INDEX 1
+
+#define LOCK_FILENAME "/tmp/rf_atten_lock.txt"
+
+int filelock_fd = -1;
 
 // index 0 == RF switch SN
 // index 1 == ATTEN SN, the attenuator hooked
@@ -18,7 +25,6 @@ char *ports[NUM_RF_SWITCHES][MAX_POLS_PER_SWITCH + 2] = {
   {"11807090023", "11805160031", "2ay", "2by", "2ey", "3ly", "1fy", "5cy", "4ly", "4gy", "", "", "", "", "", "", "", "" },
   {"11710190006", "", "1ax", "1bx", "1gx", "1hx", "2kx", "2mx", "3dx", "4jx", "1ay", "1by", "1gy", "1hy", "2ky", "2my", "3dy", "4jy" }
 };
-
 
 typedef struct {
 	char antPol[4]; //Max ant pol name would be 4 characters (includes null terminator)
@@ -139,7 +145,7 @@ DeviceHookups *getDeviceHookupsFromAntpolList(char **antPols, int numAntPols, bo
 
 }
 
-char **commaSepListStringToStringArray(char *string, int *resultLen) {
+char **commaSepListStringToStringArray(char *string, int *resultLen, bool is_ant_list) {
 
 	char *token;
 	int count = 0;
@@ -162,7 +168,7 @@ char **commaSepListStringToStringArray(char *string, int *resultLen) {
         while(token != NULL) {
 		resultArray[i] = (char *)calloc(4, sizeof(char));
 		strcpy(resultArray[i], token);
-                if(strlen(token) == 2) {
+                if(is_ant_list == true && strlen(token) == 2) {
 			resultArray[i][2] = 'x';
 			i++;
 			resultArray[i] = (char *)calloc(4, sizeof(char));
@@ -191,6 +197,32 @@ void printArrayValues(char *preamble, char **stringArray, int numValues) {
 	}
 
 }
+
+void lock() {
+
+	filelock_fd = open(LOCK_FILENAME, O_RDONLY|O_CREAT);
+	if(filelock_fd == -1) {
+		fprintf(stderr,"ERROR: can not open lock file %s, %s exiting\n", LOCK_FILENAME, strerror(errno));
+		exit(1);
+	}
+
+	bool lock_obtained = false;
+	while(lock_obtained == false) {
+		if(flock(filelock_fd, LOCK_EX) == -1)
+			sleep(1);
+		else
+			lock_obtained = true;
+	}
+
+}
+
+void cleanup(int exit_value) {
+
+	flock(filelock_fd, LOCK_UN);
+	close(filelock_fd);
+        exit(exit_value);
+}
+
 
 #endif //ANTASSIGN
 

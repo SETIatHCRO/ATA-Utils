@@ -45,7 +45,7 @@ void printHelp() {
         fprintf(stderr, "  discover all attenuators on the USB bus\n");
         fprintf(stderr, "Will print OK\\n if successful. Otherwise an error will be reported.\n");
         fprintf(stderr, "**REMEMBER to run as root!!**\n");
-        exit(0);
+	cleanup(0);
 
 }
 
@@ -258,7 +258,7 @@ void initDevice() {
         if (usb_dev == NULL)
         {
                 fprintf(stdout, "USB, cannot init!\n");
-                exit(-1);
+		cleanup(-1);
         }
         usb_handle = usb_open(usb_dev);
         int drstatus = usb_get_driver_np(usb_handle, 0, kdname, sizeof(kdname));
@@ -310,22 +310,23 @@ void discoverPorts() {
 
 }
 
-
 int main( int argc, unsigned char **argv)
 {
+
+	lock();
 
 	//hid_set_debug(HID_DEBUG_ALL);
 	//hid_set_usb_debug(HID_DEBUG_ALL);
 	if(argc > 1 && !strncmp(argv[1], "-d", 2)) {
 		discoverPorts();
-		exit(0);
+		cleanup(0);
 	}
 	if(argc != 3) printHelp(); //will exit
 
 	int numAntPols = 0;
-	char **antPolList = commaSepListStringToStringArray(argv[2], &numAntPols);
+	char **antPolList = commaSepListStringToStringArray(argv[2], &numAntPols, true);
 	int numAntPolsDB = 0;
-	char **antDBList = commaSepListStringToStringArray(argv[1], &numAntPolsDB);
+	char **antDBList = commaSepListStringToStringArray(argv[1], &numAntPolsDB, false);
 
 	if(numAntPols != numAntPolsDB) {
 		fprintf(stderr, "ERROR: Num ant pols [%d] not equal number of dB values [%d]\n",
@@ -342,7 +343,7 @@ int main( int argc, unsigned char **argv)
 	//fprintf(stdout, "Num indexes = %d\n", numIndexes);
 	if(matcherIndexes == NULL) {
 		printf("error: no attenuator for %s\n", argv[2]);
-		exit(1);
+		cleanup(1);
 	}
 
 	//printf("NUM=%d\n", numIndexes);
@@ -409,5 +410,5 @@ int main( int argc, unsigned char **argv)
         hid_delete_HIDInterface(&hid);
         hid_cleanup();
 	fprintf(stderr,"OK\n");
-	return 0;
+	cleanup(0);
 }

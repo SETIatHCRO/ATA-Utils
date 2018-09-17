@@ -46,7 +46,7 @@ void printHelp() {
 	fprintf(stderr, " -d will discover all rf switches.\n");
 	fprintf(stderr, "Will print OK\\n if successful. Otherwise an error will be reported.\n");
 	fprintf(stderr, "**REMEMBER to run as root!!**\n");
-	exit(0);
+	cleanup(0);
 
 }
 
@@ -261,7 +261,7 @@ void initDevice() {
         if (usb_dev == NULL)
         {
                 fprintf(stdout, "USB, cannot init!\n");
-                exit(-1);
+                cleanup(-1);
         }
         usb_handle = usb_open(usb_dev);
         int drstatus = usb_get_driver_np(usb_handle, 0, kdname, sizeof(kdname));
@@ -400,23 +400,25 @@ IndexAndPort **getMatcherIndexes(char **antPols, int numAntPols, int *numIndexes
 int main( int argc, unsigned char **argv)
 {
 
+	lock();
+
 	if(argc > 1 && !strncmp(argv[1], "-d", 2)) {
 		discoverPorts();
-		exit(0);
+		cleanup(0);
 	}
 	else if(argc > 1 && !strncmp(argv[1], "-i", 2)) {
 		if(argc != 3) {
 			printHelp(); //will exit
 		}
 		printHookup(argv[2]);
-		exit(0);
+		cleanup(0);
 	}
 	else {
 		if(argc != 2) printHelp(); //will exit
 	}
 
 	int numAntPols = 0;
-        char **antPolList = commaSepListStringToStringArray(argv[1], &numAntPols);
+        char **antPolList = commaSepListStringToStringArray(argv[1], &numAntPols, true);
 	//printArrayValues("Ant pols", antPolList, numAntPols);
 
 	int numIndexes = -1;
@@ -462,6 +464,7 @@ int main( int argc, unsigned char **argv)
 	hid_delete_HIDInterface(&hid);
 	hid_cleanup();
 	fprintf(stderr, "OK\n");
+	cleanup(0);
 	return 0;
 }
 
