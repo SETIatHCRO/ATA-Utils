@@ -110,7 +110,7 @@ void Get_PN (char* PNstr)
 	PACKET[0]=40; // PN code
 	ret = hid_interrupt_write(hid, 0x01, PACKET, SEND_PACKET_LEN,1000);
 	if (ret != HID_RET_SUCCESS) {
-		fprintf(stderr, "hid_interrupt_write failed with return code %d\n", ret);
+		fprintf(stderr, "1hid_interrupt_write failed with return code %d\n", ret);
 	}
 	ret = hid_interrupt_read(hid, 0x01, PACKETreceive, SEND_PACKET_LEN,1000);
 	if (ret == HID_RET_SUCCESS) {
@@ -131,7 +131,7 @@ void Get_SN (char* SNstr)
 	PACKET[0]=41; // SN Code
 	ret = hid_interrupt_write(hid, 0x01, PACKET, SEND_PACKET_LEN,1000);
 	if (ret != HID_RET_SUCCESS) {
-		fprintf(stderr, "hid_interrupt_write failed with return code %d\n", ret);
+		fprintf(stderr, "2hid_interrupt_write failed with return code %d\n", ret);
 	}
 	ret = hid_interrupt_read(hid, 0x01, PACKETreceive, SEND_PACKET_LEN,1000);
 	if (ret == HID_RET_SUCCESS) {
@@ -154,7 +154,7 @@ void Set_Switch ( unsigned char state, int is16)
 	else sprintf(PACKET+1, ":SP8T:STATE:%d", state);
 	ret = hid_interrupt_write(hid, 0x01, PACKET, SEND_PACKET_LEN,1000);
 	if (ret != HID_RET_SUCCESS) {
-		fprintf(stderr, "hid_interrupt_write failed with return code, sending Set_Switch() %d\n", ret);
+		fprintf(stderr, "3hid_interrupt_write failed with return code, sending Set_Switch() %d\n", ret);
 	}
 	memset(PACKETreceive, 0, sizeof(PACKETreceive));
 	ret = hid_interrupt_read(hid, 0x01, PACKETreceive, SEND_PACKET_LEN,1000);
@@ -177,7 +177,7 @@ int Get_Switch (int is16)
 	else sprintf(PACKET+1, ":SP8T:STATE?");
 	ret = hid_interrupt_write(hid, 0x01, PACKET, SEND_PACKET_LEN,1000);
 	if (ret != HID_RET_SUCCESS) {
-		fprintf(stderr, "hid_interrupt_write failed with return code, sending Set_Switch() %d\n", ret);
+		fprintf(stderr, "4hid_interrupt_write failed with return code, sending Set_Switch() %d\n", ret);
 		return -1;
 	}
 	memset(PACKETreceive, 0, sizeof(PACKETreceive));
@@ -318,7 +318,7 @@ IndexAndPort **getMatcherIndexes(char **antPols, int numAntPols, int *numIndexes
 	int nextInsertPos = 0;
 
 	//DeviceHookups *deviceHookups = getDeviceHookups(ant, false);
-	DeviceHookups *deviceHookups = getDeviceHookupsFromAntpolList(antPols, numAntPols, true);
+	DeviceHookups *deviceHookups = getDeviceHookupsFromAntpolList(antPols, numAntPols, false);
 	if(deviceHookups == NULL) return NULL;
 
 	IndexAndPort **indexAndPort = (IndexAndPort **)calloc(deviceHookups->num, sizeof(IndexAndPort *));
@@ -371,6 +371,7 @@ IndexAndPort **getMatcherIndexes(char **antPols, int numAntPols, int *numIndexes
 		//fprintf(stdout," SN= %s .\n",SNreceive);
 
 		for(int i = 0; i<deviceHookups->num; i++) {
+
 
 			if(!strcmp(SNreceive, deviceHookups->deviceHookups[i]->rf_switch_sn)) {
 				indexAndPort[nextInsertPos]->matcherIndex = matcher_index;

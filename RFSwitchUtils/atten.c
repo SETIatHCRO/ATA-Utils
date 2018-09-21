@@ -181,6 +181,7 @@ IndexAndPort **getMatcherIndexes(char **antPols, int numAntPols, int *numIndexes
         int nextInsertPos = 0;
 
         //DeviceHookups *deviceHookups = getDeviceHookups(ant, true);
+	//DeviceHookups *deviceHookups = getDeviceHookupsFromAntpolList(antPols, numAntPols, true);
 	DeviceHookups *deviceHookups = getDeviceHookupsFromAntpolList(antPols, numAntPols, true);
         if(deviceHookups == NULL) return NULL;
         if(deviceHookups->numValid == 0) return NULL;
@@ -342,7 +343,8 @@ int main( int argc, unsigned char **argv)
 	IndexAndPort **matcherIndexes = getMatcherIndexes(antPolList, numAntPols, &numIndexes);
 	//fprintf(stdout, "Num indexes = %d\n", numIndexes);
 	if(matcherIndexes == NULL) {
-		printf("error: no attenuator for %s\n", argv[2]);
+		fprintf(stdout, "no attenuator for %s\n", argv[2]);
+		fprintf(stderr,"OK\n");
 		cleanup(1);
 	}
 
