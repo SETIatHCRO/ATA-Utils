@@ -1,0 +1,31 @@
+#!/bin/bash
+
+while [ 1 ]
+do
+	date
+	sudo ./atten 0,0 1a & sudo ./atten 0,0 2m &
+	date
+	sudo ./atten 10,10 1a & sudo ./atten 0,0 2m &
+	date
+	sudo ./atten 0,0 1a
+	date
+	sudo ./atten 10,i10 1a
+	date
+	sudo ./atten 0,0 2j & sudo ./atten 0,0 2m &
+	date
+	sudo ./atten 10,i10 2j
+	date
+	sudo ./atten 0,0 2j
+	date
+	sudo ./atten 10,10 2j & sudo ./atten 0,0 2m &
+	date
+	sudo ./atten 0,0 1a
+	date
+	sudo ./atten 10,i10 1a
+	date
+	sudo ./atten 0,0 1a
+	date
+	sudo ./atten 10,10 1a
+	date
+	sudo ./atten 1,2,3,4 2a,1a
+done
