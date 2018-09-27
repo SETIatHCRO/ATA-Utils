@@ -34,6 +34,13 @@ static bool usb_defined_already = false;
 
 void initDevice();
 
+void cleanup_all(int exit_code, char *message) {
+        hid_delete_HIDInterface(&hid);
+        hid_cleanup();
+	fprintf(stderr,"%s\n", message);
+	cleanup(exit_code);
+}
+
 void printHelp() {
 
         fprintf(stderr, "Minicircuits attenuator control.\n\n");
@@ -55,6 +62,7 @@ bool custom_matcher(struct usb_dev_handle const* usbdev,
         struct usb_device const* dev = usb_device((usb_dev_handle*)usbdev);
         //printf("PRODUCT_ID=%X\n", PRODUCT_ID);
         //printf("Matcher... %X, %X\n", dev->descriptor.idVendor, dev->descriptor.idProduct);
+
         if(dev->descriptor.idVendor == VENDOR_ID && dev->descriptor.idProduct == PRODUCT_ID) {
                 if(matcher_try_count++ == matcher_index) {
 			//fprintf(stderr,"matcher_try_count=%d\n", matcher_try_count);
@@ -65,7 +73,7 @@ bool custom_matcher(struct usb_dev_handle const* usbdev,
 }
 
 
-bool match_serial_number(struct usb_dev_handle* usbdev, void* custom, unsigned int len)
+bool match_serial_number(struct usb_dev_handle * usbdev, void* custom, unsigned int len)
 {
 	bool ret;
 	char* buffer = (char*)malloc(len);
@@ -227,6 +235,7 @@ IndexAndPort **getMatcherIndexes(char **antPols, int numAntPols, int *numIndexes
 
                 for(int i = 0; i<deviceHookups->num; i++) {
 
+
                         if(!strcmp(SNreceive, deviceHookups->deviceHookups[i]->atten_sn)) {
                                 indexAndPort[nextInsertPos]->matcherIndex = matcher_index;
                                 indexAndPort[nextInsertPos]->switchPortNum = deviceHookups->deviceHookups[i]->portNum;
@@ -259,7 +268,7 @@ void initDevice() {
         if (usb_dev == NULL)
         {
                 fprintf(stdout, "USB, cannot init!\n");
-		cleanup(-1);
+		cleanup_all(-1, "");
         }
         usb_handle = usb_open(usb_dev);
         int drstatus = usb_get_driver_np(usb_handle, 0, kdname, sizeof(kdname));
@@ -320,9 +329,10 @@ int main( int argc, unsigned char **argv)
 	//hid_set_usb_debug(HID_DEBUG_ALL);
 	if(argc > 1 && !strncmp(argv[1], "-d", 2)) {
 		discoverPorts();
-		cleanup(0);
+		cleanup_all(0, "");
 	}
 	if(argc != 3) printHelp(); //will exit
+
 
 	int numAntPols = 0;
 	char **antPolList = commaSepListStringToStringArray(argv[2], &numAntPols, true);
@@ -335,6 +345,7 @@ int main( int argc, unsigned char **argv)
 		printHelp();
 	}
 
+
 	//printArrayValues("Ant pols", antPolList, numAntPols);
 	//printArrayValues("dB values", antDBList, numAntPolsDB);
 
@@ -344,8 +355,7 @@ int main( int argc, unsigned char **argv)
 	//fprintf(stdout, "Num indexes = %d\n", numIndexes);
 	if(matcherIndexes == NULL) {
 		fprintf(stdout, "no attenuator for %s\n", argv[2]);
-		fprintf(stderr,"OK\n");
-		cleanup(1);
+		cleanup_all(1, "OK");
 	}
 
 	//printf("NUM=%d\n", numIndexes);
@@ -358,25 +368,13 @@ int main( int argc, unsigned char **argv)
 		float LastAtt=0.0;
 
 		initDevice();
-		HIDInterfaceMatcher matcher = { VENDOR_ID, PRODUCT_ID, custom_matcher, NULL, 5 };
-/*
-		ret = hid_init();
-		if (ret != HID_RET_SUCCESS) {
-			fprintf(stderr, "hid_init failed with return code %d\n", ret);
-			return 1;
-		}
-		hid = hid_new_HIDInterface();
-		if (hid == 0) {
-			fprintf(stderr, "hid_new_HIDInterface() failed, out of memory?\n");
-			return 1;
-		}
-*/
+
+		HIDInterfaceMatcher matcher = { VENDOR_ID, PRODUCT_ID, custom_matcher, NULL, 0 };
+
 		ret = hid_force_open(hid, 0, &matcher, 3);
 		if(!hid) {
-		//if (ret != HID_RET_SUCCESS) {
-			//fprintf(stderr, "hid_force_open failed with return code %d\n", ret);
 			fprintf(stderr, "Unable to open device\n");
-			return 1;
+        		cleanup_all(1, "");
 		}
 		char PNreceive[SEND_PACKET_LEN];
 		char SNreceive[SEND_PACKET_LEN];
@@ -396,21 +394,10 @@ int main( int argc, unsigned char **argv)
 		ret = hid_close(hid);
 		if (ret != HID_RET_SUCCESS) {
 			fprintf(stderr, "hid_close failed with return code %d, atten read was %f db\n", ret, LastAtt);
-			return 1;
+        		cleanup_all(1, "");
 		}
 
-		//hid_delete_HIDInterface(&hid);
-/*
-		ret = hid_cleanup();
-		if (ret != HID_RET_SUCCESS) {
-			fprintf(stderr, "hid_cleanup failed with return code %d, atten read was %f db\n", ret, LastAtt);
-			return 1;
-		}
-*/
 	}
 
-        hid_delete_HIDInterface(&hid);
-        hid_cleanup();
-	fprintf(stderr,"OK\n");
-	cleanup(0);
+	cleanup_all(0, "OK");
 }

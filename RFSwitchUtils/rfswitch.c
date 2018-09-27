@@ -33,6 +33,13 @@ static int matcher_index = 0;
 
 bool usb_defined_already = false;
 
+void cleanup_all(int exit_code, char *message) {
+        hid_delete_HIDInterface(&hid);
+        hid_cleanup();
+        fprintf(stderr,"%s\n", message);
+        cleanup(exit_code);
+}
+
 void printHelp() {
 
 	fprintf(stderr, "Minicircuits rf switch controller control.\n\n");
@@ -261,7 +268,7 @@ void initDevice() {
         if (usb_dev == NULL)
         {
                 fprintf(stdout, "USB, cannot init!\n");
-                cleanup(-1);
+                cleanup_all(-1, "");
         }
         usb_handle = usb_open(usb_dev);
         int drstatus = usb_get_driver_np(usb_handle, 0, kdname, sizeof(kdname));
@@ -405,14 +412,14 @@ int main( int argc, unsigned char **argv)
 
 	if(argc > 1 && !strncmp(argv[1], "-d", 2)) {
 		discoverPorts();
-		cleanup(0);
+		cleanup_all(0, "");
 	}
 	else if(argc > 1 && !strncmp(argv[1], "-i", 2)) {
 		if(argc != 3) {
 			printHelp(); //will exit
 		}
 		printHookup(argv[2]);
-		cleanup(0);
+		cleanup_all(0, "");
 	}
 	else {
 		if(argc != 2) printHelp(); //will exit
@@ -438,6 +445,7 @@ int main( int argc, unsigned char **argv)
 		ret = hid_force_open(hid, 0, &matcher, 3);
 		if (ret != HID_RET_SUCCESS) {
 			fprintf(stdout, "hid_force_open failed with return code %d\n", ret);
+			cleanup_all(1, "");
 			return 1;
 		}
 
@@ -457,6 +465,7 @@ int main( int argc, unsigned char **argv)
 		ret = hid_close(hid);
 		if (ret != HID_RET_SUCCESS) {
 			fprintf(stdout, "hid_close failed with return code %d\n", ret);
+			cleanup_all(1, "");
 			return 1;
 		}
 		hid_close(hid);
@@ -464,8 +473,7 @@ int main( int argc, unsigned char **argv)
 
 	hid_delete_HIDInterface(&hid);
 	hid_cleanup();
-	fprintf(stderr, "OK\n");
-	cleanup(0);
+	cleanup_all(0, "OK");
 	return 0;
 }
 
