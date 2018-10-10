@@ -2,7 +2,7 @@ CC = gcc
 #CFLAGS = -Wall -Werror
 RFOBJS = rfswitch.o
 ATTENOBJS = atten.o
-LIBS = -lusb -lhid
+LIBS = -lusb -lhid -lpthread
 RFEXE = rfswitch
 ATTENEXE = atten
 
