@@ -16,14 +16,6 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Current Database: `ants`
---
-
-CREATE DATABASE /*!32312 IF NOT EXISTS*/ `ants` /*!40100 DEFAULT CHARACTER SET latin1 */;
-
-USE `ants`;
-
---
 -- Table structure for table `feed_sensors`
 --
 
@@ -74,6 +66,8 @@ CREATE TABLE `feed_sensors` (
   `turbobearingtemp` int(11) DEFAULT '-99',
   `turbomotortemp` int(11) DEFAULT '-99',
   `turbospeedactual` int(11) DEFAULT '-99',
+  `cryopower` float DEFAULT '-99',
+  `cryotemp` float DEFAULT '-99',
   PRIMARY KEY (`ant`,`ts`),
   KEY `idx` (`ant`,`ts`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -113,7 +107,7 @@ CREATE TABLE `observations` (
   `freq` float NOT NULL,
   `target` varchar(32) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=1370 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -126,6 +120,7 @@ DROP TABLE IF EXISTS `rfswitch`;
 CREATE TABLE `rfswitch` (
   `ts` datetime NOT NULL,
   `ant` varchar(3) NOT NULL,
+  `pol` varchar(1) NOT NULL,
   `switch` int(11) DEFAULT '0',
   `port` int(11) DEFAULT '0',
   PRIMARY KEY (`ts`)
@@ -147,6 +142,106 @@ CREATE TABLE `sefd` (
   PRIMARY KEY (`id`),
   KEY `idx` (`obsid`,`ant`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `snap_onoff_atten`
+--
+
+DROP TABLE IF EXISTS `snap_onoff_atten`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `snap_onoff_atten` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `ant` varchar(4) NOT NULL,
+  `obsid` int(11) NOT NULL,
+  `source` varchar(64) NOT NULL,
+  `freq` float NOT NULL,
+  `db` float NOT NULL,
+  KEY `idx` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=27832 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `snap_onoff_obs`
+--
+
+DROP TABLE IF EXISTS `snap_onoff_obs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `snap_onoff_obs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `snap` varchar(16) NOT NULL,
+  `obsid` int(11) NOT NULL,
+  `ant` varchar(4) NOT NULL,
+  `source` varchar(64) NOT NULL,
+  `freq` float NOT NULL,
+  `onoff` varchar(15) DEFAULT NULL,
+  `rep` int(11) NOT NULL,
+  KEY `idx` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=94753 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `test_observations`
+--
+
+DROP TABLE IF EXISTS `test_observations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `test_observations` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ts_start` datetime NOT NULL,
+  `ts_stop` datetime DEFAULT NULL,
+  `ants` varchar(255) NOT NULL,
+  `az_offset` float DEFAULT '0',
+  `el_offset` float DEFAULT '0',
+  `freq` float NOT NULL,
+  `target` varchar(32) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `test_snap_onoff_atten`
+--
+
+DROP TABLE IF EXISTS `test_snap_onoff_atten`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `test_snap_onoff_atten` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `ant` varchar(4) NOT NULL,
+  `obsid` int(11) NOT NULL,
+  `source` varchar(64) NOT NULL,
+  `freq` float NOT NULL,
+  `db` float NOT NULL,
+  KEY `idx` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `test_snap_onoff_obs`
+--
+
+DROP TABLE IF EXISTS `test_snap_onoff_obs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `test_snap_onoff_obs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `snap` varchar(16) NOT NULL,
+  `obsid` int(11) NOT NULL,
+  `ant` varchar(4) NOT NULL,
+  `source` varchar(64) NOT NULL,
+  `freq` float NOT NULL,
+  `onoff` varchar(15) DEFAULT NULL,
+  `rep` int(11) NOT NULL,
+  KEY `idx` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -180,14 +275,6 @@ CREATE TABLE `various_sensors` (
   KEY `idx` (`ant`,`ts`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping events for database 'ants'
---
-
---
--- Dumping routines for database 'ants'
---
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -198,4 +285,4 @@ CREATE TABLE `various_sensors` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2018-06-24 21:40:24
+-- Dump completed on 2018-11-01  0:15:24
