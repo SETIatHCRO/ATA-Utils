@@ -10,7 +10,7 @@ $ANTS = ['1c', '1e', '1g', '1h', '1k', '2a', '2b', '2e', '2h', '2j', '2m', '3c',
 
 $HOST = "sonata@10.1.49.80";
 #$ANTS = ['1e', '1h', '1k', '2a', '2b', '2e', '2h', '2j', '2m', '3c', '3d', '3l', '4j'];
-#$ANTS = ['1e', '1c'];
+#$ANTS = ['1c'];
 
 $ITEMS = [
 [ "fanpwm", "getfanpwm", "Fan power. ( % on time ) ( pulse width modulation )", 1, 2],
@@ -41,7 +41,9 @@ $ITEMS = [
 [ "turbobottomtemp", "p330", "Turbo bottom temperature. ( °C) ( most sensitive to fan )", 2, 3 ],
 [ "turbobearingtemp", "p342", "Turbo bearing temperature. ( °C) ( no tenths from Pfeiffer )", 2, 3 ],
 [ "turbomotortemp", "p346", "Turbo motor temperature. ( °C ) ( error 117 ) ( 100 is hot )", 2, 3 ],
-[ "turbospeedactual", "p398", "Turbo speed, actual. ( rpm )( 90,000 nom )( 90,600 bad, reset p023 )", 2, 3 ] ];
+[ "turbospeedactual", "p398", "Turbo speed, actual. ( rpm )( 90,000 nom )( 90,600 bad, reset p023 )", 2, 3 ],
+[ "cryopower", "P", "Cryo power. (watts)", 2, 4 ],
+[ "cryotemp", "TC", "Display Temperature Coldhead. ( Kelvin ) ( risk if below 60 )", 2, 4 ] ];
 # Don't ask for the vdc48volt, it is always 0.0
 #[ "vdc48volt", "get48v",  "48 VDC actual measured. ( not connected )", 1, 1 ],
 #vacuumgaugevoltage does not work
@@ -123,9 +125,12 @@ File.open("test.txt", "w") do |f|
 end
 
 def doFeed(ant, timestamp)
+
+	
   cmd = 'ssh ' +  ant  + ' netcat -v -i 2 rimbox 1518 < test.txt | sed -e "s/\r/\r\n/g"';
-puts cmd;
+  puts cmd;
   result = `#{cmd}`;
+  puts result;
 
   if(result.include?("Connection timed out"))
     #return "'" + timestamp + "','" + ant + "',0"; # Specify state = not good
@@ -135,11 +140,12 @@ puts cmd;
   i = 0;
   #csv = "'" + timestamp + "','" + ant + "',1";
   csv = "" + timestamp + "," + ant + ",1";
+  if(result == nil) then return; end
   result.each_line do |val|
     puts "[" + ant + "]" + $ITEMS[i][0] + " = " + val;
     if($ITEMS[i][0].eql?("accel"))
       #-0.410  -0.117   0.052   0.136| 0.750   1.022   0.082   1.360|-0.786  -0.001   0.413   0.846
-      parts = val.chomp.gsub("|", " ").split(/\s+/);
+      parts = val.chomp.strip.gsub("|", " ").split(/\s+/);
       parts.each do |a|
         if(val.chomp.eql?("timeout"))
           csv += ",-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99,-99";
@@ -147,6 +153,26 @@ puts cmd;
           csv += "," + a;
         end
       end
+    elsif($ITEMS[i][0].eql?("cryopower"))
+        if(val == nil)
+          csv += ",0.0"
+	end
+	parts = val.chomp.strip.gsub("|", " ").split(/\s+/)
+        if(parts.length < 2)
+          csv += ",0.0" 
+        else
+	  csv += "," + parts[1].chomp + "";
+        end
+    elsif($ITEMS[i][0].eql?("cryotemp"))
+        if(val == nil)
+          csv += ",0.0"
+	end
+	parts = val.chomp.strip.gsub("|", " ").split(/\s+/)
+        if(parts.length < 2)
+          csv += ",0.0" 
+        else
+	  csv += "," + parts[1].chomp + "";
+        end
     elsif($ITEMS[i][4] == 2) #String
         if(val.chomp.eql?("timeout"))
           #csv += ",\'\'";
