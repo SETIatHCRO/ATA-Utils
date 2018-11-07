@@ -18,6 +18,7 @@ require 'json'
 $LOCK  = Mutex.new;
 
 $TABLES = [ "various_sensors", "feed_sensors"];
+#$TABLES = [ "feed_sensors"];
 
 def runDbCmd(cmd)
   parts = [];
@@ -55,8 +56,10 @@ def getTableNumericFieldNames(tableName)
   result = [];
   cmd = "describe #{tableName}";
   runDbCmd(cmd).each do |d|
-    if(d[1].downcase().eql?("float") || d[1].downcase().eql?("int"))
-      result << d[0];
+    if(d[1].downcase().eql?("float") || d[1].downcase().eql?("int(11)"))
+      if(!d[0].eql?("displayexcesstemp") && !d[0].eql?("excesstempturbo"))
+        result << d[0];
+      end
     end
   end
   return result;
@@ -78,26 +81,29 @@ def getTableValues(tableName, years, ants, fieldNames)
       max = Hash.new();
     
       #cmd = "SELECT ant, WEEK(ts), ";
-      cmd = "SELECT "
 #i = 0;
       fieldNames.each do |f|
+       cmd = "SELECT "
        cmd += "AVG (#{f}), MIN(#{f}), MAX(#{f}),";
        avg[f] = [];
        min[f] = [];
        max[f] = [];
-      end
-      cmd.chop!;
-      cmd += " FROM #{tableName} where YEAR(ts)=#{y} AND ant='#{a}'  GROUP BY ant, WEEK(ts), YEAR(ts)";
-      #puts cmd;
-      dbRows = runDbCmd(cmd);
-      dbRows.each_with_index do |row|
-        index = 0;
-        fieldNames.each do |fieldname|
-          avg[fieldname] << row[index*3].to_f.round(2);
-          min[fieldname] << row[index*3+1].to_f.round(2);
-          max[fieldname] << row[index*3+2].to_f.round(2);
-          index = index + 1;
-        end
+       cmd.chop!;
+       cmd += " FROM #{tableName} where YEAR(ts)=#{y} AND ant='#{a}' AND #{f}<>-99 ";
+       if(f == "cryotemp")
+         cmd += " AND #{f}>0.0 ";
+       end
+       cmd += " GROUP BY ant, WEEK(ts), YEAR(ts)";
+       #puts cmd;
+       
+       dbRows = runDbCmd(cmd);
+       index = 0;
+       dbRows.each_with_index do |row|
+        avg[f] << row[0].to_f.round(2);
+        min[f] << row[1].to_f.round(2);
+        max[f] << row[2].to_f.round(2);
+        index = index + 1
+       end
       end
 
       v = Hash.new();
