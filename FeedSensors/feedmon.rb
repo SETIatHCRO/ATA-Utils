@@ -6,11 +6,19 @@ require 'thread'
 
 $LOCK  = Mutex.new;
 
-$ANTS = ['1c', '1e', '1g', '1h', '1k', '2a', '2b', '2e', '2h', '2j', '2m', '3c', '3d', '3l', '4j', '5b'];
+#$ANTS = ['1c', '1e', '1g', '1h', '1k', '2a', '2b', '2e', '2h', '2j', '2m', '3c', '3d', '3l', '4j', '5b'];
+$ANTS = ['1g', '1h', '2a', '2b', '2e', '3l', '4j', '5b', '2j'];
 
 $HOST = "sonata@10.1.49.80";
 #$ANTS = ['1e', '1h', '1k', '2a', '2b', '2e', '2h', '2j', '2m', '3c', '3d', '3l', '4j'];
 #$ANTS = ['1c'];
+
+$ITEMS_SHORT = [
+[ "turbocurrrent", "p310",  "Turbo current consumption. ( amps ) ( 000183 = 1.83 ) ( data T2 )", 2, 3 ],
+[ "turbopower", "p316", "Turbo power consumption. ( watts )( 77 max )( 14 good )", 2, 3 ],
+[ "turbospeedactual", "p398", "Turbo speed, actual. ( rpm )( 90,000 nom )( 90,600 bad, reset p023 )", 2, 3 ],
+[ "cryopower", "P", "Cryo power. (watts)", 2, 4 ],
+[ "cryotemp", "TC", "Display Temperature Coldhead. ( Kelvin ) ( risk if below 60 )", 2, 4 ] ];
 
 $ITEMS = [
 [ "fanpwm", "getfanpwm", "Fan power. ( % on time ) ( pulse width modulation )", 1, 2],
@@ -112,19 +120,7 @@ if(ARGV.length == 1 && (ARGV[0].start_with?("table")))
   exit(0);
 end
 
-# If we get this far, then query the ants
-items = [];
-$ITEMS.each do |item|
-  items << item[1];
-  #puts "#{item[1]}";
-end
-
-#ssh 1e netcat -v -i 2 rimbox 1518 < test.txt  | sed -e "s/\r/\r\n/g" 
-File.open("test.txt", "w") do |f|
-  f.puts(items)
-end
-
-def doFeed(ant, timestamp)
+def doFeed(ant, timestamp, items)
 
 	
   cmd = 'ssh ' +  ant  + ' netcat -v -i 2 rimbox 1518 < test.txt | sed -e "s/\r/\r\n/g"';
@@ -142,8 +138,8 @@ def doFeed(ant, timestamp)
   csv = "" + timestamp + "," + ant + ",1";
   if(result == nil) then return; end
   result.each_line do |val|
-    puts "[" + ant + "]" + $ITEMS[i][0] + " = " + val;
-    if($ITEMS[i][0].eql?("accel"))
+    puts "[" + ant + "]" + items[i][0] + " = " + val;
+    if(items[i][0].eql?("accel"))
       #-0.410  -0.117   0.052   0.136| 0.750   1.022   0.082   1.360|-0.786  -0.001   0.413   0.846
       parts = val.chomp.strip.gsub("|", " ").split(/\s+/);
       parts.each do |a|
@@ -153,7 +149,7 @@ def doFeed(ant, timestamp)
           csv += "," + a;
         end
       end
-    elsif($ITEMS[i][0].eql?("cryopower"))
+    elsif(items[i][0].eql?("cryopower"))
         if(val == nil)
           csv += ",0.0"
 	end
@@ -163,7 +159,7 @@ def doFeed(ant, timestamp)
         else
 	  csv += "," + parts[1].chomp + "";
         end
-    elsif($ITEMS[i][0].eql?("cryotemp"))
+    elsif(items[i][0].eql?("cryotemp"))
         if(val == nil)
           csv += ",0.0"
 	end
@@ -173,7 +169,7 @@ def doFeed(ant, timestamp)
         else
 	  csv += "," + parts[1].chomp + "";
         end
-    elsif($ITEMS[i][4] == 2) #String
+    elsif(items[i][4] == 2) #String
         if(val.chomp.eql?("timeout"))
           #csv += ",\'\'";
           csv += ",";
@@ -205,38 +201,62 @@ def count_commas(s)
  return num.to_s;
 end
 
-numInGroup = $ANTS.length;
-timestamp = Time.now.strftime('%Y-%m-%d %H:%M:%S');
-(0...$ANTS.length).step(numInGroup) do |i|
+def process(items, csv_filename)
 
-  t = [];
-puts "";
-  (i...(i+numInGroup)).each  do |j|
-    puts j.to_s;
-    t << Thread.new{doFeed($ANTS[j], timestamp)};
-  end
+    $results = [];
 
-  t.each do |th|
-    th.join();
-  end
-
-  File.open("feed_sensors.csv", "w") do |f|
-    #f.puts(items)
-    $results.each do |r|
-      f.puts r;
+    item_names = [];
+    items.each do |item|
+      item_names << item[1];
     end
-  end
+    File.open("test.txt", "w") do |f|
+      f.puts(item_names)
+    end
 
+    numInGroup = $ANTS.length;
+    timestamp = Time.now.strftime('%Y-%m-%d %H:%M:%S');
+    (0...$ANTS.length).step(numInGroup) do |i|
+
+        t = [];
+        (i...(i+numInGroup)).each  do |j|
+            t << Thread.new{doFeed($ANTS[j], timestamp, items)};
+        end
+
+        t.each do |th|
+            th.join();
+        end
+
+        File.open(csv_filename, "w") do |f|
+            $results.each do |r|
+                f.puts r;
+            end
+        end
+
+    end
+
+    #send the file
+    cmd = "scp ./#{csv_filename} sonata@10.1.49.80:/home/sonata/ATA-Utils/FeedSensors";
+    puts cmd;
+    `#{cmd}`;
+
+    cmd = 'ssh sonata@10.1.49.80 "cd /home/sonata/ATA-Utils/FeedSensors; /home/sonata/ATA-Utils/FeedSensors/feed_sensors_load.rb"';
+    puts cmd;
+    `#{cmd}`;
+
+    puts "Finished";
 end
-#it1 = Thread.new{pointBF(1, $obsFreq1)};
 
-#send the file
-cmd = "scp ./feed_sensors.csv sonata@10.1.49.80:/home/sonata/ATA-Utils/FeedSensors";
-puts cmd;
-`#{cmd}`;
+#get the hour, minute
+d = DateTime.now();
+hour = d.hour;
+min = d.min;
+puts "Hour=#{hour}, Min=#{min}";
 
-cmd = 'ssh sonata@10.1.49.80 "cd /home/sonata/ATA-Utils/FeedSensors; /home/sonata/ATA-Utils/FeedSensors/feed_sensors_load.rb"';
-puts cmd;
-`#{cmd}`;
+if(min == 13 && ((hour%4) == 0))
+    process($ITEMS_SHORT, "feed_sensors_short.csv");
+    process($ITEMS, "feed_sensors.csv");
+else
+    process($ITEMS_SHORT, "feed_sensors_short.csv");
+    #process($ITEMS, "feed_sensors.csv");
+end
 
-puts "Finished";

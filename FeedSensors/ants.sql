@@ -68,6 +68,85 @@ CREATE TABLE `feed_sensors` (
   `turbospeedactual` int(11) DEFAULT '-99',
   `cryopower` float DEFAULT '-99',
   `cryotemp` float DEFAULT '-99',
+  PRIMARY KEY (`ts`,`ant`),
+  KEY `idx` (`ant`,`ts`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `feed_sensors_orig`
+--
+
+DROP TABLE IF EXISTS `feed_sensors_orig`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `feed_sensors_orig` (
+  `ts` datetime NOT NULL,
+  `ant` varchar(3) NOT NULL,
+  `state` tinyint(4) NOT NULL DEFAULT '0',
+  `fanpwm` varchar(8) DEFAULT NULL,
+  `fanspeed` float DEFAULT '-99',
+  `cryoattemp` varchar(8) DEFAULT NULL,
+  `controlboardtemp` float DEFAULT '-99',
+  `outsideairtemp` float DEFAULT '-99',
+  `paxairtemp` float DEFAULT '-99',
+  `exhausttemp` float DEFAULT '-99',
+  `coolerrejectiontemp` float DEFAULT '-99',
+  `coolerhousingtemp` float DEFAULT '-99',
+  `lnatemp` float DEFAULT '-99',
+  `lnadiodevoltage` float DEFAULT '-99',
+  `accelminx` float DEFAULT '-99',
+  `accelmeanx` float DEFAULT '-99',
+  `accelstdx` float DEFAULT '-99',
+  `accelmaxx` float DEFAULT '-99',
+  `accelminy` float DEFAULT '-99',
+  `accelmeany` float DEFAULT '-99',
+  `accelstdy` float DEFAULT '-99',
+  `accelmaxy` float DEFAULT '-99',
+  `accelminz` float DEFAULT '-99',
+  `accelmeanz` float DEFAULT '-99',
+  `accelstdz` float DEFAULT '-99',
+  `accelmaxz` float DEFAULT '-99',
+  `relaystate` varchar(8) DEFAULT NULL,
+  `feedstartmode` varchar(8) DEFAULT NULL,
+  `cryotempregulating` varchar(8) DEFAULT NULL,
+  `cryotempnoregulating` varchar(8) DEFAULT NULL,
+  `vdc24volt` float DEFAULT '-99',
+  `errormessages` varchar(8) DEFAULT NULL,
+  `displayexcesstemp` int(11) DEFAULT '-99',
+  `excesstempturbo` int(11) DEFAULT '-99',
+  `turbocurrrent` int(11) DEFAULT '-99',
+  `ophours` int(11) DEFAULT '-99',
+  `turbospeednominal` int(11) DEFAULT '-99',
+  `turbopower` int(11) DEFAULT '-99',
+  `electronicsboardtemp` int(11) DEFAULT '-99',
+  `turbobottomtemp` int(11) DEFAULT '-99',
+  `turbobearingtemp` int(11) DEFAULT '-99',
+  `turbomotortemp` int(11) DEFAULT '-99',
+  `turbospeedactual` int(11) DEFAULT '-99',
+  `cryopower` float DEFAULT '-99',
+  `cryotemp` float DEFAULT '-99',
+  PRIMARY KEY (`ant`,`ts`),
+  KEY `idx` (`ant`,`ts`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `feed_sensors_short`
+--
+
+DROP TABLE IF EXISTS `feed_sensors_short`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `feed_sensors_short` (
+  `ts` datetime NOT NULL,
+  `ant` varchar(3) NOT NULL,
+  `state` tinyint(4) NOT NULL,
+  `turbocurrrent` int(11) DEFAULT '-99',
+  `turbopower` int(11) DEFAULT '-99',
+  `turbospeedactual` int(11) DEFAULT '-99',
+  `cryopower` float DEFAULT '-99',
+  `cryotemp` float DEFAULT '-99',
   PRIMARY KEY (`ant`,`ts`),
   KEY `idx` (`ant`,`ts`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -107,7 +186,7 @@ CREATE TABLE `observations` (
   `freq` float NOT NULL,
   `target` varchar(32) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1370 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=1415 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -160,7 +239,7 @@ CREATE TABLE `snap_onoff_atten` (
   `freq` float NOT NULL,
   `db` float NOT NULL,
   KEY `idx` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=27832 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=30380 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -181,7 +260,7 @@ CREATE TABLE `snap_onoff_obs` (
   `onoff` varchar(15) DEFAULT NULL,
   `rep` int(11) NOT NULL,
   KEY `idx` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=94753 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=102475 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -285,4 +364,4 @@ CREATE TABLE `various_sensors` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2018-11-01  0:15:24
+-- Dump completed on 2018-11-08 17:19:59
