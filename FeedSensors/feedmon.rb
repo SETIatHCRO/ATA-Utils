@@ -252,7 +252,7 @@ hour = d.hour;
 min = d.min;
 puts "Hour=#{hour}, Min=#{min}";
 
-if(min == 13 && ((hour%4) == 0))
+if(min == 14 && ((hour%4) == 0))
     process($ITEMS_SHORT, "feed_sensors_short.csv");
     process($ITEMS, "feed_sensors.csv");
 else
