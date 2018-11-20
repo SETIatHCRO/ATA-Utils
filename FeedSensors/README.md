@@ -33,3 +33,14 @@ Created with: "mysqldump  -d -B --events --routines --triggers ants > ants.sql"
 ## sweepdetpams.rb
 
 Sweep the full range of PAM settings, saving the detx and detx values for further analysis. Creates a file named db_pams_dets.json
+
+## waketurbo.txt
+
+Use these commands to wake up a turbo pump and roughing pump once it has been repowered. These commands should be issued via netcat. 
+
+On ataant@antcntl issue the command: "ssh ant3l netcat -v -i 2 rimbox 1518 < waketurbo.txt"
+
+It should tabke 6 to 8 hours for the cooling to get back down to 65k.
+
+
+
