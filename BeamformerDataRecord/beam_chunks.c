@@ -9,14 +9,38 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <linux/limits.h>
 #include "hashpipe.h"
 #include "beam_databuf.h"
 
 hashpipe_databuf_t *databuf;
 static int keep_running = 1;
-static char filename[512];
+static char output_dir[1024];
+static char filename_prefix[1024];
+static int output_port = 0;
 
-#define FILENAME "/data1/beam.bin"
+#define FILESIZE 136314880
+#define SEGMENTS_PER_FILE (FILESIZE/DBUF_BLOCK_SIZE) //8
+
+static int setupSendSocket()
+{
+        int sendSd = socket(AF_INET, SOCK_DGRAM, 0);
+        int optval = 1;
+        int ttl = 1;
+        setsockopt(sendSd, SOL_SOCKET, SO_REUSEADDR, (char *) &optval, sizeof(optval));
+        setsockopt(sendSd, SOL_SOCKET, SO_BROADCAST, (char *) &optval, sizeof(optval));
+        setsockopt(sendSd, SOL_SOCKET, IP_TTL, (char *) &ttl, sizeof(ttl));
+        if (sendSd < 0) {
+                perror("opening datagram socket");
+                exit(1);
+        }
+        return sendSd;
+
+}
+
 
 void ctrlchandler(int s){
            printf("Caught signal %d\n",s);
@@ -41,8 +65,12 @@ fprintf(stderr, "DBUF_NUM_BLOCKS=%d\n", DBUF_NUM_BLOCKS);
 
         hashpipe_status_t st = args->st;
 
-        hgets(st.buf, "file", 511, filename);
-        fprintf(stderr, "Filename = %s\n", filename);
+        hgets(st.buf, "output_dir", 1023, output_dir);
+        hgets(st.buf, "filename_prefix", 1023, filename_prefix);
+        hgeti4(st.buf, "output_port", &output_port);
+        fprintf(stderr, "beam_chunks: output_dir=%s, prefix=%s, port=%d\n", 
+            output_dir, filename_prefix, output_port);
+
         databuf = hashpipe_databuf_create(MY_INSTANCE, DBUF_ID, DBUF_HEADER_SIZE,
                     DBUF_BLOCK_SIZE, DBUF_NUM_BLOCKS);
 
@@ -59,14 +87,36 @@ static void *run(hashpipe_thread_args_t * args)
         unsigned char *d;
         int fout = -1;;
         int n = 0;
+        int send_socket = 0;
+        struct sockaddr_in send1;
+        char filename[PATH_MAX];
+        int chunk_num = 0;
+        int segment_num = 0;
+        int i = 0;
 
-        fout = open(filename, O_CREAT|O_TRUNC|O_WRONLY|O_DIRECT, S_IRWXU);
+        send_socket = setupSendSocket();
+        if(send_socket < 0) {
+          perror("send_socket error: ");
+          fprintf(stderr, "error - can't create send socket\n");
+          exit(1);
+        }
+
+        memset((char *) &send1, 0, sizeof(send1));
+        send1.sin_family = AF_INET;
+        send1.sin_addr.s_addr = inet_addr("127.0.0.1");
+        send1.sin_port = htons(output_port);
+
 
         if(posix_memalign(&buffer, 512, DBUF_BLOCK_SIZE))
         {
           fprintf(stderr, "error - memalign problem %d\n" , errno);
           exit(1);
         }
+
+	sprintf(filename, "%s/%s_%05d.raw\n", output_dir, filename_prefix, chunk_num);
+        fout = open(filename, O_CREAT|O_TRUNC|O_WRONLY|O_DIRECT, S_IRWXU);
+
+        //SEGMENTS_PER_FILE
 
         while(!hashpipe_databuf_busywait_filled(databuf, block_num))
         {
@@ -78,6 +128,20 @@ static void *run(hashpipe_thread_args_t * args)
             fprintf(stderr, "Beam write error: %d, n=%d, %s\n", errno,n,strerror(errno));
             break;
           }
+          segment_num++;
+          if(segment_num == SEGMENTS_PER_FILE) {
+            close(fout);
+            chunk_num++;
+            segment_num = 0;
+	    sprintf(filename, "%s/%s_%05d.raw\n", output_dir, filename_prefix, chunk_num);
+            fout = open(filename, O_CREAT|O_TRUNC|O_WRONLY|O_DIRECT, S_IRWXU);
+          }
+
+          for(i = 0; i<DBUF_BLOCK_SIZE; i+=PACKET_SIZE) {
+            n = sendto(send_socket, buffer+i, PACKET_SIZE, 0,
+              (struct sockaddr*)&send1, sizeof(send1));
+          }
+
           hashpipe_databuf_set_free(databuf, block_num);
           block_num = (block_num + 1) % DBUF_NUM_BLOCKS;
         }

@@ -153,6 +153,7 @@ static void *run(hashpipe_thread_args_t * args)
         struct sockaddr_in send2;
         int n = 0;
         int count = 0;
+        int i = 0;
 
         send_socket = setupSendSocket();
         if(send_socket < 0) {
@@ -179,27 +180,29 @@ static void *run(hashpipe_thread_args_t * args)
         {
           d = hashpipe_databuf_data(databuf, block_num);
           memcpy(buffer, d, DBUF_BLOCK_SIZE);
-          //n = write(fd1, buffer, DBUF_BLOCK_SIZE);
-          n = sendto(send_socket, buffer, DBUF_BLOCK_SIZE, 0,
-                      (struct sockaddr*)&send1,
-                     sizeof(send1));
-          if(n != DBUF_BLOCK_SIZE)
-          {
-            fprintf(stderr, "Beam split send1 error: %d, n=%d, %s\n", errno,n,strerror(errno));
-            break;
-          }
-          if(count % ip2_decimate == 0) {
-            //n = write(fd2, buffer, DBUF_BLOCK_SIZE);
-            n = sendto(send_socket, buffer, DBUF_BLOCK_SIZE, 0,
-                        (struct sockaddr*)&send2,
-                       sizeof(send2));
-            if(n != DBUF_BLOCK_SIZE)
+          for(i = 0; i<DBUF_BLOCK_SIZE; i+=PACKET_SIZE) {
+            //n = write(fd1, buffer, DBUF_BLOCK_SIZE);
+            n = sendto(send_socket, buffer+(i*PACKET_SIZE), PACKET_SIZE, 0,
+                        (struct sockaddr*)&send1,
+                       sizeof(send1));
+            if(n != PACKET_SIZE)
             {
-              fprintf(stderr, "Beam split send2 error: %d, n=%d, %s\n", errno,n,strerror(errno));
+              fprintf(stderr, "Beam split send1 error: %d, n=%d, %s\n", errno,n,strerror(errno));
               break;
             }
+            if(count % ip2_decimate == 0) {
+              //n = write(fd2, buffer, DBUF_BLOCK_SIZE);
+              n = sendto(send_socket, buffer+i, PACKET_SIZE, 0,
+                          (struct sockaddr*)&send2,
+                         sizeof(send2));
+              if(n != PACKET_SIZE)
+              {
+                fprintf(stderr, "Beam split send2 error: %d, n=%d, %s\n", errno,n,strerror(errno));
+                break;
+              }
+            }
+            count++;
           }
-          count++;
           hashpipe_databuf_set_free(databuf, block_num);
           block_num = (block_num + 1) % DBUF_NUM_BLOCKS;
         }
