@@ -22,5 +22,9 @@ Scripts to continually sample feed and dish sensors, storing them in a database.
 
 A set of scripts to facilitate a noob using the ATA.
 
+## BeamformerDataRecord
+
+Hashpipe based modules to read beam data from the beamformer and write to disk.
+
 
 
