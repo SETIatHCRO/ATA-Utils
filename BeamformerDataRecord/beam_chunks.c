@@ -93,6 +93,7 @@ static void *run(hashpipe_thread_args_t * args)
         int chunk_num = 0;
         int segment_num = 0;
         int i = 0;
+        char redis_command[1024];
 
         send_socket = setupSendSocket();
         if(send_socket < 0) {
@@ -115,6 +116,10 @@ static void *run(hashpipe_thread_args_t * args)
 
 	sprintf(filename, "%s/%s_%05d.raw\n", output_dir, filename_prefix, chunk_num);
         fout = open(filename, O_CREAT|O_TRUNC|O_WRONLY|O_DIRECT, S_IRWXU);
+        sprintf(redis_command, "redis-cli PUBLISH chunk %s", filename);
+        n = system(redis_command); 
+        sprintf(redis_command, "redis-cli SET latest_chunk %s", filename);
+        n = system(redis_command); 
 
         //SEGMENTS_PER_FILE
 
@@ -135,6 +140,10 @@ static void *run(hashpipe_thread_args_t * args)
             segment_num = 0;
 	    sprintf(filename, "%s/%s_%05d.raw\n", output_dir, filename_prefix, chunk_num);
             fout = open(filename, O_CREAT|O_TRUNC|O_WRONLY|O_DIRECT, S_IRWXU);
+            sprintf(redis_command, "redis-cli PUBLISH chunk %s", filename);
+            n = system(redis_command); 
+            sprintf(redis_command, "redis-cli SET latest_chunk %s", filename);
+            n = system(redis_command); 
           }
 
           for(i = 0; i<DBUF_BLOCK_SIZE; i+=PACKET_SIZE) {
