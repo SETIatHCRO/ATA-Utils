@@ -182,11 +182,12 @@ static void *run(hashpipe_thread_args_t * args)
           memcpy(buffer, d, DBUF_BLOCK_SIZE);
           for(i = 0; i<DBUF_BLOCK_SIZE; i+=PACKET_SIZE) {
             //n = write(fd1, buffer, DBUF_BLOCK_SIZE);
-            n = sendto(send_socket, buffer+(i*PACKET_SIZE), PACKET_SIZE, 0,
+            n = sendto(send_socket, buffer+i, PACKET_SIZE, 0,
                         (struct sockaddr*)&send1,
                        sizeof(send1));
             if(n != PACKET_SIZE)
             {
+              printf("n=%d, i=%d, \n", n, i/PACKET_SIZE);
               fprintf(stderr, "Beam split send1 error: %d, n=%d, %s\n", errno,n,strerror(errno));
               break;
             }
@@ -198,7 +199,7 @@ static void *run(hashpipe_thread_args_t * args)
               if(n != PACKET_SIZE)
               {
                 fprintf(stderr, "Beam split send2 error: %d, n=%d, %s\n", errno,n,strerror(errno));
-                break;
+                continue;
               }
             }
             count++;
