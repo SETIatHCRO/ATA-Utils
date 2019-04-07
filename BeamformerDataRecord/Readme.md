@@ -25,3 +25,13 @@ beam_split.so takes the data and does 2 things with each packet:
 The decimating is useful if you want to send the data to a slow application, such as baudline.
 
 Decimantion is defines as sending on every "nth" 4160 byte packet.
+
+## beam_chunks.sh
+
+This shell script starts up beam_read.so to read data from the beamformer socket and
+pass the data to beam_chunks.so.
+
+beam_chunks.so writes out the beam data into snmaller file sized onto idks. Also
+the data is sent out to another port for display in a program such as baudline.
+
+
