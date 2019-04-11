@@ -31,7 +31,7 @@ Sunset = 19:37
 proc = Popen(["ssh", "obs@tumulus", "ataweather -l"], stdout=PIPE, stderr=PIPE)
 stdout, stderr = proc.communicate()
 lines = stdout.split('\n')
-insert = "insert into weather set ts=now(), "
+insert = "insert into weather set ts=CONVERT_TZ(now(),'UTC','America/Los_Angeles'), "
 for line in lines:
   parts = line.split()
   if "Pressure" in line:

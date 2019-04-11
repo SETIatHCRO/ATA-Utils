@@ -67,7 +67,7 @@ for antinfo in antlist:
     # ['X-pol:', '  vg 0.25', '  vd 1.5', '  vm -0.8', '  id 60.5', 'Y-pol:', '  vg 0.46', '  vd 1.49', '  vm -0.8', '  id 59.9', '']
     lines = stdout.split('\n')
     print lines
-    insert = "insert into lna_values set ts=now(), sn='" + sn + "'";
+    insert = "insert into lna_values set ts=CONVERT_TZ(now(),'UTC','America/Los_Angeles'), sn='" + sn + "'";
     if len(lines) == 11:
         x_vg = lines[1].strip().split()[1]
         x_vd = lines[2].strip().split()[1]
@@ -88,6 +88,7 @@ for antinfo in antlist:
     print insert
     mycursor_local.execute(insert)
     mydb_local.commit()
+    
     mycursor_remote.execute(insert)
     mydb_remote.commit()
 
