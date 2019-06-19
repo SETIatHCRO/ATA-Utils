@@ -32,31 +32,37 @@ stdout, stderr = proc.communicate()
 lines = stdout.split('\n')
 for line in lines:
   if line.startswith("ant"):
-    parts = line.split()
-    ant = parts[0][3:]
+    #ant5h  Running  AzEl        180.00,18.00  0.00,-0.00   
+    #parts = line[55:-1].split()
+    parts = line[len("ant1a  Running  AzEl    180.00,18.00  -0.00,0.00   "):-1].split()
+    ant = line.split()[0][3:]
     insert = "INSERT into dish_temp_sensors set ts=now(), ant='" + ant + "'"
     try:
-        temp = float(parts[5])
-        insert += ", control_box_temp=" + parts[5]
+        temp = float(parts[0])
+        insert += ", control_box_temp=" + parts[0]
     except ValueError:
         pass
     try:
-        temp = float(parts[6])
-        insert += ", drive_box_temp=" + parts[6]
+        temp = float(parts[1])
+        insert += ", drive_box_temp=" + parts[1]
     except ValueError:
         pass
     try:
-        temp = float(parts[7])
-        insert += ", pax_box_temp=" + parts[7]
+        temp = float(parts[2])
+        insert += ", pax_box_temp=" + parts[2]
     except ValueError:
         pass
     try:
-        temp = float(parts[8])
-        insert += ", rim_box_temp=" + parts[8]
+        print len(parts)
+        if len(parts) > 3:
+          temp = float(parts[3])
+          insert += ", rim_box_temp=" + parts[3]
     except ValueError:
         pass
 
     print insert
+
+    #sys.exit(0)
 
     mycursor_local.execute(insert)
     mydb_local.commit()
