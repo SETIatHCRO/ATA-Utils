@@ -30,6 +30,9 @@ def calcAntennaTemp(yFactor, TSrc, localTCold = constants.TCold):
            
     """   
     
+    if yFactor == 1:
+        return numpy.inf
+    
     numerator = (TSrc + localTCold ) - yFactor * localTCold 
     denominator = yFactor - 1;
     

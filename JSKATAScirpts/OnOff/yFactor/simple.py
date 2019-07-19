@@ -40,12 +40,14 @@ def simple(vectorOn,vectorOff,guardAreaPercent = 0.1):
     assert dataONLen == dataOFFLen, "two vectors must have the same size"
     assert guardAreaPercent <= 0.45, "guard area cannot exceed 2*45% of the data"
     
-    guardSamplesOneSide = numpy.floor(guardAreaPercent * dataONLen)
+    guardSamplesOneSide = numpy.int(numpy.floor(guardAreaPercent * dataONLen))
+
     
-    powerOn = numpy.sum(vectorOn[guardSamplesOneSide:dataONLen-guardSamplesOneSide])
-    powerOff = numpy.sum(vectorOff[guardSamplesOneSide:dataONLen-guardSamplesOneSide])
+    powerOn = numpy.sum(vectorOn[guardSamplesOneSide:dataONLen-guardSamplesOneSide],dtype=float)
+    powerOff = numpy.sum(vectorOff[guardSamplesOneSide:dataONLen-guardSamplesOneSide],dtype=float)
     
     yFactor = powerOn/powerOff
+
     return yFactor
     
     
