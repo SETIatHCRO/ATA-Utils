@@ -89,18 +89,18 @@ mysql> select ts,ant, accelminz,accelmeanz,accelstdz,accelmaxz from feed_sensors
 10 rows in set (0.00 sec)
 
 """
-accel_tol = { "x" : { "min" : { "min" : -1.0, "max" : -0.5 },
-                      "max" : { "min" : -1.0, "max" : -0.5 },
-                      "mean": { "min" : -1.0, "max" : -0.5 },
-                      "std" : { "min" :  0.001, "max" : 0.1 } },
-              "y" : { "min" : { "min" : -0.2, "max" : -0.01 },
-                      "max" : { "min" : 0.0, "max" : 0.2 },
-                      "mean": { "min" : -0.1, "max" : 0.1 },
-                      "std" : { "min" :  0.001, "max" : 0.1 } },
-              "z" : { "min" : { "min" : 0.3, "max" : 0.6 },
-                      "max" : { "min" : 0.5, "max" : 1.0 },
-                      "mean": { "min" : 0.4, "max" : 0.7 },
-                      "std" : { "min" :  0.001, "max" : 0.1 } }
+accel_values = { "x" : { "min" : { "min" : -5.0, "max" : 5.0 },
+                      "max" : { "min" : -5.0, "max" : 5.0 },
+                      "mean": { "min" : -5.0, "max" : 5.0 },
+                      "std" : { "min" :  0.001, "max" : 0.12 } },
+              "y" : { "min" : { "min" : -5.0, "max" : 5.0 },
+                      "max" : { "min" : -5.0, "max" : 5.0 },
+                      "mean": { "min" : -5.0, "max" : 5.0 },
+                      "std" : { "min" :  0.001, "max" : 0.12 } },
+              "z" : { "min" : { "min" : -5.0, "max" : 5.0 },
+                      "max" : { "min" : -5.0, "max" : 5.0 },
+                      "mean": { "min" : -5.0, "max" : 5.0 },
+                      "std" : { "min" :  0.001, "max" : 0.12 } }
               }
 
 def pad_string(string, max_len, center=False):
@@ -124,7 +124,8 @@ def pad_string(string, max_len, center=False):
         new_string += string
         i = 0
         while i < num_spaces/2:
-/bin/bash: /popw: No such file or directory
+            new_string += " "
+            i += 1
 
     return new_string[0:max_len]
 
@@ -149,7 +150,7 @@ def print_help():
     print("|%s|%s|%s|%s|" % (pad_string("axis",7,True), pad_string("Field", 7, True), pad_string("Min", 8, True), pad_string("Max", 8, True)))
     for axis in accel['axis']:
         for field in accel["fields"]:
-            print("|%s|%s|%s|%s|" % (pad_string(axis,7, True), pad_string(field,7,True), pad_string(str(accel_tol[axis][field]["min"]),8,True), pad_string(str(accel_tol[axis][field]["max"]), 8,True)))
+            print("|%s|%s|%s|%s|" % (pad_string(axis,7, True), pad_string(field,7,True), pad_string(str(accel_values[axis][field]["min"]),8,True), pad_string(str(accel_values[axis][field]["max"]), 8,True)))
     print("")
 
 
@@ -157,13 +158,77 @@ if len(sys.argv) != 2:
     print_help()
     exit(0)
 
+def check_accel_value_within_range(axis, field, value):
+
+    min_value = accel_values[axis][field]["min"];
+    max_value = accel_values[axis][field]["max"];
+
+    if value < min_value or value > max_value:
+        return False
+
+    return True
+
+
+# -1.250  -1.045   0.036  -0.840|-0.250  -0.027   0.104   0.186|-0.242  -0.107   0.057   0.038
+def  accel_parse(line):
+
+    sep = accel['sep']
+    parts = line.split(sep)
+    parts_x = parts[0].split()
+    parts_y = parts[1].split()
+    parts_z = parts[2].split()
+    values_x = [ float(parts_x[0]), float(parts_x[1]), float(parts_x[2]), float(parts_x[3]) ]
+    values_y = [ float(parts_y[0]), float(parts_y[1]), float(parts_y[2]), float(parts_y[3]) ]
+    values_z = [ float(parts_z[0]), float(parts_z[1]), float(parts_z[2]), float(parts_z[3]) ]
+    values = { "x" : values_x, "y" : values_y, "z" : values_z }
+    i = 0
+    for field in accel["fields"]:
+        in_range = check_accel_value_within_range('x', field, values_x[i])
+        accel_values["x"][field]["value"] = values_x[i]
+        accel_values["x"][field]["in_range"] = in_range
+
+        in_range = check_accel_value_within_range('y', field, values_y[i])
+        accel_values["y"][field]["value"] = values_y[i]
+        accel_values["y"][field]["in_range"] = in_range
+
+        in_range = check_accel_value_within_range('z', field, values_z[i])
+        accel_values["z"][field]["value"] = values_z[i]
+        accel_values["z"][field]["in_range"] = in_range
+
+        i += 1
+
+    all_good = True
+    print("")
+    print("Accelerometer values:")
+    print("")
+    print("|%s|%s|%s|%s|%s|%s|" % (pad_string("axis",7,True), pad_string("Field", 7, True), pad_string("Min", 8, True), pad_string("Max", 8, True), pad_string("Value", 8, True), pad_string("In Range", 12, True)))
+    for axis in accel['axis']:
+        for field in accel["fields"]:
+            print("|%s|%s|%s|%s|%s|%s|" % (pad_string(axis,7, True), pad_string(field,7,True), pad_string(str(accel_values[axis][field]["min"]),8,True), pad_string(str(accel_values[axis][field]["max"]), 8,True), pad_string(str(accel_values[axis][field]["value"]),8,True), pad_string(str(accel_values[axis][field]["in_range"]),12,True)))
+            if accel_values[axis][field]["in_range"] == False:
+                all_good = True
+
+    print("")
+    if not all_good:
+        print("FAIL - Some accerometer values not within range!!")
+        return
+    print("PASS - All accelerometer values within range")
+    print("")
+
+    return
+
+if sys.argv[1] == "test":
+    line = "-1.250  -1.045   0.036  -0.840|-0.250  -0.027   0.104   0.186|-0.242  -0.107   0.057   0.038"
+    print(line)
+    accel_parse(line)
+    exit(0)
+
 serial_port_file = sys.argv[1]
 print("Opening %s at baud %d" % (serial_port_file, BAUD))
-
 ser = serial.Serial(serial_port_file, baud, timeout=1)
 
-
-# Gather the sensor information
+# Query the sensor values and find if in range
+all_sensors_good = True
 for sensor in sensors:
     cmd = sensor['cmd'] + "\n"
     ser.write(cmd.encode())
@@ -177,10 +242,33 @@ for sensor in sensors:
     min_value = sensor['min_value']
     max_value = sensor['min_value']
     sensor['in_range'] = True
-    if value < min_malue or value > max_value:
+    if value < min_value or value > max_value:
+        all_sensors_good = False
         sensor['in_range'] = False
+
+print("")
+print("| %s|%s|%s|%s|%s|%s|" % (pad_string("Sensor", 22, True), pad_string("Units", 8, True), pad_string("max", 10, True), pad_string("min", 10, True), pad_string("Value", 8, True), pad_string("In Range", 12, True)))
+
+for sensor in sensors:
+    name = pad_string(sensor['name'], 22)
+    units = pad_string(sensor['units'], 8, True)
+    max_value = pad_string(str(sensor['max_value']), 10, True)
+    min_value = pad_string(str(sensor['min_value']), 10, True)
+    value = pad_string(str(sensor['value']), 8, True)
+    in_range = pad_string(str(sensor['in_range']), 12, True)
+    print("| %s|%s|%s|%s|%s|%s|" % (name, units, min_value, max_value, value, in_range))
+
+if not all_sensors_good:
+    print("FAIL - Some values not within range!!")
+else:
+    print("PASS - All sensor values within range")
     
-# Get the aaccelerometer info
+# Get the aaccelerometer values
+cmd = accel['cmd']
+ser.write(cmd.encode())
+line = str(ser.readline(), 'ascii')
+accel_parse(line)
+
 
 
 line = str(ser.readline(), 'ascii')
