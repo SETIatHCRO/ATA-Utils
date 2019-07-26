@@ -5,50 +5,65 @@ import serial
 
 import threading
 
-rs_test_mode = False
-rs_test_error_count = 0
-rs_test_total_bytes = 0
+BAUD = 19200
 
-def read_serial_thread(ser):
+sensors = 
+        [ 
+        { "name": "controller board temp", "cmd" : "gt a0", "value_type" : "float", "units" : "deg", "min_value" : 10.0, "max_value" : 100.0 },
+        { "name": "outside air temp", "cmd" : "gt a1", "value_type" : "float", "units" : "deg", "min_value" : 10.0, "max_value" : 100.0 },
+        { "name": "pax box air temp", "cmd" : "gt a2", "value_type" : "float", "units" : "deg", "min_value" : 10.0, "max_value" : 100.0 },
+        { "name": "exhaust temp", "cmd" : "gt a3", "value_type" : "float", "units" : "deg", "min_value" : 10.0, "max_value" : 100.0 },
+        { "name": "cooler rejection temp", "cmd" : "gt a5", "value_type" : "units" : "deg", "float", "min_value" : 10.0, "max_value" : 100.0 },
+        { "name": "cooler housing temp", "cmd" : "gt a6", "value_type" : "units" : "deg", "float", "min_value" : 10.0, "max_value" : 100.0 },
+        { "name": "turbo speed", "cmd" : "gt a1", "value_type" : "float", "units" : "deg", "min_value" : 10.0, "max_value" : 100.0 },
+        { "name": "turbo popwer", "cmd" : "gt a1", "value_type" : "float", "units" : "watts", "min_value" : 10.0, "max_value" : 100.0 },
+        { "name": "cryo temp", "cmd" : "TC", "value_type" : "float", "units" : "deg", "min_value" : 10.0, "max_value" : 100.0 },
+        { "name": "lna temp", "cmd" : "gt a1", "value_type" : "float", "units" : "deg", "min_value" : 10.0, "max_value" : 100.0 },
+        { "name": "24v", "cmd" : "gt a1", "value_type" : "float", "units" : "volts", "min_value" : 10.0, "max_value" : 100.0 },
+        { "name": "48v", "cmd" : "gt a1", "value_type" : "float", "units" : "volts", "min_value" : 10.0, "max_value" : 100.0 },
+        { "name": "fan speed", "cmd" : "gt a1", "value_type" : "int", "units" : "rpm", "min_value" : 2800.0, "max_value" : 3100.0 }
+        ]
 
-    global rs_test_mode
-    global rs_test_error_count
-    global rs_test_total_bytes 
+accel = { "cmd"    : "getaccel", 
+          "sep"    : "|", 
+          "axis"   : [ "x", "y", "z" ], 
+          "fields" : [ "min", "max", "mean", "std" ],
+          "min"    : { "min" : 0.0, "max" : 100.0 },
+          "max"    : { "min" : 0.0, "max" : 100.0 },
+          "mean"   : { "min" : 0.0, "max" : 100.0 },
+          "std"    : { "min" : 0.0, "max" : 100.0 }
+        }
 
-    print("read_serial_thread started...")
-
-    while True:
-        try:
-            line = str(ser.readline(), 'ascii')
-        except:
-            continue;
-        if len(line) > 0:
-            print("%s" % line, end="")
-            if rs_test_mode == True and line.startswith("rs") == False:
-                if line.startswith("END"):
-                    rs_test_mode = False
-                    print("Test ended, errors=%d, total bytes=%d" % (rs_test_error_count, rs_test_total_bytes))
-                    #sys.exit(0)
-                else:
-                    #print("len=%d, %s" % (len(line), line[:0]))
-                    if len(line) != 12 or line[:10] != "0123456789":
-                        rs_test_error_count += 1;
-                    rs_test_total_bytes += len(line)
-                    
-
-
-
-if len(sys.argv) != 3:
-    print("Syntax: %s <serial port file> <baud>" % sys.argv[0])
+if len(sys.argv) != 2:
+    print("Syntax: %s <serial port file>" % sys.argv[0])
     sys.exit(0)
-
 serial_port_file = sys.argv[1]
-baud = int(sys.argv[2])
-
-print("Opening %s at baud %d" % (serial_port_file, baud))
+print("Opening %s at baud %d" % (serial_port_file, BAUD))
 
 ser = serial.Serial(serial_port_file, baud, timeout=1)
 
+
+# Gather the sensor information
+for sensor in sensors:
+    cmd = sensor['cmd'] + "\n"
+    ser.write(cmd.encode())
+    line = str(ser.readline(), 'ascii')
+    value_type = sensor['value_type']
+    value  = None
+    if value_type == 'float':
+        value = float(line)
+    if value_type == 'int':
+        value = int(line)
+    min_value = sensor['min_value']
+    max_value = sensor['min_value']
+    sensor['in_range'] = True
+    if value < min_malue || value > max_value:
+        sensor['in_range'] = False
+    
+# Get the aaccelerometer info
+
+
+line = str(ser.readline(), 'ascii')
 t = threading.Thread(target=read_serial_thread, args=(ser,))
 t.daemon = True
 t.start()
