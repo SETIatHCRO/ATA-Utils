@@ -17,7 +17,7 @@ sensors = [
         { "name": "cooler rejection temp", "cmd" : "gt a5", "value_type" : "float",  "units" : "deg", "min_value" : 10.0, "max_value" : 45.0 },
         { "name": "cooler housing temp", "cmd" : "gt a6", "value_type" : "float", "units" : "deg", "min_value" : 10.0, "max_value" : 45.0 },
         { "name": "turbo speed", "cmd" : "p398", "value_type" : "int", "units" : "rpm", "min_value" : 89900, "max_value" : 90600 },
-        { "name": "turbo popwer", "cmd" : "p316", "value_type" : "int", "units" : "watts", "min_value" : 4.0, "max_value" : 20.0 },
+        { "name": "turbo power", "cmd" : "p316", "value_type" : "int", "units" : "watts", "min_value" : 4.0, "max_value" : 20.0 },
         { "name": "cryo temp", "cmd" : "TC", "value_type" : "float", "units" : "deg", "min_value" : 64.0, "max_value" : 66.0 },
         { "name": "lna temp", "cmd" : "gd", "value_type" : "float", "units" : "deg", "min_value" : 65.0, "max_value" : 80.0 },
         { "name": "24v", "cmd" : "get24v", "value_type" : "float", "units" : "volts", "min_value" : 23.8, "max_value" : 24.2 },
@@ -124,8 +124,7 @@ def pad_string(string, max_len, center=False):
         new_string += string
         i = 0
         while i < num_spaces/2:
-            new_string += " ";
-            i += 1
+/bin/bash: /popw: No such file or directory
 
     return new_string[0:max_len]
 
@@ -134,7 +133,7 @@ def print_help():
     print("")
     print("Syntax: %s <serial port file>" % sys.argv[0])
     print("")
-    print("Sensor values meeasured, and tolerances:")
+    print("Sensor values measured, and tolerances:")
     print("")
     print("| %s|%s|%s|%s|" % (pad_string("Sensor", 22, True), pad_string("Units", 8, True), pad_string("max", 10, True), pad_string("min", 10, True)))
 
@@ -145,7 +144,7 @@ def print_help():
         min_value = pad_string(str(sensor['min_value']), 10, True)
         print("| %s|%s|%s|%s|" % (name, units, min_value, max_value))
     print("")
-    print("Accelerometer vaues:")
+    print("Accelerometer values:")
     print("")
     print("|%s|%s|%s|%s|" % (pad_string("axis",7,True), pad_string("Field", 7, True), pad_string("Min", 8, True), pad_string("Max", 8, True)))
     for axis in accel['axis']:
