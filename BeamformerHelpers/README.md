@@ -6,10 +6,10 @@ These scripts start up the beamformer and calibrate. Once this script is finishe
 
 The main script is bf_testing.rb. It does it all.
 
-  ./bf_setup.rb &lt;delay cal target&gt; &lt;phase target name&gt; &lt;BF1 freq MHz&gt; &lt;BF2/3 freq MHz&gt; &lt;beam1 target name&gt; &lt;beam2 target name&gt; &lt;beam3 target name&gt; &lt;logfile name tag&gt;
+  ./bf_testing.rb &lt;delay cal target&gt; &lt;phase target name&gt; &lt;BF1 freq MHz&gt; &lt;BF2/3 freq MHz&gt; &lt;beam1 target name&gt; &lt;beam2 target name&gt; &lt;beam3 target name&gt; &lt;logfile name tag&gt;
 
  Example:
-  ./bf_setup.rb casa 3c48 1680.0 1680.0 moon moon moon testlog1
+  ./bf_testing.rb casa 3c48 1680.0 1680.0 moon moon moon testlog1
 
 You need to modify ants.rb to specify:
 
