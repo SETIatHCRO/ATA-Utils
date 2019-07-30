@@ -4,18 +4,21 @@ These scripts are only useful at the Allen Telescope Array to control the beamfo
 
 These scripts start up the beamformer and calibrate. Once this script is finished the beamformer will be locked on to one or more targets and outputting beamformer packets over ethernet. Up to 3 beams, 2 pols each. So actually 6 individual beams.
 
-The main script is bf_setup.rb. It does it all.
+The main script is bf_testing.rb. It does it all.
 
   ./bf_setup.rb &lt;delay cal target&gt; &lt;phase target name&gt; &lt;BF1 freq MHz&gt; &lt;BF2/3 freq MHz&gt; &lt;beam1 target name&gt; &lt;beam2 target name&gt; &lt;beam3 target name&gt; &lt;logfile name tag&gt;
 
  Example:
   ./bf_setup.rb casa 3c48 1680.0 1680.0 moon moon moon testlog1
 
-You need to modify userinfo.rb to specify:
+You need to modify ants.rb to specify:
 
  * beamformers to use
  * ant pols to use
- * beam data output address and port
+
+The output beam IP addresses are located in bf_testing.rb, and you should edit as desired. If a subset of beamformers is desired, like if you want to use only beams 1 and 2, you can comment out the approriate code in bf_testing.rb and ants.rb.
+
+bf_setup.rb is a new version of bf_testing under development. It needs to be tested and verified.
 
 Trick - for the &lt;phase target name&gt; you can specify "best" (without quotes) and the script will pick out the best calibtaor to use.
 
