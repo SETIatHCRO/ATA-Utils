@@ -24,6 +24,7 @@ def makeAntReport()
 
 
 	$antPolList.each do |bfAnts|
+                puts bfAnts;
 		"xy".each_byte do |pol|
 
 			pol = pol.chr;
@@ -53,6 +54,7 @@ def makeAntReport()
 
 	result = "";
 	index = 0;
+        puts polListsx;
 	polListsx.each do |list|
 		result += "BF" + (index + 1).to_s + " x: ";
 		list.each do |ant|
@@ -209,10 +211,11 @@ def makeCalReport(delayCal)
 end
 
 if __FILE__==$0
-	puts makeAntReport();
-	puts makeAttnReport(IO.read(ARGV[0]));
-	puts "\n***\nDELAY CALIBRATION:\n\n";
-	puts makeCalReport(IO.read(ARGV[1]));
-	puts "\n***\nPHASE CALIBRATION:\n\n";
-	puts makeCalReport(IO.read(ARGV[2]));
+       createReport("", REPORT_TYPE_ANTS);
+#	puts makeAntReport();
+#	puts makeAttnReport(IO.read(ARGV[0]));
+#	puts "\n***\nDELAY CALIBRATION:\n\n";
+#	puts makeCalReport(IO.read(ARGV[1]));
+#	puts "\n***\nPHASE CALIBRATION:\n\n";
+#	puts makeCalReport(IO.read(ARGV[2]));
 end

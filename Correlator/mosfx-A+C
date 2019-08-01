@@ -1,0 +1,526 @@
+#!/bin/tcsh
+# script to observe a list of sources & calibrator in fx64 mode - jrf 29mar08
+# modified to add multiple sources -- 17aug07 --- gcb
+# updated for genobs 02sep07 - jrf
+# Added sending of blog post to log.hcro.org - cgk 21jan08
+# Added parameter for log book identification purposes - cgk 25jan08
+# updated to fx64 - jrf 29mar08
+# updated to fringe rotation - jrf 12apr08
+# simplified code - added frot.csh, multiple cals & durations - jrf 18apr08
+# modified to accept instrument:group for corr a,b,c,d - jrf & DavidM 20nov08
+# changed generic name to include corr (eg: mosfxa) - jrf
+# added gps sources using ataigsephem and either prn or gps names - jrf 12may09
+# added alias to switch from frot to frotnear - jrf 26may09
+# removed ataephem --utcms switch and changed --interval from 10 to 1 sec
+#   for better tof correction accuracy on satellites - jrf 14jun09
+# returned --utcms and --interval to original setup.  also added Billy's tof 
+# correction to igsephem output (which is not adding it)  - jrf 26jun09
+# added dual correlators and bandwidths; use -ephem switch all sources (not cals) - jrf 13aug09
+# added restart & inttime arguments; subtract overhead+src,cal durations from stop time - jrf 18aug09
+# now using only ataephem and atacheck for ephemeris making & sourceup check - jrf 28aug09
+# added --catalog $ucat to atacheck & ataephem for cals (not sources).  this
+# is interim fix until vla catalog is put into the ATA catalog.      - jrf 08sep09 (undone on 04nov09)
+# added section to trap el > elmax since atacheck does not check that.         - jrf 30sep09
+# added atacheck --hozizon to trap el < elmin+1 (1deg = 4 min)   - jrf 02oct09
+# removed the --catalog $ucat entry in atacheck  - jrf 04nov09
+# more efficient stop calculation; make ephem if missing w/r option; allow single scans if
+#      stop time negative - jrf 10mar10
+# use -ephem in atafx only if ephem has non-zero 4th column (radial distance) - jrf 29apr10
+
+onintr fail
+
+set elmin=16.5; set elmax=88            # elvation limits
+set elminplus = `echo $elmin | awk '{print $1+1}'`    # higher elmin to give 4min before settting
+set oh = 0.03                           # estimated obs overhead (hours)
+alias frot.csh frotnear.csh             # (hash out to disable)
+set ucat = /home/obs/bin/catalog.list   # general user catalog (for cals only)
+
+# get required inputs (sou & cal times in seconds; stop time in local hrs)
+
+if ($#argv < 13) then
+  echo "Enter Freq1 Freq2 BW1 BW2 Inst1 Inst2 Inttime SourceList Soutime CalList Caltime Stoptime name"
+  echo " [optional: negative stoptime does single scan on calibrator, use "r" at end to skip initialization]"
+  echo "eg: $0 1430 1430 100 100 fx64a:fxa fx64c:fxa 10 dr21 120 2052+365 60 8.8 test [r]"
+  set flt      = ($<)
+  set freq1     = $flt[1]
+  set freq2     = $flt[2]
+  set bw1       = $flt[3]
+  set bw2       = $flt[4]
+  set inst1     = $flt[5]
+  set inst2     = $flt[6]
+  set inttime   = $flt[7]
+  set soulist  = $flt[8]
+  set dursou   = $flt[9]
+  set callist  = $flt[10]
+  set durcal   = $flt[11]
+  set stop     = $flt[12]
+  set logident = $flt[13]
+else
+  set freq1     = $1
+  set freq2     = $2
+  set bw1       = $3
+  set bw2       = $4
+  set inst1     = $5
+  set inst2     = $6
+  set inttime   = $7
+  set soulist  = $8
+  set dursou   = $9
+  set callist  = $10
+  set durcal   = $11
+  set stop     = $12
+  set logident = $13
+endif
+
+set restart
+if (($#argv > 13) && (`echo $14 | grep -i r` != '')) then
+  set restart = r
+  echo " "
+  echo " ------------------------------------------------------------------------------------"
+  echo " >>> WARNING:  $00 restarting"
+  echo " >>>      NO:  fxlaunch, autoatten nor focus, pam, bw, lna or inttime set"
+  echo " >>>     BUT:  the LOs are set and locked"
+  echo " ------------------------------------------------------------------------------------"
+  echo " "
+endif
+
+#set begin=`date +%T | tr ':' ' ' | awk '{print $1+($2/60)-0.1}'`
+set begin=`date +%T | tr ':' ' ' | awk '{print $1+($2/60)+($3/3600)}'`
+#set begin = 10.0
+
+# change stop time to be one cal duration + overhead + begin time if $stop is negative
+set singlecal; if (`echo $stop | grep '-'` != '')   set singlecal = 1
+if ($singlecal) then
+  set ct = `date | tr ':' ' ' | awk '{printf "%6.3f\n", $4+($5+($6/60))/60}'`  # current time in hours
+  set soh = 10
+  set newstop = `echo $begin $soh $durcal | awk '{printf "%6.3f\n", $1+$2/60+$3/3600}'`
+  echo "Single-scan mode: stoptime will be changed from $stop to $newstop."
+  echo "Current time is $ct hrs.  Using overhead of $soh minutes"
+  echo " "
+  set stop = $newstop
+else
+  set stop = `echo $stop 0.1 | awk '{print $1-$2}'`
+  echo "Reducing stop time by 6 minutes to avoid overrun.  New stop = $stop local time"
+  echo " "
+endif
+
+if (`echo $inst1 | grep ':'` == '') then
+  echo "Must include instrument and group separated by a colon.  Exiting!"
+  exit 1
+endif
+if (`echo $inst2 | grep ':'` == '') then
+  echo "Must include instrument and group separated by a colon.  Exiting!"
+  exit 1
+endif
+
+set ic1 = `echo $inst1 | cut -d: -f1 | gawk -F '' '{print ($NF)}'`
+set ic2 = `echo $inst2 | cut -d: -f1 | gawk -F '' '{print ($NF)}'`
+
+# Changing lo2 to alias loc instead of loa
+# ibobs for lo2 (aka fxc) are now on loc instead of loa
+#set lo1 = b; set lo2 = a
+# 02dec2011 - cgk
+set lo1 = b; set lo2 = c
+#if ( $ic1 == c) set lo1 = a
+if ( $ic1 == c) then
+  set lo1 = c
+  set bw1 = 100
+endif
+if ( $ic2 == a ) set lo2 = b
+
+# find exact bandwidth to pass to atafx with -bw switches
+ebw.csh $bw1 | tee bw1
+set ebw1 = `awk '{print $9}' bw1`
+ebw.csh $bw2 | tee bw2
+set ebw2 = `awk '{print $9}' bw2`
+ 
+echo "Corelator 1 Inst Freq LO BW = $inst1 $freq1 $lo1 $bw1 ($ebw1) mhz"
+echo "Corelator 2 Inst Freq LO BW = $inst2 $freq2 $lo2 $bw2 ($ebw2) mhz"
+echo "Cal = $callist, Duration = $durcal sec"
+
+# get required files (copies hookup again every scan below)
+
+#cp ~/bin/genswitch .
+
+set vis=mosfx                   # generic name for mapping run
+set vis1=mosfx{$ic1}
+set vis2=mosfx{$ic2}            
+set aswitch="-noabort -fringeon -norm"     # standard atafx switches
+set cswitch="-noabort -fringeon -norm"               # standard atafx switches
+set pswitch=-ephem               # used only for objects with non-zero radial distance
+set alist=`slist.csh $inst1`     # list of antennas in group
+set pwd = `pwd`                  # current working directory
+spolist.csh $inst1                # make list of antpols for atafx
+set antpols1 = `cat antpols`      # antpols list for atafx
+spolist.csh $inst2                # make list of antpols for atafx
+set antpols2 = `cat antpols`      # antpols list for atafx
+set compasscheck = 1
+
+set hours=`echo $stop $begin | awk '{if ($1>$2) print $1-$2; else print $1-$2+24}'`
+
+echo -------------------------------------------------------------------------------
+echo Begin=$begin Stop=$stop Obstime=$hours
+echo Instruments=$inst1 $inst2  Freqs=$freq1 $freq2  BWs=$bw1 $bw2
+echo Cals=$callist
+echo Sources=$soulist
+echo -------------------------------------------------------------------------------
+
+echo " "
+echo " >>>>>>>>>>>>>>> Observe time is $hours hours <<<<<<<<<<<<<"
+echo " "
+
+# Make a note to log.hcro.org for Colby
+#/hcro/ata/scripts/notify-obs-blog.csh $logident "Freqs: $freq1 $freq2" "LOs: $lo1 $lo2" "Antennas: $alist" "Switch: $switch" "PSwitch: $pswitch" "Begin: $begin" "Hours: $hours" "Stop: $stop" "SOUList: $soulist" "CALlist: $callist" "Dir: $pwd"
+
+echo " "
+echo " set frequencies and lock LO servers"
+echo " "
+
+atasetskyfreq $lo1 $freq1           # set LO frequency
+atasetskyfreq $lo2 $freq2           
+atalockserver lo$lo1 $vis1          # lock LOs against accidental changes
+atalockserver lo$lo2 $vis2           
+
+if ($soulist == 'none') set sou=none
+
+echo " "
+echo " make ephemeris once for each source and cal over the full obs period"
+echo " "
+
+foreach cal (`echo $callist | tr ',' ' '`)
+  if !(-e $cal.ephem) then
+   echo making ephem for $cal
+   ataephem $cal --interval 10 
+   atawrapephem $cal.ephem
+  endif
+end
+
+if ($soulist != 'none') then
+ foreach sou (`echo $soulist | tr ',' ' '`)
+  if !(-e $sou.ephem) then
+   ataephem $sou --interval 10
+   atawrapephem $sou.ephem
+  endif
+ end
+else
+ echo "No ephemerides needed for source list = $soulist"
+endif
+
+if ($restart == r) goto skipinits
+
+echo " "
+echo " restart FXServer & fx2nets"
+echo " "
+#fxlaunch-jon $inst1                     # restart FXServer & fx2nets
+#fxlaunch-jon $inst2                     
+/home/obs/bin/fxlaunch-fx2net4stokes $inst1
+/home/obs/bin/fxlaunch-fx2net4stokes $inst2
+
+echo " "
+echo "setting focus, pam attenuators & bandwidth"
+echo " "
+# find highest frequency and set focus there
+set freq3 = `echo $freq1 $freq2 | awk '{if($1>=$2) print $1; else print $2}'`
+echo "Setting focus to $freq3"
+atasetfocus $alist $freq3           # set focus
+atasetpams $alist xband                   # set pams to default settings
+bw.csh $inst1 $bw1                  # set bandwidths
+bw.csh $inst2 $bw2
+waitfocus $alist $freq3             # wait for focus to reach correct setting
+atagetfocus $alist > focus          # get the current focus settings & errors
+
+echo " "
+echo "turning on lnas, setting integration time & attemplifiers" 
+echo "NOT moving to pole. set attemplifiers where we're pointing."
+echo " "
+# point antennas to the north pole for attemplifier adjustment
+# atasetazel -w $alist 0 41
+atalnaon $alist                     # turn on lnas
+setintfx.csh $inttime $inst1 &      # set correlator integration times
+setintfx.csh $inttime $inst2   
+wait      
+autoattenall.csh $inst1 &             # set attemplifiers for rms = 13
+autoattenall.csh $inst2
+wait
+
+skipinits:
+
+# begin infinite loop - exit by finish or fail
+begin:
+  date | & tee -ia $vis.log
+  if (`stopnow.csh $begin $stop` == 'stop') goto finish
+  echo "----------------------------------------------------" | & tee -ia $vis.log
+  echo sourcelist is $soulist | & tee -ia $vis.log
+  echo callist is $callist | & tee -ia $vis.log
+  echo "----------------------------------------------------" | & tee -ia $vis.log
+ 
+# observe any cals that are currently up
+cal:
+echo " "
+echo "Starting new CAL scan ................................."
+foreach cal (`echo $callist | tr ',' ' '`)
+ if (`stopnow.csh $begin $stop` == 'stop') then
+  echo stopnow says to stop. going to finish
+  goto finish
+ endif
+
+  set shortstop=`echo $stop $dursou $durcal $oh | awk '{st=$1-$4; if(st<0) print st+24; else print st }'`
+  set ct = `date | tr ':' ' ' | awk '{printf "%6.3f\n", $4+($5+($6/60))/60}'` # time in hours
+  if ($singlecal) set shortstop = $stop 
+  echo "current time is $ct hours"
+  echo "stoptime is $shortstop (to assure stopping at $stop)"
+
+#db - new check on running overtime and source setting 
+  set tend = `echo $shortstop $ct | awk '{printf "%6.3f",$1-$2}'`
+  if (`echo $tend | grep -` != '') then
+    echo "Current time is $tend later than Shortstop time for $cal.  This is bad"
+  endif
+
+  set st=`atacheck --ephem $cal.ephem | grep Sets | awk '{print $9}' | tr ":" " " | awk '{print $1+$2/60+$3/3600}'`
+  set send = `echo $shortstop $st | awk '{printf "%6.3f",$2-$1}'`
+  if (`echo $send | grep -` != '') then
+    echo "$cal sets $send hours before Shortstop time.  This is bad, but proceeding anyway."
+  endif
+
+  echo " "
+  if (`stopnow.csh $begin $shortstop` == 'stop') goto finish
+
+  atacheck --ephem $cal.ephem --horizon $elminplus > chk
+  set el = `cat chk | grep Az | tr ')' ' )' | awk '{print $5}'`
+  set up = `echo $el $elmax | awk '{if($1<$2) print "yes"; else print "no"}'`
+  if ($up == no) then
+    echo "-----------------------------------------------------------------"
+    echo "$cal is NOT up (El $el is > $elmax) - skipping it and moving on" 
+    echo "-----------------------------------------------------------------"
+    goto skipcal  
+  endif
+  if (`cat chk | grep "not up"` != '') then
+    echo "-----------------------------------------------------------------"
+    echo "$cal is NOT up (El $el is < $elminplus) - skipping it and moving on" 
+    echo "-----------------------------------------------------------------"
+    goto skipcal  
+  endif
+
+  set ct = `date | tr ':' ' ' | awk '{printf "%6.3f\n", $4+($5+($6/60))/60}'` # current time in hours
+  if (`echo $stop $begin $ct | awk '{if(($2<$1)&&($3>$1)) print "stop"}'` == stop) then
+        echo "Panic - looks like we're past the stoptime.  Finishing now!!"
+	goto finish
+  endif
+# check if ephemeris has non-zero radial velocity; use -ephem only if true
+   set pswitch = `head -1 $cal.ephem | awk '{if ($4 != 0) print "-ephem"}'`
+   echo "------------------------------------------------"
+   date | & tee -ia $vis.log
+   echo " moving to $cal - observe for $durcal sec"  | tee -ia $vis.log
+   echo "fxa switch is $aswitch $pswitch"  | tee -ia $vis.log
+   echo "fxc switch is $cswitch $pswitch"  | tee -ia $vis.log
+   echo "------------------------------------------------"
+
+# ------------------ Calibrator observing block ----------------------
+# start fringe rotation for current scan; wait 10sec for ephem to load
+# begin tracking ephemeris; start atafx and launch atafx
+
+   set alist=`slist.csh $inst1`            # update list of antennas
+   spolist.csh $inst1                 # update list of antpols for atafx
+   set antpols1 = `cat antpols`
+   spolist.csh $inst2       # make list of antpols in file 'antpols'
+   set antpols2 = `cat antpols`
+  frot.csh $inst1 $cal.ephem $freq1 `pwd` start
+  frot.csh $inst2 $cal.ephem $freq2 `pwd` start
+   sleep 10 &
+   atatrackephem $alist $cal.ephem -w | & tee -ia track.log
+   wait
+   set caltimes = `date -u +%y%h%d:%H:%M:%S`
+   atafx $vis1-$cal-$freq1-$bw1 $antpols1 $inst1 $cal.ephem -duration $durcal -noabort -fringeon $pswitch -bw $ebw1 &
+   atafx $vis2-$cal-$freq2-$bw2 $antpols2 $inst2 $cal.ephem -duration $durcal -noabort -fringeon $pswitch -bw $ebw2
+   #atafx $vis1-$cal-$freq1-$bw1 $antpols1 $inst1 $cal.ephem -duration $durcal $aswitch $pswitch -bw $ebw1 
+   echo "`date` atafx running in forground ends."
+   wait
+   echo "`date` atafx running in background ends."
+   set caltimes = ($caltimes `date -u +%y%h%d:%H:%M:%S`)
+   announce-cal-data $pwd/$vis1-$cal-$freq1-$bw1 $caltimes[1] $caltimes[2] $inst1
+   announce-cal-data $pwd/$vis2-$cal-$freq2-$bw2 $caltimes[1] $caltimes[2] $inst2
+   echo "`date` both catchers end (after bkgnd wait)."
+   set compasscheck = 0
+  frot.csh $inst1 $cal.ephem $freq1 `pwd` kill
+  frot.csh $inst1 $cal.ephem $freq1 `pwd` stop
+  frot.csh $inst2 $cal.ephem $freq2 `pwd` kill
+  frot.csh $inst2 $cal.ephem $freq2 `pwd` stop
+skipcal:
+end                 # end loop over all cals in list
+
+if ($singlecal) goto finish
+if ($soulist == 'none') goto cal
+
+# ------------------ Source observing block ----------------------
+# observe any sources that are currently up; shorten scan duration if possible
+sou:
+foreach sou (`echo $soulist | tr ',' ' '`)
+echo " "
+echo "Starting new SOURCE scan - finding appropriate duration ......"
+# check if source is up
+  atacheck --ephem $sou.ephem --horizon $elminplus > chk
+  set el = `cat chk | grep Az | tr ')' ' )' | awk '{print $5}'`
+  set up = `echo $el $elmax | awk '{if($1<$2) print "yes"; else print "no"}'`
+
+  if ($up == no) then
+    echo "-----------------------------------------------------------------"
+    echo "$sou is NOT up (El $el is > $elmax) - skipping it and moving on" 
+    echo "-----------------------------------------------------------------"
+    goto skipsou
+  endif
+  if (`cat chk | grep "not up"` != '') then
+    echo "-----------------------------------------------------------------"
+    echo "$sou is NOT up (El $el is < $elminplus) - skipping it and moving on" 
+    echo "-----------------------------------------------------------------"
+    goto skipsou  
+  endif
+
+    echo "$sou is up (El = $el)"
+    echo "------------------------------------------------"
+
+  if (`stopnow.csh $begin $stop` == 'stop') then
+   echo stopnow says to stop. going to finish
+   goto finish
+  endif
+  
+  set shortstop=`echo $stop $dursou $durcal $oh \
+    | awk '{st=$1-($2/3600)-($3/3600)-2*$4; if(st<0) print st+24; else print st}'`
+  set ct = `date | tr ':' ' ' | awk '{printf "%6.3f\n", $4+($5+($6/60))/60}'`
+  echo "begin is $begin, stop is $stop, current time is $ct"
+  echo "Shortstop is $shortstop (to assure stopping at $stop with full duration+cal+2*oh)"
+
+#   attempt to get a last partial scan on the source by reducing source duration by cal & setting time
+
+#  if (($begin <= $stop) && ($shortstop <= $begin)) set shortstop = $stop - sanity check that shortstop NOT > stop
+    set shortstop = `echo $begin $stop $shortstop | awk '{if(($1<=$2)&&($3<=$1)) print $2; else print $3}'`
+
+  if (`stopnow.csh $begin $shortstop` == 'stop') then
+    echo "-------------------------------------------------------"
+    echo "stoptime exceeded for full $dursou sec scan on $sou." 
+    set timeleft = `echo $ct $stop | awk '{printf "%6.3f", $2-$1}'`          # time left in hours
+    if (`echo $timeleft | grep '-'` != '') then
+      echo "timeleft is < 0 - finishing now!"
+      goto finish
+    endif
+
+#   check if source sets before shortstop time
+    set st=`atacheck --ephem $sou.ephem | grep Sets | awk '{print $9}' | tr ":" " " | awk '{print $1+$2/60+$3/3600}'` # time source sets in hrs
+    set send = `echo $shortstop $st | awk '{printf "%6.3f",$2-$1}'`  # hours between setting and shortstop time 
+    if (`echo $send | grep -` != '') then
+       echo "$sou sets $send hours before shortstop time ($shortstop) - Changing Shortstop to $ct"
+       set shortstop = $ct
+    else
+       set send=0
+       echo "$sou sets at $st which is after the shortstop time ($shortstop)"
+    endif
+
+    set durmin = `echo $durcal $oh | awk '{printf "%6.3f", $1/3600+$2*2}'`   # minimum scan time hours
+    set newdur = `echo $timeleft $durmin $send | awk '{printf "%6.3f", $1-$2+$3}'`    # new duration in hours
+    set newdurs = `echo $newdur | awk '{printf "%9.0f", $1*3600}'`           # new duration in seconds
+    set durmins = `echo $durmin | awk '{printf "%9.0f", $1*3600}'`           # minimum duration in sec
+    set chgdur = `echo $newdur $durmin | awk '{if ($1>$2) print "yes"; else print "no"}'`
+    echo "timeleft durmin newdur newdurs chgdur = $timeleft $durmin $newdur $newdurs $chgdur"
+    
+#db - added more output for duration change on source scan
+    if ($chgdur == yes) then
+	echo "Change source duration from $dursou to $newdurs to end at newend"
+	echo "Going to source $sou at $ct"
+	echo "-------------------------------------------------------"
+	set dursou = $newdurs
+    else
+	echo "Insufficient time for another source scan ($timeleft<=$newdur+$durmin hrs)"
+	echo "Going to calibrator."
+	echo "-------------------------------------------------------"
+	goto cal
+    endif
+  endif
+
+#db - check on running overtime  
+  set tend = `echo $shortstop $ct | awk '{printf "%6.3f",$1-$2}'`
+  if (`echo $tend | grep -` != '') then
+    echo "Current time is $tend later than Shortstop time for $sou.  This is bad"
+  endif
+
+  if (`echo $stop $begin $ct | awk '{if(($2<$1)&&($3>$1)) print "stop"}'` == stop) then
+        echo "Panic - looks like we're past the stoptime.  Finishing now!!"
+	goto finish
+  endif
+# check if ephemeris has non-zero radial velocity; use -ephem only if true
+   set pswitch = `head -1 $sou.ephem | awk '{if ($4 != 0) print "-ephem"}'`
+    echo "------------------------------------------------"
+    date | & tee -ia $vis.log
+    echo " moving to $sou - observe for $dursou sec"  | tee -ia $vis.log
+    echo "fxa switch is $aswitch $pswitch"  | tee -ia $vis.log
+    echo "fxc switch is $cswitch $pswitch"  | tee -ia $vis.log
+    echo "------------------------------------------------"
+
+# ------------------ Source observing block ----------------------
+# kill frot.rb if running and start fringe rotation for current scan
+
+   set alist=`slist.csh $inst1`            # update list of antennas
+   spolist.csh $inst1                 # update list of antpols for atafx
+   set antpols1 = `cat antpols`
+   spolist.csh $inst2       # make list of antpols in file 'antpols'
+   set antpols2 = `cat antpols`
+  frot.csh $inst1 $sou.ephem $freq1 `pwd` start
+  frot.csh $inst2 $sou.ephem $freq2 `pwd` start
+   sleep 10 &
+   atatrackephem $alist $sou.ephem -w | & tee -ia track.log
+   wait
+   atafx $vis1-$sou-$freq1-$bw1 $antpols1 $inst1 $sou.ephem -duration $dursou -noabort -fringeon $pswitch -bw $ebw1 &
+   atafx $vis2-$sou-$freq2-$bw2 $antpols2 $inst2 $sou.ephem -duration $dursou -noabort -fringeon $pswitch -bw $ebw2
+   echo "`date` atafx running in forground ends."
+   wait
+   echo "`date` both catchers end (after bkgnd wait)."
+  frot.csh $inst1 $sou.ephem $freq1 `pwd` kill
+  frot.csh $inst1 $sou.ephem $freq1 `pwd` stop
+  frot.csh $inst2 $sou.ephem $freq2 `pwd` kill
+  frot.csh $inst2 $sou.ephem $freq2 `pwd` stop
+  set compasscheck = 1
+skipsou:
+end             # end loop over list of sources
+
+goto begin	# infinite loop; terminate script by finish or fail
+
+finish:
+  echo " "
+  echo "Finish section ---------------"
+  echo "Try to unlock LOsx $lo1 $lo2"
+  ataunlockserver lo$lo1 $vis1
+  ataunlockserver lo$lo2 $vis2
+  echo "Unlocklo succeeded!"
+  frot.csh $inst1 $cal.ephem $freq1 `pwd` kill
+  frot.csh $inst1 $cal.ephem $freq1 `pwd` stop
+  frot.csh $inst2 $cal.ephem $freq2 `pwd` kill
+  frot.csh $inst2 $cal.ephem $freq2 `pwd` stop
+  frot.csh $inst1 $sou.ephem $freq1 `pwd` kill
+  frot.csh $inst1 $sou.ephem $freq1 `pwd` stop
+  frot.csh $inst2 $sou.ephem $freq2 `pwd` kill
+  frot.csh $inst2 $sou.ephem $freq2 `pwd` stop
+ rm -f radec check
+ echo "-----------------------------------------------------" | tee -ia $vis.log
+ echo "Finished -  the time is `date`" | tee -ia $vis.log
+ set ct = `date | tr ':' ' ' | awk '{printf "%6.3f\n", $4+($5+($6/60))/60}'`  # current time in hours
+ echo "Current time is $ct - Stop time is $stop"
+exit 0
+
+fail:
+# kill frot.rb if running and turn fringe rotation off
+echo " "
+echo "Entered fail section"
+  echo "---------------------------------"
+  echo "Try to unlock LOs $lo1 $lo2"
+  ataunlockserver lo$lo1 $vis1
+  ataunlockserver lo$lo2 $vis2
+  echo "Unlocklo succeeded!"
+  frot.csh $inst1 $cal.ephem $freq1 `pwd` kill
+  frot.csh $inst1 $cal.ephem $freq1 `pwd` stop
+  frot.csh $inst2 $cal.ephem $freq2 `pwd` kill
+  frot.csh $inst2 $cal.ephem $freq2 `pwd` stop
+  frot.csh $inst1 $sou.ephem $freq1 `pwd` kill
+  frot.csh $inst1 $sou.ephem $freq1 `pwd` stop
+  frot.csh $inst2 $sou.ephem $freq2 `pwd` kill
+  frot.csh $inst2 $sou.ephem $freq2 `pwd` stop
+  rm -f radec check
+  echo "-----------------------------------------------------" | tee -ia $vis.log
+  echo "$00 failed for some reason.  stopping observation" | tee -ia $vis.log
+exit 1
