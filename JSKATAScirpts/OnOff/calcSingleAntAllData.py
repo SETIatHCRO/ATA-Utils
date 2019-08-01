@@ -15,9 +15,11 @@ import numpy
 import pdb
 import matplotlib.pyplot as plt
 
-def calcSingleAnt(source, frequency, measdate, onArray, offArray):
+def calcSingleAntAllData(source, frequency, measdate, onArray, offArray):
     """
     Calculates system temperature based on On-Off data
+
+    averages the measurements (assuming ergodicity)
 
     Parameters
     -------------
@@ -36,15 +38,13 @@ def calcSingleAnt(source, frequency, measdate, onArray, offArray):
     -------------
     float
         sytem temp in Kelvin
-    float
-        std of system temp
         
     Raises
     -------------
         AssertionError     
     """    
 
-    doDebug = 0
+    doDebug = 1
 
     flx = OnOff.flux.sourceFlux(source,frequency,measdate)
     TSrc = OnOff.misc.calcSourceTemp(flx)
@@ -56,37 +56,34 @@ def calcSingleAnt(source, frequency, measdate, onArray, offArray):
     
     assert len(onArray[0]) == len(offArray[0]), "both arrays should have the same size"
     
-    temps = numpy.zeros(Larray,dtype=float)
+    #temps = numpy.zeros(Larray,dtype=float)
     
-    
-    for iK in xrange(Larray):
-        cOn = onArray[iK]
+    cOn = numpy.sum(onArray,axis=0,dtype='float')
+
+    #pdb.set_trace()
         
-        if doDebug:
-            cOn[0] = 0.0
-            plt.plot(cOn)
-            plt.show()
+    if doDebug:
+        cOn[0] = 0.0
+        plt.plot(cOn)
+        plt.show()
         
-        cOff = offArray[iK]
+    cOff = numpy.sum(offArray,axis=0,dtype='float')
         
-        if doDebug:
-            cOff[0] = 0.0
-            plt.plot(cOff)
-            plt.show()
-        
-        #pdb.set_trace()
-        yFac = OnOff.yFactor.simple(cOn,cOff)
-        temps[iK] = OnOff.misc.calcAntennaTemp(yFac,TSrc)
+    if doDebug:
+        cOff[0] = 0.0
+        plt.plot(cOff)
+        plt.show()
         
 
-    avgTemp = numpy.mean(temps)
-    stdTemp = numpy.std(temps)
+    yFac = OnOff.yFactor.simple(cOn,cOff)
+    temp = OnOff.misc.calcAntennaTemp(yFac,TSrc)
+        
 
     if doDebug:    
-        print(temps)
+        print(temp)
         #pdb.set_trace()
         
-    return avgTemp,stdTemp
+    return temp
     
     
     

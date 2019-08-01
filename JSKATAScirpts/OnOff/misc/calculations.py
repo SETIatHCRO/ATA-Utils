@@ -8,7 +8,92 @@ Created on Thu Jul 18 2019
 
 import constants
 import numpy
+import OnOff.filterArray
 
+import pdb
+import matplotlib.pyplot as plt
+
+def calcOnOffParamVec(onVect, offVect):
+    """
+    Calculation of vector of SFED values
+        
+    Parameters
+    -------------
+    onVect : array_like
+        vector of On data
+    offVect : array_like
+        vector of Off data
+        
+    Returns
+    -------------
+    float
+        the SEFD value
+    float
+        power on    
+    float
+        power off
+        
+    """   
+    
+    assert len(onVect) == len(offVect), "both vectors should have the same size"
+    
+    tmpVect = numpy.divide(offVect,(onVect - offVect))
+    
+
+    onoffparam = numpy.median(tmpVect)
+
+    powOn = numpy.sum(onVect)
+    powOff = numpy.sum(offVect)
+    
+    #plt.plot(tmpVect[indexList])
+    #plt.show()
+    
+    return onoffparam,powOn,powOff
+
+def calcSEFD(onArray, offArray, srcFlux):
+    """
+    Calculation of SFED for signle frequency
+        
+    Parameters
+    -------------
+    onArray : array_like
+        vector of On data
+    offArray : array_like
+        vector of Off data
+    srcFlux : float
+        flux of the source
+        
+    Returns
+    -------------
+    float
+        SEFD value
+    float
+        SEFD variance in time
+    array_like 
+        On power in time
+    array_like 
+        On power in time
+           
+    """  
+        
+    onArrayF,offArrayF = OnOff.filterArray.MADSEFDAll(onArray,offArray)
+    
+    Larray = len(onArrayF)
+    
+    SEFDs = numpy.zeros(Larray,dtype=float)
+    powOn = numpy.zeros(Larray,dtype=float)
+    powOff = numpy.zeros(Larray,dtype=float)
+    
+    for iK in xrange(Larray):
+        SEFDs[iK],powOn[iK],powOff[iK] = calcOnOffParamVec(onArrayF[iK],offArrayF[iK])
+    
+    SEFD = srcFlux * numpy.median(SEFDs)
+    SEFD_var = srcFlux * numpy.std(SEFDs)
+    
+    #pdb.set_trace()
+    
+    return SEFD,SEFD_var,powOn,powOff
+    
 
 def calcAntennaTemp(yFactor, TSrc, localTCold = constants.TCold):
     """
