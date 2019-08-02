@@ -2,6 +2,7 @@
 import os
 import sys
 import serial
+from datetime import datetime
 
 import threading
 
@@ -22,7 +23,7 @@ sensors = [
         { "name": "lna temp", "cmd" : "gd", "value_type" : "float", "units" : "deg", "min_value" : 65.0, "max_value" : 80.0 },
         { "name": "24v", "cmd" : "get24v", "value_type" : "float", "units" : "volts", "min_value" : 23.8, "max_value" : 24.2 },
         { "name": "48v", "cmd" : "get48v", "value_type" : "float", "units" : "volts", "min_value" : 47.8, "max_value" : 48.2 },
-        { "name": "fan speed", "cmd" : "gt a1", "value_type" : "int", "units" : "rpm", "min_value" : 2800.0, "max_value" : 3100.0 }
+        { "name": "fan speed", "cmd" : "getfanspeed", "value_type" : "int", "units" : "rpm", "min_value" : 2800.0, "max_value" : 3100.0 }
         ]
 
 accel = { "cmd"    : "getaccel", 
@@ -224,30 +225,47 @@ if sys.argv[1] == "test":
     exit(0)
 
 serial_port_file = sys.argv[1]
-print("Opening %s at baud %d" % (serial_port_file, BAUD))
-ser = serial.Serial(serial_port_file, baud, timeout=1)
+#print("Opening %s at baud %d" % (serial_port_file, BAUD))
+dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+print("\n%s\n" %dt_string)
+ser = serial.Serial(serial_port_file, BAUD, timeout=1)
+
+def getValueFromLine(line):
+    #print(line)
+    if("|" in line):
+        parts = line.replace("\\r", "").split("|")
+        return parts[1]
+
+    return line.replace("\\r", "")
 
 # Query the sensor values and find if in range
 all_sensors_good = True
 for sensor in sensors:
     cmd = sensor['cmd'] + "\n"
+    #print(cmd)
     ser.write(cmd.encode())
     line = str(ser.readline(), 'ascii')
+    if len(line) == 0:
+        line = str(ser.readline(), 'ascii')
+    #print(line)
     value_type = sensor['value_type']
     value  = None
     if value_type == 'float':
-        value = float(line)
+        value = float(getValueFromLine(line))
+        sensor['value'] = value
     if value_type == 'int':
-        value = int(line)
+        value = int(getValueFromLine(line))
+        sensor['value'] = value
     min_value = sensor['min_value']
-    max_value = sensor['min_value']
+    max_value = sensor['max_value']
     sensor['in_range'] = True
     if value < min_value or value > max_value:
+        #print("BAD %s, %s, %s" % (str(value), str(min_value), str(max_value)))
         all_sensors_good = False
         sensor['in_range'] = False
 
 print("")
-print("| %s|%s|%s|%s|%s|%s|" % (pad_string("Sensor", 22, True), pad_string("Units", 8, True), pad_string("max", 10, True), pad_string("min", 10, True), pad_string("Value", 8, True), pad_string("In Range", 12, True)))
+print("| %s|%s|%s|%s|%s|%s|" % (pad_string("Sensor", 22, True), pad_string("Units", 8, True), pad_string("min", 10, True), pad_string("max", 10, True), pad_string("Value", 8, True), pad_string("In Range", 12, True)))
 
 for sensor in sensors:
     name = pad_string(sensor['name'], 22)
@@ -264,29 +282,15 @@ else:
     print("PASS - All sensor values within range")
     
 # Get the aaccelerometer values
-cmd = accel['cmd']
+cmd = accel['cmd'] + "\n"
+#print("ACCEL CMD=%s" % cmd)
 ser.write(cmd.encode())
 line = str(ser.readline(), 'ascii')
+if len(line) == 0:
+    line = str(ser.readline(), 'ascii')
+#print("ACCEL LINE=%s, len=%d" % (line, len(line)))
 accel_parse(line)
 
-
-
-line = str(ser.readline(), 'ascii')
-t = threading.Thread(target=read_serial_thread, args=(ser,))
-t.daemon = True
-t.start()
-
-
-while True:
-
-    line = input("") + "\r\n"
-    #print(line)
-    if line.startswith("rs"):
-        rs_test_mode = True
-        rs_test_error_count = 0
-        rs_test_total_bytes = 0
-    ser.write(line.encode())
-    #print("Len=%d" % len(line.encode()))
 
 
 
