@@ -1,0 +1,9 @@
+waittillstart.csh 20.00
+atasetalarm -a -u jrichards -m "Observing WOW center"
+fxconf.rb sals
+fxconf.rb sagive none fxa `slist.csh none`
+set-defaults.csh y
+mosfx-A+C 1419 1419 13 100 fx64a:fxa fx64c:fxa 10 wowcenter 1800 3c380 180 00.00 test 
+fxconf.rb sagive fxa none `slist.csh fxa`
+park.csh none 180 18
+atasetalarm -a -u jrichards -m "Finished observing"
