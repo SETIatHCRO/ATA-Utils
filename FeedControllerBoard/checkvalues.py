@@ -8,23 +8,26 @@ import threading
 
 BAUD = 19200
 
+EXPECTED_FW_VERSION = 4.2
+
 # https://github.com/SETIatHCRO/antonio-feed-controller-board/blob/master/manuals/ATA%20Cooled%20Feed%20Manual%20Control%20Commands%20Ver%205a.pdf
 # https://github.com/SETIatHCRO/antonio-feed-controller-board/blob/master/antonio-feed-control-v2.X/commands.c
 sensors = [ 
+        { "name": "firmware version", "cmd" : "getversion", "value_type" : "float", "units" : "none", "min_value" : EXPECTED_FW_VERSION, "max_value" : EXPECTED_FW_VERSION },
         { "name": "controller board temp", "cmd" : "gt a0", "value_type" : "float", "units" : "deg", "min_value" : 10.0, "max_value" : 45.0 },
         { "name": "outside air temp", "cmd" : "gt a1", "value_type" : "float", "units" : "deg", "min_value" : 10.0, "max_value" : 45.0 },
         { "name": "pax box air temp", "cmd" : "gt a2", "value_type" : "float", "units" : "deg", "min_value" : 10.0, "max_value" : 45.0 },
         { "name": "exhaust temp", "cmd" : "gt a3", "value_type" : "float", "units" : "deg", "min_value" : 10.0, "max_value" : 45.0 },
         { "name": "cooler rejection temp", "cmd" : "gt a5", "value_type" : "float",  "units" : "deg", "min_value" : 10.0, "max_value" : 45.0 },
-        { "name": "cooler housing temp", "cmd" : "gt a6", "value_type" : "float", "units" : "deg", "min_value" : 10.0, "max_value" : 45.0 },
+        { "name": "cooler housing temp", "cmd" : "gt a6", "value_type" : "float", "units" : "deg", "min_value" : 10.0, "max_value" : 52.0 },
         { "name": "turbo speed", "cmd" : "p398", "value_type" : "int", "units" : "rpm", "min_value" : 89900, "max_value" : 90600 },
         { "name": "turbo power", "cmd" : "p316", "value_type" : "int", "units" : "watts", "min_value" : 4.0, "max_value" : 20.0 },
-        { "name": "cryo temp", "cmd" : "TC", "value_type" : "float", "units" : "deg", "min_value" : 64.0, "max_value" : 66.0 },
+        { "name": "cryo temp", "cmd" : "TC", "value_type" : "float", "units" : "deg", "min_value" : 64.0, "max_value" : 72.0 },
         { "name": "lna temp", "cmd" : "gd", "value_type" : "float", "units" : "deg", "min_value" : 65.0, "max_value" : 80.0 },
         { "name": "24v", "cmd" : "get24v", "value_type" : "float", "units" : "volts", "min_value" : 23.8, "max_value" : 24.2 },
-        { "name": "48v", "cmd" : "get48v", "value_type" : "float", "units" : "volts", "min_value" : 47.8, "max_value" : 48.2 },
-        { "name": "fan speed", "cmd" : "getfanspeed", "value_type" : "int", "units" : "rpm", "min_value" : 2800.0, "max_value" : 3100.0 }
+        { "name": "fan speed", "cmd" : "getfanspeed", "value_type" : "int", "units" : "rpm", "min_value" : 2400.0, "max_value" : 3100.0 }
         ]
+#        { "name": "48v", "cmd" : "get48v", "value_type" : "float", "units" : "volts", "min_value" : 47.8, "max_value" : 48.2 },
 
 accel = { "cmd"    : "getaccel", 
           "sep"    : "|", 
@@ -207,7 +210,7 @@ def  accel_parse(line):
         for field in accel["fields"]:
             print("|%s|%s|%s|%s|%s|%s|" % (pad_string(axis,7, True), pad_string(field,7,True), pad_string(str(accel_values[axis][field]["min"]),8,True), pad_string(str(accel_values[axis][field]["max"]), 8,True), pad_string(str(accel_values[axis][field]["value"]),8,True), pad_string(str(accel_values[axis][field]["in_range"]),12,True)))
             if accel_values[axis][field]["in_range"] == False:
-                all_good = True
+                all_good = False
 
     print("")
     if not all_good:
@@ -228,7 +231,7 @@ serial_port_file = sys.argv[1]
 #print("Opening %s at baud %d" % (serial_port_file, BAUD))
 dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 print("\n%s\n" %dt_string)
-ser = serial.Serial(serial_port_file, BAUD, timeout=1)
+ser = serial.Serial(serial_port_file, BAUD, timeout=3)
 
 def getValueFromLine(line):
     #print(line)
@@ -240,6 +243,12 @@ def getValueFromLine(line):
 
 # Query the sensor values and find if in range
 all_sensors_good = True
+#print("before")
+ser.write("stty\n".encode())
+#print("after")
+line = str(ser.readline(), 'ascii')
+#print("after 2, line=%s" % line)
+ser = serial.Serial(serial_port_file, BAUD, timeout=1)
 for sensor in sensors:
     cmd = sensor['cmd'] + "\n"
     #print(cmd)
