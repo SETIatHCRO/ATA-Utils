@@ -15,10 +15,12 @@ sys.path.append("..")
 #import OnOff.misc
 #import OnOff.yFactor
 import OnOff
-import datetime
 import pickle
 import re
 from google.cloud import storage
+import matplotlib.pyplot as plt
+
+outputDir = '../'
 
 bucket_name = 'ata_test_data'
 sClient = storage.Client()
@@ -45,35 +47,37 @@ for key in bucketDict.keys():
             key2=re.sub('_on_000_','_off_002_',key)
             offKey2=re.sub('_on_000_','_off_002_',key)
             
-            onDict = pickle.loads(bucketDict[key].download_as_string())
-            offDict = pickle.loads(bucketDict[offKey].download_as_string())
-            onDict1 = pickle.loads(bucketDict[key].download_as_string())
-            offDict1 = pickle.loads(bucketDict[offKey].download_as_string())
-            onDict2 = pickle.loads(bucketDict[key].download_as_string())
-            offDict2 = pickle.loads(bucketDict[offKey].download_as_string())
+            Dict0On = pickle.loads(bucketDict[key].download_as_string())
+            Dict0Off = pickle.loads(bucketDict[offKey].download_as_string())
+            Dict1On = pickle.loads(bucketDict[key].download_as_string())
+            offDict1Off = pickle.loads(bucketDict[offKey].download_as_string())
+            Dict2On = pickle.loads(bucketDict[key].download_as_string())
+            Dict2Off = pickle.loads(bucketDict[offKey].download_as_string())
             
-            freq=offDict['rfc']
-            freqtest=onDict['rfc']
+            SEFD_X,SEFD_var_X,SEFD_Y,SEFD_var_Y,timeStamps,powerX,powerY = OnOff.calcSEFDThreeDict(Dict0On, Dict0Off,Dict1On, Dict1Off,Dict2On, Dict2Off)
 
-            assert freq == freqtest, "file mismatch"
-
-            ant = onDict['ant'];
-            meastime = int(onDict['auto0_timestamp'][0])
-            datetime_stamp = datetime.datetime.utcfromtimestamp(meastime)
-            source= onDict['source']
-
-            print(key)
+            outDict={}
+            outDict['SEFD_X']=SEFD_X
+            outDict['SEFD_var_X']=SEFD_var_X
+            outDict['SEFD_Y']=SEFD_Y
+            outDict['SEFD_var_Y']=SEFD_var_Y
+            outDict['timeStamps']=timeStamps
+            outDict['powerX']=powerX
+            outDict['powerY']=powerY
             
-            #TsysX,TsysstdX = OnOff.calcSingleAnt(source, freq, datetime_stamp, onDict['auto0'], offDict['auto0'])
-            #TsysX,TsysstdX = OnOff.calcSingleAnt(source, freq, datetime_stamp, onDict['auto0'], offDict['auto0'])
-            #TsysY,TsysstdY = OnOff.calcSingleAnt(source, freq, datetime_stamp, onDict['auto1'], offDict['auto1'])
-            #TsysY,TsysstdY = OnOff.calcSingleAnt(source, freq, datetime_stamp, onDict['auto1'], offDict['auto1'])
-
-            #print('TsysX = %f +- %f K',TsysX, TsysstdX)
-            #print('TsysY = %f +- %f K',TsysY, TsysstdY)
-
-            SEFD_X,SEFD_X_STD = OnOff.calcSEFDSingleAnt(source, freq, datetime_stamp, onDict['auto0'], offDict['auto0'])
-            SEFD_Y,SEFD_Y_STD = OnOff.calcSEFDSingleAnt(source, freq, datetime_stamp, onDict['auto1'], offDict['auto1'])
+            obsname = offKey=re.sub('_on_000_','_',Dict0On['comment'])
             
-            print('SEFD_X = ' + repr(SEFD_X) + ' +/- ' + repr(SEFD_X_STD) + ' Jy')
-            print('SEFD_Y = ' + repr(SEFD_Y) + ' +/- ' + repr(SEFD_Y_STD) + ' Jy')
+            fileName =  outputDir + 'processed_'+obsname+'.pkl'
+            
+            file_out = open(fileName, 'w') 
+            pickle.dump(outDict, file_out)
+            file_out.close()
+            
+            filepownameX = outputDir + 'pow_'+obsname+'.png'
+            plt.plot(timeStamps,powerX,label='powerX')
+            plt.plot(timeStamps,powerY,label='powerY')
+            plt.legend(['X','Y'])
+            plt.title(obsname)
+            plt.xlabel('time [s]')
+            plt.ylabel('power [arbitrary]')
+            plt.savefig(filepownameX)

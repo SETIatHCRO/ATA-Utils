@@ -42,8 +42,8 @@ def calcOnOffParamVec(onVect, offVect):
 
     onoffparam = numpy.median(tmpVect)
 
-    powOn = numpy.sum(onVect)
-    powOff = numpy.sum(offVect)
+    powOn = numpy.divide(numpy.sum(onVect),len(onVect))
+    powOff =  numpy.divide(numpy.sum(offVect),len(offVect))
     
     #plt.plot(tmpVect[indexList])
     #plt.show()
