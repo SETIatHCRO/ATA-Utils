@@ -57,8 +57,8 @@ pickle.dump(outDict, file_out)
 file_out.close()
 
 filepownameX = outputDir + 'pow_'+obsname+'.png'
-plt.plot(timeStamps,powerX,label='powerX')
-plt.plot(timeStamps,powerY,label='powerY')
+plt.plot(timeStamps,powerX,'.',label='powerX')
+plt.plot(timeStamps,powerY,'.',label='powerY')
 plt.legend(['X','Y'])
 plt.title(obsname)
 plt.xlabel('time [s]')
