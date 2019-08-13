@@ -24,38 +24,42 @@ import get_filenames
 
 antennas =  ['2a','2b','2e','3l','1f','5c','4l','4g','2j','2d','4k','1d','2f','5h','3j','3e','1a','1b','1g','1h','2k','2m','3d','4j','5e','2c','4e','2l','2h','5g']
 
-tunings = ["1000.00",
-        "2000.00",
-        "3000.00",
-        "4000.00",
-        "5000.00",                      
-        "6000.00",
-        "7000.00",
-        "8000.00",
-        "9000.00",
-        "10000.00"]
+tunings = ["1400.00",
+        "2500.00",
+        "3500.00",
+        "4500.00",
+        "5500.00",                      
+        "6500.00",
+        "7500.00",
+        "8500.00",
+        "9500.00"]
 
 sources = ["moon",
         "casa",
         "vira",
         "taua"]
 
+sources = ["moon"]
+antennas =  ['3e']
+tunings = ["2500.00"]
+
 
 #fig = plt.subplots()
 
-antennas = get_filenames.get_ant_list();
+#antennas = get_filenames.get_ant_list();
+#antennas =  ['2e']
 
 #tunings = ["4000.00", "6000.00"]
 #sources = ["casa"]
 #antennas = ['4j']
 
-MAX_GROUPS = 3
+MAX_GROUPS = 1
 
 #antennas = ['5b', '2e', '2a', '4j', '1g']
 #antennas = ['2e']
 #tunings = ["3000.00", "4000.00"]
-#antennas = ['2a']
-#sources=['casa']
+#antennas = ['4e']
+#sources=['taua']
 
 def writeToFile(filename, line):
 
@@ -80,9 +84,14 @@ def list_avg(l):
         return 0.0
 
     sum = 0.0;
+    count = 0
     for f in l:
-        sum += f;
-    return sum / len(l)
+        if f > 0.0:
+            sum += f;
+            count += 1
+    if count > 0:
+        return sum / count
+    return 0
 
 def get_source_flux(source, tuning):
 
@@ -147,7 +156,8 @@ def make_graph(antenna, pol, tuning, source, power, ratio, goodcnt, markers, avg
           sefd_on_std = "%.02f" % m[6]
           sefd_off_std = "%.02f" % m[7]
        plt.axvline(x=m[0], color='grey', linestyle='--')
-       plt.text(m[0]-1, 0, m[1] + "\nsefd " + str(obs_sefd) + "\n" + sefd_on_std + ", " + sefd_off_std, horizontalalignment='right')
+       #plt.text(m[0]-1, 0, m[1] + "\nsefd " + str(obs_sefd) + "\n" + sefd_on_std + ", " + sefd_off_std, horizontalalignment='right')
+       plt.text(m[0]-1, 0, m[1] + "\nsefd " + str(obs_sefd), horizontalalignment='right')
        #plt.text(m[0]-1, -10, "sefd " + str(obs_sefd), horizontalalignment='right')
        #print "MARKER!"
 
@@ -200,8 +210,31 @@ for antenna in antennas:
                 group_count = 0
                 graph_count = 0;
 
+                should_pass = True
+
                 #groups3 = groups[-3:]
                 for g in groups:
+
+                    should_process = False
+
+                    if should_pass == True:
+                         filename_parts = get_filenames.get_filename_parts(g[0][0])
+                         #if("20190604" not in filename_parts.date):
+                         #if ("20190413" not in filename_parts.date
+                         #   and "20190414" not in filename_parts.date) :
+                         #if ("20190401" not in filename_parts.date
+                         #   and "20190331" not in filename_parts.date) :
+                         #if ("20190226" not in filename_parts.date 
+                         #    and "20190225" not in filename_parts.date
+                         #    and "20190210" not in filename_parts.date
+                         #    and "20190208" not in filename_parts.date
+                         #    and "20190207" not in filename_parts.date) :
+                             #print filename_parts.date
+                         #    continue
+                         #else:
+                         print("FOUND: " + filename_parts.date)
+
+                    should_process = True
 
                     group_count += 1
                     goodcnt0 = 0;
@@ -227,10 +260,12 @@ for antenna in antennas:
                             on_filename = pair[0]
                             off_filename = pair[1]
 
+
                             #print pair
 
                             # Skip 1536297385 to 1536451200
                             filename_parts = get_filenames.get_filename_parts(on_filename)
+                            print filename_parts.date
                             file_timestamp = int(filename_parts.secs)
                             #if(filename_parts.obsid == "974" or filename_parts.obsid == "973") :
                             #    break
@@ -254,7 +289,7 @@ for antenna in antennas:
                             break
 
 
-                        if dataon['adc0_stats']['dev'] >= 2.:
+                        if dataon['adc0_stats']['dev'] >= 0.2:
                             frange = dataon['frange'][768:1700]
                             specon = np.mean(dataon['auto0'], axis=0)[768:1700]
                             specoff = np.mean(dataoff['auto0'], axis=0)[768:1700]
@@ -273,13 +308,13 @@ for antenna in antennas:
                             #print sedf_x_on_std,sedf_x_off_std
                             goodcnt0 += 1
 
-                            if(len(sefd_y_text) > 0):
-                                sefd_y_text += ","
+                            if(len(sefd_x_text) > 0):
+                                sefd_x_text += ","
                             sefd_x_text += "%0.2f" % onpower
                             sefd_x_text +="," 
                             sefd_x_text += "%0.2f" % offpower
 
-                        if dataon['adc1_stats']['dev'] >= 2.:
+                        if dataon['adc1_stats']['dev'] >= 0.2:
                             frange = dataon['frange'][768:1700]
                             specon = np.mean(dataon['auto1'], axis=0)[768:1700]
                             specoff = np.mean(dataoff['auto1'], axis=0)[768:1700]
@@ -333,18 +368,22 @@ for antenna in antennas:
                     #print "len=%d, thisObsId=%d, sefd_x=%f, sefd_y=%f, goodcnt0=%d, goodcnt1=%d" % (len(power0)-1, int(thisObsid), sefd_x, sefd_y, goodcnt0, goodcnt1)
                     markers.append([len(power0)-1, thisObsid, sefd_x, sefd_y, sedf_x_on_std, sedf_x_off_std, sedf_y_on_std, sedf_y_off_std ])
 
+                    print("group_count=%d, iteration=%d\n" % (group_count, int(iteration)))
+
                     #if(group_count == len(groups) and int(iteration) == 2):
-                    if(group_count == MAX_GROUPS and int(iteration) == 2):
+                    #if(group_count == MAX_GROUPS and int(iteration) == 2):
+                    print(group_count, int(iteration))
+                    if(group_count ==2 and int(iteration) == 2):
                         graph_count += 1
                         ##print sefd_group_x
                         #print list_avg(sefd_group_x)
                         #print("AVGs=%f,%f\n" % (list_avg(sefd_group_x), list_avg(sefd_group_y)))
                         #if graph_count == 2:
                         #    print sefd_group_x
-                        #fname = make_graph(antenna, 'x', tuning, source, power0, ratio0, goodcnt0, markers, list_avg(sefd_group_x), graph_count)
-                        #fnames_x.append(fname)
-                        #fname = make_graph(antenna, 'y', tuning, source, power1, ratio1, goodcnt1, markers, list_avg(sefd_group_y), graph_count)
-                        #fnames_y.append(fname)
+                        fname = make_graph(antenna, 'x', tuning, source, power0, ratio0, goodcnt0, markers, list_avg(sefd_group_x), graph_count)
+                        fnames_x.append(fname)
+                        fname = make_graph(antenna, 'y', tuning, source, power1, ratio1, goodcnt1, markers, list_avg(sefd_group_y), graph_count)
+                        fnames_y.append(fname)
 
                         group_count = 0
                         sefd_group_x = []
@@ -361,6 +400,9 @@ for antenna in antennas:
                         #    exit(0)
                         xxx += 1
 
+                if should_process == False:
+                    continue
+
                 s = antenna + "," + "x" + "," + str(tuning) + "," + source + "," + num_groups + "," + str(list_avg(sefd_list_x)) 
                 s += "," + str(np.std(sefd_list_x))
                 #s += "," +  sefd_x_text
@@ -368,6 +410,7 @@ for antenna in antennas:
                 for f in fnames_x:
                     s += "," + f
                 print s
+                print str(sefd_list_x)
                 s = antenna + "," + "y" + "," + str(tuning) + "," + source + "," + num_groups + "," + str(list_avg(sefd_list_y))
                 s += "," + str(np.std(sefd_list_y))
                 #s += "," +  sefd_y_text
@@ -375,6 +418,7 @@ for antenna in antennas:
                 for f in fnames_y:
                     s += "," + f
                 print s
+                print str(sefd_list_y)
                 sefd_list_x = []
                 sefd_list_y = []
                 fnames_x = []
