@@ -16,6 +16,7 @@ for xhci in /sys/bus/pci/drivers/xhci_hcd ; do
   echo Resetting devices from $xhci...
 
   for i in ????:??:??.? ; do
+    echo "$i"
     echo -n "$i" > unbind
     echo -n "$i" > bind
   done
