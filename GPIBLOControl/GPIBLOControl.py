@@ -7,12 +7,13 @@ import sys
 if __name__ == "__main__":
     usage = """Usage %prog [options] command [commandopt]
     command selection:
-        setfreq  freq - set the frequency
+        setfreq  freq - set the frequency [Hz]
         errors - list all errors
-        init - resets the device do default settings
+        init - resets the device do default settings and turn it on
         on - turns the power on
         off - turns the power off
-        getfreq - returns the current frequency"""
+        getfreq - returns the current frequency
+        getoutputstate - returns True/False based on output state (On/Off)"""
     parser = OptionParser(usage=usage)
     parser.add_option("-a", "--gpibaddres", action="store", type="int", dest="address", default=30,
                       help="GPIB address od the device, default=%default", metavar="ADDR")
@@ -20,8 +21,10 @@ if __name__ == "__main__":
                       help="hostname of the controller default=%default", metavar="HOST")
     parser.add_option("-w", "--wait", action="store", type="int", dest="wait", default=True,
                       help="wait for *OPC? to finish, default=%default", metavar="BOOL")
-    parser.add_option("-v", "--verbose", action="store", type="int", dest="v", default=True,
-                      help="prints more, default=%default", metavar="BOOL")
+    parser.add_option("-v", "--verbose", action="store_true", dest="v", default=True,
+                      help="print more output, default=%default")
+    parser.add_option("-q", "--quiet",action="store_false", dest="v",
+                      help="print less output")
     
     (options, args) = parser.parse_args()
     
@@ -30,7 +33,7 @@ if __name__ == "__main__":
         parser.print_help()
         sys.exit(1)
         
-    validopts = ['setfreq','errors','init','on','off','getfreq']
+    validopts = ['setfreq','errors','init','on','off','getfreq','getoutputstate']
     
     if any(args[0] in s for s in validopts):
         if args[0] == 'setfreq' and len(args) < 2:
@@ -73,6 +76,7 @@ if __name__ == "__main__":
             print "initializing device"
         commandmodule.reset_device()
         commandmodule.set_defaults()
+        commandmodule.output_on(options.wait)
         if options.v:
             setF = commandmodule.get_frequency()
             print "current frequency is " + str(setF/1e9) + " GHz"
@@ -89,7 +93,10 @@ if __name__ == "__main__":
     
     if args[0] == 'getfreq':
         setF = commandmodule.get_frequency()
-        print "current frequency is " + str(setF/1e9) + " GHz"
+        print "current frequency is " + str(setF) + " Hz"
+        
+    if args[0] == 'getoutputstate':
+        print commandmodule.is_transmitting()
         
     if options.v:
         isT = commandmodule.is_transmitting()
