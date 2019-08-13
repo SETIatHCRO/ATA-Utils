@@ -12,7 +12,8 @@ is installed in the snap-controlling server
 The shell program has predefined command options
 
 #Usage
-Usage: Usage GPIBLOControl.py [options] command [commandopt]
+
+ Usage: Usage GPIBLOControl.py [options] command [commandopt]
 
     command selection:
 
@@ -31,7 +32,7 @@ Usage: Usage GPIBLOControl.py [options] command [commandopt]
         getoutputstate - returns True/False based on output state (On/Off)
 
 
-Options:
+ Options:
 
   -h, --help            show this help message and exit
 
@@ -46,7 +47,8 @@ Options:
 
   -q, --quiet           print less output
 
-#examples:
+#Examples:
+
 setting LO to default settings and turning it on:
 
     GPIBLOControl.py -q init
