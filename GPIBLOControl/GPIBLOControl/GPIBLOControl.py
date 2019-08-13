@@ -1,10 +1,10 @@
 #!/usr/bin/env python2
 
-import control
+import gpibcontrol
 from optparse import OptionParser
 import sys
 
-if __name__ == "__main__":
+def main():
     usage = """Usage %prog [options] command [commandopt]
     command selection:
         setfreq  freq - set the frequency [Hz]
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         parser.print_help()
         sys.exit(1)
     
-    commandmodule = control.control()
+    commandmodule = gpibcontrol.control()
     
     if options.v:
         print "connecting to " + options.host + " at bus " + str(options.address)
@@ -110,3 +110,6 @@ if __name__ == "__main__":
        
     sys.exit(0)
     
+if __name__ == "__main__":
+    main()
+

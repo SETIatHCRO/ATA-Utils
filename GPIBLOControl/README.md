@@ -11,7 +11,7 @@ is installed in the snap-controlling server
 
 The shell program has predefined command options
 
-#Usage
+## Usage
 
  Usage: Usage GPIBLOControl.py [options] command [commandopt]
 
@@ -47,7 +47,7 @@ The shell program has predefined command options
 
   -q, --quiet           print less output
 
-#Examples:
+## Examples:
 
 setting LO to default settings and turning it on:
 

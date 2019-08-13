@@ -1,0 +1,1 @@
+from gpibcontrol import control

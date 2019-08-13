@@ -26,5 +26,7 @@ A set of scripts to facilitate a noob using the ATA.
 
 Hashpipe based modules to read beam data from the beamformer and write to disk.
 
+## GPIBLOControl
 
+Python script to control generator used as a LO
 
