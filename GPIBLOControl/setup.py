@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='GPIBLOControl',
-    version='0.0.1',
+    version='0.0.2',
     description='python package controls the HP 83731B via the prologix GPIB to Ethernet adapter',
     license='MIT',
     packages=['GPIBLOControl'],
@@ -14,5 +14,5 @@ setuptools.setup(
     keywords=['HP 83731B','GPIB'],
     long_description=long_description,
     url="https://github.com/SETIatHCRO/ATA-Utils/",
-    entry_points={'console_sripts': ['GPIBLOControl = GPIBLOControl.GPIBLOControl:main']},
+    entry_points={'console_scripts': ['GPIBLOControl = GPIBLOControl.GPIBLOControl:main']},
 )
