@@ -15,15 +15,20 @@ import plumbum
 import math
 import get_filenames
 
-#sefd_graphs.py
-#code will read in data, calculate average SEFD, output one value for X and one value for Y
-# and also the png filename. This CVS data is then appropriate for converting to JSON.
-# The png files are scp'd to the server
+"""
+sefd_graphs.py
+Suthor: Jon Richards, August 28, 2019
+
+This will read data from grousp of SNAP on/off pkl files and calculate 
+average SEFD, output one SEFD graph for X and one SEFD graph for Y pol.
+The png files are scp'd to the server
+ """
 
 # NOTE: after 1536561956 I used the auto attenuator settings
 
-antennas =  ['2a','2b','2e','3l','1f','5c','4l','4g','2j','2d','4k','1d','2f','5h','3j','3e','1a','1b','1g','1h','2k','2m','3d','4j','5e','2c','4e','2l','2h','5g']
-
+# Specify the criterial for the pkl data file selection.
+sources = ["casa"]
+antennas =  ['1c', '2h','2a','2b','2e','2j','2d','1d','4j']
 tunings = ["1400.00",
         "2500.00",
         "3500.00",
@@ -34,14 +39,9 @@ tunings = ["1400.00",
         "8500.00",
         "9500.00"]
 
-sources = ["moon",
-        "casa",
-        "vira",
-        "taua"]
+obs_id  = -1
+last_num_groups = -1
 
-sources = ["moon"]
-antennas =  ['3e']
-tunings = ["2500.00"]
 
 
 #fig = plt.subplots()
@@ -56,7 +56,7 @@ tunings = ["2500.00"]
 MAX_GROUPS = 1
 
 #antennas = ['5b', '2e', '2a', '4j', '1g']
-#antennas = ['2e']
+#antennas = ['2h']
 #tunings = ["3000.00", "4000.00"]
 #antennas = ['4e']
 #sources=['taua']
@@ -112,11 +112,15 @@ def get_source_flux(source, tuning):
 
 def calc_sefd(source, tuning, ratio, goodcnt):
 
+    #print("GOODCNT=%s, ratio=%s" % (str(goodcnt), str(ratio)))
+
     sourceflux = get_source_flux(source, tuning)
     ratio = 1/(ratio / (float(goodcnt)))
     ratio = math.fabs(ratio);
     if 1/ratio < 0.01:
         ratio = 0.0
+
+    #print("RATIO=%s" % str(ratio))
 
     return (ratio * sourceflux)
 
@@ -157,7 +161,7 @@ def make_graph(antenna, pol, tuning, source, power, ratio, goodcnt, markers, avg
           sefd_off_std = "%.02f" % m[7]
        plt.axvline(x=m[0], color='grey', linestyle='--')
        #plt.text(m[0]-1, 0, m[1] + "\nsefd " + str(obs_sefd) + "\n" + sefd_on_std + ", " + sefd_off_std, horizontalalignment='right')
-       plt.text(m[0]-1, 0, m[1] + "\nsefd " + str(obs_sefd), horizontalalignment='right')
+       plt.text(m[0]-1, 0, m[1] + "\ns" + str(obs_sefd), horizontalalignment='right')
        #plt.text(m[0]-1, -10, "sefd " + str(obs_sefd), horizontalalignment='right')
        #print "MARKER!"
 
@@ -230,7 +234,13 @@ for antenna in antennas:
                          #    and "20190208" not in filename_parts.date
                          #    and "20190207" not in filename_parts.date) :
                              #print filename_parts.date
-                         #    continue
+                         #if ("20190814" not in filename_parts.date and "20190815" not in filename_parts.date and "20190816" not in filename_parts.date) :
+                         if ("20190824" not in filename_parts.date 
+                            and "20190825" not in filename_parts.date
+                            and "20190826" not in filename_parts.date): 
+                                print("REJECT %s" % filename_parts.date)
+                                group_count += 1
+                                continue
                          #else:
                          print("FOUND: " + filename_parts.date)
 
@@ -239,7 +249,7 @@ for antenna in antennas:
                     group_count += 1
                     goodcnt0 = 0;
                     goodcnt1 = 0;
-                    #print "Group %d, pair count=%d" % (group_count, len(g))
+                    print "Group %d, pair count=%d" % (group_count, len(g))
 
                     thisObsid = "-1"
                     ratio_one_obs_0 = 0.0
@@ -265,7 +275,6 @@ for antenna in antennas:
 
                             # Skip 1536297385 to 1536451200
                             filename_parts = get_filenames.get_filename_parts(on_filename)
-                            print filename_parts.date
                             file_timestamp = int(filename_parts.secs)
                             #if(filename_parts.obsid == "974" or filename_parts.obsid == "973") :
                             #    break
@@ -350,6 +359,7 @@ for antenna in antennas:
                         goodcnt0 = 0;
                         goodcnt1 = 0;
                     """
+
         
                     print "+%s,%s,%s,x,%s,%s" % (thisObsid, antenna, str(tuning), source, sefd_x_text.replace(",,", ","))
                     print "+%s,%s,%s,y,%s,%s" % (thisObsid, antenna, str(tuning), source, sefd_y_text.replace(",,", ","))
@@ -368,12 +378,14 @@ for antenna in antennas:
                     #print "len=%d, thisObsId=%d, sefd_x=%f, sefd_y=%f, goodcnt0=%d, goodcnt1=%d" % (len(power0)-1, int(thisObsid), sefd_x, sefd_y, goodcnt0, goodcnt1)
                     markers.append([len(power0)-1, thisObsid, sefd_x, sefd_y, sedf_x_on_std, sedf_x_off_std, sedf_y_on_std, sedf_y_off_std ])
 
-                    print("group_count=%d, iteration=%d\n" % (group_count, int(iteration)))
 
-                    #if(group_count == len(groups) and int(iteration) == 2):
+                    print("group_count=%d, INTER=%d, num groups=%d"%(group_count, int(iteration), len(groups)))
+                    #if(group_count == 2 and int(iteration) == 2):
+                    if(group_count == len(groups) and int(iteration) == 2):
                     #if(group_count == MAX_GROUPS and int(iteration) == 2):
-                    print(group_count, int(iteration))
-                    if(group_count ==2 and int(iteration) == 2):
+                    #print(group_count, int(iteration))
+                    #if(group_count ==2 and int(iteration) == 2):
+                    #if(group_count == 1 and int(iteration) == 2):
                         graph_count += 1
                         ##print sefd_group_x
                         #print list_avg(sefd_group_x)
@@ -423,3 +435,4 @@ for antenna in antennas:
                 sefd_list_y = []
                 fnames_x = []
                 fnames_y = []
+
