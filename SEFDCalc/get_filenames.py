@@ -1,5 +1,16 @@
 #!/usr/bin/python
 
+"""
+Name: get_filenames.py
+Author: Jon Richards, August 28, 2019
+
+Contains helpers to retrieve the SNAP on/off pkl data files.
+Returns the file groups based on source, frequency, antenna, etc.
+The function get_all_file_groups() is the one you will want to
+use. See the main test at the end of this file for an example.
+
+"""
+
 from __future__ import division
 
 import sys
@@ -17,26 +28,39 @@ import glob;
 
 
 DATA_BASE_DIR = "/home/sonata/data"
+files_meta_data = None
 
 def get_data_dirs():
+
+    """ Get a sorted list of all the data directories. """
 
     dirs = [x[0] for x in os.walk(DATA_BASE_DIR)]
     data_dirs = []
     for d in dirs:
             if d.find("2") > -1 and d.find("data-backup") == -1:
-                data_dirs.append(d)
+                parts = d.split("/")
+                if int(parts[4]) >= 20190814:
+                    data_dirs.append(d)
     return sorted(data_dirs)
 
 def get_all_on0_filenames(data_dirs, ant_source_freq_list=None):
 
+    """ Retrieve the filenames of all the on0 pkl data files. """
+
+    # Filename example:
+    # 1539097761_rf9000.00_n16_taua_off_002_ant_1d_9000.00_obsid1151.pkl
     matcher = "*_on_000*.pkl"
     if(ant_source_freq_list != None):
         ant = ant_source_freq_list[0]
         source = ant_source_freq_list[1]
         freq = ant_source_freq_list[2]
+        obsid = ant_source_freq_list[3]
         if "." not in freq:
             freq += ".00"
-        matcher = "*_" + source + "_on_000_ant_" + ant + "_" + freq + "_*.pkl"
+        if obsid is not -1:
+            matcher = "*_" + source + "_on_000_ant_" + ant + "_" + freq + "_obsid" + str(obsid) + ".pkl"
+        else:
+            matcher = "*_" + source + "_on_000_ant_" + ant + "_" + freq + "_*.pkl"
         #matcher = "*_" + source + "_on_000_ant_" + ant + "_" + freq + ".00_*.pkl"
 
     filenames = []
@@ -48,6 +72,8 @@ def get_all_on0_filenames(data_dirs, ant_source_freq_list=None):
 
 
 def get_filename_parts(filename):
+
+    """Given a pkl filename return a named tuple of all the parts."""
 
     parts = filename.split("_")
 
@@ -69,8 +95,9 @@ def get_filename_parts(filename):
 
 def create_filename(filename_parts):
 
+    """From a list of filename parts, assemble and return the full path filename."""
+
     fp = filename_parts
-    #filename  = fp.directory + "/" + fp.secs + "_rf" + fp.freq + ".00_n" + fp.num_iterations + "_" 
     filename  = fp.directory + "/" + "*" + "_rf" + fp.freq + ".00_n" + fp.num_iterations + "_" 
     filename += fp.source + "_" + fp.onoff + "_" + fp.iteration + "_ant_" + fp.ant + "_"
     filename += fp.freq + ".00_obsid" + fp.obsid + ".pkl"
@@ -90,16 +117,26 @@ def create_filename(filename_parts):
     return (None, False)
 
 
-def get_obs_ids(data_dirs):
+def get_obs_ids(data_dirs=None):
+
+    """ Go through all the file directories and return the list of antennas."""
+
+    if data_dirs is None:
+        data_dirs = get_data_dirs()
 
     obs_ids = []
 
+    # Filename example:
     #/home/sonata/data/20181009/1539097761_rf9000.00_n16_taua_off_002_ant_1d_9000.00_obsid1151.pkl
     for d in data_dirs:
             file_list = sorted([f for f in sorted(glob.glob(d +"/*.pkl"))])
 
             for f in file_list:
+                #print(f)
                 parts = f.split("_")
+                if int(parts[2][1:]) != 16:
+                    continue
+                #print(f, len(parts), parts[2][1:])
                 parts = parts[-1].split(".")
                 obsid = int(parts[0][5:])
                 if obsid not in obs_ids:
@@ -109,7 +146,9 @@ def get_obs_ids(data_dirs):
 
 def get_ant_list(data_dirs=None):
 
-    if(data_dirs == None):
+    """ Go through all the file directories and return the list of antennas."""
+
+    if data_dirs is None:
         data_dirs = get_data_dirs()
 
     ant_list = []
@@ -128,7 +167,9 @@ def get_ant_list(data_dirs=None):
 
 def get_freqs(data_dirs=None):
 
-    if(data_dirs == None):
+    """ Go through all the file directories and return the list of frequencies."""
+
+    if data_dirs is None:
         data_dirs = get_data_dirs()
 
     freq_list = []
@@ -147,6 +188,8 @@ def get_freqs(data_dirs=None):
 
 def get_sources(data_dirs):
 
+    """ Go through all the file directories and return the list of sources."""
+
     source_list = []
 
     #/home/sonata/data/20181009/1539097761_rf9000.00_n16_taua_off_002_ant_1d_9000.00_obsid1151.pkl
@@ -163,6 +206,16 @@ def get_sources(data_dirs):
 
 def get_file_meta():
 
+    """ Get the meta data for all data files in the data directory.
+    Returns a named tuple containing the list of directories, obs ids,
+    antennas, freqencies, and sources.
+    """
+
+
+    global files_meta_data
+    if files_meta_data is not  None:
+        return files_meta_data
+
     data_dirs = get_data_dirs()
 
     obs_ids = get_obs_ids(data_dirs)
@@ -170,20 +223,25 @@ def get_file_meta():
     freq_list = get_freqs(data_dirs)
     source_list = get_sources(data_dirs)
 
-    #print obs_ids
-    #print ant_list
-    #print freq_list
-    #print source_list
-
     MetaData = collections.namedtuple('MetaData', ['data_dirs', 'obs_ids', 'ant_list', 'freq_list', 'source_list'])
-    meta_data = MetaData(data_dirs, obs_ids, ant_list, freq_list, source_list)
-    return meta_data
+    files_meta_data = MetaData(data_dirs, obs_ids, ant_list, freq_list, source_list)
+    return files_meta_data
 
-# Get the next group of on/off files
-def files_get_next_group(num, ant, source, freq):
+def files_get_next_group(num, ant, source, freq, obsid):
 
-    meta_data = get_file_meta()
-    on_files = get_all_on0_filenames(meta_data.data_dirs, [ant, source, freq])
+    """
+    Generator that returns data file names that match the
+    desired antena, source, frequency and optionally an
+    obsid.
+    The files are returned in a list of lists. Each list
+    is grouped by obsid. 
+    """
+
+    global files_meta_data
+    if files_meta_data is None:
+        files_meta_data = get_file_meta()
+
+    on_files = get_all_on0_filenames(files_meta_data.data_dirs, [ant, source, freq, obsid])
 
     for on_file in on_files:
         file_list = []
@@ -200,83 +258,38 @@ def files_get_next_group(num, ant, source, freq):
                     if(on_or_off == "off"):
                         file_list.append(pair)
                         pair = []
-                    #file_list.append(file_create[0])
-        if(len(file_list) == 3):
+        if(len(file_list) == num):
             yield file_list
-        else:
-            print >> sys.stderr, "Only %d files for %s" % (len(file_list), on_file)
+        #else:
+        #    print >> sys.stderr, "Only %d files for %s" % (len(file_list), on_file)
 
-#def get_all_file_groups(num, ant, source, freq):
-#
-#    all_list = []
-#    for file_list in files_get_next_group(num, ant, source, freq):
-#            all_list.extend(file_list)
-#
-#    return all_list
+def get_all_file_groups(number_in_group, ant, source, freq, obsid, lastn):
 
-def get_all_file_groups(num, ant, source, freq):
+    """
+    Retrieve data file names that match the desired antenna, source, 
+    frequency and optionally an obsid.
+
+    number_in_group is the number of pkl files to be returned in each group
+    obsid can be -1, whcih will return ALL groups that match.
+    lastn returns only the name "n" matches. -1 returns all.
+
+    The files are returned in a list of lists. Each list
+    is grouped by obsid. 
+    """
 
     all_list = []
-    for file_list in files_get_next_group(num, ant, source, freq):
-            #all_list.extend(file_list)
+    for file_list in files_get_next_group(number_in_group, ant, source, freq, int(obsid)):
             all_list.append(file_list)
 
+    if lastn > 0:
+        return all_list[-lastn:]
     return all_list
 
 if __name__ == '__main__':
 
-    #/home/sonata/data/20181017/1539773602_rf5000.00_n16_casa_on_000_ant_3e_5000.00_obsid1176.pkl
-    #meta_data = get_file_meta()
-    #on_files = get_all_on0_filenames(meta_data.data_dirs, ["3e", "casa", "5000"])
-    #for f in on_files:
-    #    print f
-    #for file_list in files_get_next_group(3, "2a", "moon", "1000.00"):
-    #   print " "
-    #   for f in file_list:
-    #        print f
-    #fname_parts = get_filename_parts("/home/sonata/data/20181009/1539097761_rf9000.00_n16_taua_off_002_ant_1d_9000.00_obsid1151.pkl")
-    #print fname_parts.short_filename
-
-#    for f in get_all_file_groups(3, "2a", "casa", "1000.00"):
-#        print f
-#
-#    print get_ant_list()
-#    print get_freqs()
-
-
-    meta_data = get_file_meta()
-    #print len(get_all_on0_filenames(meta_data.data_dirs, ['2j', 'casa', '2000']))
-    #for f in get_all_on0_filenames(meta_data.data_dirs, ['2j', 'casa', '2000']):
-    #    print f
     count = 0
-    for group in get_all_file_groups(3, "1f", "moon", "2000.00"):
+    for group in get_all_file_groups(3, "1c", "moon", "1400.00", -1, -1):
         count += 1
         print "Group %d" % count
         for f in group:
             print f
-
-    """
-    fname_parts = get_filename_parts("/home/sonata/data/20181009/1539097761_rf9000.00_n16_taua_off_002_ant_1d_9000.00_obsid1151.pkl")
-    print fname_parts
-    print create_filename(fname_parts)
-    fname_parts = fname_parts._replace(onoff = "on")
-    print fname_parts
-    print create_filename(fname_parts)
-    meta_data = get_file_meta()
-    print get_all_on0_filenames(meta_data.data_dirs)
-    print len(get_all_on0_filenames(meta_data.data_dirs))
-    #rf5000.00_n16_casa_on_000_ant_3e_5000.00_obsid1176.pkl
-    print len(get_all_on0_filenames(meta_data.data_dirs, ['3e', 'casa', '5000']))
-    for f in get_all_on0_filenames(meta_data.data_dirs, ['3e', 'casa', '5000']):
-        print f
-
-    print range(0, 3)
-
-    #print meta_data.data_dirs
-    #print meta_data.obs_ids
-    #print meta_data.ant_list
-    #print meta_data.freq_list
-    #print meta_data.source_list
-    """
-
-

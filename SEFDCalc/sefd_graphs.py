@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 from __future__ import division
 
@@ -12,242 +13,265 @@ import matplotlib.patches as mpatches
 import json
 import plumbum
 import math
+import get_filenames
+from collections import OrderedDict
+import datetime
+import random
 
-#sefd_graphs.py
-#code will read in data, calculate average SEFD, output one value for X and one value for Y
-# and also the png filename. This CVS data is then appropriate for converting to JSON.
-# The png files are scp'd to the server
+sys.path.append('/home/sonata/ATA-Utils/JSKATAScirpts')
+import OnOff
 
+"""
+sefd_graphs.py
+Suthor: Jon Richards, August 28, 2019
 
-antennas = ["1d",
-        "1e",
-        "1f",
-        "1h",
-        "1k",
-        "2a",
-        "2b",
-        "2e",
-        "2h",
-        "2j",
-        "2d",
-        "2f",
-        "2m",
-        "3d",
-        "3e",
-        "3l",
-        "3j",
-        "4j",
-        "4l",
-        "4g",            
-        "4k",            
-        "5c",
-        "5h"]
+This will read data from groups of SNAP on/off pkl files and calculate 
+average SEFD, output one SEFD graph for X and one SEFD graph for Y pol.
+The png files are scp'd to the server
+ """
 
-tunings = ["1000.00",
-        "2000.00",
-        "3000.00",
-        "4000.00",
-        "5000.00",                      
-        "6000.00",
-        "7000.00",
-        "8000.00",
-        "9000.00",
-        "10000.00"]
+# NOTE: after 1536561956 I used the auto attenuator settings - JR
 
-sources = ["moon",
-        "casa",
-        "vira",
-        "taua"]
+SEFD_SERVER = "antfeeds.setiquest.info"
+SEFD_SERVER_DIR = "www/sefd"
+HTML_FILENAME = "latest_sefds_"
+HTML_DIR = "www"
 
-fig = plt.subplots()
+"""START OF VALUES TO CHANGE"""
 
-for antenna in antennas:
+sources = ["moon","casa"]
+antennas =  ['1c', '2h','2a','2b','2e','2j','2d','1d','4j']
+tunings = ["1400.00",
+        "2500.00",
+        "3500.00",
+        "4500.00",
+        "5500.00",                      
+        "6500.00",
+        "7500.00",
+        "8500.00",
+        "9500.00"]
+antennas =  ['1c','2h']
+tunings = ["1400.00", "2500.00"]
 
-        for source in sources:
+obs_id = -1
+last_num_groups = 9 
+png_suffix = "_2"
+ssh_pngs_to_server = True
+show_graphs = False
+create_html = True
 
+"""END OF VALUES TO CHANGE"""
 
+def make_html(source, antennas, pngs):
 
-                for tuning in tunings:	
+    filename = "%s%s.html" % (HTML_FILENAME, source)
+    file = open(filename, "w")
 
-                        #print antenna
-                        #print source
-                        #print tuning
+    file.write("<HTML>\n<body>\n")
+    file.write("<h1>%s Latest On/Off SEFDs</h1>\n" % source)
+    t = datetime.datetime.today().strftime('%Y-%m-%d&nbsp;%H:%M:%S')
+    file.write("%s UTC\n" % t)
 
+    rand = random.randint(1,50000)
 
-                        #mylist = sorted([f for f in glob.glob("*"+ source + "*" + antenna +"*" + tuning +"*obsid" + myObsid +".pkl")])
-                        mylist = sorted([f for f in glob.glob("*"+source+"*" + antenna +"*" + tuning +"*.pkl")])		
-                        #print mylist
-                        z = range(len(mylist))
-                        power0 = np.zeros(1);
-                        power1 = np.zeros(1);
-                        ratio0 = 0.0
-                        ratio1 = 0.0
-                        goodcnt0 = 0;
-                        goodcnt1 = 0;
+    for ant in antennas:
+        if ant not in pngs:
+            continue
+        s = "<h2>%s</h2>\n" % ant
+        file.write(s)
 
-                        lastObsid = "-1"
-                        thisObsid = "-1"
-                        markers = [];
+        i = 0
+        for img in pngs[ant]:
 
+            s = "<img src=\"http://%s/sefd/%s?x=%d\" width=\"400\">\n" % (SEFD_SERVER, img, rand)
+            file.write(s)
+            i += 1
+            if i == 2:
+                file.write("<BR>\n")
+                i = 0
 
-                        j = 0
-                        for i in z[::2]:
+        file.write("<BR><BR>");
 
-                                try:
-                                    if "_on_" not in mylist[j]:
-                                        j = j + 1;
-                                        print "skip1, %s,%s" % ( mylist[j],  mylist[j+1])
-                                        continue
-                                    if "_off_" not in mylist[j+1]:
-                                        j = j + 1
-                                        print "skip2, %s,%s" % ( mylist[j],  mylist[j+1])
-                                        continue
-                                    dataon = pickle.load(open(mylist[j],'r'))
-                                    dataoff = pickle.load(open(mylist[j+1],'r'))
+    file.write("</body>\n</HTML>\n")
 
-                                    #Keep track of the obsId for drawing the markers
-                                    thisObsid = mylist[j+1].split("_")[-1].split(".")[0][5:]
-                                    if(lastObsid == "-1"):
-                                        lastObsid = thisObsid;
-                                    #print mylist[j] 
-                                    #print mylist[j+1]
-                                    #print " "
-                                except:
+    file.close()
 
-                                    continue
+    # SSH to server
+    if ssh_pngs_to_server:
+        r = plumbum.machines.SshMachine(SEFD_SERVER)
+        fro = plumbum.local.path(filename)
+        to =  r.path(HTML_DIR)
+        plumbum.path.utils.copy(fro, to);
+        os.remove(filename);
 
-                                j = j + 2
+        url = "http://%s/%s" % (SEFD_SERVER, filename)
+        return url
 
-                                """
-                                if (dataon['adc0_stats']['dev'] <= 30. and dataon['adc0_stats']['dev'] >= 5.):
-                                        print "Good stddev for adc0: ", mylist[i], dataon['adc0_stats']
-                                else:
-                                        print "Bad stddev for adc0: ", mylist[i], dataon['adc0_stats']		
+    return filename
 
-                                if (dataoff['adc0_stats']['dev'] <= 30. and dataoff['adc0_stats']['dev'] >= 5.):
-                                        print "Good stddev for adc0: ", mylist[i+1], dataoff['adc0_stats']
-                                else:
-                                        print "Bad stddev for adc0: ", mylist[i+1], dataoff['adc0_stats']		
+def make_graph(antenna, pol, tuning, source, power, markers, avg_sefd):
 
-                                if (dataon['adc1_stats']['dev'] <= 30. and dataon['adc1_stats']['dev'] >= 5.):
-                                        print "Good stddev for adc1: ", mylist[i], dataon['adc1_stats']
-                                else:
-                                        print "Bad stddev for adc1: ", mylist[i], dataon['adc1_stats']		
+    plt.figure()
+    plt.plot(power)
+    ptitle = "Antenna: "+ antenna + pol + " Frequency: "+ tuning+ " MHz SEFD: " + str(int(avg_sefd)) + " Jy"
+    plt.title(ptitle)
+    id_text = "id:"
+    sefd_text = "sefd:"
+    if len(markers) > 4:
+        id_text = ""
+        sefd_text = "s"
+    for m in markers:
+       obs_sefd = m[2]
+       plt.axvline(x=m[0], color='grey', linestyle='--')
+       plt.text(m[0]-1, 0, id_text + m[1] + "\n" + sefd_text + str(obs_sefd), horizontalalignment='right')
 
-                                if (dataoff['adc1_stats']['dev'] <= 30. and dataoff['adc1_stats']['dev'] >= 5.):
-                                        print "Good stddev for adc1: ", mylist[i+1], dataoff['adc1_stats']
-                                else:
-                                        print "Bad stddev for adc1: ", mylist[i+1], dataoff['adc1_stats']		
-                                """
-                                """
-                                if(antenna == '4l'):
-                                    if (dataon['adc0_stats']['dev'] > 30. or dataon['adc0_stats']['dev'] < 5.):
-                                        print "Bad stddev for adc0: ", mylist[i], dataon['adc0_stats']		
+    fname = antenna + pol + "_" + tuning + "_" + source + png_suffix + ".png"
+    plt.savefig(fname)
 
-                                    if (dataoff['adc0_stats']['dev'] > 30. or dataoff['adc0_stats']['dev'] < 5.):
-                                        print "Bad stddev for adc0: ", mylist[i+1], dataoff['adc0_stats']		
+    # Display the graph
+    if show_graphs:
+        plt.show()
+    plt.close()				
 
-                                    if (dataon['adc1_stats']['dev'] > 30. or dataon['adc1_stats']['dev'] < 5.):
-                                        print "Bad stddev for adc1: ", mylist[i], dataon['adc1_stats']
+    # SSH to server
+    if ssh_pngs_to_server:
+        r = plumbum.machines.SshMachine(SEFD_SERVER)
+        fro = plumbum.local.path(fname)
+        to =  r.path(SEFD_SERVER_DIR)
+        plumbum.path.utils.copy(fro, to);
+        os.remove(fname);
 
-                                    if (dataoff['adc1_stats']['dev'] > 30. or dataoff['adc1_stats']['dev'] < 5.):
-                                        print "Bad stddev for adc1: ", mylist[i+1], dataoff['adc1_stats']		
-                                """
-
-                                if dataon['adc0_stats']['dev'] >= 2.:
-                                    frange = dataon['frange'][768:1700]
-                                    specon = np.mean(dataon['auto0'], axis=0)[768:1700]
-                                    specoff = np.mean(dataoff['auto0'], axis=0)[768:1700]
-
-                                    if(lastObsid != thisObsid):
-                                        markers.append([len(power0)-1, lastObsid])
-                                        lastObsid = thisObsid
-
-                                    power0 = np.append(power0, np.mean(np.array(dataon['auto0'])[:,768:1700], axis=1))
-                                    power0 = np.append(power0, np.mean(np.array(dataoff['auto0'])[:,768:1700], axis=1))   
-                                    onpower = np.mean(np.array(dataon['auto0'])[:,768:1700])
-                                    offpower = np.mean(np.array(dataoff['auto0'])[:,768:1700])
-                                    ratio0 += (onpower / offpower - 1.0)
-                                    goodcnt0 += 1
+    return fname
 
 
-                                if dataon['adc1_stats']['dev'] >= 2.:
-                                    frange = dataon['frange'][768:1700]
-                                    specon = np.mean(dataon['auto1'], axis=0)[768:1700]
-                                    specoff = np.mean(dataoff['auto1'], axis=0)[768:1700]
+"""
+Go through the pkl data files and create the graphs.
+"""
 
-                                    power1 = np.append(power1, np.mean(np.array(dataon['auto1'])[:,768:1700], axis=1))
-                                    power1 = np.append(power1, np.mean(np.array(dataoff['auto1'])[:,768:1700], axis=1))
+# The png files created are stored in a dict for creating the
+# HTML file.
+pngs = {};
+
+html = []
+
+#for antenna in antennas:
+for source in sources:
+
+    pngs ={} 
 
 
-                                    onpower = np.mean(np.array(dataon['auto1'])[:,768:1700])
-                                    offpower = np.mean(np.array(dataoff['auto1'])[:,768:1700])
-                                    ratio1 += (onpower / offpower - 1.0)
-                                    goodcnt1 += 1
+#    for source in sources:
+    for antenna in antennas:
 
-                        markers.append([len(power0)-1, thisObsid])
+        pngs[antenna] = []
 
-                        if source == "moon":
-                            sourceflux = 1.38 * 10**-23 * 270 / ((3 * 10**8) / (float(tuning) * 10**6))**2 * (6.67*10**-5)/ (10**-26)
-                        if source == "casa":
-                            sourceflux = 250034 * float(tuning)**-0.667
-                        if source == "vira":
-                            sourceflux = 39810.7 * float(tuning)**-0.75
-                        if source == "taua":
-                            sourceflux = 6309.6 * float(tuning)**-0.25
+        for tuning in tunings:	
 
-                        if len(power0) > 2:
-                                ratio = 1/(ratio0 / (float(goodcnt0)))
-                                ratio = math.fabs(ratio);
-                                if 1/ratio < 0.01:
-                                    ratio = 0.0
-                                
-                                # Finish up the plot
-                                plt.figure()
-                                plt.plot(power0)
-                                ptitle = "Antenna: "+ antenna+ "X Frequency: "+ tuning+ " MHz SEFD: "+ str(ratio * sourceflux)+ " Jy"
-                                plt.title(ptitle)
-                                for m in markers:
-                                  plt.axvline(x=m[0], color='grey', linestyle='--')
-                                  plt.text(m[0]-1, 0, m[1], horizontalalignment='right');
-                                fname = antenna+"x_"+tuning+"_"+source+".png"
-                                plt.savefig(fname)
-                                plt.close()				
+            print("Processing %s, %s, %s" % (antenna, source, tuning))
 
-                                #Output CSV line
-                                print("%s,%s,x,%s,%f,%f,%s" % (source, antenna, tuning, ratio * sourceflux, ratio, fname));
-                                # SSH to server
-                                r = plumbum.machines.SshMachine("antfeeds.setiquest.info")
-                                fro = plumbum.local.path(fname)
-                                to =  r.path("www/sefd")
-                                plumbum.path.utils.copy(fro, to);
-                               
+            # Get groups of three on/off pkl files
+            groups = get_filenames.get_all_file_groups(3, antenna, source, tuning, obs_id, last_num_groups)
 
-                        if len(power1) > 2:
-                                ratio = 1/(ratio1 / (float(goodcnt1)))
-                                ratio = math.fabs(ratio);
-                                if 1/ratio < 0.01:
-                                    ratio = 0.0
-                                
-                                # Finish up the plot
-                                plt.figure()
-                                plt.plot(power1)
-                                ptitle = "Antenna: "+ antenna+ "Y Frequency: "+ tuning+ " MHz SEFD: "+ str(ratio * sourceflux)+ " Jy"
-                                plt.title(ptitle)
-                                for m in markers:
-                                  plt.axvline(x=m[0], color='grey', linestyle='--')
-                                  plt.text(m[0]-1, 0, m[1], horizontalalignment='right');
-                                fname = antenna+"y_"+tuning+"_"+source+".png"
-                                plt.savefig(fname)
-                                plt.close()				
-                                
-                                #Output CSV line
-                                print("%s,%s,y,%s,%f,%f,%s" % (source, antenna, tuning, ratio * sourceflux, ratio,fname));
+            print "NUMBER GROUPS of 3 = " + str(len(groups))
 
-                                # SSH to server
-                                r = plumbum.machines.SshMachine("antfeeds.setiquest.info")
-                                fro = plumbum.local.path(fname)
-                                to =  r.path("www/sefd")
-                                plumbum.path.utils.copy(fro, to);
+            # Markers are the data used to decorate the graph with
+            # extra information such as average SEFD, obsid, etc.
+            markers_x = []
+            markers_y = []
 
+            # Init the power x/y data array. make the first value be
+            # 0.0 so all the graphs have basically the same scale
+            # when plotted.
+            power_x = [0]
+            power_y = [0]
+
+            sefd_mean_x = []
+            sefd_mean_y = []
+
+            for g in groups:
+
+                # Get the groups of 3 on/off file names
+                file_on0 = g[0][0]
+                file_off0 = g[0][1]
+                file_on1 = g[1][0]
+                file_off1 = g[1][1]
+                file_on2 = g[2][0]
+                file_off2 = g[2][1]
+
+                # Get the data from the files
+                on_0_dict = pickle.load( open( file_on0, "rb" )  )
+                off_0_dict = pickle.load( open( file_off0, "rb" ) )
+                on_1_dict = pickle.load( open( file_on1, "rb" )  )
+                off_1_dict = pickle.load( open( file_off1, "rb" ) )
+                on_2_dict = pickle.load( open( file_on2, "rb" )  )
+                off_2_dict = pickle.load( open( file_off2, "rb" ) )
+
+                # Calculate the SEFD
+                SEFD_X,SEFD_var_X,SEFD_Y,SEFD_var_Y,timeStamps,powerX,powerY = OnOff.calcSEFDThreeDict(on_0_dict, off_0_dict, on_1_dict, off_1_dict, on_2_dict, off_2_dict)
+
+                # Get the observation id for this group
+                filename_parts = get_filenames.get_filename_parts(file_on0)
+                obsid = filename_parts.obsid
+
+                # Calc the mean of the SEFD values. If the mean is
+                # less than 500, there is obviously a problem. So
+                # set to 0. 500 was arbitrarily selected as a
+                # threshold value, you may wish to change this.
+                # Also added > 200000, that is way too large
+                obs_sefd_mean_x = np.mean(SEFD_X)
+                obs_sefd_mean_y = np.mean(SEFD_Y)
+                if obs_sefd_mean_x < 500 or obs_sefd_mean_x > 200000:
+                    obs_sefd_mean_x = 0
+                if obs_sefd_mean_y < 500 or obs_sefd_mean_y > 200000:
+                    obs_sefd_mean_y = 0
+
+                # For graphing, append the power data
+                power_x.extend(powerX)
+                power_y.extend(powerY)
+
+
+                # If the SEFD is > 0, thus no error calulating the 
+                # SEFD, add it to the sefd_mean_x/y array.
+                # Add the data necessary for the graphing markers.
+                if obs_sefd_mean_x > 0:
+                    sefd_mean_x.append(obs_sefd_mean_x)
+                    markers_x.append([len(power_x), obsid, int(obs_sefd_mean_x)])
+                else:
+                    markers_x.append([len(power_x), obsid, 0])
+
+                if obs_sefd_mean_y > 0:
+                    sefd_mean_y.append(obs_sefd_mean_y)
+                    markers_y.append([len(power_y), obsid, int(obs_sefd_mean_x)])
+                else:
+                    markers_y.append([len(power_y), obsid, 0])
+            
+            # If there are no SEFD mean values, probably due to 
+            # bad data or RFI, create an array [0.0] so the
+            # mean calculates to 0 for making hte graph.
+            if len(sefd_mean_x) == 0:
+                sefd_mean_x.append(0.0)
+            if len(sefd_mean_y) == 0:
+                sefd_mean_y.append(0.0)
+            
+            # Make the x and y pol graphs.
+            fname_x = make_graph(antenna, 'x', tuning, 
+                    source, [int(x) for x in power_x], 
+                    markers_x, int(np.mean(sefd_mean_x)))
+            fname_y = make_graph(antenna, 'y', tuning, 
+                    source, [int(x) for x in power_y], 
+                    markers_y, int(np.mean(sefd_mean_y)))
+
+            # For making the HTML file add the filenames
+            # to a dict.
+            pngs[antenna].append(fname_x)
+            pngs[antenna].append(fname_y)
+
+
+    if create_html:
+        url = make_html(source, antennas, pngs)
+        html.append(url)
+
+if create_html:
+    for url in html:
+        print("View at %s" % url)
 
