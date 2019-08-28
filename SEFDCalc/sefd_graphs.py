@@ -27,7 +27,9 @@ Suthor: Jon Richards, August 28, 2019
 
 This will read data from groups of SNAP on/off pkl files and calculate 
 average SEFD, output one SEFD graph for X and one SEFD graph for Y pol.
-The png files are scp'd to the server
+The png files are scp'd to the server.
+This script optionally will create the HTML pages for viewing the
+graphs and scp's them to the server.
  """
 
 # NOTE: after 1536561956 I used the auto attenuator settings - JR
@@ -40,7 +42,7 @@ HTML_DIR = "www"
 """START OF VALUES TO CHANGE"""
 
 sources = ["moon","casa"]
-antennas =  ['1c', '2h','2a','2b','2e','2j','2d','1d','4j']
+antennas =  ['1c', '2h','2a','2b','2e','2j','4j']
 tunings = ["1400.00",
         "2500.00",
         "3500.00",
@@ -50,8 +52,6 @@ tunings = ["1400.00",
         "7500.00",
         "8500.00",
         "9500.00"]
-antennas =  ['1c','2h']
-tunings = ["1400.00", "2500.00"]
 
 obs_id = -1
 last_num_groups = 9 
@@ -152,15 +152,14 @@ Go through the pkl data files and create the graphs.
 # HTML file.
 pngs = {};
 
+# The list of HTML URLs are saved and printed out
+# at the end for the user to reference.
 html = []
 
-#for antenna in antennas:
 for source in sources:
 
     pngs ={} 
 
-
-#    for source in sources:
     for antenna in antennas:
 
         pngs[antenna] = []
