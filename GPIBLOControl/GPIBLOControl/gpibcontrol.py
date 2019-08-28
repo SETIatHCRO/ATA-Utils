@@ -63,7 +63,7 @@ class defaultVals:
     """Default frequency in Hz"""
     defFreq = 14.9e9
     """Default power in dBm"""
-    defPow = 13 
+    defPow = 3.5 
 
 class control():
     """This class implements the methods to control the Cryocon temperature controller"""

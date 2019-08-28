@@ -5,7 +5,7 @@ Tested with HP 83731B
 the repository consist of library (control.py) and a shell program (GPIBLOControl.py)
 
 The library allows to send and receive any arbitrary SCPI command, but also 
-have some predefined functions. The default power level is +13 dBm and it is not
+have some predefined functions. The default power level is +3.5 dBm and it is not
 possible to control it in the program (it is defined in the library). The program
 is installed in the snap-controlling server
 
