@@ -8,6 +8,9 @@ import numpy as np, scipy.io
 import pickle
 import os
 import glob
+# This way of importing matplotlib.pyplot allows running without an active X Server
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import json
@@ -262,9 +265,9 @@ for source in sources:
                 # Also added > 200000, that is way too large
                 obs_sefd_mean_x = np.mean(SEFD_X)
                 obs_sefd_mean_y = np.mean(SEFD_Y)
-                if obs_sefd_mean_x < 500 or obs_sefd_mean_x > 400000:
+                if obs_sefd_mean_x < 500 or obs_sefd_mean_x > 200000:
                     obs_sefd_mean_x = 0
-                if obs_sefd_mean_y < 500 or obs_sefd_mean_y > 400000:
+                if obs_sefd_mean_y < 500 or obs_sefd_mean_y > 200000:
                     obs_sefd_mean_y = 0
 
                 # For graphing, append the power data
