@@ -85,11 +85,8 @@ tunings = ["1400.00",
         "8500.00",
         "9500.00"]
 
-antennas =  ['4j']
-sources = ["moon"]
-tunings = ["7500.00","8500.00","9500.00"]
 obs_id = -1
-last_num_groups = 2 
+last_num_groups = 8 
 png_suffix = "_1"
 ssh_pngs_to_server = True
 show_graphs = False
