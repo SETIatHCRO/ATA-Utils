@@ -23,13 +23,45 @@ import OnOff
 
 """
 sefd_graphs.py
-Suthor: Jon Richards, August 28, 2019
+Author: Jon Richards, August 29, 2019
 
-This will read data from groups of SNAP on/off pkl files and calculate 
-average SEFD, output one SEFD graph for X and one SEFD graph for Y pol.
-The png files are scp'd to the server.
-This script optionally will create the HTML pages for viewing the
-graphs and scp's them to the server.
+NOTES: The website and server are at antfeeds.setiquest.info.
+       After successfully running this script, view
+         http://antfeeds.setiquest.info with the new graphs
+
+This will:
+
+  1) Read data from groups of SNAP on/off pkl files
+  2) Calculate the average SEFD for each pol 
+  3) Create SEFD power graphs as PNGs
+  4) The png files can be scp'd to the server.
+  5) Create the HTML pages for viewing the graphs and scp's the HTML file 
+     to the server.
+  6) Creates a JSONP file of all the SEFD averages and PNG files for
+     displaying on the website.
+
+The operator of this script can select specify many options:
+
+  1) The user can select which sources, ants, tunings, etc in the 
+     "START OF VALUES TO CHANGE" section.
+  2) To process just one observation id (one group of 3) specify
+     a value for obs_id. The default is -1, which means do not use
+     obs_id as a selection criteria.
+  3) To process just the last "n" on/off observations, change the
+     value of "last_num_groups". -1 means ALL on/off observations, which
+     may be too much to display. "1" will display just the most recent
+     on/off observation. A good value is "9" because 9 on/off observations
+     fit well in a graph.
+  4) "ssh_pngs_to_server" to True will:
+       a) scp the resulting png files to the server for viewing
+       b) The sefd.jsonp wile will be scp'd to the server
+  5) "create_html" to True will create an HTML for viewing the graphs
+     all on one page, one page for each source. If "ssh_pngs_to_server"
+     is True the HTML files will be scp'd to the server.
+  6) "show_graphs" will display each graph in an X window popup as
+     they are created. This is useful for looking at a few graphs to
+     make sure one or two are working, but not useful if you have a
+     lot to process.
  """
 
 # NOTE: after 1536561956 I used the auto attenuator settings - JR
@@ -54,8 +86,8 @@ tunings = ["1400.00",
         "9500.00"]
 
 obs_id = -1
-last_num_groups = 9 
-png_suffix = "_2"
+last_num_groups = 8 
+png_suffix = "_1"
 ssh_pngs_to_server = True
 show_graphs = False
 create_html = True
@@ -141,6 +173,8 @@ def make_graph(antenna, pol, tuning, source, power, markers, avg_sefd):
         plumbum.path.utils.copy(fro, to);
         os.remove(fname);
 
+    jsonp[source][antenna][pol].append([[tuning],[str(int(avg_sefd))],[fname]])
+
     return fname
 
 
@@ -156,11 +190,20 @@ pngs = {};
 # at the end for the user to reference.
 html = []
 
+jsonp = OrderedDict()
+jsonp["ants"] = antennas
+jsonp["sources"] = sources
+
 for source in sources:
 
+    jsonp[source] = OrderedDict()
     pngs ={} 
 
     for antenna in antennas:
+
+        jsonp[source][antenna] = OrderedDict()
+        jsonp[source][antenna]['x'] = []
+        jsonp[source][antenna]['y'] = []
 
         pngs[antenna] = []
 
@@ -219,9 +262,9 @@ for source in sources:
                 # Also added > 200000, that is way too large
                 obs_sefd_mean_x = np.mean(SEFD_X)
                 obs_sefd_mean_y = np.mean(SEFD_Y)
-                if obs_sefd_mean_x < 500 or obs_sefd_mean_x > 200000:
+                if obs_sefd_mean_x < 500 or obs_sefd_mean_x > 400000:
                     obs_sefd_mean_x = 0
-                if obs_sefd_mean_y < 500 or obs_sefd_mean_y > 200000:
+                if obs_sefd_mean_y < 500 or obs_sefd_mean_y > 400000:
                     obs_sefd_mean_y = 0
 
                 # For graphing, append the power data
@@ -240,7 +283,7 @@ for source in sources:
 
                 if obs_sefd_mean_y > 0:
                     sefd_mean_y.append(obs_sefd_mean_y)
-                    markers_y.append([len(power_y), obsid, int(obs_sefd_mean_x)])
+                    markers_y.append([len(power_y), obsid, int(obs_sefd_mean_y)])
                 else:
                     markers_y.append([len(power_y), obsid, 0])
             
@@ -270,7 +313,23 @@ for source in sources:
         url = make_html(source, antennas, pngs)
         html.append(url)
 
+# A the end, print out the URLs for the user to view, if create_html is True
 if create_html:
     for url in html:
         print("View at %s" % url)
 
+# Push the sefd.jsonp file to the server
+if ssh_pngs_to_server:
+
+    file = open("sefd.jsonp", "w")
+    j = "sefd(" + json.dumps(jsonp) + ")"
+    file.write(j)
+    file.close()
+
+    r = plumbum.machines.SshMachine(SEFD_SERVER)
+    fro = plumbum.local.path("sefd.jsonp")
+    to =  r.path(SEFD_SERVER_DIR)
+    plumbum.path.utils.copy(fro, to);
+    os.remove("sefd.jsonp");
+
+# Whew! the end!
