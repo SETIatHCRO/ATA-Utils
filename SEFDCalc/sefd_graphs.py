@@ -52,6 +52,8 @@ tunings = ["1400.00",
         "7500.00",
         "8500.00",
         "9500.00"]
+antennas =  ['1c', '2h']
+tunings = ["1400.00"]
 
 obs_id = -1
 last_num_groups = 9 
@@ -141,6 +143,8 @@ def make_graph(antenna, pol, tuning, source, power, markers, avg_sefd):
         plumbum.path.utils.copy(fro, to);
         os.remove(fname);
 
+    jsonp[source][antenna][pol].append([[tuning],[str(int(avg_sefd))],[fname]])
+
     return fname
 
 
@@ -156,11 +160,20 @@ pngs = {};
 # at the end for the user to reference.
 html = []
 
+jsonp = OrderedDict()
+jsonp["ants"] = antennas
+jsonp["sources"] = sources
+
 for source in sources:
 
+    jsonp[source] = OrderedDict()
     pngs ={} 
 
     for antenna in antennas:
+
+        jsonp[source][antenna] = OrderedDict()
+        jsonp[source][antenna]['x'] = []
+        jsonp[source][antenna]['y'] = []
 
         pngs[antenna] = []
 
@@ -274,3 +287,15 @@ if create_html:
     for url in html:
         print("View at %s" % url)
 
+if ssh_pngs_to_server:
+
+    file = open("sefd.jsonp", "w")
+    j = "sefd(" + json.dumps(jsonp) + ")"
+    file.write(j)
+    file.close()
+
+    r = plumbum.machines.SshMachine(SEFD_SERVER)
+    fro = plumbum.local.path("sefd.jsonp")
+    to =  r.path(SEFD_SERVER_DIR)
+    plumbum.path.utils.copy(fro, to);
+    os.remove("sefd.jsonp");
