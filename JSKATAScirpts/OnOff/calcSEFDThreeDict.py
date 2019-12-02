@@ -52,6 +52,10 @@ def calcSEFDThreeDict(Dict0On, Dict0Off,Dict1On, Dict1Off,Dict2On, Dict2Off):
         power for X meas
     array_like
         power for Y meas
+    list
+        list of array_like (3) for X pol indexes used
+    list
+        list of array_like (3) for Y pol indexes used
         
     Raises
     -------------
@@ -113,19 +117,21 @@ def calcSEFDThreeDict(Dict0On, Dict0Off,Dict1On, Dict1Off,Dict2On, Dict2Off):
     SEFD_Y = numpy.zeros(3,dtype='float')
     SEFD_var_Y = numpy.zeros(3,dtype='float')
     
-    SEFD_X[0],SEFD_var_X[0],powOn0X,powOff0X = OnOff.misc.calcSEFD(Dict0On['auto0'],Dict0Off['auto0'],flx)
-    SEFD_X[1],SEFD_var_X[1],powOn1X,powOff1X = OnOff.misc.calcSEFD(Dict1On['auto0'],Dict1Off['auto0'],flx)
-    SEFD_X[2],SEFD_var_X[2],powOn2X,powOff2X = OnOff.misc.calcSEFD(Dict2On['auto0'],Dict2Off['auto0'],flx)
+    SEFD_X[0],SEFD_var_X[0],powOn0X,powOff0X,indexes0X = OnOff.misc.calcSEFD(Dict0On['auto0'],Dict0Off['auto0'],flx)
+    SEFD_X[1],SEFD_var_X[1],powOn1X,powOff1X,indexes1X = OnOff.misc.calcSEFD(Dict1On['auto0'],Dict1Off['auto0'],flx)
+    SEFD_X[2],SEFD_var_X[2],powOn2X,powOff2X,indexes2X = OnOff.misc.calcSEFD(Dict2On['auto0'],Dict2Off['auto0'],flx)
     
-    SEFD_Y[0],SEFD_var_Y[0],powOn0Y,powOff0Y = OnOff.misc.calcSEFD(Dict0On['auto1'],Dict0Off['auto1'],flx)
-    SEFD_Y[1],SEFD_var_Y[1],powOn1Y,powOff1Y = OnOff.misc.calcSEFD(Dict1On['auto1'],Dict1Off['auto1'],flx)
-    SEFD_Y[2],SEFD_var_Y[2],powOn2Y,powOff2Y = OnOff.misc.calcSEFD(Dict2On['auto1'],Dict2Off['auto1'],flx)
+    SEFD_Y[0],SEFD_var_Y[0],powOn0Y,powOff0Y,indexes0Y = OnOff.misc.calcSEFD(Dict0On['auto1'],Dict0Off['auto1'],flx)
+    SEFD_Y[1],SEFD_var_Y[1],powOn1Y,powOff1Y,indexes1Y = OnOff.misc.calcSEFD(Dict1On['auto1'],Dict1Off['auto1'],flx)
+    SEFD_Y[2],SEFD_var_Y[2],powOn2Y,powOff2Y,indexes2Y = OnOff.misc.calcSEFD(Dict2On['auto1'],Dict2Off['auto1'],flx)
     
     powerX = numpy.concatenate( (powOn0X,powOff0X,powOn1X,powOff1X,powOn2X,powOff2X) )
     powerY = numpy.concatenate( (powOn0Y,powOff0Y,powOn1Y,powOff1Y,powOn2Y,powOff2Y) )
 
     timeStamps = numpy.concatenate( (Dict0On['auto0_timestamp'],Dict0Off['auto0_timestamp'],Dict1On['auto0_timestamp'],Dict1Off['auto0_timestamp'],Dict2On['auto0_timestamp'],Dict2Off['auto0_timestamp']) )
  
+    Xindexes = [indexes0X,indexes1X,indexes2X]
+    Yindexes = [indexes0Y,indexes1Y,indexes2Y]
     #pdb.set_trace()
     
-    return SEFD_X,SEFD_var_X,SEFD_Y,SEFD_var_Y,timeStamps,powerX,powerY
+    return SEFD_X,SEFD_var_X,SEFD_Y,SEFD_var_Y,timeStamps,powerX,powerY,Xindexes,Yindexes

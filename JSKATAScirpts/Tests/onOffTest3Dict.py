@@ -38,7 +38,8 @@ Dict2On = pickle.load( open( onFileName2, "rb" )  )
 Dict2Off = pickle.load( open( offFileName2, "rb" ) )
 
 OnOff.filterArray.setMADall()
-SEFD_X,SEFD_var_X,SEFD_Y,SEFD_var_Y,timeStamps,powerX,powerY = OnOff.calcSEFDThreeDict(Dict0On, Dict0Off,Dict1On, Dict1Off,Dict2On, Dict2Off)
+#OnOff.filterArray.setSimple()
+SEFD_X,SEFD_var_X,SEFD_Y,SEFD_var_Y,timeStamps,powerX,powerY,idx,idy = OnOff.calcSEFDThreeDict(Dict0On, Dict0Off,Dict1On, Dict1Off,Dict2On, Dict2Off)
 
 outDict={}
 outDict['SEFD_X']=SEFD_X

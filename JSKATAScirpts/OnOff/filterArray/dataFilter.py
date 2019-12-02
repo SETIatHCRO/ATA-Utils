@@ -51,6 +51,8 @@ def filterFun(onArray, offArray):
         filtered data for ON measurement, number of columns in each row may vary
     array_like
         filtered data for OFF measurement, number of columns in each row may vary
+    array_like
+        index list of the valid data.
         
     Raises
     -------------
@@ -67,6 +69,6 @@ def filterFun(onArray, offArray):
     
     assert func is not None, "unknown filter call"
     
-    onFiltered,offFiltered = func(onArray, offArray)
+    onFiltered,offFiltered,indexList = func(onArray, offArray)
     
-    return onFiltered,offFiltered
+    return onFiltered,offFiltered,indexList

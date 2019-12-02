@@ -28,6 +28,8 @@ def MADSEFD(onArray, offArray):
         filtered data for ON measurement, number of columns in each row may vary
     array_like
         filtered data for OFF measurement, number of columns in each row may vary
+    array_like
+        index list of the valid data. This is inacurate because each row is different 
         
     Raises
     -------------
@@ -42,6 +44,8 @@ def MADSEFD(onArray, offArray):
     onFiltered = []
     offFiltered = []
     
+    uniqueIdList = []
+    
     for iK in range(Larray):
         onVectSel = onArray[iK][OnOff.misc.constants.dataRange]
         offVectSel = offArray[iK][OnOff.misc.constants.dataRange]
@@ -55,8 +59,10 @@ def MADSEFD(onArray, offArray):
         
         onFiltered.append(onVectSel[indexList])
         offFiltered.append(offVectSel[indexList])
+        
+        uniqueIdList = list(set(uniqueIdList.append(indexList)))
     
-    return onFiltered,offFiltered
+    return onFiltered,offFiltered,OnOff.misc.constants.dataRange[uniqueIdList]
 
 def MADSEFDAll(onArray, offArray):
     """
@@ -68,6 +74,8 @@ def MADSEFDAll(onArray, offArray):
         Data array for ON measurement
     offArray : array_like
         Data array for OFF measurement
+    array_like
+        index list of the valid data.
         
     Returns
     -------------
@@ -75,6 +83,8 @@ def MADSEFDAll(onArray, offArray):
         filtered data for ON measurement, number of columns in each row may vary
     array_like
         filtered data for OFF measurement, number of columns in each row may vary
+    array_like
+        index list of the valid data.
         
     Raises
     -------------
@@ -109,4 +119,6 @@ def MADSEFDAll(onArray, offArray):
         onFiltered.append(onVectSel[indexList])
         offFiltered.append(offVectSel[indexList])
     
-    return onFiltered,offFiltered
+    #pdb.set_trace()
+    
+    return onFiltered,offFiltered,OnOff.misc.constants.dataRange[indexList]

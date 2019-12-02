@@ -73,10 +73,12 @@ def calcSEFD(onArray, offArray, srcFlux):
         On power in time
     array_like 
         On power in time
+    array_like
+        indexes used for calculation
            
     """  
         
-    onArrayF,offArrayF = OnOff.filterArray.filterFun(onArray,offArray)
+    onArrayF,offArrayF,indexes = OnOff.filterArray.filterFun(onArray,offArray)
     
     Larray = len(onArrayF)
     
@@ -92,7 +94,7 @@ def calcSEFD(onArray, offArray, srcFlux):
     
     #pdb.set_trace()
     
-    return SEFD,SEFD_var,powOn,powOff
+    return SEFD,SEFD_var,powOn,powOff,indexes
     
 
 def calcAntennaTemp(yFactor, TSrc, localTCold = constants.TCold):

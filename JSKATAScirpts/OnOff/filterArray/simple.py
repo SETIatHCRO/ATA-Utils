@@ -42,4 +42,4 @@ def simple(onArray, offArray):
     onFiltered = numpy.array(onArray)[:,OnOff.misc.constants.dataRange]
     offFiltered = numpy.array(offArray)[:,OnOff.misc.constants.dataRange]
     
-    return onFiltered,offFiltered
+    return onFiltered,offFiltered,OnOff.misc.constants.dataRange

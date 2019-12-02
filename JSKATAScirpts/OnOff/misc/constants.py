@@ -1,5 +1,8 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
+
+import numpy
+
 """
 Created on Thu Jul 18 2019
 
@@ -16,4 +19,4 @@ kBoltzman = 1.38064852;
 TCold = 3
 """the valid data range for the array"""
 #dataRange = range(768,1700)
-dataRange = range(700,1800)
+dataRange = numpy.array(range(700,1800))
