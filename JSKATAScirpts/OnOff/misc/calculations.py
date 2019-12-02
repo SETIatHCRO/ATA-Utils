@@ -76,7 +76,7 @@ def calcSEFD(onArray, offArray, srcFlux):
            
     """  
         
-    onArrayF,offArrayF = OnOff.filterArray.MADSEFDAll(onArray,offArray)
+    onArrayF,offArrayF = OnOff.filterArray.filterFun(onArray,offArray)
     
     Larray = len(onArrayF)
     
