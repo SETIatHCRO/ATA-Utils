@@ -105,7 +105,7 @@ def MADSEFDAll(onArray, offArray):
     xMAD = numpy.median(numpy.abs(tmpVect - xMed))
 
     # extracting indexes of values in tmpVect being median +/- 3*MAD
-    indexList = numpy.asarray( (tmpVect < (xMed + 3*xMAD)) * (tmpVect > (xMed - 3*xMAD)) ).nonzero()[0]
+    indexList = numpy.asarray( (tmpVect < (xMed + 1.48*xMAD)) * (tmpVect > (xMed - 1.48*xMAD)) ).nonzero()[0]
     
     #pdb.set_trace()
     
