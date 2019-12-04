@@ -80,6 +80,7 @@ HTML_DIR = "www"
 #sources = ["moon","casa"]
 sources = ["moon"]
 antennas =  ['1c', '2h','2a','2b','2e','2j','4j']
+#antennas =  ['1c']
 #antennas = ['1a','1b','1c','1d','1f','1g','2a','2b','2c','2d','2e','2f','2h','2j','2k','2l','3e','3j','3l','4g','4j','4k','4l','5b','5e','5g','5h']
 tunings = ["1400.00",
         "2500.00",
@@ -106,28 +107,33 @@ def make_html(source, antennas, pngs):
     filename = "%s%s.html" % (HTML_FILENAME, source)
     file = open(filename, "w")
 
-    file.write('<html>\n<head>\n\t<head><link rel="stylesheet" type="text/css" href="css_sefd.css">\n</head>\n<body>\n')
+    file.write('<html>\n<head>\n\t<link rel="stylesheet" type="text/css" href="css_sefd.css">\n')
+    file.write('<title>%s Latest On/Off SEFDs</title>\n' % source)
+    file.write('</head>\n<body>\n')
 
     #creating the navbar
-    file.write('<div class="navbar">\n<div class="dropdown">')
+    file.write('<div class="navbar">\n')
     
     #filling the navigation tab
     for ant in antennas:
         if ant not in pngs:
             continue
-        
+
+        file.write('<div class="dropdown">')
         s = '<button class="dropbtn">%s' % ant
         file.write(s)
         file.write('\t<i class="fa fa-caret-down"></i>\n</button>\n')
 
         #Now adding the frequencies
-        file.write('<div class="dropdown-content">')
-        #for freq in
-        #   link_name = '%s_%s' % ant freq
-        #   s =  '<a href="#%s">%s</a>' % link_name freq
-        #   file.write(s)
-        file.write('</div>')
-    file.write('</div>\n</div>')
+        file.write('<div class="dropdown-content">\n')
+        fkeys = pngs[ant].keys()
+        fkeys.sort()
+        for freq in fkeys:
+           link_name = '%s_%d' % (ant, int(float(freq)))
+           s =  '<a href="#%s">%d</a>\n' % (link_name, int(float(freq)))
+           file.write(s)
+        file.write('</div>\n</div>\n')
+    file.write('</div>\n')
 
     file.write("<h1>%s Latest On/Off SEFDs</h1>\n" % source)
     t = datetime.datetime.today().strftime('%Y-%m-%d&nbsp;%H:%M:%S')
@@ -138,20 +144,29 @@ def make_html(source, antennas, pngs):
     for ant in antennas:
         if ant not in pngs:
             continue
+        file.write('<p id=%s>\n' % ant)
         s = "<h2>%s</h2>\n" % ant
         file.write(s)
 
-        i = 0
-        for img in pngs[ant]:
-
-            s = "<img src=\"http://%s/sefd/%s?x=%d\" width=\"400\">\n" % (SEFD_SERVER, img, rand)
+        fkeys = pngs[ant].keys()
+        fkeys.sort()
+        for freq in fkeys:
+            id_str = '%s_%d' % (ant, int(float(freq)))
+            s = '<p id=%s>' % id_str
             file.write(s)
-            i += 1
-            if i == 2:
-                file.write("<BR>\n")
-                i = 0
+            i = 0
+            for img in pngs[ant][freq]:
 
-        file.write("<BR><BR>");
+                s = "<img src=\"http://%s/sefd/%s?x=%d\" width=\"400\">\n" % (SEFD_SERVER, img, rand)
+                file.write(s)
+                i += 1
+                if i == 2:
+                    file.write("<BR>\n")
+                    i = 0
+
+            file.write("<BR><BR>");
+            file.write('</p>\n')
+        file.write('</p>\n')
 
     file.write("</body>\n</HTML>\n")
 
@@ -246,7 +261,7 @@ def make_spectrogram_graph(antenna, tuning, source, number, onArray, offArray, i
 
 def make_graph(antenna, pol, tuning, source, power, markers, avg_sefd):
     plt.figure()
-    plt.plot(power)
+    plt.plot(np.transpose(power))
     ptitle = "Antenna: "+ antenna + pol + " Frequency: "+ tuning+ " MHz SEFD: " + str(int(avg_sefd)) + " Jy"
     plt.title(ptitle)
     id_text = "id:"
@@ -307,10 +322,10 @@ for source in sources:
         jsonp[source][antenna]['x'] = []
         jsonp[source][antenna]['y'] = []
 
-        pngs[antenna] = []
+        pngs[antenna] = {}
 
         for tuning in tunings:	
-
+            pngs[antenna][tuning] = []
             xPolSpectrogramNames=[]
             yPolSpectrogramNames=[]
 
@@ -329,8 +344,11 @@ for source in sources:
             # Init the power x/y data array. make the first value be
             # 0.0 so all the graphs have basically the same scale
             # when plotted.
-            power_x = [0]
-            power_y = [0]
+            power_x = np.zeros(1)
+            power_y = np.zeros(1)
+            
+            power_x_s = np.zeros(1)
+            power_y_s = np.zeros(1)
 
             sefd_mean_x = []
             sefd_mean_y = []
@@ -393,9 +411,13 @@ for source in sources:
                     obs_sefd_mean_y = 0
 
                 # For graphing, append the power data
-                power_x.extend(powerX)
-                power_y.extend(powerY)
-
+                #power_x.extend(powerX)
+                #power_y.extend(powerY)
+                power_x = np.hstack((power_x,powerX))
+                power_y = np.hstack((power_y,powerY))
+                if compare_RFI:
+                    power_x_s = np.hstack((power_x_s,powerX_s))
+                    power_y_s = np.hstack((power_y_s,powerY_s))
 
                 # If the SEFD is > 0, thus no error calulating the 
                 # SEFD, add it to the sefd_mean_x/y array.
@@ -421,21 +443,36 @@ for source in sources:
                 sefd_mean_y.append(0.0)
             
             # Make the x and y pol graphs.
-            fname_x = make_graph(antenna, 'x', tuning, 
-                    source, [int(x) for x in power_x], 
+            #fname_x = make_graph(antenna, 'x', tuning, 
+            #        source, [int(x) for x in power_x], 
+            #        markers_x, int(np.mean(sefd_mean_x)))
+            #fname_y = make_graph(antenna, 'y', tuning, 
+            #        source, [int(x) for x in power_y], 
+            #        markers_y, int(np.mean(sefd_mean_y)))
+            if compare_RFI:
+                fname_x = make_graph(antenna, 'x', tuning, 
+                    source, [power_x,power_x_s], 
                     markers_x, int(np.mean(sefd_mean_x)))
-            fname_y = make_graph(antenna, 'y', tuning, 
-                    source, [int(x) for x in power_y], 
+                fname_y = make_graph(antenna, 'y', tuning, 
+                    source, [power_y,power_y_s], 
+                    markers_y, int(np.mean(sefd_mean_y)))
+
+            else:
+                fname_x = make_graph(antenna, 'x', tuning, 
+                    source, power_x, 
+                    markers_x, int(np.mean(sefd_mean_x)))
+                fname_y = make_graph(antenna, 'y', tuning, 
+                    source, power_y, 
                     markers_y, int(np.mean(sefd_mean_y)))
 
             # For making the HTML file add the filenames
             # to a dict.
-            pngs[antenna].append(fname_x)
-            pngs[antenna].append(fname_y)
+            pngs[antenna][tuning].append(fname_x)
+            pngs[antenna][tuning].append(fname_y)
             for x in xPolSpectrogramNames:
-                pngs[antenna].append(x)
+                pngs[antenna][tuning].append(x)
             for x in yPolSpectrogramNames:
-                pngs[antenna].append(x)
+                pngs[antenna][tuning].append(x)
 
 
     if create_html:

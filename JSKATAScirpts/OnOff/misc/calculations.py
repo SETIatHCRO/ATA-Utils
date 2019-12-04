@@ -89,6 +89,11 @@ def calcSEFD(onArray, offArray, srcFlux):
     for iK in xrange(Larray):
         SEFDs[iK],powOn[iK],powOff[iK] = calcOnOffParamVec(onArrayF[iK],offArrayF[iK])
     
+    #normalization towars 0?
+    mean_off = numpy.mean(powOff)
+    powOn = powOn - mean_off
+    powOff = powOff - mean_off
+
     SEFD = srcFlux * numpy.median(SEFDs)
     SEFD_var = srcFlux * numpy.std(SEFDs)
     
