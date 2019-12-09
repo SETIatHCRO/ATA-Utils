@@ -65,4 +65,27 @@ plt.legend(['X','Y'])
 plt.title(obsname)
 plt.xlabel('time [s]')
 plt.ylabel('power [arbitrary]')
+#plt.show()
 plt.savefig(filepownameX)
+
+
+#plt.rcParams["figure.figsize"] = (20,3)
+import numpy
+data = numpy.array(Dict0On['auto0']);
+data[:,0]= 0
+
+plt.clf()
+plt.imshow(data,aspect='auto', interpolation='none')
+filepownameX = outputDir + 'waterfall1orig_'+obsname+'.png'
+plt.savefig(filepownameX)
+
+rtozero = numpy.arange(0,data.shape[1]-1)
+rr = numpy.delete(rtozero,idx[0])
+data[:,rr] = 0
+
+plt.clf()
+plt.imshow(data,aspect='auto', interpolation='none')
+filepownameX = outputDir + 'waterfall1_'+obsname+'.png'
+plt.savefig(filepownameX)
+
+
