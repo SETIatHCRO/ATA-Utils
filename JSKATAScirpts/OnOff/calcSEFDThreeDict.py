@@ -53,9 +53,9 @@ def calcSEFDThreeDict(Dict0On, Dict0Off,Dict1On, Dict1Off,Dict2On, Dict2Off):
     array_like
         power for Y meas
     list
-        list of array_like (3) for X pol indexes used
+        list of numpy.array (3) for X pol mask used
     list
-        list of array_like (3) for Y pol indexes used
+        list of numpy.array (3) for Y pol mask used
         
     Raises
     -------------
@@ -130,8 +130,8 @@ def calcSEFDThreeDict(Dict0On, Dict0Off,Dict1On, Dict1Off,Dict2On, Dict2Off):
 
     timeStamps = numpy.concatenate( (Dict0On['auto0_timestamp'],Dict0Off['auto0_timestamp'],Dict1On['auto0_timestamp'],Dict1Off['auto0_timestamp'],Dict2On['auto0_timestamp'],Dict2Off['auto0_timestamp']) )
  
-    Xindexes = [indexes0X,indexes1X,indexes2X]
-    Yindexes = [indexes0Y,indexes1Y,indexes2Y]
+    Xmask = [indexes0X,indexes1X,indexes2X]
+    Ymask = [indexes0Y,indexes1Y,indexes2Y]
     #pdb.set_trace()
     
-    return SEFD_X,SEFD_var_X,SEFD_Y,SEFD_var_Y,timeStamps,powerX,powerY,Xindexes,Yindexes
+    return SEFD_X,SEFD_var_X,SEFD_Y,SEFD_var_Y,timeStamps,powerX,powerY,Xmask,Ymask

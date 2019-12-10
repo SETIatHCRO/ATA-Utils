@@ -13,7 +13,7 @@ import OnOff.filterArray
 import pdb
 import matplotlib.pyplot as plt
 
-def calcOnOffParamVec(onVect, offVect):
+def calcOnOffParamVec(onVectIn, offVectIn, maskedVect):
     """
     Calculation of vector of SFED values
         
@@ -35,15 +35,25 @@ def calcOnOffParamVec(onVect, offVect):
         
     """   
     
-    assert len(onVect) == len(offVect), "both vectors should have the same size"
+    assert len(onVectIn) == len(offVectIn), "both vectors should have the same size"
+    assert len(onVectIn) == len(maskedVect), "mask vector should have the same size as the others"
+    
+    
+    onVect = onVectIn[maskedVect == 0]
+    offVect = offVectIn[maskedVect == 0]
+    
+    #pdb.set_trace()
     
     tmpVect = numpy.divide(offVect,(onVect - offVect))
-    
 
     onoffparam = numpy.median(tmpVect)
 
-    powOn = numpy.divide(numpy.sum(onVect),len(onVect))
-    powOff =  numpy.divide(numpy.sum(offVect),len(offVect))
+    #powOn = numpy.divide(numpy.sum(onVect),len(onVect))
+    #powOff =  numpy.divide(numpy.sum(offVect),len(offVect))
+    
+    powOn  =  numpy.divide(numpy.sqrt(numpy.sum(numpy.square(onVect))),len(onVect))
+    powOff = numpy.divide(numpy.sqrt(numpy.sum(numpy.square(offVect))),len(offVect))
+    
     #plt.plot(tmpVect[indexList])
     #plt.show()
     return onoffparam,powOn,powOff
@@ -75,17 +85,25 @@ def calcSEFD(onArray, offArray, srcFlux):
         indexes used for calculation
            
     """  
-        
-    onArrayF,offArrayF,indexes = OnOff.filterArray.filterFun(onArray,offArray)
     
-    Larray = len(onArrayF)
+    onArrayM = numpy.array(onArray)
+    offArrayM = numpy.array(offArray)
+    
+    maskedBinsArray = OnOff.filterArray.filterFun(onArrayM,offArrayM)
+    
+    #plt.imshow(maskedBinsArray,aspect='auto', interpolation='none')
+    #plt.show()
+    #numpy.sum(maskedBinsArray)
+    #pdb.set_trace()
+    
+    Larray = len(onArrayM)
     
     SEFDs = numpy.zeros(Larray,dtype=float)
     powOn = numpy.zeros(Larray,dtype=float)
     powOff = numpy.zeros(Larray,dtype=float)
     
     for iK in xrange(Larray):
-        SEFDs[iK],powOn[iK],powOff[iK] = calcOnOffParamVec(onArrayF[iK],offArrayF[iK])
+        SEFDs[iK],powOn[iK],powOff[iK] = calcOnOffParamVec(onArrayM[iK],offArrayM[iK],maskedBinsArray[iK])
         
     #normalization towars 0?
     mean_off = numpy.mean(powOff)
@@ -97,7 +115,7 @@ def calcSEFD(onArray, offArray, srcFlux):
     
     #pdb.set_trace()
     
-    return SEFD,SEFD_var,powOn,powOff,indexes
+    return SEFD,SEFD_var,powOn,powOff,maskedBinsArray
     
 
 def calcAntennaTemp(yFactor, TSrc, localTCold = constants.TCold):

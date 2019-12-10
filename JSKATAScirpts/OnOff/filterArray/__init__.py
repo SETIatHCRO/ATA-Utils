@@ -5,4 +5,5 @@
 from .dataFilter import filterFun
 from .dataFilter import setSimple
 from .dataFilter import setMADall
+from .dataFilter import setMAD
 from .dataFilter import getFilterType

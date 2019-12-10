@@ -11,25 +11,23 @@ import numpy
 
 import pdb
 
+MADMultiplier = 1.48
+
 def MADSEFD(onArray, offArray):
     """
     a MAD based data filter for On and Off data set
     
     Parameters
     -------------
-    onArray : array_like
+    onArray : numpy.array
         Data array for ON measurement
-    offArray : array_like
+    offArray : numpy.array
         Data array for OFF measurement
         
     Returns
     -------------
-    array_like
-        filtered data for ON measurement, number of columns in each row may vary
-    array_like
-        filtered data for OFF measurement, number of columns in each row may vary
-    array_like
-        index list of the valid data. This is inacurate because each row is different 
+    numpy.array
+        mask of invalid frequency bins (contaminated by RFI)
         
     Raises
     -------------
@@ -41,28 +39,30 @@ def MADSEFD(onArray, offArray):
     
     assert Larray == Larray2, "both arrays should have the same size"
     
-    onFiltered = []
-    offFiltered = []
+    #onFiltered = []
+    #offFiltered = []
     
-    uniqueIdList = []
+    dataMask = numpy.ones(onArray.shape)
     
     for iK in range(Larray):
-        onVectSel = onArray[iK][OnOff.misc.constants.dataRange]
-        offVectSel = offArray[iK][OnOff.misc.constants.dataRange]
+        onVectSel = onArray[iK,OnOff.misc.constants.dataRange]
+        offVectSel = offArray[iK,OnOff.misc.constants.dataRange]
         tmpVect = numpy.divide(offVectSel,(onVectSel - offVectSel),dtype='float')
     
         xMed = numpy.median(tmpVect);
         xMAD = numpy.median(numpy.abs(tmpVect - xMed))
     
         # extracting indexes of values in tmpVect being median +/- 3*MAD
-        indexList = numpy.asarray( (tmpVect < (xMed + 1.48*xMAD)) * (tmpVect > (xMed - 1.48*xMAD)) ).nonzero()[0]
+        indexList = numpy.asarray( (tmpVect < (xMed + MADMultiplier*xMAD)) * (tmpVect > (xMed - MADMultiplier*xMAD)) ).nonzero()[0]
         
-        onFiltered.append(onVectSel[indexList])
-        offFiltered.append(offVectSel[indexList])
+        #onFiltered.append(onVectSel[indexList])
+        #offFiltered.append(offVectSel[indexList])
         
-        uniqueIdList = list(set(uniqueIdList.append(indexList)))
+        #uniqueIdList = list(set(uniqueIdList.append(indexList)))
+        dataMask[iK,OnOff.misc.constants.dataRange[indexList]] = 0
     
-    return onFiltered,offFiltered,OnOff.misc.constants.dataRange[uniqueIdList]
+    #return onFiltered,offFiltered,OnOff.misc.constants.dataRange[uniqueIdList]
+    return dataMask
 
 def MADSEFDAll(onArray, offArray):
     """
@@ -70,21 +70,15 @@ def MADSEFDAll(onArray, offArray):
     
     Parameters
     -------------
-    onArray : array_like
+    onArray : numpy.array
         Data array for ON measurement
-    offArray : array_like
+    offArray : numpy.array
         Data array for OFF measurement
-    array_like
-        index list of the valid data.
         
     Returns
     -------------
-    array_like
-        filtered data for ON measurement, number of columns in each row may vary
-    array_like
-        filtered data for OFF measurement, number of columns in each row may vary
-    array_like
-        index list of the valid data.
+    numpy.array
+        mask of invalid frequency bins (contaminated by RFI)
         
     Raises
     -------------
@@ -96,8 +90,10 @@ def MADSEFDAll(onArray, offArray):
     
     assert Larray == Larray2, "both arrays should have the same size"
     
-    onSum = numpy.sum(numpy.array(onArray)[:,OnOff.misc.constants.dataRange],axis=0)
-    offSum = numpy.sum(numpy.array(offArray)[:,OnOff.misc.constants.dataRange],axis=0)
+    dataMask = numpy.ones(onArray.shape)
+    
+    onSum = numpy.sum(onArray[:,OnOff.misc.constants.dataRange],axis=0)
+    offSum = numpy.sum(offArray[:,OnOff.misc.constants.dataRange],axis=0)
     
     tmpVect = numpy.divide(offSum,(onSum - offSum),dtype='float')
     
@@ -105,20 +101,23 @@ def MADSEFDAll(onArray, offArray):
     xMAD = numpy.median(numpy.abs(tmpVect - xMed))
 
     # extracting indexes of values in tmpVect being median +/- 3*MAD
-    indexList = numpy.asarray( (tmpVect < (xMed + 1.48*xMAD)) * (tmpVect > (xMed - 1.48*xMAD)) ).nonzero()[0]
+    indexList = numpy.asarray( (tmpVect < (xMed + MADMultiplier*xMAD)) * (tmpVect > (xMed - MADMultiplier*xMAD)) ).nonzero()[0]
+    
+    dataMask[:,OnOff.misc.constants.dataRange[indexList]] = 0
     
     #pdb.set_trace()
     
-    onFiltered = []
-    offFiltered = []
+    #onFiltered = []
+    #offFiltered = []
     
-    for iK in range(Larray):
-        onVectSel = onArray[iK][OnOff.misc.constants.dataRange]
-        offVectSel = offArray[iK][OnOff.misc.constants.dataRange]
+    #for iK in range(Larray):
+    #    onVectSel = onArray[iK][OnOff.misc.constants.dataRange]
+    #    offVectSel = offArray[iK][OnOff.misc.constants.dataRange]
         
-        onFiltered.append(onVectSel[indexList])
-        offFiltered.append(offVectSel[indexList])
+    #    onFiltered.append(onVectSel[indexList])
+    #    offFiltered.append(offVectSel[indexList])
     
     #pdb.set_trace()
     
-    return onFiltered,offFiltered,OnOff.misc.constants.dataRange[indexList]
+    #return onFiltered,offFiltered,OnOff.misc.constants.dataRange[indexList]
+    return dataMask

@@ -17,17 +17,15 @@ def simple(onArray, offArray):
     
     Parameters
     -------------
-    onArray : array_like
+    onArray : numpy.array
         Data array for ON measurement
-    offArray : array_like
+    offArray : numpy.array
         Data array for OFF measurement
         
     Returns
     -------------
-    array_like
-        filtered data for ON measurement, number of columns in each row may vary
-    array_like
-        filtered data for OFF measurement, number of columns in each row may vary
+    numpy.array
+        mask of invalid frequency bins (contaminated by RFI)
         
     Raises
     -------------
@@ -39,7 +37,13 @@ def simple(onArray, offArray):
     
     assert Larray == Larray2, "both arrays should have the same size"
     
-    onFiltered = numpy.array(onArray)[:,OnOff.misc.constants.dataRange]
-    offFiltered = numpy.array(offArray)[:,OnOff.misc.constants.dataRange]
+    #onFiltered = numpy.array(onArray)[:,OnOff.misc.constants.dataRange]
+    #offFiltered = numpy.array(offArray)[:,OnOff.misc.constants.dataRange]
     
-    return onFiltered,offFiltered,OnOff.misc.constants.dataRange
+    #return onFiltered,offFiltered,OnOff.misc.constants.dataRange
+    
+    dataMask = numpy.ones(onArray.shape)
+    dataMask[:,OnOff.misc.constants.dataRange] = 0
+    
+    return dataMask
+    

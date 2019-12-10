@@ -25,6 +25,13 @@ def setMADall():
     """
     global filterType
     filterType = 'MADall'
+
+def setMAD():
+    """
+    Sets filter type to MADall filter
+    """
+    global filterType
+    filterType = 'MAD'
     
 def getFilterType():
     """
@@ -40,19 +47,15 @@ def filterFun(onArray, offArray):
     
     Parameters
     -------------
-    onArray : array_like
+    onArray : numpy.array
         Data array for ON measurement
-    offArray : array_like
+    offArray : numpy.array
         Data array for OFF measurement
         
     Returns
     -------------
-    array_like
-        filtered data for ON measurement, number of columns in each row may vary
-    array_like
-        filtered data for OFF measurement, number of columns in each row may vary
-    array_like
-        index list of the valid data.
+    numpy.array
+        mask of invalid frequency bins (contaminated by RFI)
         
     Raises
     -------------
@@ -69,6 +72,6 @@ def filterFun(onArray, offArray):
     
     assert func is not None, "unknown filter call"
     
-    onFiltered,offFiltered,indexList = func(onArray, offArray)
+    maksedArray = func(onArray, offArray)
     
-    return onFiltered,offFiltered,indexList
+    return maksedArray

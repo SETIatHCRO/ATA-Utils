@@ -37,7 +37,8 @@ Dict1Off = pickle.load( open( offFileName1, "rb" ) )
 Dict2On = pickle.load( open( onFileName2, "rb" )  )
 Dict2Off = pickle.load( open( offFileName2, "rb" ) )
 
-OnOff.filterArray.setMADall()
+#OnOff.filterArray.setMADall()
+OnOff.filterArray.setMAD()
 #OnOff.filterArray.setSimple()
 SEFD_X,SEFD_var_X,SEFD_Y,SEFD_var_Y,timeStamps,powerX,powerY,idx,idy = OnOff.calcSEFDThreeDict(Dict0On, Dict0Off,Dict1On, Dict1Off,Dict2On, Dict2Off)
 
@@ -49,6 +50,8 @@ outDict['SEFD_var_Y']=SEFD_var_Y
 outDict['timeStamps']=timeStamps
 outDict['powerX']=powerX
 outDict['powerY']=powerY
+
+SEFD_X
 
 obsname = offKey=re.sub('_on_000_','_',Dict0On['comment'])
 
@@ -70,22 +73,22 @@ plt.savefig(filepownameX)
 
 
 #plt.rcParams["figure.figsize"] = (20,3)
-import numpy
-data = numpy.array(Dict0On['auto0']);
-data[:,0]= 0
-
-plt.clf()
-plt.imshow(data,aspect='auto', interpolation='none')
-filepownameX = outputDir + 'waterfall1orig_'+obsname+'.png'
-plt.savefig(filepownameX)
-
-rtozero = numpy.arange(0,data.shape[1]-1)
-rr = numpy.delete(rtozero,idx[0])
-data[:,rr] = 0
-
-plt.clf()
-plt.imshow(data,aspect='auto', interpolation='none')
-filepownameX = outputDir + 'waterfall1_'+obsname+'.png'
-plt.savefig(filepownameX)
+#import numpy
+#data = numpy.array(Dict0On['auto0']);
+#data[:,0]= 0
+#
+#plt.clf()
+#plt.imshow(data,aspect='auto', interpolation='none')
+#filepownameX = outputDir + 'waterfall1orig_'+obsname+'.png'
+#plt.savefig(filepownameX)
+#
+#rtozero = numpy.arange(0,data.shape[1]-1)
+#rr = numpy.delete(rtozero,idx[0])
+#data[:,rr] = 0
+#
+#plt.clf()
+#plt.imshow(data,aspect='auto', interpolation='none')
+#filepownameX = outputDir + 'waterfall1_'+obsname+'.png'
+#plt.savefig(filepownameX)
 
 
