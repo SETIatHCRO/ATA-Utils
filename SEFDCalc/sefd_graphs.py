@@ -79,18 +79,20 @@ HTML_DIR = "www"
 
 #sources = ["moon","casa"]
 sources = ["moon"]
-antennas =  ['1c', '2h','2a','2b','2e','2j','4j']
+#antennas =  ['1c', '2h','2a','2b','2e','2j','4j']
+antennas = ['2a', '2b', '2j',  '3c', '1c']
 #antennas =  ['1c']
 #antennas = ['1a','1b','1c','1d','1f','1g','2a','2b','2c','2d','2e','2f','2h','2j','2k','2l','3e','3j','3l','4g','4j','4k','4l','5b','5e','5g','5h']
-tunings = ["1400.00",
-        "2500.00",
-        "3500.00",
-        "4500.00",
-        "5500.00",                      
-        "6500.00",
-        "7500.00",
-        "8500.00",
-        "9500.00"]
+tunings = ["1000.00", "1400.00", "2500.00", "3000.00", "3500.00","4500.00","5500.00","6500.00"]
+#tunings = ["1400.00",
+#        "2500.00",
+#        "3500.00",
+#        "4500.00",
+#        "5500.00",                      
+#        "6500.00",
+#        "7500.00",
+#        "8500.00",
+#       "9500.00"]
 
 obs_id = -1
 last_num_groups = 1 
@@ -189,11 +191,12 @@ def redo_spectrogram_data(data,plotStart,plotStop,idx_filtered):
     dataArray1 = np.array(data);
     dataArray = np.array(data);
     data_s = dataArray1[:,plotStart:plotStop];
-    data_f_tmp = dataArray;
-    rtozero = np.arange(0,data_f_tmp.shape[1]-1)
-    rr = np.delete(rtozero,idx_filtered)
-    data_f_tmp[:,rr] = 0
-    data_f = data_f_tmp[:,plotStart:plotStop];
+    #data_f_tmp = dataArray;
+    #rtozero = np.arange(0,data_f_tmp.shape[1]-1)
+    #rr = np.delete(rtozero,idx_filtered)
+    #data_f_tmp[:,rr] = 0
+    dataArray[idx_filtered <> 0] = 0
+    data_f = dataArray[:,plotStart:plotStop];
     
     return data_s,data_f
     
@@ -248,8 +251,8 @@ def make_single_spectrogram_graph(antenna, pol, tuning, source, number,ptype, pl
 def make_spectrogram_graph(antenna, tuning, source, number, onArray, offArray, idx_simple, idx_filtered):
     #TODO: check if frange are the same in both!
     frange = onArray['frange']
-    plotStart = idx_simple[0]
-    plotStop = idx_simple[-1]
+    plotStart = OnOff.misc.constants.dataRange[0]
+    plotStop = OnOff.misc.constants.dataRange[-1]
 
     fname1,fname2=make_single_spectrogram_graph(antenna, 'x', tuning, source, number,'ON', plotStart, plotStop, idx_filtered, frange, onArray['auto0'])
     fname3,fname4=make_single_spectrogram_graph(antenna, 'x', tuning, source, number,'OFF', plotStart, plotStop, idx_filtered, frange, offArray['auto0'])
@@ -373,6 +376,7 @@ for source in sources:
 
                 # Calculate the SEFD
                 OnOff.filterArray.setMADall()
+                #OnOff.filterArray.setMAD()
                 SEFD_X,SEFD_var_X,SEFD_Y,SEFD_var_Y,timeStamps,powerX,powerY,idx_plot,idy_plot = OnOff.calcSEFDThreeDict(on_0_dict, off_0_dict, on_1_dict, off_1_dict, on_2_dict, off_2_dict)
                 if compare_RFI:
                     OnOff.filterArray.setSimple()
