@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from optparse import OptionParser
 import sys
 from mysql.connector import Error  
-import ATASQL
+import ATA-Utils-priv.ATASQL as atasql
 
 satval = 0.88
 polyOrd = 5 #up to 5
@@ -205,7 +205,7 @@ def genDatabaseQuery(pb,data,polys,rest,isok):
         
         pdb.set_trace()
         
-        db = ATASQL.connectGoogleRW();
+        db = atasql.connectDefaultRW();
         cx = db.cursor()
         
         query = ("INSERT INTO pbmeas ( " 

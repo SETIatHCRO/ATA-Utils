@@ -30,3 +30,7 @@ Hashpipe based modules to read beam data from the beamformer and write to disk.
 
 Python script to control generator used as a LO
 
+## PamMeas
+
+Script to calculate a polynomial for Pax Box Measurements
+
