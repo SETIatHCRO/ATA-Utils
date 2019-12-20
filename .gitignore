@@ -5,3 +5,5 @@ FeedSensors/test.txt
 *.png
 *.pkl
 PamMeas/meas/*.txt
+FeedSensors_backup
+RFSwitchUtils_backup
