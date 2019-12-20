@@ -7,3 +7,5 @@ FeedSensors/test.txt
 PamMeas/meas/*.txt
 FeedSensors_backup
 RFSwitchUtils_backup
+RFSwitchUtils/atten
+RFSwitchUtils/rfswitch
