@@ -91,8 +91,11 @@ def calcSEFD(onArray, offArray, srcFlux):
     
     maskedBinsArray = OnOff.filterArray.filterFun(onArrayM,offArrayM)
     
-    #plt.imshow(maskedBinsArray,aspect='auto', interpolation='none')
-    #plt.show()
+    plt.imshow(offArrayM[:,OnOff.misc.constants.dataRange],aspect='auto', interpolation='none')
+    plt.show()
+    plt.clf()
+    plt.imshow(maskedBinsArray[:,OnOff.misc.constants.dataRange],aspect='auto', interpolation='none')
+    plt.show()
     #numpy.sum(maskedBinsArray)
     #pdb.set_trace()
     

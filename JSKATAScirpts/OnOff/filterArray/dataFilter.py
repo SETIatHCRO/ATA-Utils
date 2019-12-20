@@ -9,8 +9,13 @@ Created on Thu Dec 3 2019
 import simple
 import MADSEFD
 
-filterType = 'MADall'
 
+filterType = 'MADall'
+doUseCFAR = True
+
+def useCFAR(val):
+    global doUseCFAR
+    doUseCFAR = val
 
 def setSimple():
     """
