@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from optparse import OptionParser
 import sys
 from mysql.connector import Error  
-import ATA-Utils-priv.ATASQL as atasql
+import ATASQL as atasql
 
 satval = 0.88
 polyOrd = 5 #up to 5
@@ -203,8 +203,6 @@ def genDatabaseQuery(pb,data,polys,rest,isok):
         dict4['vallow'] = rest[keyYNoise][0]
         dict4['valhigh'] = rest[keyYNoise][1]
         
-        pdb.set_trace()
-        
         db = atasql.connectDefaultRW();
         cx = db.cursor()
         
@@ -217,15 +215,15 @@ def genDatabaseQuery(pb,data,polys,rest,isok):
                 " det8, det9, det10, det11, det12, det13, det14, "
                 " det15, det16, det17, det18, det19, det20, "
                 " lowdet, highdet, p0, p1, p2, p3, p4, p5"
-                ") VALUES %(pbstr)s, %(pol)s, %(type)s, %(ok)d, "
-                " %(m0)f, %(m1)f, %(m2)f, %(m3)f, %(m4)f, %(m5)f, %(m6)f, %(m7)f,"
-                " %(m8)f, %(m9)f, %(m10)f, %(m11)f, %(m12)f, %(m13)f, %(m14)f, "
-                " %(m15)f, %(m16)f, %(m17)f, %(m18)f, %(m19)f, %(m20)f, "
-                " %(d0)f, %(d1)f, %(d2)f, %(d3)f, %(d4)f, %(d5)f, %(d6)f, %(d7)f,"
-                " %(d8)f, %(d9)f, %(d10)f, %(d11)f, %(d12)f, %(d13)f, %(d14)f, "
-                " %(d15)f, %(d16)f, %(d17)f, %(d18)f, %(d19)f, %(d20)f, "
-                " %(vallow)f, %(valhigh)f, "
-                " %(p0)f, %(p1)f, %(p2)f, %(p3)f, %(p4)f, %(p5)f, "
+                ") VALUES ( %(pbstr)s, %(pol)s, %(type)s, %(ok)s, "
+                " %(m0)s, %(m1)s, %(m2)s, %(m3)s, %(m4)s, %(m5)s, %(m6)s, %(m7)s,"
+                " %(m8)s, %(m9)s, %(m10)s, %(m11)s, %(m12)s, %(m13)s, %(m14)s, "
+                " %(m15)s, %(m16)s, %(m17)s, %(m18)s, %(m19)s, %(m20)s, "
+                " %(d0)s, %(d1)s, %(d2)s, %(d3)s, %(d4)s, %(d5)s, %(d6)s, %(d7)s,"
+                " %(d8)s, %(d9)s, %(d10)s, %(d11)s, %(d12)s, %(d13)s, %(d14)s, "
+                " %(d15)s, %(d16)s, %(d17)s, %(d18)s, %(d19)s, %(d20)s, "
+                " %(vallow)s, %(valhigh)s, "
+                " %(p0)s, %(p1)s, %(p2)s, %(p3)s, %(p4)s, %(p5)s ); "
                 )
         cx.execute(query,dict1)
         db.commit()
@@ -239,6 +237,8 @@ def genDatabaseQuery(pb,data,polys,rest,isok):
         db.close()
     except Error as e:
         print("Error reading data from MySQL table", e)
+        print(cx._executed)
+        print(query)
 
     
 
