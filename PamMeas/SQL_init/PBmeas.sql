@@ -54,5 +54,5 @@ CREATE TABLE pbmeas (
 	p3 DOUBLE NOT NULL DEFAULT 0,
 	p4 DOUBLE NOT NULL DEFAULT 0,
 	p5 DOUBLE NOT NULL DEFAULT 0,
-       	CONSTRAINT pax_pol PRIMARY KEY (pax_box_sn,pol)
+       	CONSTRAINT pax_pol PRIMARY KEY (pax_box_sn,pol,type)
 );
