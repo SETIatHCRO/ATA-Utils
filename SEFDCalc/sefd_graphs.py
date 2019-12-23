@@ -21,8 +21,7 @@ from collections import OrderedDict
 import datetime
 import random
 
-sys.path.append('/home/sonata/ATA-Utils/JSKATAScirpts')
-import OnOff
+import OnOffCalc as OnOff
 
 """
 sefd_graphs.py
