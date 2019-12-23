@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # __init__.py
 #package used for estimating flux (in Jy) of given astronomical sources
