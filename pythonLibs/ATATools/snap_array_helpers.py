@@ -34,15 +34,15 @@ def string_to_array(string):
         return arr[0]
     return arr[0][0]
 
-def dict_keys_to_array(dic, do_sort):
-
-    if(do_sort == False):
-        return list(dic.keys())
-    else:
-        newList = [];
-        for key, value in sorted(dic.iteritems(), key=lambda (k,v): (v,k)):
-            newList.append(key)
-        return newList
+#def dict_keys_to_array(dic, do_sort):
+#
+#    if(do_sort == False):
+#        return list(dic.keys())
+#    else:
+#        newList = [];
+#        for key, value in sorted(dic.iteritems(), key=lambda (k,v): (v,k)):
+#            newList.append(key)
+#        return newList
 
 def flatten(arr):
 
@@ -70,21 +70,21 @@ def run_tests():
 
     #arr = "[0,0,0,1,1],[0,0,0,0,0],[0,1,1,0,0],[1,0,0,0]";
     #print string_to_array(arr)
-    print string_to_array("casa,vira,taua,moon")
+    #print string_to_array("casa,vira,taua,moon")
     #print flatten(string_to_array("casa,vira,taua,moon"))
-    print string_to_array("[2j,2d,4k,1d,2f,5h,3j,3e],[2a,2b,2e,3l,1f,5c,4l,4g]");
-    print "Flatten: %s" % flatten(string_to_array("[2j,2d,4k,1d,2f,5h,3j,3e],[2a,2b,2e,3l,1f,5c,4l,4g]"))
-    print string_to_numeric_array("[1000.0,2000,3000],[1000.0,2000,3000]")
-    print sum(string_to_numeric_array("[1000.0,2000,3000],[1000.0,2000,3000]"), [])
-    print "Flatten: %s" % flatten(string_to_numeric_array("[1000.0,2000,3000],[1000.0,2000,3000]"))
+    #print string_to_array("[2j,2d,4k,1d,2f,5h,3j,3e],[2a,2b,2e,3l,1f,5c,4l,4g]");
+    #print "Flatten: %s" % flatten(string_to_array("[2j,2d,4k,1d,2f,5h,3j,3e],[2a,2b,2e,3l,1f,5c,4l,4g]"))
+    #print string_to_numeric_array("[1000.0,2000,3000],[1000.0,2000,3000]")
+    #print sum(string_to_numeric_array("[1000.0,2000,3000],[1000.0,2000,3000]"), [])
+    #print "Flatten: %s" % flatten(string_to_numeric_array("[1000.0,2000,3000],[1000.0,2000,3000]"))
 
-    print string_to_numeric_array("1000.0,2000,3000")
-    print string_to_numeric_array("")
-    print string_to_numeric_array("[]")
-    print string_to_array("2j,2d,2f,4k,3e,3j,5h,1d")
+    #print string_to_numeric_array("1000.0,2000,3000")
+    #print string_to_numeric_array("")
+    #print string_to_numeric_array("[]")
+    #print string_to_array("2j,2d,2f,4k,3e,3j,5h,1d")
     testList =  ['2j', '2d', '2f', '4k', '3e', '3j', '5h', '1d']
-    print "Unflattened: %s" % testList
-    print "Flatten: %s" % flatten(string_to_array(str(testList).replace("'", "")))
+    #print "Unflattened: %s" % testList
+    #print "Flatten: %s" % flatten(string_to_array(str(testList).replace("'", "")))
 
 
     snaps = {
@@ -92,17 +92,17 @@ def run_tests():
             "snap1" : "2j,2d,4k,1d,2f,5h,3j,3e",
             #"snap2" : "1ax,1bx,1gx,1hx,2kx,2mx,3dx,4jx,1ay,1by,1gy,1hy,2ky,2my,3dy,4jy"
         }
-    snapList = dict_keys_to_array(snaps, True)
-    print(str(snapList))
-    snapList = dict_keys_to_array(snaps, False)
-    print(str(snapList))
+    #snapList = dict_keys_to_array(snaps, True)
+    #print(str(snapList))
+    #snapList = dict_keys_to_array(snaps, False)
+    #print(str(snapList))
 
 if __name__== "__main__":
 
     import sys
 
     def print_help():
-        print "Syntax: %s test" % (sys.argv[0],)
+        print ("Syntax: %s test" % (sys.argv[0],))
         sys.exit()
 
 
@@ -110,7 +110,7 @@ if __name__== "__main__":
         print_help()
 
     if(sys.argv[1] == "test"):
-        print "Running tests..."
+        print ("Running tests...")
         run_tests()
         sys.exit()
     else:
