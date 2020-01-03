@@ -16,11 +16,40 @@ import socket
 import ast
 import logging
 from threading import Thread
+import ata_remote
 import snap_array_helpers
-import snap_onoffs_contants
-from plumbum import local
+#import snap_onoffs_contants
+#from plumbum import local
 import time
 import datetime
+
+def set_pam_atten(ant, pol, val):
+    """
+    Set the attenuation of antenna `ant`, polarization `pol` to `val` dB
+    """
+    
+    assert pol in ['x','y'], "unknown polarization string"
+    
+    logger = logging.getLogger(__name__)
+    FORMAT = '%(asctime)s %(levelname)s %(name)s: %(message)s'
+    logging.basicConfig(format=FORMAT)
+    
+    logger.info("setting pam attenuator %s%s to %.1fdb" % (ant, pol, val))
+    stdout,stderr=ata_remote.callObs(["atasetpams", ant, "-%s"%pol, str(val)])
+    
+    logger.info(stdout.rstrip())
+
+def set_pam_attens_old(ant, valx, valy):
+    """
+    Set the attenuation of antenna `ant`, both pols, to valx and valy dB
+    """
+    logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
+    logger.info("setting pam attenuator %s to %.1f,%.1f db" % (ant, valx, valy))
+    proc = Popen(["ssh", "obs@tumulus", "atasetpams", ant, "%f"%valx, "%f"%valy], stdout=PIPE)
+    stdout, stderr = proc.communicate()
+    proc.wait()
+    # Log  returned result, but strip off the newline character
+    logger.info(stdout.rstrip())
 
 RF_SWITCH_HOST = "nsg-work1"
 ATTEN_HOST = "nsg-work1"
@@ -159,11 +188,11 @@ def set_atten(ant_list, db_list):
         logger.info("Set atten for ant %s to %s db result: SUCCESS" % (ant_list_stripped, db_list_stripped))
         return output
     else:
-        print "STDERR=%s" % (stderr)
+        print ("STDERR=%s" % (stderr))
         logger.error("Set attenuation 'sudo atten %s %s' failed! Trying again" % (db_list_stripped, ant_list_stripped))
         raise RuntimeError("ERROR: set_atten %s %s returned: %s" % (db_list_stripped, ant_list_stripped, stderr))
 
-def set_pam_atten(ant, pol, val):
+def set_pam_atten_old(ant, pol, val):
     """
     Set the attenuation of antenna `ant`, polarization `pol` to `val` dB
     """
@@ -178,7 +207,7 @@ def set_pam_atten(ant, pol, val):
     # Log  returned result, but strip off the newline character
     logger.info(stdout.rstrip())
 
-def set_pam_attens(ant, valx, valy):
+def set_pam_attens_old(ant, valx, valy):
     """
     Set the attenuation of antenna `ant`, both pols, to valx and valy dB
     """
@@ -217,7 +246,7 @@ def move_ant_group(ants, from_group, to_group):
     for ant in ants:
         if ant not in bfa:
             #print nonegroup
-            print ants
+            print(ants)
             logger.error("Failed to move antenna %s from %s to %s" % (ant, from_group, to_group))
             raise RuntimeError("Failed to move antenna %s from %s to %s" % (ant, from_group, to_group))
 
@@ -352,7 +381,8 @@ if __name__== "__main__":
     #logger.addHandler(sh)
 
     #print set_freq(2000.0, "2a,2b")
-    print set_atten("2jx,2jy", "10.0,10.0")
+    #print set_atten("2jx,2jy", "10.0,10.0")
     #print create_ephems("casa", 10.0, 5.0)
     #print point_ants("on", "1a,1b")
     #print point_ants("off", "1a,1b")
+    print('foo')
