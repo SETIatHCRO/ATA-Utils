@@ -7,9 +7,9 @@ Created on Thu Jul 22 2019
 @author: jkulpa
 """
 
-import OnOff.flux
-import OnOff.misc
-import OnOff.yFactor
+import OnOffCalc.flux
+import OnOffCalc.misc
+import OnOffCalc.yFactor
 import numpy
 
 import pdb
@@ -46,8 +46,8 @@ def calcSingleAnt(source, frequency, measdate, onArray, offArray):
 
     doDebug = 0
 
-    flx = OnOff.flux.sourceFlux(source,frequency,measdate)
-    TSrc = OnOff.misc.calcSourceTemp(flx)
+    flx = OnOffCalc.flux.sourceFlux(source,frequency,measdate)
+    TSrc = OnOffCalc.misc.calcSourceTemp(flx)
     
     Larray = len(onArray)
     Larray2 = len(offArray)
@@ -75,8 +75,8 @@ def calcSingleAnt(source, frequency, measdate, onArray, offArray):
             plt.show()
         
         #pdb.set_trace()
-        yFac = OnOff.yFactor.simple(cOn,cOff)
-        temps[iK] = OnOff.misc.calcAntennaTemp(yFac,TSrc)
+        yFac = OnOffCalc.yFactor.simple(cOn,cOff)
+        temps[iK] = OnOffCalc.misc.calcAntennaTemp(yFac,TSrc)
         
 
     avgTemp = numpy.mean(temps)

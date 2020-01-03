@@ -8,7 +8,7 @@ Created on Thu Jul 18 2019
 
 import constants
 import numpy
-import OnOff.filterArray
+import OnOffCalc.filterArray
 
 import pdb
 import matplotlib.pyplot as plt
@@ -89,12 +89,12 @@ def calcSEFD(onArray, offArray, srcFlux):
     onArrayM = numpy.array(onArray)
     offArrayM = numpy.array(offArray)
     
-    maskedBinsArray = OnOff.filterArray.filterFun(onArrayM,offArrayM)
+    maskedBinsArray = OnOffCalc.filterArray.filterFun(onArrayM,offArrayM)
     
-    plt.imshow(offArrayM[:,OnOff.misc.constants.dataRange],aspect='auto', interpolation='none')
+    plt.imshow(offArrayM[:,OnOffCalc.misc.constants.dataRange],aspect='auto', interpolation='none')
     plt.show()
     plt.clf()
-    plt.imshow(maskedBinsArray[:,OnOff.misc.constants.dataRange],aspect='auto', interpolation='none')
+    plt.imshow(maskedBinsArray[:,OnOffCalc.misc.constants.dataRange],aspect='auto', interpolation='none')
     plt.show()
     #numpy.sum(maskedBinsArray)
     #pdb.set_trace()

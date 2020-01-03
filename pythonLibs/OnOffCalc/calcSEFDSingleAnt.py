@@ -7,8 +7,8 @@ Created on Thu Jul 22 2019
 @author: jkulpa
 """
 
-import OnOff.flux
-import OnOff.misc
+import OnOffCalc.flux
+import OnOffCalc.misc
 import numpy
 
 import pdb
@@ -43,8 +43,8 @@ def calcSEFDSingleAnt(source, frequency, measdate, onArray, offArray):
         AssertionError     
     """    
 
-    flx = OnOff.flux.sourceFlux(source,frequency,measdate)
+    flx = OnOffCalc.flux.sourceFlux(source,frequency,measdate)
     
-    SEFD,SEFD_var = OnOff.misc.calcSEFD(onArray,offArray,flx)
+    SEFD,SEFD_var = OnOffCalc.misc.calcSEFD(onArray,offArray,flx)
     
     return SEFD,SEFD_var

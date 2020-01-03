@@ -7,8 +7,8 @@ Created on Thu Jul 31 2019
 @author: jkulpa
 """
 
-import OnOff.flux
-import OnOff.misc
+import OnOffCalc.flux
+import OnOffCalc.misc
 import numpy
 import datetime
 
@@ -110,20 +110,20 @@ def calcSEFDThreeDict(Dict0On, Dict0Off,Dict1On, Dict1Off,Dict2On, Dict2Off):
     assert Dict2Off['auto0_timestamp'] == Dict2Off['auto1_timestamp'], "timestamp error"
 
     #calculating flux based on the time. If needed, various timestamps may be used
-    flx = OnOff.flux.sourceFlux(source,freq,datetime_stamp)
+    flx = OnOffCalc.flux.sourceFlux(source,freq,datetime_stamp)
     
     SEFD_X = numpy.zeros(3,dtype='float')
     SEFD_var_X = numpy.zeros(3,dtype='float')
     SEFD_Y = numpy.zeros(3,dtype='float')
     SEFD_var_Y = numpy.zeros(3,dtype='float')
     
-    SEFD_X[0],SEFD_var_X[0],powOn0X,powOff0X,indexes0X = OnOff.misc.calcSEFD(Dict0On['auto0'],Dict0Off['auto0'],flx)
-    SEFD_X[1],SEFD_var_X[1],powOn1X,powOff1X,indexes1X = OnOff.misc.calcSEFD(Dict1On['auto0'],Dict1Off['auto0'],flx)
-    SEFD_X[2],SEFD_var_X[2],powOn2X,powOff2X,indexes2X = OnOff.misc.calcSEFD(Dict2On['auto0'],Dict2Off['auto0'],flx)
+    SEFD_X[0],SEFD_var_X[0],powOn0X,powOff0X,indexes0X = OnOffCalc.misc.calcSEFD(Dict0On['auto0'],Dict0Off['auto0'],flx)
+    SEFD_X[1],SEFD_var_X[1],powOn1X,powOff1X,indexes1X = OnOffCalc.misc.calcSEFD(Dict1On['auto0'],Dict1Off['auto0'],flx)
+    SEFD_X[2],SEFD_var_X[2],powOn2X,powOff2X,indexes2X = OnOffCalc.misc.calcSEFD(Dict2On['auto0'],Dict2Off['auto0'],flx)
     
-    SEFD_Y[0],SEFD_var_Y[0],powOn0Y,powOff0Y,indexes0Y = OnOff.misc.calcSEFD(Dict0On['auto1'],Dict0Off['auto1'],flx)
-    SEFD_Y[1],SEFD_var_Y[1],powOn1Y,powOff1Y,indexes1Y = OnOff.misc.calcSEFD(Dict1On['auto1'],Dict1Off['auto1'],flx)
-    SEFD_Y[2],SEFD_var_Y[2],powOn2Y,powOff2Y,indexes2Y = OnOff.misc.calcSEFD(Dict2On['auto1'],Dict2Off['auto1'],flx)
+    SEFD_Y[0],SEFD_var_Y[0],powOn0Y,powOff0Y,indexes0Y = OnOffCalc.misc.calcSEFD(Dict0On['auto1'],Dict0Off['auto1'],flx)
+    SEFD_Y[1],SEFD_var_Y[1],powOn1Y,powOff1Y,indexes1Y = OnOffCalc.misc.calcSEFD(Dict1On['auto1'],Dict1Off['auto1'],flx)
+    SEFD_Y[2],SEFD_var_Y[2],powOn2Y,powOff2Y,indexes2Y = OnOffCalc.misc.calcSEFD(Dict2On['auto1'],Dict2Off['auto1'],flx)
     
     powerX = numpy.concatenate( (powOn0X,powOff0X,powOn1X,powOff1X,powOn2X,powOff2X) )
     powerY = numpy.concatenate( (powOn0Y,powOff0Y,powOn1Y,powOff1Y,powOn2Y,powOff2Y) )

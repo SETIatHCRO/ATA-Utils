@@ -6,7 +6,7 @@ Created on Thu Jul 31 2019
 @author: jkulpa
 """
 
-import OnOff.misc
+import OnOffCalc.misc
 import numpy
 
 import pdb
@@ -43,7 +43,7 @@ def simple(onArray, offArray):
     #return onFiltered,offFiltered,OnOff.misc.constants.dataRange
     
     dataMask = numpy.ones(onArray.shape)
-    dataMask[:,OnOff.misc.constants.dataRange] = 0
+    dataMask[:,OnOffCalc.misc.constants.dataRange] = 0
     
     return dataMask
     
