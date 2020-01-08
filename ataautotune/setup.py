@@ -16,5 +16,5 @@ setuptools.setup(
     keywords=['SQL','PAX'],
     long_description=long_description,
     url="https://github.com/SETIatHCRO/ATA-Utils/",
-    entry_points={'console_scripts': ['ataautotune = ataautotune.ataautotune:main']},
+    entry_points={'console_scripts': ['ataautotune = ataautotune.ataautotune:main', 'atagetdetdbm = ataautotune.atagetdetdbm:main']},
 )
