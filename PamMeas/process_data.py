@@ -73,11 +73,11 @@ def checkData(data):
     #doing X pol
     tval1 = (data[keyXCW][1,:] >= lowerLim) * (data[keyXCW][1,:] <= upperLim)
     OX_CW = data[keyXCW][1,tval1]
-    OY_CW = 20*numpy.log10(data[keyXCW][0,tval1]);
+    OY_CW = 10*numpy.log10(data[keyXCW][0,tval1]);
     
     tval2 = (data[keyXNoise][1,:] >= lowerLim) * (data[keyXNoise][1,:] <= upperLim)
     OX_N = data[keyXNoise][1,tval2]
-    OY_N = 20*numpy.log10(data[keyXNoise][0,tval2]);
+    OY_N = 10*numpy.log10(data[keyXNoise][0,tval2]);
     
     p1x = numpy.polyfit(OX_CW,OY_CW,1)
     p2x = numpy.polyfit(OX_N,OY_N,1)
@@ -92,11 +92,11 @@ def checkData(data):
     #doing Y pol
     tval1 = (data[keyYCW][1,:] >= lowerLim) * (data[keyYCW][1,:] <= upperLim)
     OX_CW = data[keyYCW][1,tval1]
-    OY_CW = 20*numpy.log10(data[keyYCW][0,tval1]);
+    OY_CW = 10*numpy.log10(data[keyYCW][0,tval1]);
     
     tval2 = (data[keyYNoise][1,:] >= lowerLim) * (data[keyYNoise][1,:] <= upperLim)
     OX_N = data[keyYNoise][1,tval2]
-    OY_N = 20*numpy.log10(data[keyYNoise][0,tval2]);
+    OY_N = 10*numpy.log10(data[keyYNoise][0,tval2]);
     
     p1y = numpy.polyfit(OX_CW,OY_CW,1)
     p2y = numpy.polyfit(OX_N,OY_N,1)
@@ -144,20 +144,20 @@ def makePolynomial(ar,doPolyTest=0):
     maxval = 10*numpy.log10(numpy.max(ar[0,valid]));
     minval = 10*numpy.log10(numpy.min(ar[0,valid]));
     rest=[minval,maxval]
-    pp = numpy.polyfit(20*numpy.log10(ar[0,valid]),ar[1,valid],polyOrd)
+    pp = numpy.polyfit(10*numpy.log10(ar[0,valid]),ar[1,valid],polyOrd)
     
     if doPolyTest:
         plt.clf()
         pv = numpy.poly1d(pp);
-        xx = pv(20*numpy.log10(ar[0,valid]))
-        plt.plot(20*numpy.log10(ar[0,valid]),xx,20*numpy.log10(ar[0,valid]),ar[1,valid])
+        xx = pv(10*numpy.log10(ar[0,valid]))
+        plt.plot(10*numpy.log10(ar[0,valid]),xx,10*numpy.log10(ar[0,valid]),ar[1,valid])
         plt.show()
 
 
     assert polyTable == 5, "Database polynomial size mismatch. polyTable must be 5"
     assert polyTable >= polyOrd, "polyOrd must be not greater than 5"
     if polyTable > polyOrd:
-        pptmp = pp;
+        pptmp = pp1;
         pp=numpy.zeros(polyTable+1)
         pp[(polyTable-polyOrd):] = pptmp
 
@@ -187,12 +187,12 @@ def genDatabaseQuery(pb,data,polys,rest,isok):
         
         dict3 = {'pbstr' : pb, 'pol': 'y', 'type': 'cw', 'ok': isok[1]}
         for a in numpy.arange(21):
-            dict3['m' + str(a)] = data[keyXCW][1,a];
-            dict3['d' + str(a)] = data[keyXCW][0,a];
+            dict3['m' + str(a)] = data[keyYCW][1,a];
+            dict3['d' + str(a)] = data[keyYCW][0,a];
         for a in numpy.arange(6):
-            dict3['p' + str(a)] = polys[keyXCW][-a-1];
-        dict3['vallow'] = rest[keyXCW][0]
-        dict3['valhigh'] = rest[keyXCW][1]
+            dict3['p' + str(a)] = polys[keyYCW][-a-1];
+        dict3['vallow'] = rest[keyYCW][0]
+        dict3['valhigh'] = rest[keyYCW][1]
             
         dict4 = {'pbstr' : pb, 'pol': 'y', 'type': 'n', 'ok': isok[1]}
         for a in numpy.arange(21):
