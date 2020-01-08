@@ -157,7 +157,7 @@ def makePolynomial(ar,doPolyTest=0):
     assert polyTable == 5, "Database polynomial size mismatch. polyTable must be 5"
     assert polyTable >= polyOrd, "polyOrd must be not greater than 5"
     if polyTable > polyOrd:
-        pptmp = pp1;
+        pptmp = pp;
         pp=numpy.zeros(polyTable+1)
         pp[(polyTable-polyOrd):] = pptmp
 
