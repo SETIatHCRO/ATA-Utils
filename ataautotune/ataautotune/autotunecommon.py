@@ -140,6 +140,22 @@ def splitAntennaString(antstring):
 def getAntennas(arg):
   """
   clear and uniform the antenna string. check if antenna exist. 
+  
+  Parameters
+  -------------
+  arg : str
+      comma separated list of antenna names, both long and short may be mixed
+        
+  Returns
+  -------------
+  str
+      string of short antenna names
+  list 
+      list of short antenna names
+        
+  Raises
+  -------------
+      KeyError (antenna not on the list)
   """
   antstr = cleanAntennaString(arg);
   antlist = splitAntennaString(antstr);

@@ -19,12 +19,47 @@ import autotunecommon
 from optparse import OptionParser
 import numpy
 import logging
-import re
-import pdb
 
 defaultPowerLeveldBm = 2.0
 defaultPowerToldBm = 0.5
 defaultRetries = 5
+
+def autotune(antlist,power=defaultPowerLeveldBm,retry=defaultRetries,tolerance=defaultPowerToldBm):
+    """
+    call to tune the pam settings, adjusting the power going to RF-Fiber converter
+
+    Parameters
+    -------------
+    antlist : list
+        list of antennas to check. should be short string e.g. ['1a','2c']
+    power : float
+        desired power level in dBm. Default 2 dBm
+    retry : int
+        maximum number of steps taken to adjust power. default 5
+    tolerance : float
+        single-sided power level tolerance (i.e. output power will be power+/-tolerance).
+        default 0.5 dB
+        
+    Returns
+    -------------
+    int
+        return code
+    list 
+        list of not tuned antennas. Antenna is present on the list if one or both polarizations are not set
+        
+    Raises
+    -------------
+        KeyError (from autotunecommon.getPolynomials)
+    """
+    polydict,lowerdict,upperdict,missingants = autotunecommon.getPolynomials(antlist)
+    
+    notTunedAnts = setPamsAutotune(antlist,polydict,lowerdict,upperdict,power,retry,tolerance)
+    
+    retval = 0
+    if notTunedAnts:
+        retval = -1
+    
+    return retval,notTunedAnts
 
 def setPamsAutotune(antlist,polydict,lowerdict,upperdict,power=defaultPowerLeveldBm,retry=defaultRetries,tol=defaultPowerToldBm):
   
@@ -76,7 +111,7 @@ def setPamsAutotune(antlist,polydict,lowerdict,upperdict,power=defaultPowerLevel
         newpamy = pamdict[ant + 'y'] - 0.9 * deltay
         attributes.set_pam(ant=ant,x=newpamx,y=newpamy)
         
-
+  #we may as well check only the todoList
   if itercnt == (retry - 1) and toDoList:
     logger.warning("all interation passed ant there are still untuned antennas: %s" % toDoList)
 
@@ -92,6 +127,8 @@ def setPamsAutotune(antlist,polydict,lowerdict,upperdict,power=defaultPowerLevel
       cpowy = polydict[ant + 'y'](powerygot)
       logger.info(ant + "x: det " + str( detdict['ant' + ant + 'x'] ) + " ( " +str(powerxgot)+ " dBm) translates to " + str(cpowx)+ " dBm pam " + str(pamdict[ant + 'x']) )
       logger.info(ant + "y: det " + str( detdict['ant' + ant + 'y'] ) + " ( " +str(powerygot)+ " dBm) translates to " + str(cpowy)+ " dBm pam " + str(pamdict[ant + 'y']) )
+
+  return toDoList
 
 def main():
 
@@ -132,9 +169,7 @@ def main():
     
     antstr,antlist = autotunecommon.getAntennas(args[0])
 
-    polydict,lowerdict,upperdict,missingants = autotunecommon.getPolynomials(antlist)
-    
-    setPamsAutotune(antlist,polydict,lowerdict,upperdict,options.power,options.retry,options.tolerance)
+    res,failed = autotune(antlist,options.power,options.retry,options.tolerance)
 
 if __name__ == '__main__':
     main()

@@ -26,7 +26,7 @@ defaultPowerLeveldBm = 2.0
 defaultPowerToldBm = 0.5
 defaultRetries = 5
 
-def getDetdBm(antlist,polydict,lowerdict,upperdict,missingants):
+def getDetdBm_dict(antlist,polydict,lowerdict,upperdict,missingants):
   
   logger = logging.getLogger(__name__)
   antstr = ",".join(antlist)
@@ -68,6 +68,32 @@ def getDetdBm(antlist,polydict,lowerdict,upperdict,missingants):
   return antDD
     
 
+def getDetdBm(antlist):
+    """
+    Calculated power of the PAX box detector in dBm based on polynomial approximation.
+
+    Parameters
+    -------------
+    antlist : list
+        list of antennas to check. should be short string e.g. ['1a','2c']
+        
+    Returns
+    -------------
+    int
+        return code
+    list dict
+        list of dictionaries for each antenna. Dictionary includes power (x and y), raw values, polynomial saturation flag and information if antenna was measured
+        
+    Raises
+    -------------
+           KeyError (from autotunecommon.getPolynomials)
+    """
+    polydict,lowerdict,upperdict,missingants = autotunecommon.getPolynomials(antlist)
+    
+    resdict = getDetdBm_dict(antlist,polydict,lowerdict,upperdict,missingants)
+    
+    return (0,resdict)
+
 def main():
 
     logger = logging.getLogger('atagetdetdbm')
@@ -94,9 +120,7 @@ def main():
 
     antstr,antlist = autotunecommon.getAntennas(args[0])
 
-    polydict,lowerdict,upperdict,missingants = autotunecommon.getPolynomials(antlist)
-    
-    resdict = getDetdBm(antlist,polydict,lowerdict,upperdict,missingants)
+    retval,resdict = getDetdBm(antlist)
 
     fstring = u'ant{ant:s}\t{powx:+1.6f}\t{satx:d}\t\t{rawx:1.6f}\t{powy:+1.6f}\t{saty:d}\t\t{rawy:1.6f}\t{accurate:d}'
     print("antenna\tx pol [dBm]\tsat flag x\tx pol raw\ty pol [dBm]\tsat flag y\ty pol raw\twas measured")
