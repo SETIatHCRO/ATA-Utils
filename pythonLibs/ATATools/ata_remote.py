@@ -14,9 +14,11 @@ import pdb
 import socket
 
 
-RF_SWITCH_HOST = "nsg-work1"
+RF_SWITCH_HOST = "if-switch"
+RF_SWITCH_HOST_IP = "10.10.1.198"
 RF_SWITCH_USER = 'sonata'
-ATTEN_HOST = "nsg-work1"
+ATTEN_HOST = "if-switch"
+ATTEN_HOST_IP = "10.10.1.198"
 ATTEN_USER = 'sonata'
 OBS_HOST = 'tumulus'
 OBS_USER = 'obs'
@@ -130,9 +132,9 @@ def callSwitch(myargs):
     -------------
     """
     if socket.gethostname() == RF_SWITCH_HOST:
-        str_out,str_err = callProg(myargs);
+        str_out,str_err = callProgIgnoreError(myargs);
     else:
-        str_out,str_err = callProg( ['ssh', RF_SWITCH_USER +'@' + RF_SWITCH_HOST ] + myargs )
+        str_out,str_err = callProgIgnoreError( ['ssh', RF_SWITCH_USER +'@' + RF_SWITCH_HOST_IP ] + myargs )
         
     return str_out,str_err
 
@@ -155,8 +157,8 @@ def callSwitch(myargs):
     -------------
     """
     if socket.gethostname() == ATTEN_HOST:
-        str_out,str_err = callProg(myargs);
+        str_out,str_err = callProgIgnoreError(myargs);
     else:
-        str_out,str_err = callProg( ['ssh', ATTEN_USER +'@' + ATTEN_HOST ] + myargs )
+        str_out,str_err = callProgIgnoreError( ['ssh', ATTEN_USER +'@' + ATTEN_HOST_IP ] + myargs )
         
     return str_out,str_err

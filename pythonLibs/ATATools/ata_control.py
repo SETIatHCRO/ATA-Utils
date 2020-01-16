@@ -17,12 +17,46 @@ import ast
 import logging
 from threading import Thread
 import ata_remote
+import ata_constants
 import snap_array_helpers
 #import snap_onoffs_contants
 #from plumbum import local
 import time
 import datetime
 import logger_defaults
+
+
+def get_snap_dictionary(array_list):
+    """
+    returns the dictionary for snap0-3 antennas
+
+    Raises KeyError if antenna is not in list
+    """
+    s0 = []
+    s1 = []
+    s2 = []
+    for ant in array_list:
+        if ant in ata_constants.snap0ants:
+            s0.append(ant)
+        elif ant in ata_constants.snap1ants:
+            s1.append(ant)
+        elif ant in ata_constants.snap2ants:
+            s2.append(ant)
+        else
+            raise KeyError("antenna unknown")
+
+    retval = {}
+    if s0:
+        retval['snap0'] = s0
+    if s1:
+        retval['snap1'] = s1
+    if s2:
+        retval['snap2'] = s2
+
+    return retval
+    
+
+
 
 def set_pam_atten(ant, pol, val):
     """
@@ -51,9 +85,6 @@ def set_pam_attens_old(ant, valx, valy):
     proc.wait()
     # Log  returned result, but strip off the newline character
     logger.info(stdout.rstrip())
-
-RF_SWITCH_HOST = "nsg-work1"
-ATTEN_HOST = "nsg-work1"
 
 def get_sky_freq():
     """
@@ -144,15 +175,15 @@ def rf_switch_thread(ant_list, wait):
     return t
 
 
-def set_atten_thread(ant_list, db_list, wait):
+def set_atten_thread(antpol_list, db_list, wait):
 
-    logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
+    logger = logging.getLogger(__name__)
 
-    if(len(ant_list) != len(db_list)):
+    if(len(antpol_list) != len(db_list)):
         logger.error("set_atten_thread, antenna list length != db_list length.")
         raise RuntimeError("set_atten_thread, antenna list length != db_list length.")
 
-    t = Thread(target=set_atten, args=(ant_list, db_list,))
+    t = Thread(target=set_atten, args=(antpol_list, db_list,))
     t.start()
 
     if(wait == True):
@@ -162,36 +193,39 @@ def set_atten_thread(ant_list, db_list, wait):
     return t
     
 
-def set_atten(ant_list, db_list):
-
-    ant_list_stripped = str(ant_list).replace("'","").replace("[","").replace("]","").replace(" ","")
-    db_list_stripped = str(db_list).replace("'","").replace("[","").replace("]","").replace(" ","")
+def set_atten(antpol_list, db_list):
     """
     Set attenuation of antenna or ant-pol `ant`
     to `db` dB.
     Allowable values are 0.0 to 31.75
     """
-    logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
-    logger.info("setting rfswitch attenuators %s %s" % (db_list_stripped, ant_list_stripped))
+
+    antpol_str = ",".join(antpol_list)
+    db_str = ",".join(db_list)
+    #ant_list_stripped = str(ant_list).replace("'","").replace("[","").replace("]","").replace(" ","")
+    #db_list_stripped = str(db_list).replace("'","").replace("[","").replace("]","").replace(" ","")
+
+    logger = logging.getLogger(__name__)
+    logger.info("setting rfswitch attenuators %s %s" % (db_str, antpol_str))
 
 #    if socket.gethostname() == ATTEN_HOST:
-    proc = Popen(["atten", "%s" % db_list_stripped, "%s" % ant_list_stripped],  stdout=PIPE, stderr=PIPE)
+#    proc = Popen(["atten", "%s" % db_list_stripped, "%s" % ant_list_stripped],  stdout=PIPE, stderr=PIPE)
 #    else:
-#        proc = Popen(["ssh", "sonata@%s" % ATTEN_HOST, "sudo", "atten", "%s" % db_list_stripped, "%s" % ant_list_stripped],  stdout=PIPE, stderr=PIPE)
-    stdout, stderr = proc.communicate()
+    #proc = Popen(["ssh", "sonata@%s" % ATTEN_HOST, "sudo", "atten", "%s" % db_list_stripped, "%s" % ant_list_stripped],  stdout=PIPE, stderr=PIPE)
+    #stdout, stderr = proc.communicate()
+    stdout, stderr = ata_remote.callSwitch(["atten",db_str,antpol_str])
 
     output = ""
     # Log the result
     for line in stdout.splitlines():
         output += "%s\n" % line
-        logger.info("Set atten for ant %s to %s db result: %s" % (ant_list_stripped, db_list_stripped, line))
+        logger.info("Set atten for ant %s to %s db result: %s" % (antpol_str, db_str, line))
     if stderr.startswith("OK"):
-        logger.info("Set atten for ant %s to %s db result: SUCCESS" % (ant_list_stripped, db_list_stripped))
+        logger.info("Set atten for ant %s to %s db result: SUCCESS" % (antpol_str, db_str))
         return output
     else:
-        print ("STDERR=%s" % (stderr))
-        logger.error("Set attenuation 'sudo atten %s %s' failed! Trying again" % (db_list_stripped, ant_list_stripped))
-        raise RuntimeError("ERROR: set_atten %s %s returned: %s" % (db_list_stripped, ant_list_stripped, stderr))
+        logger.error("Set attenuation 'atten %s %s' failed! (STDERR=%s)" % (db_str, antpol_str,stderr))
+        raise RuntimeError("ERROR: set_atten %s %s returned: %s" % (db_str, antpol_str, stderr))
 
 def set_pam_atten_old(ant, pol, val):
     """
@@ -234,7 +268,7 @@ def get_pam_status(ant):
 
 def move_ant_group(ants, from_group, to_group):
 
-    logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
+    logger = logging.getLogger(__name__)
     logger.info("Reserving \"%s\" from %s to %s" % (snap_array_helpers.array_to_string(ants), from_group, to_group))
 
     proc = Popen(["antreserve", from_group, to_group] + ants, stdout=PIPE, stderr=PIPE)
@@ -247,7 +281,7 @@ def move_ant_group(ants, from_group, to_group):
     for ant in ants:
         if ant not in bfa:
             #print nonegroup
-            print(ants)
+            #print(ants)
             logger.error("Failed to move antenna %s from %s to %s" % (ant, from_group, to_group))
             raise RuntimeError("Failed to move antenna %s from %s to %s" % (ant, from_group, to_group))
 
@@ -260,7 +294,7 @@ def release_antennas(ants, should_park):
     move_ant_group(ants, "bfa", "none")
 
     if(should_park):
-        logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
+        logger = logging.getLogger(__name__)
         logger.info("Parking ants");
         proc = Popen(["ssh", "obs@tumulus", "park.csh"], stdout=PIPE, stderr=PIPE)
         stdout, stderr = proc.communicate()

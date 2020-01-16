@@ -10,9 +10,11 @@ import re
 
 def string_to_numeric_array(string):
 
-    arr = []
-    arr.append(eval('[%s]' % string))
-    return arr[0]
+    arr = string_to_array(string)
+    return map(float,arr)
+    #arr = []
+    #arr.append(eval('[%s]' % string))
+    #return arr[0]
 
 
 # Convert a string, like "[0,0,0,1,1],[0,0,0,0,0]" to an array
@@ -60,8 +62,8 @@ def flatten(arr):
     return sum(arr, [])
 
 def array_to_string(arr):
-
-    return str(arr).replace("'", "").replace("[", "").replace("]", "").replace(" ", "")
+    return ",".join(arr)
+    #return str(arr).replace("'", "").replace("[", "").replace("]", "").replace(" ", "")
 
 def dict_values_to_array(dic):
 
