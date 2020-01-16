@@ -6,6 +6,7 @@
 
 import sys
 import ast
+import re
 
 def string_to_numeric_array(string):
 
@@ -18,21 +19,31 @@ def string_to_numeric_array(string):
 def string_to_array(string):
 
     arr = []
-    had_brackets = True;
-    string = string.replace("],[","<temp>")
-    if(string[0] != '['):
-        had_brackets = False;
-        string = "['" + string + "']"
+    res = re.findall('(?<=\[)([^\]]*)(?=\])',string)
+    if not res:
+       #no outer brackets found
+       arr = string.split(',')
     else:
-        string = string.replace("[", "['")
-        string = string.replace("]", "']")
-    string = string.replace(",", "','")
-    string = string.replace("<temp>", "'],['")
-    arr.append(eval('[%s]' % string))
+       for rr in res:
+           arr.append(rr.split(','))
+    return arr
 
-    if(had_brackets):
-        return arr[0]
-    return arr[0][0]
+    #arr = []
+    #had_brackets = True;
+    #string = string.replace("],[","<temp>")
+    #if(string[0] != '['):
+    #    had_brackets = False;
+    #    string = "['" + string + "']"
+    #else:
+    #    string = string.replace("[", "['")
+    #    string = string.replace("]", "']")
+    #string = string.replace(",", "','")
+    #string = string.replace("<temp>", "'],['")
+    #arr.append(eval('[%s]' % string))
+
+    #if(had_brackets):
+    #    return arr[0]
+    #return arr[0][0]
 
 #def dict_keys_to_array(dic, do_sort):
 #

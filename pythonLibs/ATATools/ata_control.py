@@ -22,6 +22,7 @@ import snap_array_helpers
 #from plumbum import local
 import time
 import datetime
+import logger_defaults
 
 def set_pam_atten(ant, pol, val):
     """
@@ -30,9 +31,7 @@ def set_pam_atten(ant, pol, val):
     
     assert pol in ['x','y'], "unknown polarization string"
     
-    logger = logging.getLogger(__name__)
-    FORMAT = '%(asctime)s %(levelname)s %(name)s: %(message)s'
-    logging.basicConfig(format=FORMAT)
+    logger = logger_defaults.getModuleLogger(__name__)
     
     logger.info("setting pam attenuator %s%s to %.1fdb" % (ant, pol, val))
     stdout,stderr=ata_remote.callObs(["atasetpams", ant, "-%s"%pol, str(val)])
@@ -43,7 +42,9 @@ def set_pam_attens_old(ant, valx, valy):
     """
     Set the attenuation of antenna `ant`, both pols, to valx and valy dB
     """
-    logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
+
+    logger = logger_defaults.getModuleLogger(__name__)
+
     logger.info("setting pam attenuator %s to %.1f,%.1f db" % (ant, valx, valy))
     proc = Popen(["ssh", "obs@tumulus", "atasetpams", ant, "%f"%valx, "%f"%valy], stdout=PIPE)
     stdout, stderr = proc.communicate()
