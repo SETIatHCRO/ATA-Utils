@@ -42,7 +42,7 @@ def get_snap_dictionary(array_list):
             s1.append(ant)
         elif ant in ata_constants.snap2ants:
             s2.append(ant)
-        else
+        else:
             raise KeyError("antenna unknown")
 
     retval = {}
@@ -58,33 +58,33 @@ def get_snap_dictionary(array_list):
 
 
 
-def set_pam_atten(ant, pol, val):
-    """
-    Set the attenuation of antenna `ant`, polarization `pol` to `val` dB
-    """
-    
-    assert pol in ['x','y'], "unknown polarization string"
-    
-    logger = logger_defaults.getModuleLogger(__name__)
-    
-    logger.info("setting pam attenuator %s%s to %.1fdb" % (ant, pol, val))
-    stdout,stderr=ata_remote.callObs(["atasetpams", ant, "-%s"%pol, str(val)])
-    
-    logger.info(stdout.rstrip())
-
-def set_pam_attens_old(ant, valx, valy):
-    """
-    Set the attenuation of antenna `ant`, both pols, to valx and valy dB
-    """
-
-    logger = logger_defaults.getModuleLogger(__name__)
-
-    logger.info("setting pam attenuator %s to %.1f,%.1f db" % (ant, valx, valy))
-    proc = Popen(["ssh", "obs@tumulus", "atasetpams", ant, "%f"%valx, "%f"%valy], stdout=PIPE)
-    stdout, stderr = proc.communicate()
-    proc.wait()
-    # Log  returned result, but strip off the newline character
-    logger.info(stdout.rstrip())
+#def set_pam_atten(ant, pol, val):
+#    """
+#    Set the attenuation of antenna `ant`, polarization `pol` to `val` dB
+#    """
+#    
+#    assert pol in ['x','y'], "unknown polarization string"
+#    
+#    logger = logger_defaults.getModuleLogger(__name__)
+#    
+#    logger.info("setting pam attenuator %s%s to %.1fdb" % (ant, pol, val))
+#    stdout,stderr=ata_remote.callObs(["atasetpams", ant, "-%s"%pol, str(val)])
+#    
+#    logger.info(stdout.rstrip())
+#
+#def set_pam_attens_old(ant, valx, valy):
+#    """
+#    Set the attenuation of antenna `ant`, both pols, to valx and valy dB
+#    """
+#
+#    logger = logger_defaults.getModuleLogger(__name__)
+#
+#    logger.info("setting pam attenuator %s to %.1f,%.1f db" % (ant, valx, valy))
+#    proc = Popen(["ssh", "obs@tumulus", "atasetpams", ant, "%f"%valx, "%f"%valy], stdout=PIPE)
+#    stdout, stderr = proc.communicate()
+#    proc.wait()
+#    # Log  returned result, but strip off the newline character
+#    logger.info(stdout.rstrip())
 
 def get_sky_freq():
     """
@@ -104,27 +104,27 @@ def get_ascii_status():
     stdout, stderr = proc.communicate()
     return stdout
 
-def write_obs_to_db(source, freq, az_offset=0.0, el_offset=0.0, ants=["dummy"]):
-    """
-    Write details of an observation in to the observation database.
-    """
-    proc = Popen(["obs2db", ",".join(ants), "%f" % freq, source, "%f" % az_offset, "%f" % el_offset])
-    proc.wait()
-
-def end_obs():
-    """
-    Write the current time as the end of the latest observation in the obs database.
-    """
-    proc = Popen(["obs2db", "stop"])
-    proc.wait()
-
-def get_latest_obs():
-    """
-    Get the latest observation ID from the obs database.
-    """
-    proc = Popen(["obsgetid"], stdout=PIPE, stderr=PIPE)
-    stdout, stderr = proc.communicate()
-    return int(stdout)
+#def write_obs_to_db(source, freq, az_offset=0.0, el_offset=0.0, ants=["dummy"]):
+#    """
+#    Write details of an observation in to the observation database.
+#    """
+#    proc = Popen(["obs2db", ",".join(ants), "%f" % freq, source, "%f" % az_offset, "%f" % el_offset])
+#    proc.wait()
+#
+#def end_obs():
+#    """
+#    Write the current time as the end of the latest observation in the obs database.
+#    """
+#    proc = Popen(["obs2db", "stop"])
+#    proc.wait()
+#
+#def get_latest_obs():
+#    """
+#    Get the latest observation ID from the obs database.
+#    """
+#    proc = Popen(["obsgetid"], stdout=PIPE, stderr=PIPE)
+#    stdout, stderr = proc.communicate()
+#    return int(stdout)
 
 def point(source, freq, az_offset=0.0, el_offset=0.0, ants=['dummy'], writetodb=True):
     """
@@ -201,7 +201,7 @@ def set_atten(antpol_list, db_list):
     """
 
     antpol_str = ",".join(antpol_list)
-    db_str = ",".join(db_list)
+    db_str = ",".join(map(str,db_list))
     #ant_list_stripped = str(ant_list).replace("'","").replace("[","").replace("]","").replace(" ","")
     #db_list_stripped = str(db_list).replace("'","").replace("[","").replace("]","").replace(" ","")
 
@@ -227,44 +227,44 @@ def set_atten(antpol_list, db_list):
         logger.error("Set attenuation 'atten %s %s' failed! (STDERR=%s)" % (db_str, antpol_str,stderr))
         raise RuntimeError("ERROR: set_atten %s %s returned: %s" % (db_str, antpol_str, stderr))
 
-def set_pam_atten_old(ant, pol, val):
-    """
-    Set the attenuation of antenna `ant`, polarization `pol` to `val` dB
-    """
-    logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
-    logger.info("setting pam attenuator %s%s to %.1fdb" % (ant, pol, val))
-    if(pol == ""):
-        proc = Popen(["ssh", "obs@tumulus", "atasetpams", ant, "%f"%val, "%f"%val], stdout=PIPE)
-    else:
-        proc = Popen(["ssh", "obs@tumulus", "atasetpams", ant, "-%s"%pol, "%f"%val], stdout=PIPE)
-    stdout, stderr = proc.communicate()
-    proc.wait()
-    # Log  returned result, but strip off the newline character
-    logger.info(stdout.rstrip())
+#def set_pam_atten_old(ant, pol, val):
+#    """
+#    Set the attenuation of antenna `ant`, polarization `pol` to `val` dB
+#    """
+#    logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
+#    logger.info("setting pam attenuator %s%s to %.1fdb" % (ant, pol, val))
+#    if(pol == ""):
+#        proc = Popen(["ssh", "obs@tumulus", "atasetpams", ant, "%f"%val, "%f"%val], stdout=PIPE)
+#    else:
+#        proc = Popen(["ssh", "obs@tumulus", "atasetpams", ant, "-%s"%pol, "%f"%val], stdout=PIPE)
+#    stdout, stderr = proc.communicate()
+#    proc.wait()
+#    # Log  returned result, but strip off the newline character
+#    logger.info(stdout.rstrip())
 
-def set_pam_attens_old(ant, valx, valy):
-    """
-    Set the attenuation of antenna `ant`, both pols, to valx and valy dB
-    """
-    logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
-    logger.info("setting pam attenuator %s to %.1f,%.1f db" % (ant, valx, valy))
-    proc = Popen(["ssh", "obs@tumulus", "atasetpams", ant, "%f"%valx, "%f"%valy], stdout=PIPE)
-    stdout, stderr = proc.communicate()
-    proc.wait()
-    # Log  returned result, but strip off the newline character
-    logger.info(stdout.rstrip())
+#def set_pam_attens_old(ant, valx, valy):
+#    """
+#    Set the attenuation of antenna `ant`, both pols, to valx and valy dB
+#    """
+#    logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
+#    logger.info("setting pam attenuator %s to %.1f,%.1f db" % (ant, valx, valy))
+#    proc = Popen(["ssh", "obs@tumulus", "atasetpams", ant, "%f"%valx, "%f"%valy], stdout=PIPE)
+#    stdout, stderr = proc.communicate()
+#    proc.wait()
+#    # Log  returned result, but strip off the newline character
+#    logger.info(stdout.rstrip())
 
-def get_pam_status(ant):
-    """
-    Get the PAM attenuation settings and power detector readings for antenna `ant`
-    """
-    logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
-    logger.info("getting pam attenuator %s" % ant )
-    proc = Popen(["getdetpams", ant],  stdout=PIPE, stderr=PIPE)
-    stdout, stderr = proc.communicate()
-    logger.info("getting pam attenuator stdout: %s" % stdout)
-    x = stdout.split(',')
-    return {'ant':x[0], 'atten_xf':float(x[1]), 'atten_xb':float(x[2]), 'atten_yf':float(x[3]), 'atten_yb':float(x[4]), 'det_x':float(x[5]), 'det_y':float(x[6])}
+#def get_pam_status(ant):
+#    """
+#    Get the PAM attenuation settings and power detector readings for antenna `ant`
+#    """
+#    logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
+#    logger.info("getting pam attenuator %s" % ant )
+#    proc = Popen(["getdetpams", ant],  stdout=PIPE, stderr=PIPE)
+#    stdout, stderr = proc.communicate()
+#    logger.info("getting pam attenuator stdout: %s" % stdout)
+#    x = stdout.split(',')
+#    return {'ant':x[0], 'atten_xf':float(x[1]), 'atten_xb':float(x[2]), 'atten_yf':float(x[3]), 'atten_yb':float(x[4]), 'det_x':float(x[5]), 'det_y':float(x[6])}
 
 def move_ant_group(ants, from_group, to_group):
 
@@ -296,9 +296,10 @@ def release_antennas(ants, should_park):
     if(should_park):
         logger = logging.getLogger(__name__)
         logger.info("Parking ants");
-        proc = Popen(["ssh", "obs@tumulus", "park.csh"], stdout=PIPE, stderr=PIPE)
-        stdout, stderr = proc.communicate()
-        proc.wait()
+        #proc = Popen(["ssh", "obs@tumulus", "park.csh"], stdout=PIPE, stderr=PIPE)
+        #stdout, stderr = proc.communicate()
+        #proc.wait()
+        stdout, stderr = ata_remote.callObs(["park.csh"])
         logger.info(stdout.rstrip())
         logger.info(stderr.rstrip())
         logger.info("Parked");
