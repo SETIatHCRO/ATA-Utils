@@ -23,7 +23,7 @@ def getNewObsSetID(description="n/a"):
 
     Returns
     -------------
-        int
+        long
             observation set id
 
     """
@@ -50,5 +50,56 @@ def getNewObsSetID(description="n/a"):
     mydb.close()
 
     return myid
+
+
+def getSetData(setid):
+    """
+    Get description and timestamp of data set
+
+    Parameters
+    -------------
+        setid : long
+            
+
+    Returns
+    -------------
+        str
+            description
+        datetime
+            timestamp
+
+    Raises
+    -------------
+        KeyError
+
+    """
+
+    logger = logging.getLogger(__name__)
+    FORMAT = '%(asctime)s %(levelname)s %(name)s: %(message)s'
+    logging.basicConfig(format=FORMAT, datefmt='%Y-%m-%d %H:%M:%S')
+
+    mydb = connect.connectObsDb()
+    mycursor = mydb.cursor()
+
+    insertcmd = ("select ts,description from obs_sets where id=%(myid)s")
+    dict1 = {'myid': setid}
+
+    logger.info("fetching info from set {}".format(setid))
+    
+    mycursor.execute(insertcmd,dict1)
+    row = mycursor.fetchone()
+    if not row:
+        logger.error("Key {} not found in database".format(setid))
+        raise KeyError("ID not found in the database")
+
+
+    descr = row[1]
+    ts = row[0]
+    logger.info("SET {}: at {} ( {} )".format(setid,ts,descr))
+
+    mycursor.close()
+    mydb.close()
+
+    return ts,descr
 
 

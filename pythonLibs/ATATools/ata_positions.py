@@ -19,6 +19,7 @@ import ephem
 import math
 from astropy import units as u
 from astropy.coordinates import Angle
+import logger_defaults
 
 MIN_MOON_SUN_DIST = 45.0
 MIN_ELEV = 23.0
@@ -31,6 +32,80 @@ class ATAPositions:
         self.observer.lat = ata_const.ATA_LAT * math.pi/180.0
         self.observer.lon = ata_const.ATA_LON * math.pi/180.0
         self.observer.elev = ata_const.ATA_ELEV
+
+    @staticmethod
+    def getPreferedSourceUp(preference,sources,d=None):    
+        """
+        Checks if prefered source is up and far enough from sun (and moon)
+        if yes, prefered is returned. if no, new prefered is picked
+        the new prefered is the source from the list that will have a longest uptime
+
+        Parameters
+        ------------
+        preference : str
+            the prefered source or None
+        sources : str list
+            list of possible sources
+        d : datetime
+            date and time of the search. Default is now
+
+        Returns
+        ------------
+        str 
+            prefered source or None is no measurements are possible now
+
+
+        """
+        logger = logger_defaults.getModuleLogger(__name__)
+
+        if(d == None):
+            d=dt.datetime.now()
+
+        pos = ATAPositions()
+
+        #if we have some preference, just checking if it is still up and far away from sun/moon
+        if (preference) and (preference in sources):
+            info = pos.getAzEl(d, preference)
+            sun_angle = ATAPositions.angular_distance('sun', preference, d)
+            if(preference == 'moon'):
+                moon_angle = 90.0
+            else:
+                moon_angle = ATAPositions.angular_distance('moon', preference, d)
+            is_up = pos.isUp(preference, d)
+            if(is_up == True and sun_angle >= MIN_MOON_SUN_DIST and moon_angle >= MIN_MOON_SUN_DIST):
+                logger.info('prefered source is up: {}, {}'.format(info['az'],info['el']))
+                return preference
+        
+        #since we are here, the prefered source is not up
+        preference_uptime = 0
+        now_date = d
+        for s in sources:
+            c_uptime = 0
+            future_minutes = 1
+            while (future_minutes < 1440):
+                d = now_date + dt.timedelta(minutes=future_minutes)
+                sun_angle = ATAPositions.angular_distance('sun', s, d)
+                if(s == 'moon'):
+                    moon_angle = 90.0
+                else:
+                    moon_angle = ATAPositions.angular_distance('moon', s, d)
+                is_up = pos.isUp(s, d)
+                if(is_up == True and sun_angle >= MIN_MOON_SUN_DIST and moon_angle >= MIN_MOON_SUN_DIST):
+                    print(preference)
+                    print(c_uptime)
+                    c_uptime += 1
+                    future_minutes +=1
+                else:
+                    break;
+
+            #if source is longer that last prefered, update prefered
+            if(preference_uptime < c_uptime):
+                preference = s
+                preference_uptime = c_uptime
+
+        return preference
+
+
 
     @staticmethod
     def getFirstInListThatIsUp(sources, d=None):
