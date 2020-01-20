@@ -29,7 +29,7 @@ def getObsType(string):
     else:
         return 'OTHER'
 
-def getBackend(string)
+def getBackend(string):
     """
     supported backends: frb, beamformer, correlator, snap
     """
@@ -42,7 +42,7 @@ def getBackend(string)
         return 'CORRELATOR'
     elif lstring in ['snap']:
         return 'SNAP'
-    else;
+    else:
         raise KeyError('Unknown backend')
 
 def getNewObsSetID(description="n/a"):
@@ -192,10 +192,10 @@ def initObservation(frequency,obstype,obsbackend,description,observer="unknown",
 
     if setid:
         insertcmd = ("insert into observations set freq=%(freq)s, type=%(obstype)s, backend=$(obsbackend)s, observer=%(observer)s, description=%(desc)s, setid=%(setid)s")
-        dict1 = {'freq': frequency, 'obstype' : getObsType(obstype), 'obsbackend' : getObsBackend(obsbackend), 'observer' = observer, 'desc' : description, 'setid' : setid}
+        dict1 = {'freq': frequency, 'obstype' : getObsType(obstype), 'obsbackend' : getObsBackend(obsbackend), 'observer' : observer, 'desc' : description, 'setid' : setid}
     else:
         insertcmd = ("insert into observations set freq=%(freq)s, type=%(obstype)s, backend=$(obsbackend)s, observer=%(observer)s, description=%(desc)s")
-        dict1 = {'freq': frequency, 'obstype' : getObsType(obstype), 'obsbackend' : getObsBackend(obsbackend), 'observer' = observer, 'desc' : description}
+        dict1 = {'freq': frequency, 'obstype' : getObsType(obstype), 'obsbackend' : getObsBackend(obsbackend), 'observer' : observer, 'desc' : description}
 
     logger.info("adding new observation {}".format( str(dict1) ))
     mycursor.execute(insertcmd,dict1)
