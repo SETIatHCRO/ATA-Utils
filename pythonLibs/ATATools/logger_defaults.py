@@ -39,16 +39,14 @@ def getFileLogger(name,filename,loglevel = logging.WARNING):
 
     return logger
 
-def getModuleLogger(name, loglevel = logging.WARNING):
+def getModuleLogger(name):
     """
-    Get the logger with default settings that stores the logs to the file
+    Get the default module logger
 
     Parameters
     -------------
         name : str
             the name of the logger. can be __name__
-        loglevel : logging.level
-            the logging level. default is logging.WARNING
 
     Returns
     -------------
@@ -59,6 +57,6 @@ def getModuleLogger(name, loglevel = logging.WARNING):
 
     logger = logging.getLogger(name)
     FORMAT = '%(asctime)s %(levelname)s %(name)s: %(message)s'
-    logging.basicConfig(level=loglevel, format=FORMAT, datefmt='%Y-%m-%d %H:%M:%S')
+    logging.basicConfig(format=FORMAT, datefmt='%Y-%m-%d %H:%M:%S')
 
     return logger

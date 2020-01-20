@@ -9,6 +9,7 @@ switches and attenuators in the ATA test
 setup.
 """
 
+import re
 import os
 import sys
 from subprocess import Popen, PIPE
@@ -220,6 +221,7 @@ def set_atten(antpol_list, db_list):
     for line in stdout.splitlines():
         output += "%s\n" % line
         logger.info("Set atten for ant %s to %s db result: %s" % (antpol_str, db_str, line))
+
     if stderr.startswith("OK"):
         logger.info("Set atten for ant %s to %s db result: SUCCESS" % (antpol_str, db_str))
         return output
@@ -265,6 +267,25 @@ def set_atten(antpol_list, db_list):
 #    logger.info("getting pam attenuator stdout: %s" % stdout)
 #    x = stdout.split(',')
 #    return {'ant':x[0], 'atten_xf':float(x[1]), 'atten_xb':float(x[2]), 'atten_yf':float(x[3]), 'atten_yb':float(x[4]), 'det_x':float(x[5]), 'det_y':float(x[6])}
+
+def get_pams(antlist):
+
+    logger = logger_defaults.getModuleLogger(__name__)
+    antstr = ",".join(antlist)
+    logger.info("getting pams: {}".format(antstr))
+    str_out,str_err = ata_remote.callObs(['atagetpams','-q',antstr])
+
+    retdict = {}
+    lines = str_out.splitlines()
+    for line in lines:
+        regroups = re.search('ant(?P<ant>..)\s*on\s*(?P<x>[\d.]+)\s*on\s*(?P<y>[\d.]+)',line);
+        ant = regroups.group('ant')
+        xval = float(regroups.group('x'))
+        yval = float(regroups.group('y'))
+        retdict[ant + 'x'] = xval
+        retdict[ant + 'y'] = yval
+
+    return retdict
 
 def move_ant_group(ants, from_group, to_group):
 

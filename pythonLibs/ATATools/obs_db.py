@@ -9,8 +9,41 @@ Created Jan 2020
 @author: jkulpa
 """
 
-import logging
 from  ATASQL import connect
+import logger_defaults
+import ata_control
+
+def getObsType(string):
+    """
+    supported types: frb, calibration, on-off, pulsar, other        
+    """
+    lstring = string.lower()
+    if lstring in ['frb']:
+        return 'FRB'
+    elif lstring in ['calibration','cal']:
+        return 'CALIBRATION'
+    elif lstring in ['onoff','on-off']:
+        return 'ON-OFF'
+    elif lstring in ['pulsar']:
+        return 'PULSAR'
+    else:
+        return 'OTHER'
+
+def getBackend(string)
+    """
+    supported backends: frb, beamformer, correlator, snap
+    """
+    lstring = string.lower()
+    if lstring in ['bf','beamformer']:
+        return 'BEAMFORMER'
+    elif lstring in ['frb']:
+        return 'FRB'
+    elif lstring in ['correlator']:
+        return 'CORRELATOR'
+    elif lstring in ['snap']:
+        return 'SNAP'
+    else;
+        raise KeyError('Unknown backend')
 
 def getNewObsSetID(description="n/a"):
     """
@@ -18,19 +51,17 @@ def getNewObsSetID(description="n/a"):
 
     Parameters
     -------------
-        description : str
-            optional description of the set. default is "n/a"
+    description : str
+        optional description of the set. default is "n/a"
 
     Returns
     -------------
-        long
-            observation set id
+    long
+        observation set id
 
     """
 
-    logger = logging.getLogger(__name__)
-    FORMAT = '%(asctime)s %(levelname)s %(name)s: %(message)s'
-    logging.basicConfig(format=FORMAT, datefmt='%Y-%m-%d %H:%M:%S')
+    logger= logger_defaults.getModuleLogger(__name__)
 
     mydb = connect.connectObsDb()
     mycursor = mydb.cursor()
@@ -51,6 +82,171 @@ def getNewObsSetID(description="n/a"):
 
     return myid
 
+def initAntennasTable(obsid,antlist,sources,azs=0.0,els=0.0, getpams=True):
+    """
+    Populates the antenna table with sources, azimuths and elevations, and by default with pam values
+
+
+    Parameters
+    -------------
+    obsid : long
+        observation id
+    antlist : str list
+        list of antennas, short names, ie ['1a','2b']
+    sources : str list or str
+        list of sources per antenna, or single string for all antennas
+    azs : float list or float
+        list of azimut offsets of azimut offset for all antennas from the source
+    els : float list or float
+        list of elevation offests or azimut offest for all antennas from the source
+    getpams : bool
+        flag if pam values should be read and updated
+
+    """
+
+    #if input is a single object, mutliply it by number of antennas
+    nants = len(antlist)
+    if not isinstance(sources,list):
+        sources = [sources] * nants;
+
+    if not isinstance(azs,list):
+        azs = [azs] * nants;
+
+    if not isinstance(els,list):
+        els = [els] * nants;
+
+    
+    logger= logger_defaults.getModuleLogger(__name__)
+
+    mydb = connect.connectObsDb()
+    mycursor = mydb.cursor()
+
+    insertcmdpams = ("insert into obs_ants set id=%(id)s, ant=%(ant)s, az=%(az)s, el=%(el)s, "
+                     "source=%(src)s, pamx=%(pamx)s, pamy=%(pamy)s")
+
+    insertcmdnopams = ("insert into obs_ants set id=%(id)s, ant=%(ant)s, az=%(az)s, el=%(el)s, "
+                     "source=%(src)s")
+
+    if getpams:
+        try:
+            logger.info("getting pam values")
+            pamvals = ata_control.get_pams(antlist)
+        except:
+            logger.exception("unable to get pams, ignoring flag")
+            getpams = False
+
+    #this is not the cleanest way. Probably the itertools.izip should be used
+    for x in xrange(nants):
+        cant = antlist[x]
+        dict1 = {'id': obsid, 'ant': cant, 'az': azs[x], 'el': els[x], 'src': sources[x]}
+        if getpams:
+            insertcmd = insertcmdpams
+            dict1['pamx'] = pamvals[cant + 'x']
+            dict1['pamy'] = pamvals[cant + 'y']
+        else:
+            insertcmd = insertcmdnopams
+
+        logger.info("commiting for ant {}".format(cant))
+        mycursor.execute(insertcmd,dict1)
+        mydb.commit()
+
+    mycursor.close()
+    mydb.close()
+    
+
+
+def initObservation(frequency,obstype,obsbackend,description,observer="unknown",setid=None):
+    """
+    Crates new observation entry and retruns new observation
+
+    Parameters
+    -------------
+    frequency: float
+        center frequency
+    obstype : str
+        type of the observation. see getObsType
+    obsbackend : str
+        backend of the observation. see getObsBackend
+    description : str
+        observation description
+    observer : str
+        observer description. default unknown
+    setid : long
+        id of observation set. If observation does not belong to a set, leave None. default None
+
+    Returns
+    -------------
+    long
+        observation id
+
+    Raises
+    -------------
+    KeyError
+
+    """
+
+    logger= logger_defaults.getModuleLogger(__name__)
+
+    mydb = connect.connectObsDb()
+    mycursor = mydb.cursor()
+
+    if setid:
+        insertcmd = ("insert into observations set freq=%(freq)s, type=%(obstype)s, backend=$(obsbackend)s, observer=%(observer)s, description=%(desc)s, setid=%(setid)s")
+        dict1 = {'freq': frequency, 'obstype' : getObsType(obstype), 'obsbackend' : getObsBackend(obsbackend), 'observer' = observer, 'desc' : description, 'setid' : setid}
+    else:
+        insertcmd = ("insert into observations set freq=%(freq)s, type=%(obstype)s, backend=$(obsbackend)s, observer=%(observer)s, description=%(desc)s")
+        dict1 = {'freq': frequency, 'obstype' : getObsType(obstype), 'obsbackend' : getObsBackend(obsbackend), 'observer' = observer, 'desc' : description}
+
+    logger.info("adding new observation {}".format( str(dict1) ))
+    mycursor.execute(insertcmd,dict1)
+    mydb.commit()
+    myid = mycursor.lastrowid
+
+    logger.info("got id {}".format(myid))
+
+    mycursor.close()
+    mydb.close()
+
+    return myid
+
+def startObservation(obsid):
+    """
+    updates observation start time of obsid observation to now()
+    """
+    logger= logger_defaults.getModuleLogger(__name__)
+
+    mydb = connect.connectObsDb()
+    mycursor = mydb.cursor()
+    
+    insertcmd = ("update observations set tstart=now() where id=%(id)s")
+    dict1 = {'id': obsid}
+
+    logger.info("updating start time of the observation")
+    mycursor.execute(insertcmd,dict1)
+    mydb.commit()
+
+    mycursor.close()
+    mydb.close()
+
+
+def stopObservation(obsid):
+    """
+    updates observation stop time of obsid observation to now()
+    """
+    logger= logger_defaults.getModuleLogger(__name__)
+
+    mydb = connect.connectObsDb()
+    mycursor = mydb.cursor()
+    
+    insertcmd = ("update observations set tstop=now() where id=%(id)s")
+    dict1 = {'id': obsid}
+
+    logger.info("updating stop time of the observation")
+    mycursor.execute(insertcmd,dict1)
+    mydb.commit()
+
+    mycursor.close()
+    mydb.close()
 
 def getSetData(setid):
     """
@@ -74,9 +270,7 @@ def getSetData(setid):
 
     """
 
-    logger = logging.getLogger(__name__)
-    FORMAT = '%(asctime)s %(levelname)s %(name)s: %(message)s'
-    logging.basicConfig(format=FORMAT, datefmt='%Y-%m-%d %H:%M:%S')
+    logger= logger_defaults.getModuleLogger(__name__)
 
     mydb = connect.connectObsDb()
     mycursor = mydb.cursor()

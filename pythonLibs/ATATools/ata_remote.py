@@ -12,7 +12,7 @@ import subprocess
 import logging
 import pdb
 import socket
-
+import logger_defaults
 
 RF_SWITCH_HOST = "if-switch"
 RF_SWITCH_HOST_IP = "10.10.1.198"
@@ -49,9 +49,7 @@ def callProg(myargs):
     str_out,str_err = p.communicate()
     p.wait()
     if(p.returncode):
-        logger = logging.getLogger(__name__)
-        FORMAT = '%(asctime)s %(levelname)s %(name)s: %(message)s'
-        logging.basicConfig(format=FORMAT)
+        logger = logger_defaults.getModuleLogger(__name__)
         logger.warning("process '%s' returned error\n %s" % (myargs,str_err)) 
         raise RuntimeError("process %s failed" % myargs)
 
@@ -80,9 +78,7 @@ def callProgIgnoreError(myargs):
     str_out,str_err = p.communicate()
     p.wait()
     if(p.returncode):
-        logger = logging.getLogger(__name__)
-        FORMAT = '%(asctime)s %(levelname)s %(name)s: %(message)s'
-        logging.basicConfig(format=FORMAT)
+        logger = logger_defaults.getModuleLogger(__name__)
         logger.warning("process '%s' returned error\n %s" % (myargs,str_err)) 
 
     return str_out,str_err
