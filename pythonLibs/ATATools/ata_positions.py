@@ -91,8 +91,6 @@ class ATAPositions:
                     moon_angle = ATAPositions.angular_distance('moon', s, d)
                 is_up = pos.isUp(s, d)
                 if(is_up == True and sun_angle >= MIN_MOON_SUN_DIST and moon_angle >= MIN_MOON_SUN_DIST):
-                    print(preference)
-                    print(c_uptime)
                     c_uptime += 1
                     future_minutes +=1
                 else:
