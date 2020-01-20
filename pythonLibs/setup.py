@@ -1,11 +1,12 @@
 import setuptools
+import version
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name='pythonLibs_for_ATA-Utils',
-    version='0.0.1',
+    version=version.__version__,
     description='python utility scripts for ATA (private repo)',
     license='MIT',
     packages=['OnOffCalc','ATATools'],
