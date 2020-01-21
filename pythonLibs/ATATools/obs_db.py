@@ -9,7 +9,7 @@ Created Jan 2020
 @author: jkulpa
 """
 
-from  ATASQL import connect
+import ATASQL
 import logger_defaults
 import ata_control
 
@@ -63,7 +63,7 @@ def getNewObsSetID(description="n/a"):
 
     logger= logger_defaults.getModuleLogger(__name__)
 
-    mydb = connect.connectObsDb()
+    mydb = ATASQL.connectObsDb()
     mycursor = mydb.cursor()
 
     insertcmd = ("insert into obs_sets set description=%(des)s")
@@ -118,7 +118,7 @@ def initAntennasTable(obsid,antlist,sources,azs=0.0,els=0.0, getpams=True):
     
     logger= logger_defaults.getModuleLogger(__name__)
 
-    mydb = connect.connectObsDb()
+    mydb = ATASQL.connectObsDb()
     mycursor = mydb.cursor()
 
     insertcmdpams = ("insert into obs_ants set id=%(id)s, ant=%(ant)s, az=%(az)s, el=%(el)s, "
@@ -187,7 +187,7 @@ def initObservation(frequency,obstype,obsbackend,description,observer="unknown",
 
     logger= logger_defaults.getModuleLogger(__name__)
 
-    mydb = connect.connectObsDb()
+    mydb = ATASQL.connectObsDb()
     mycursor = mydb.cursor()
 
     if setid:
@@ -215,7 +215,7 @@ def startObservation(obsid):
     """
     logger= logger_defaults.getModuleLogger(__name__)
 
-    mydb = connect.connectObsDb()
+    mydb = ATASQL.connectObsDb()
     mycursor = mydb.cursor()
     
     insertcmd = ("update observations set tstart=now(), status='STARTED' where id=%(id)s")
@@ -235,7 +235,7 @@ def stopObservation(obsid):
     """
     logger= logger_defaults.getModuleLogger(__name__)
 
-    mydb = connect.connectObsDb()
+    mydb = ATASQL.connectObsDb()
     mycursor = mydb.cursor()
     
     insertcmd = ("update observations set tstop=now(), status='STOPPED' where id=%(id)s")
@@ -258,7 +258,7 @@ def markObservationsBAD(obsid_list):
 
     logger= logger_defaults.getModuleLogger(__name__)
 
-    mydb = connect.connectObsDb()
+    mydb = ATASQL.connectObsDb()
     mycursor = mydb.cursor()
 
     insertcmd_part = ("update observations set status='BAD' where id in (%s)")
@@ -283,7 +283,7 @@ def markObservationsOK(obsid_list):
 
     logger= logger_defaults.getModuleLogger(__name__)
 
-    mydb = connect.connectObsDb()
+    mydb = ATASQL.connectObsDb()
     mycursor = mydb.cursor()
 
     insertcmd_part = ("update observations set status='OK' where id in (%s)")
@@ -322,7 +322,7 @@ def getSetData(setid):
 
     logger= logger_defaults.getModuleLogger(__name__)
 
-    mydb = connect.connectObsDb()
+    mydb = ATASQL.connectObsDb()
     mycursor = mydb.cursor()
 
     insertcmd = ("select ts,description from obs_sets where id=%(myid)s")
