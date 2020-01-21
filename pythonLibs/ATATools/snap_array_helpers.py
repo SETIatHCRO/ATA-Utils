@@ -8,6 +8,12 @@ import sys
 import ast
 import re
 
+
+def dict_values_to_comma_string(dictionary):
+    dlist = dictionary.values()
+    mystring = ",".join(dlist)
+    return mystring
+
 def string_to_numeric_array(string):
 
     arr = string_to_array(string)
