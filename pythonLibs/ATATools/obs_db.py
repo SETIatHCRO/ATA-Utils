@@ -218,7 +218,7 @@ def startObservation(obsid):
     mydb = connect.connectObsDb()
     mycursor = mydb.cursor()
     
-    insertcmd = ("update observations set tstart=now() where id=%(id)s")
+    insertcmd = ("update observations set tstart=now(), status='STARTED' where id=%(id)s")
     dict1 = {'id': obsid}
 
     logger.info("updating start time of the observation")
@@ -238,13 +238,63 @@ def stopObservation(obsid):
     mydb = connect.connectObsDb()
     mycursor = mydb.cursor()
     
-    insertcmd = ("update observations set tstop=now() where id=%(id)s")
+    insertcmd = ("update observations set tstop=now(), status='STOPPED' where id=%(id)s")
     dict1 = {'id': obsid}
 
     logger.info("updating stop time of the observation")
     mycursor.execute(insertcmd,dict1)
     mydb.commit()
 
+    mycursor.close()
+    mydb.close()
+
+def markObservationsBAD(obsid_list):
+    """
+    mark observations as bad. 
+    """
+
+    if not isinstance(obsid_list,list) and len(obsid_list) == 1:
+        obsid_list = [obsid_list]
+
+    logger= logger_defaults.getModuleLogger(__name__)
+
+    mydb = connect.connectObsDb()
+    mycursor = mydb.cursor()
+
+    insertcmd_part = ("update observations set status='BAD' where id in (%s)")
+    in_p=', '.join(map(lambda x: '%s', obsid_list))
+    insertcmd = insertcmd_part % in_p;
+    
+    logger.info("changing status of observations {} to BAD".format(', '.join(obsid_list)))
+
+    mycursor.execute(insertcmd,obsid_list)
+    mydb.commit()
+    
+    mycursor.close()
+    mydb.close()
+
+def markObservationsOK(obsid_list):
+    """
+    mark observations as ok. 
+    """
+
+    if not isinstance(obsid_list,list) and len(obsid_list) == 1:
+        obsid_list = [obsid_list]
+
+    logger= logger_defaults.getModuleLogger(__name__)
+
+    mydb = connect.connectObsDb()
+    mycursor = mydb.cursor()
+
+    insertcmd_part = ("update observations set status='OK' where id in (%s)")
+    in_p=', '.join(map(lambda x: '%s', obsid_list))
+    insertcmd = insertcmd_part % in_p;
+    
+    logger.info("changing status of observations {} to OK".format(', '.join(obsid_list)))
+
+    mycursor.execute(insertcmd,obsid_list)
+    mydb.commit()
+    
     mycursor.close()
     mydb.close()
 
