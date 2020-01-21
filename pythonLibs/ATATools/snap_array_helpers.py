@@ -9,8 +9,13 @@ import ast
 import re
 
 
-def dict_values_to_comma_string(dictionary):
+def dict_list_to_list(dictionary):
     dlist = [item for sublist in dictionary.values() for item in sublist]
+    return dictionary
+
+def dict_values_to_comma_string(dictionary):
+    #dlist = [item for sublist in dictionary.values() for item in sublist]
+    dlist = dictionary.values()
     mystring = ",".join(dlist)
     return mystring
 
