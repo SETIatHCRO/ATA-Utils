@@ -11,7 +11,7 @@ import re
 
 def dict_list_to_list(dictionary):
     dlist = [item for sublist in dictionary.values() for item in sublist]
-    return dictionary
+    return dlist
 
 def dict_values_to_comma_string(dictionary):
     #dlist = [item for sublist in dictionary.values() for item in sublist]
