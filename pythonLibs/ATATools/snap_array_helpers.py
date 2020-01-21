@@ -10,7 +10,7 @@ import re
 
 
 def dict_values_to_comma_string(dictionary):
-    dlist = dictionary.values()
+    dlist = [item for sublist in dictionary.values() for item in sublist]
     mystring = ",".join(dlist)
     return mystring
 
