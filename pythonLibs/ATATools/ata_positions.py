@@ -53,7 +53,8 @@ class ATAPositions:
         ------------
         str 
             prefered source or None is no measurements are possible now
-
+        int
+            flag if there was a source change. 0 if source stayed, 1 if change
 
         """
         logger = logger_defaults.getModuleLogger(__name__)
@@ -74,7 +75,7 @@ class ATAPositions:
             is_up = pos.isUp(preference, d)
             if(is_up == True and sun_angle >= MIN_MOON_SUN_DIST and moon_angle >= MIN_MOON_SUN_DIST):
                 logger.info('prefered source is up: {}, {}'.format(info['az'],info['el']))
-                return preference
+                return preference,0
         
         #since we are here, the prefered source is not up
         preference_uptime = 0
@@ -101,7 +102,7 @@ class ATAPositions:
                 preference = s
                 preference_uptime = c_uptime
 
-        return preference
+        return preference,1
 
 
 
