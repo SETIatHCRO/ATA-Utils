@@ -21,7 +21,7 @@ import ata_remote
 import ata_constants
 import snap_array_helpers
 #import snap_onoffs_contants
-#from plumbum import local
+from plumbum import local
 import time
 import datetime
 import logger_defaults
@@ -57,7 +57,22 @@ def get_snap_dictionary(array_list):
     return retval
     
 
+def autotune(ant_string):
+    logger = logger_defaults.getModuleLogger(__name__)
 
+    logger.warning("autotune not implemented! fix it")
+    return
+
+    logger.info("autotuning: {}".format(ant_str))
+    str_out,str_err = ata_remote.callObs(['ataautotune',antstr])
+    #searching for warnings or errors
+    rwarn = str_out.find("warning")
+    if rwarn != -1:
+        logger.warning(str_out)
+    rerr = str_out.find("error")
+    if rerr != -1:
+        logger.error(str_out)
+        raise RuntimeError("Autotune execution error")
 
 #def set_pam_atten(ant, pol, val):
 #    """
