@@ -3,29 +3,17 @@
 """
 Python wrappers for various command line
 tools at the ATA.
-NB: many of these can only be run on
-`nsg-work1`, which has control of the USB
-switches and attenuators in the ATA test
-setup.
 """
 
 import re
-import os
-import sys
 from subprocess import Popen, PIPE
-import socket
 import ast
-import logging
 from threading import Thread
 import ata_remote
 import ata_constants
 import snap_array_helpers
-#import snap_onoffs_contants
 from plumbum import local
-import time
-import datetime
 import logger_defaults
-
 
 def get_snap_dictionary(array_list):
     """
@@ -74,34 +62,6 @@ def autotune(ant_string):
         logger.error(str_out)
         raise RuntimeError("Autotune execution error")
 
-#def set_pam_atten(ant, pol, val):
-#    """
-#    Set the attenuation of antenna `ant`, polarization `pol` to `val` dB
-#    """
-#    
-#    assert pol in ['x','y'], "unknown polarization string"
-#    
-#    logger = logger_defaults.getModuleLogger(__name__)
-#    
-#    logger.info("setting pam attenuator %s%s to %.1fdb" % (ant, pol, val))
-#    stdout,stderr=ata_remote.callObs(["atasetpams", ant, "-%s"%pol, str(val)])
-#    
-#    logger.info(stdout.rstrip())
-#
-#def set_pam_attens_old(ant, valx, valy):
-#    """
-#    Set the attenuation of antenna `ant`, both pols, to valx and valy dB
-#    """
-#
-#    logger = logger_defaults.getModuleLogger(__name__)
-#
-#    logger.info("setting pam attenuator %s to %.1f,%.1f db" % (ant, valx, valy))
-#    proc = Popen(["ssh", "obs@tumulus", "atasetpams", ant, "%f"%valx, "%f"%valy], stdout=PIPE)
-#    stdout, stderr = proc.communicate()
-#    proc.wait()
-#    # Log  returned result, but strip off the newline character
-#    logger.info(stdout.rstrip())
-
 def get_sky_freq():
     """
     Return the sky frequency (in MHz) currently
@@ -120,28 +80,6 @@ def get_ascii_status():
     stdout, stderr = proc.communicate()
     return stdout
 
-#def write_obs_to_db(source, freq, az_offset=0.0, el_offset=0.0, ants=["dummy"]):
-#    """
-#    Write details of an observation in to the observation database.
-#    """
-#    proc = Popen(["obs2db", ",".join(ants), "%f" % freq, source, "%f" % az_offset, "%f" % el_offset])
-#    proc.wait()
-#
-#def end_obs():
-#    """
-#    Write the current time as the end of the latest observation in the obs database.
-#    """
-#    proc = Popen(["obs2db", "stop"])
-#    proc.wait()
-#
-#def get_latest_obs():
-#    """
-#    Get the latest observation ID from the obs database.
-#    """
-#    proc = Popen(["obsgetid"], stdout=PIPE, stderr=PIPE)
-#    stdout, stderr = proc.communicate()
-#    return int(stdout)
-
 def point(source, freq, az_offset=0.0, el_offset=0.0, ants=['dummy'], writetodb=True):
     """
     Point the ATA at `source`, with an offset
@@ -159,7 +97,7 @@ def set_rf_switch(ant_list):
     Set RF switch `switch` (0..1) to connect the COM port
     to port `sel` (1..8)
     """
-    logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
+    logger = logger_defaults.getModuleLogger(__name__)
 
     ant_list_stripped = str(ant_list).replace("'","").replace("[","").replace("]","").replace(" ","")
 
@@ -179,7 +117,7 @@ def set_rf_switch(ant_list):
 
 def rf_switch_thread(ant_list, wait):
 
-    logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
+    logger = logger_defaults.getModuleLogger(__name__)
 
     t = Thread(target=set_rf_switch, args=(ant_list,))
     t.start()
@@ -192,8 +130,11 @@ def rf_switch_thread(ant_list, wait):
 
 
 def set_atten_thread(antpol_list, db_list, wait):
+    """
+    start a thread to set attenuator value
+    """
 
-    logger = logging.getLogger(__name__)
+    logger = logger_defaults.getModuleLogger(__name__)
 
     if(len(antpol_list) != len(db_list)):
         logger.error("set_atten_thread, antenna list length != db_list length.")
@@ -208,6 +149,12 @@ def set_atten_thread(antpol_list, db_list, wait):
 
     return t
     
+def wait_for_threads(tlist):
+    """
+    wait for all threads in the list to finish
+    """
+    for t in tlist:
+        t.join()
 
 def set_atten(antpol_list, db_list):
     """
@@ -221,7 +168,7 @@ def set_atten(antpol_list, db_list):
     #ant_list_stripped = str(ant_list).replace("'","").replace("[","").replace("]","").replace(" ","")
     #db_list_stripped = str(db_list).replace("'","").replace("[","").replace("]","").replace(" ","")
 
-    logger = logging.getLogger(__name__)
+    logger = logger_defaults.getModuleLogger(__name__)
     logger.info("setting rfswitch attenuators %s %s" % (db_str, antpol_str))
 
 #    if socket.gethostname() == ATTEN_HOST:
@@ -304,7 +251,7 @@ def get_pams(antlist):
 
 def move_ant_group(ants, from_group, to_group):
 
-    logger = logging.getLogger(__name__)
+    logger = logger_defaults.getModuleLogger(__name__)
     logger.info("Reserving \"%s\" from %s to %s" % (snap_array_helpers.array_to_string(ants), from_group, to_group))
 
     proc = Popen(["antreserve", from_group, to_group] + ants, stdout=PIPE, stderr=PIPE)
@@ -330,7 +277,7 @@ def release_antennas(ants, should_park):
     move_ant_group(ants, "bfa", "none")
 
     if(should_park):
-        logger = logging.getLogger(__name__)
+        logger = logger_defaults.getModuleLogger(__name__)
         logger.info("Parking ants");
         #proc = Popen(["ssh", "obs@tumulus", "park.csh"], stdout=PIPE, stderr=PIPE)
         #stdout, stderr = proc.communicate()
@@ -386,59 +333,6 @@ def set_freq(freq, ants):
     cmd = ssh[("obs@tumulus", "atasetfocus %s %.2f" % (ants, freq))]
     result = cmd()
     return result
-
-DEFAULT_DATA_DIR = "~/data"
-output_dir = os.path.expanduser("%s" % DEFAULT_DATA_DIR)
-
-def set_output_dir(dirname=None):
-
-    global output_dir
-
-    # Determine the snap data output directory based on todays date
-    todays_date = datetime.datetime.today().strftime('%Y%m%d')
-    if(dirname != None):
-        output_dir = dirname
-    else:
-        output_dir = os.path.expanduser("%s/%s" % (os.path.expanduser("%s" % DEFAULT_DATA_DIR), todays_date))
-    try:
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-    except OSError:
-        print ("Error: Creating directory %s" %  output_dir)
-        send_email("Error report", "Error: Creating directory %s. exiting" % output_dir)
-        sys.exit(1);
-
-    handle = logging.FileHandler("%s/log.txt" % output_dir, 'a')
-    formatter = logging.Formatter('%(asctime)s - %(module)s.%(funcName)s() - %(message)s')
-    handle.setFormatter(formatter)
-
-    logger = logging.getLogger()
-    logger.handlers = [handle]
-
-
-def get_output_dir():
-
-    global output_dir
-    return output_dir
-
-#https://stackoverflow.com/questions/22934616/multi-line-logging-in-python
-class CustomFilter(logging.Filter):
-    def filter(self, record):
-        if hasattr(record, 'dict') and len(record.dct) > 0:
-            for k, v in record.dct.iteritems():
-                record.msg = record.msg + '\n\t' + k + ': ' + v
-        return super(CustomFilter, self).filter(record)
-
-def setup_logger(dirname=None):
-
-    logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
-    logger.setLevel(logging.INFO)
-    logger.addFilter(CustomFilter())
-
-    set_output_dir(dirname)
-
-    return logger
-
 
 if __name__== "__main__":
 
