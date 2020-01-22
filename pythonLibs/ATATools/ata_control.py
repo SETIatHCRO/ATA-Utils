@@ -8,7 +8,8 @@ tools at the ATA.
 import re
 from subprocess import Popen, PIPE
 import ast
-from threading import Thread
+#from threading import Thread
+import concurrent.futures
 import ata_remote
 import ata_constants
 import snap_array_helpers
@@ -129,25 +130,33 @@ def rf_switch_thread(ant_list, wait):
     return t
 
 
-def set_atten_thread(antpol_list, db_list, wait):
+def set_atten_thread(antpol_list_list, db_list_list):
     """
     start a thread to set attenuator value
     """
 
     logger = logger_defaults.getModuleLogger(__name__)
+    tcount = len(antpol_list_list)
+    if(len(antpol_list_list) != len(db_list_list)):
+        logger.error("set_atten_thread, antenna list list length != db_list list length.")
+        raise RuntimeError("set_atten_thread, antenna list list length != db_list list length.")
 
-    if(len(antpol_list) != len(db_list)):
-        logger.error("set_atten_thread, antenna list length != db_list length.")
-        raise RuntimeError("set_atten_thread, antenna list length != db_list length.")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=tcount) as executor:
+    #with concurrent.futures.ProcessPoolExecutor(max_workers=tcount) as executor:
+        tlist = []
+        for ii in range(tcount):
+            antpol_list = antpol_list_list[ii]
+            db_list = db_list_list[ii]
+            if(len(antpol_list) != len(db_list)):
+                logger.error("set_atten_thread, antenna list length != db_list length.")
+                raise RuntimeError("set_atten_thread, antenna list length != db_list length.")
 
-    t = Thread(target=set_atten, args=(antpol_list, db_list,))
-    t.start()
+            t = executor.submit(set_atten,antpol_list, db_list)
+            tlist.append(t)
 
-    if(wait == True):
-        t.join();
-        return None
+        for t in tlist:
+            retval = t.result()
 
-    return t
     
 def wait_for_threads(tlist):
     """
