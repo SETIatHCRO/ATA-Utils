@@ -11,17 +11,16 @@ import datetime
 
 DEFAULT_DATA_DIR = "~/data"
 
-def set_output_dir_obsid(defaultdir=None,obsid):
+def set_output_dir_obsid(obsid,defaultdir=None):
 
     if not defaultdir:
         defaultdir = DEFAULT_DATA_DIR
 
     id_string = "{0:d}".format(obsid)
     output_dir = os.path.expanduser("%s/id%s" % (os.path.expanduser(defaultdir), id_string))
-    set_output_dir(dirname)
+    set_output_dir(output_dir)
 
-
-def set_output_dir_date(defaultdir=None,date=None):
+def set_output_dir_date(date=None,defaultdir=None):
 
     if not date:
         date = datetime.datetime.today()
@@ -30,7 +29,7 @@ def set_output_dir_date(defaultdir=None,date=None):
 
     date_string = date.strftime('%Y%m%d')
     output_dir = os.path.expanduser("%s/day%s" % (os.path.expanduser(defaultdir), todays_date))
-    set_output_dir(dirname)
+    set_output_dir(output_dir)
 
 def set_output_dir(dirname):
 

@@ -282,7 +282,7 @@ def release_antennas(ants, should_park):
         #proc = Popen(["ssh", "obs@tumulus", "park.csh"], stdout=PIPE, stderr=PIPE)
         #stdout, stderr = proc.communicate()
         #proc.wait()
-        stdout, stderr = ata_remote.callObs(["park.csh"])
+        stdout, stderr = ata_remote.callObs(["park.csh", ','.join(ants)])
         logger.info(stdout.rstrip())
         logger.info(stderr.rstrip())
         logger.info("Parked");

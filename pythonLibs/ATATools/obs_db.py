@@ -29,7 +29,7 @@ def getObsType(string):
     else:
         return 'OTHER'
 
-def getBackend(string):
+def getObsBackend(string):
     """
     supported backends: frb, beamformer, correlator, snap
     """
@@ -191,10 +191,10 @@ def initObservation(frequency,obstype,obsbackend,description,observer="unknown",
     mycursor = mydb.cursor()
 
     if setid:
-        insertcmd = ("insert into observations set freq=%(freq)s, type=%(obstype)s, backend=$(obsbackend)s, observer=%(observer)s, description=%(desc)s, setid=%(setid)s")
+        insertcmd = ("insert into observations set freq=%(freq)s, type=%(obstype)s, backend=%(obsbackend)s, observer=%(observer)s, description=%(desc)s, setid=%(setid)s")
         dict1 = {'freq': frequency, 'obstype' : getObsType(obstype), 'obsbackend' : getObsBackend(obsbackend), 'observer' : observer, 'desc' : description, 'setid' : setid}
     else:
-        insertcmd = ("insert into observations set freq=%(freq)s, type=%(obstype)s, backend=$(obsbackend)s, observer=%(observer)s, description=%(desc)s")
+        insertcmd = ("insert into observations set freq=%(freq)s, type=%(obstype)s, backend=%(obsbackend)s, observer=%(observer)s, description=%(desc)s")
         dict1 = {'freq': frequency, 'obstype' : getObsType(obstype), 'obsbackend' : getObsBackend(obsbackend), 'observer' : observer, 'desc' : description}
 
     logger.info("adding new observation {}".format( str(dict1) ))
