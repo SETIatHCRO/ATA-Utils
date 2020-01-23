@@ -38,7 +38,7 @@ def getPolynomials(alist):
     logger = logging.getLogger(__name__)
     logger.info("connecting to database")
     
-    mydb = ATASQL.connectDefaultROnly()
+    mydb = ATASQL.connectATAROnly()
     cursor = mydb.cursor()
     
     queryPart = ("select feed_parts.ant,pbmeas.pax_box_sn,pbmeas.pol,pbmeas.iscoherent,pbmeas.lowdet,pbmeas.highdet,pbmeas.p0,pbmeas.p1,pbmeas.p2,pbmeas.p3,pbmeas.p4,pbmeas.p5 "
