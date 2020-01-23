@@ -122,7 +122,7 @@ def initAntennasTable(recid,antlist,sources,azs=0.0,els=0.0, getpams=True):
     mycursor = mydb.cursor()
 
     insertcmdpams = ("insert into rec_ants set id=%(id)s, ant=%(ant)s, az=%(az)s, el=%(el)s, "
-                     "source=%(src)s, pamx=%(pamx)s, pamy=%(pamy)s")
+                     "source=%(src)s, pamx=%(pamx)s, pamy=%(pamy)s, pamdetx=%(pamdetx)s, pamdety=%(pamdety)s")
 
     insertcmdnopams = ("insert into rec_ants set id=%(id)s, ant=%(ant)s, az=%(az)s, el=%(el)s, "
                      "source=%(src)s")
@@ -131,6 +131,7 @@ def initAntennasTable(recid,antlist,sources,azs=0.0,els=0.0, getpams=True):
         try:
             logger.info("getting pam values")
             pamvals = ata_control.get_pams(antlist)
+            detvals = ata_control.get_dets(antlist)
         except:
             logger.exception("unable to get pams, ignoring flag")
             getpams = False
@@ -141,8 +142,10 @@ def initAntennasTable(recid,antlist,sources,azs=0.0,els=0.0, getpams=True):
         dict1 = {'id': recid, 'ant': cant, 'az': azs[x], 'el': els[x], 'src': sources[x]}
         if getpams:
             insertcmd = insertcmdpams
-            dict1['pamx'] = pamvals[cant + 'x']
-            dict1['pamy'] = pamvals[cant + 'y']
+            dict1['pamx'] = pamvals['ant' + cant + 'x']
+            dict1['pamy'] = pamvals['ant' + cant + 'y']
+            dict1['pamdetx'] = detvals['ant' + cant + 'x']
+            dict1['pamdety'] = detvals['ant' + cant + 'y']
         else:
             insertcmd = insertcmdnopams
 

@@ -42,19 +42,22 @@ def get_snap_dictionary(array_list):
 
     return retval
 
-def autotune(ant_string):
+def autotune(ants):
     logger = logger_defaults.getModuleLogger(__name__)
+
+    assert isinstance(ants,str),"input parameter not a string"
 
     logger.warning("autotune not implemented! fix it")
     return
 
-    logger.info("autotuning: {}".format(ant_str))
-    str_out,str_err = ata_remote.callObs(['ataautotune',antstr])
+    logger.info("autotuning: {}".format(ants))
+    str_out,str_err = ata_remote.callObs(['ataautotune',ants])
     #searching for warnings or errors
     rwarn = str_out.find("warning")
+    logger.info(str_err)
     if rwarn != -1:
         logger.warning(str_out)
-    rerr = str_out.find("error")
+    rerr = str_err.find("error")
     if rerr != -1:
         logger.error(str_out)
         raise RuntimeError("Autotune execution error")
@@ -82,6 +85,8 @@ def set_rf_switch(ant_list):
     to port `sel` (1..8)
     """
     logger = logger_defaults.getModuleLogger(__name__)
+
+    assert isinstance(ant_list,list),"input parameter not a list"
 
     ants = ','.join(ant_list)
 
@@ -155,6 +160,9 @@ def set_atten(antpol_list, db_list):
     Allowable values are 0.0 to 31.75
     """
 
+    assert isinstance(antpol_list,list),"input parameter not a list"
+    assert isinstance(db_list,list),"input parameter not a list"
+
     antpol_str = ",".join(antpol_list)
     db_str = ",".join(map(str,db_list))
 
@@ -178,52 +186,89 @@ def set_atten(antpol_list, db_list):
 
 def get_pams(antlist):
 
+    assert isinstance(antlist,list),"input parameter not a list"
+
     logger = logger_defaults.getModuleLogger(__name__)
     antstr = ",".join(antlist)
     logger.info("getting pams: {}".format(antstr))
     str_out,str_err = ata_remote.callObs(['atagetpams','-q',antstr])
 
+    if str_err:
+        logger.error("atagetpams got error: {}".format(str_err))
+
     retdict = {}
     lines = str_out.splitlines()
     for line in lines:
         regroups = re.search('ant(?P<ant>..)\s*on\s*(?P<x>[\d.]+)\s*on\s*(?P<y>[\d.]+)',line);
-        ant = regroups.group('ant')
-        xval = float(regroups.group('x'))
-        yval = float(regroups.group('y'))
-        retdict[ant + 'x'] = xval
-        retdict[ant + 'y'] = yval
+        if regroups:
+            ant = regroups.group('ant')
+            xval = float(regroups.group('x'))
+            yval = float(regroups.group('y'))
+            retdict['ant' + ant + 'x'] = xval
+            retdict['ant' + ant + 'y'] = yval
+        else:
+            logger.warning('unable to parse line: {}'.format(line))
 
     return retdict
 
-def move_ant_group(ants, from_group, to_group):
+def get_dets(antlist):
+
+    assert isinstance(antlist,list),"input parameter not a list"
 
     logger = logger_defaults.getModuleLogger(__name__)
-    logger.info("Reserving \"%s\" from %s to %s" % (snap_array_helpers.array_to_string(ants), from_group, to_group))
+    antstr = ",".join(antlist)
+    logger.info("getting dets: {}".format(antstr))
+    str_out,str_err = ata_remote.callObs(['atagetdet','-q',antstr])
+
+    if str_err:
+        logger.error("atagetdet got error: {}".format(str_err))
+
+    retdict = {}
+    lines = str_out.splitlines()
+    for line in lines:
+        regroups = re.search('ant(?P<ant>..)\s*(?P<x>[\d.]+)\s*(?P<y>[\d.]+)',line);
+        if regroups:
+            ant = regroups.group('ant')
+            xval = float(regroups.group('x'))
+            yval = float(regroups.group('y'))
+            retdict['ant' + ant + 'x'] = xval
+            retdict['ant' + ant + 'y'] = yval
+        else:
+            logger.warning('unable to parse line: {}'.format(line))
+
+    return retdict
+
+def move_ant_group(antlist, from_group, to_group):
+
+    assert isinstance(antlist,list),"input parameter not a list"
+
+    logger = logger_defaults.getModuleLogger(__name__)
+    logger.info("Reserving \"{}\" from {} to {}".format(snap_array_helpers.array_to_string(antlist), from_group, to_group))
     
-    stdout, stderr = ata_remote.callProg(["antreserve", from_group, to_group] + ants)
+    stdout, stderr = ata_remote.callProg(["antreserve", from_group, to_group] + antlist)
 
     lines = stdout.split('\n')
     for line in lines:
         cols = line.split()
         if (len(cols) > 0) and (cols[0]  == to_group):
             bfa = cols[1:]
-    for ant in ants:
+    for ant in antlist:
         if ant not in bfa:
-            logger.error("Failed to move antenna %s from %s to %s" % (ant, from_group, to_group))
-            raise RuntimeError("Failed to move antenna %s from %s to %s" % (ant, from_group, to_group))
+            logger.error("Failed to move antenna {} from {} to {}".format(ant, from_group, to_group))
+            raise RuntimeError("Failed to move antenna {} from {} to {}".format(ant, from_group, to_group))
 
-def reserve_antennas(ants):
+def reserve_antennas(antlist):
 
-    move_ant_group(ants, "none", "bfa")
+    move_ant_group(antlist, "none", "bfa")
 
-def release_antennas(ants, should_park):
+def release_antennas(antlist, should_park):
 
-    move_ant_group(ants, "bfa", "none")
+    move_ant_group(antlist, "bfa", "none")
 
     if(should_park):
         logger = logger_defaults.getModuleLogger(__name__)
         logger.info("Parking ants");
-        stdout, stderr = ata_remote.callObs(["park.csh", ','.join(ants)])
+        stdout, stderr = ata_remote.callObs(["park.csh", ','.join(antlist)])
         logger.info(stdout.rstrip())
         logger.info(stderr.rstrip())
         logger.info("Parked");
@@ -256,12 +301,20 @@ def create_ephems(source, az_offset, el_offset):
     #cmd = ssh[("obs@tumulus", "cd /home/obs/NSG;./create_ephems.rb %s %.2f %.2f" % (source, az_offset, el_offset))]
     #result = cmd()
     result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./create_ephems.rb {0!s} {1:.2f} {2:.2f}'.format(source,az_offset,el_offset)])
+    if errormsg:
+        logger = logger_defaults.getModuleLogger(__name__)
+        logger.error(errormsg)
     return ast.literal_eval(result)
 
 
 def point_ants(on_or_off, ants):
 
+    assert isinstance(ants,str),"input parameter not a string"
+
     result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./point_ants_onoff.rb {} {}'.format(on_or_off, ants)]) 
+    if errormsg:
+        logger = logger_defaults.getModuleLogger(__name__)
+        logger.error(errormsg)
     #ssh = local["ssh"]
     #cmd = ssh[("obs@tumulus", "cd /home/obs/NSG;./point_ants_onoff.rb %s %s" % (on_or_off, ants))]
     #result = cmd()
@@ -269,9 +322,18 @@ def point_ants(on_or_off, ants):
 
 def set_freq(freq, ants):
 
+    assert isinstance(ants,str),"input parameter not a string"
+
+    logger = logger_defaults.getModuleLogger(__name__)
+
     freqstr = '{0:.2f}'.format(freq)
     stdout, stderr = ata_remote.callObs(['atasetskyfreq','a',freqstr])
+    if stderr:
+        logger.error(errormsg)
+
     stdout, stderr = ata_remote.callObs(['atasetfocus',ants,freqstr])
+    if stderr:
+        logger.error(errormsg)
     #ssh = local["ssh"]
     #cmd = ssh[("obs@tumulus", "atasetskyfreq a %.2f" % freq)]
     #result = cmd()
