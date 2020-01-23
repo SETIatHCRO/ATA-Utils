@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name='pythonLibs_for_ATA-Utils',
+    name='ATA-Utils-pythonLibs',
     version=version.__version__,
     description='python utility scripts for ATA (private repo)',
     license='MIT',
