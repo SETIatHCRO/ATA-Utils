@@ -9,8 +9,17 @@ import ast
 import re
 
 def dict_list_to_list(dictionary):
+    """
+    this will convert {"snap0": [1,2,3], "snap2": [33,23]} to [1,2,3,33,23]
+    """
     dlist = [item for sublist in dictionary.values() for item in sublist]
     return dlist
+
+def dict_to_list(dictionary):
+    """
+    this will convert {"snap0": 1, "snap2": 33} to [1,33]
+    """
+    return dictionary.values() 
 
 def dict_values_to_comma_string(dictionary):
     #dlist = [item for sublist in dictionary.values() for item in sublist]

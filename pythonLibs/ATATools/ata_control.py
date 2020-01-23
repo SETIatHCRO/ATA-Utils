@@ -105,6 +105,7 @@ def rf_switch_thread(ant_list):
 
     logger = logger_defaults.getModuleLogger(__name__)
     tcount = len(ant_list)
+
     logger.info("starting concurrent execution of set_rf_switch with {} workers".format(tcount))
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=tcount) as executor:
