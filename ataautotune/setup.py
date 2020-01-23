@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='autotune',
-    install_requires=['ATASQL>=0.0.2'],
+    install_requires=['ATA-Utils-priv>=1.0.0'],
     version=version.__version__,
     description='python package for auto tune',
     license='MIT',
