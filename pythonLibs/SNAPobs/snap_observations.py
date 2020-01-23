@@ -15,7 +15,7 @@ def single_snap_observe():
     raise NotImplementedError
 
 
-def observe_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,rms=None,
+def observe_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,backend="SNAP",rms=None,
         az_offset=0,el_offset=0,fpga_file=snap_defaults.spectra_snap_file,obs_set_id=None):
     """
     basic observation scripts, where all antennas are pointed on in the same position
@@ -45,7 +45,7 @@ def observe_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragmen
     logger = logger_defaults.getModuleLogger(__name__)
     #setting up the observation and starting it
 
-    obsid = obs_db.initObservation(freq,obstype,"SNAP",desc,obsuser,obs_set_id)
+    obsid = obs_db.initRecording(freq,obstype,backend,desc,obsuser,obs_set_id)
 
     logger.info("got obs id {}".format(obsid))
 
@@ -59,7 +59,7 @@ def observe_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragmen
         logger.info("starting observation {}. Target RMS {}".format(obsid,rms))
     else:
         logger.info("starting observation {}. No RMS provided".format(obsid))
-    obs_db.startObservation(obsid)
+    obs_db.startRecording(obsid)
 
     #import pdb
     #pdb.set_trace()
@@ -77,7 +77,7 @@ def observe_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragmen
         for t in threads:
             retval = t.result()
 
-    obs_db.stopObservation(obsid)
+    obs_db.stopRecording(obsid)
 
     return obsid
 

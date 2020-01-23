@@ -13,7 +13,7 @@ import ATASQL
 import logger_defaults
 import ata_control
 
-def getObsType(string):
+def getRecType(string):
     """
     supported types: frb, calibration, on-off, pulsar, other        
     """
@@ -29,7 +29,7 @@ def getObsType(string):
     else:
         return 'OTHER'
 
-def getObsBackend(string):
+def getRecBackend(string):
     """
     supported backends: frb, beamformer, correlator, snap
     """
@@ -82,15 +82,15 @@ def getNewObsSetID(description="n/a"):
 
     return myid
 
-def initAntennasTable(obsid,antlist,sources,azs=0.0,els=0.0, getpams=True):
+def initAntennasTable(recid,antlist,sources,azs=0.0,els=0.0, getpams=True):
     """
     Populates the antenna table with sources, azimuths and elevations, and by default with pam values
 
 
     Parameters
     -------------
-    obsid : long
-        observation id
+    recid : long
+        recording id
     antlist : str list
         list of antennas, short names, ie ['1a','2b']
     sources : str list or str
@@ -121,10 +121,10 @@ def initAntennasTable(obsid,antlist,sources,azs=0.0,els=0.0, getpams=True):
     mydb = ATASQL.connectObsDb()
     mycursor = mydb.cursor()
 
-    insertcmdpams = ("insert into obs_ants set id=%(id)s, ant=%(ant)s, az=%(az)s, el=%(el)s, "
+    insertcmdpams = ("insert into rec_ants set id=%(id)s, ant=%(ant)s, az=%(az)s, el=%(el)s, "
                      "source=%(src)s, pamx=%(pamx)s, pamy=%(pamy)s")
 
-    insertcmdnopams = ("insert into obs_ants set id=%(id)s, ant=%(ant)s, az=%(az)s, el=%(el)s, "
+    insertcmdnopams = ("insert into rec_ants set id=%(id)s, ant=%(ant)s, az=%(az)s, el=%(el)s, "
                      "source=%(src)s")
 
     if getpams:
@@ -138,7 +138,7 @@ def initAntennasTable(obsid,antlist,sources,azs=0.0,els=0.0, getpams=True):
     #this is not the cleanest way. Probably the itertools.izip should be used
     for x in xrange(nants):
         cant = antlist[x]
-        dict1 = {'id': obsid, 'ant': cant, 'az': azs[x], 'el': els[x], 'src': sources[x]}
+        dict1 = {'id': recid, 'ant': cant, 'az': azs[x], 'el': els[x], 'src': sources[x]}
         if getpams:
             insertcmd = insertcmdpams
             dict1['pamx'] = pamvals[cant + 'x']
@@ -155,18 +155,18 @@ def initAntennasTable(obsid,antlist,sources,azs=0.0,els=0.0, getpams=True):
     
 
 
-def initObservation(frequency,obstype,obsbackend,description,observer="unknown",setid=None):
+def initRecording(frequency,obstype,obsbackend,description,observer="unknown",setid=None):
     """
-    Crates new observation entry and retruns new observation
+    Crates new recording entry and retruns new recording id
 
     Parameters
     -------------
     frequency: float
         center frequency
     obstype : str
-        type of the observation. see getObsType
+        type of the recording. see getRecType
     obsbackend : str
-        backend of the observation. see getObsBackend
+        backend of the recording. see getRecBackend
     description : str
         observation description
     observer : str
@@ -177,7 +177,7 @@ def initObservation(frequency,obstype,obsbackend,description,observer="unknown",
     Returns
     -------------
     long
-        observation id
+        recording id
 
     Raises
     -------------
@@ -191,11 +191,11 @@ def initObservation(frequency,obstype,obsbackend,description,observer="unknown",
     mycursor = mydb.cursor()
 
     if setid:
-        insertcmd = ("insert into observations set freq=%(freq)s, type=%(obstype)s, backend=%(obsbackend)s, observer=%(observer)s, description=%(desc)s, setid=%(setid)s")
-        dict1 = {'freq': frequency, 'obstype' : getObsType(obstype), 'obsbackend' : getObsBackend(obsbackend), 'observer' : observer, 'desc' : description, 'setid' : setid}
+        insertcmd = ("insert into recordings set freq=%(freq)s, type=%(obstype)s, backend=%(obsbackend)s, observer=%(observer)s, description=%(desc)s, setid=%(setid)s")
+        dict1 = {'freq': frequency, 'obstype' : getRecType(obstype), 'obsbackend' : getRecBackend(obsbackend), 'observer' : observer, 'desc' : description, 'setid' : setid}
     else:
-        insertcmd = ("insert into observations set freq=%(freq)s, type=%(obstype)s, backend=%(obsbackend)s, observer=%(observer)s, description=%(desc)s")
-        dict1 = {'freq': frequency, 'obstype' : getObsType(obstype), 'obsbackend' : getObsBackend(obsbackend), 'observer' : observer, 'desc' : description}
+        insertcmd = ("insert into recordings set freq=%(freq)s, type=%(obstype)s, backend=%(obsbackend)s, observer=%(observer)s, description=%(desc)s")
+        dict1 = {'freq': frequency, 'obstype' : getRecType(obstype), 'obsbackend' : getRecBackend(obsbackend), 'observer' : observer, 'desc' : description}
 
     logger.info("adding new observation {}".format( str(dict1) ))
     mycursor.execute(insertcmd,dict1)
@@ -209,19 +209,19 @@ def initObservation(frequency,obstype,obsbackend,description,observer="unknown",
 
     return myid
 
-def startObservation(obsid):
+def startRecording(obsid):
     """
-    updates observation start time of obsid observation to now()
+    updates recording start time of obsid recording to now()
     """
     logger= logger_defaults.getModuleLogger(__name__)
 
     mydb = ATASQL.connectObsDb()
     mycursor = mydb.cursor()
     
-    insertcmd = ("update observations set tstart=now(), status='STARTED' where id=%(id)s")
+    insertcmd = ("update recordings set tstart=now(), status='STARTED' where id=%(id)s")
     dict1 = {'id': obsid}
 
-    logger.info("updating start time of the observation")
+    logger.info("updating start time of the recording")
     mycursor.execute(insertcmd,dict1)
     mydb.commit()
 
@@ -229,28 +229,28 @@ def startObservation(obsid):
     mydb.close()
 
 
-def stopObservation(obsid):
+def stopRecording(obsid):
     """
-    updates observation stop time of obsid observation to now()
+    updates recording stop time of obsid recording to now()
     """
     logger= logger_defaults.getModuleLogger(__name__)
 
     mydb = ATASQL.connectObsDb()
     mycursor = mydb.cursor()
     
-    insertcmd = ("update observations set tstop=now(), status='STOPPED' where id=%(id)s")
+    insertcmd = ("update recordings set tstop=now(), status='STOPPED' where id=%(id)s")
     dict1 = {'id': obsid}
 
-    logger.info("updating stop time of the observation")
+    logger.info("updating stop time of the recording")
     mycursor.execute(insertcmd,dict1)
     mydb.commit()
 
     mycursor.close()
     mydb.close()
 
-def markObservationsBAD(obsid_list):
+def markRecordingssBAD(obsid_list):
     """
-    mark observations as bad. 
+    mark recordings as bad. 
     """
 
     if not isinstance(obsid_list,list) and len(obsid_list) == 1:
@@ -261,11 +261,11 @@ def markObservationsBAD(obsid_list):
     mydb = ATASQL.connectObsDb()
     mycursor = mydb.cursor()
 
-    insertcmd_part = ("update observations set status='BAD' where id in (%s)")
+    insertcmd_part = ("update recordings set status='BAD' where id in (%s)")
     in_p=', '.join(map(lambda x: '%s', obsid_list))
     insertcmd = insertcmd_part % in_p;
     
-    logger.info("changing status of observations {} to BAD".format(', '.join(obsid_list)))
+    logger.info("changing status of recordings {} to BAD".format(', '.join(obsid_list)))
 
     mycursor.execute(insertcmd,obsid_list)
     mydb.commit()
@@ -273,9 +273,9 @@ def markObservationsBAD(obsid_list):
     mycursor.close()
     mydb.close()
 
-def markObservationsOK(obsid_list):
+def markRecordingsOK(obsid_list):
     """
-    mark observations as ok. 
+    mark recordings as ok. 
     """
 
     if not isinstance(obsid_list,list) and len(obsid_list) == 1:
@@ -286,11 +286,11 @@ def markObservationsOK(obsid_list):
     mydb = ATASQL.connectObsDb()
     mycursor = mydb.cursor()
 
-    insertcmd_part = ("update observations set status='OK' where id in (%s)")
+    insertcmd_part = ("update recordings set status='OK' where id in (%s)")
     in_p=', '.join(map(lambda x: '%s', obsid_list))
     insertcmd = insertcmd_part % in_p;
     
-    logger.info("changing status of observations {} to OK".format(', '.join(obsid_list)))
+    logger.info("changing status of recordings {} to OK".format(', '.join(obsid_list)))
 
     mycursor.execute(insertcmd,obsid_list)
     mydb.commit()
