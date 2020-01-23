@@ -10,15 +10,15 @@ import snap_defaults
 import snap_dirs
 import concurrent.futures
 
-def single_snap_observe():
+def single_snap_recording():
     logger = logger_defaults.getModuleLogger(__name__)
     raise NotImplementedError
 
 
-def observe_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,backend="SNAP",rms=None,
+def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,backend="SNAP",rms=None,
         az_offset=0,el_offset=0,fpga_file=snap_defaults.spectra_snap_file,obs_set_id=None):
     """
-    basic observation scripts, where all antennas are pointed on in the same position
+    basic recording scripts, where all antennas are pointed on in the same position
     NOTE:
     the frequency, antenna pointing and source has to be set up earlier. This function only 
     records data and populates the database with given information. 
@@ -70,7 +70,7 @@ def observe_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragmen
     with concurrent.futures.ThreadPoolExecutor(max_workers=nsnaps) as executor:
         threads = []
         for snap in snaps:
-            t = executor.submit(single_snap_observe)
+            t = executor.submit(single_snap_recording)
             threads.append(t)
 
 
@@ -105,7 +105,7 @@ if __name__== "__main__":
     ata_control.reserve_antennas(ant_list)
 
     try:
-        obsid = observe_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,rms,
+        obsid = record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,rms,
                         az_offset,el_offset,fpga_file,obs_set_id)
         logger.info("ID: {}".format(obsid))
     except:
