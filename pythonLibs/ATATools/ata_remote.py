@@ -7,7 +7,6 @@ Created on Tue Dec 24 2019
 @author: jkulpa
 """
 
-
 import subprocess
 import logging
 import pdb
@@ -128,9 +127,9 @@ def callSwitch(myargs):
     -------------
     """
     if socket.gethostname() == RF_SWITCH_HOST:
-        str_out,str_err = callProgIgnoreError(myargs);
+        str_out,str_err = callProg(myargs);
     else:
-        str_out,str_err = callProgIgnoreError( ['ssh', RF_SWITCH_USER +'@' + RF_SWITCH_HOST_IP ] + myargs )
+        str_out,str_err = callProg( ['ssh', RF_SWITCH_USER +'@' + RF_SWITCH_HOST_IP ] + myargs )
         
     return str_out,str_err
 
@@ -153,8 +152,8 @@ def callSwitch(myargs):
     -------------
     """
     if socket.gethostname() == ATTEN_HOST:
-        str_out,str_err = callProgIgnoreError(myargs);
+        str_out,str_err = callProg(myargs);
     else:
-        str_out,str_err = callProgIgnoreError( ['ssh', ATTEN_USER +'@' + ATTEN_HOST_IP ] + myargs )
+        str_out,str_err = callProg( ['ssh', ATTEN_USER +'@' + ATTEN_HOST_IP ] + myargs )
         
     return str_out,str_err
