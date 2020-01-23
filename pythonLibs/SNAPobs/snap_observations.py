@@ -8,16 +8,36 @@ main functions for snap observations
 from ATATools import logger_defaults,obs_db,ata_control
 import snap_defaults
 import snap_dirs
-from threading import Thread
-#from subprocess import Popen, PIPE
+import concurrent.futures
 
 def single_snap_observe():
     logger = logger_defaults.getModuleLogger(__name__)
+    raise NotImplementedError
 
 
 def observe_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,rms=None,
         az_offset=0,el_offset=0,fpga_file=snap_defaults.spectra_snap_file,obs_set_id=None):
     """
+    basic observation scripts, where all antennas are pointed on in the same position
+    NOTE:
+    the frequency, antenna pointing and source has to be set up earlier. This function only 
+    records data and populates the database with given information. 
+    optionaly, it changes the rms values for the attenuators, but that may be removed in future version
+
+    Parameters
+    -------------
+    ant_dict : dict
+        the snap to antenna mapping for the recording. e.g. {'snap0': '2a','snap1': '2j'}
+    freq : float
+        the frequency
+    
+    Returns
+    -------------
+    long
+        observation (recording) id
+    
+    Raises
+    -------------
 
 
     """
@@ -45,18 +65,17 @@ def observe_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragmen
     #pdb.set_trace()
 
     snaps = ant_dict.keys()
-    threads = []
-    for snap in snaps:
-        t = Thread(target=single_snap_observe,
-                args=())
+    nsnaps = len(snaps)
 
-        t.start()
-        #time.sleep(1)
-        threads.append(t)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=nsnaps) as executor:
+        threads = []
+        for snap in snaps:
+            t = executor.submit(single_snap_observe)
+            threads.append(t)
 
 
-    for t in threads:
-        t.join()
+        for t in threads:
+            retval = t.result()
 
     obs_db.stopObservation(obsid)
 

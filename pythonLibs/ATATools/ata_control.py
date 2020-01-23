@@ -6,14 +6,11 @@ tools at the ATA.
 """
 
 import re
-from subprocess import Popen, PIPE
 import ast
-#from threading import Thread
 import concurrent.futures
 import ata_remote
 import ata_constants
 import snap_array_helpers
-from plumbum import local
 import logger_defaults
 
 def get_snap_dictionary(array_list):
@@ -44,7 +41,6 @@ def get_snap_dictionary(array_list):
         retval['snap2'] = s2
 
     return retval
-    
 
 def autotune(ant_string):
     logger = logger_defaults.getModuleLogger(__name__)
@@ -68,8 +64,7 @@ def get_sky_freq():
     Return the sky frequency (in MHz) currently
     tuned to the center of the ATA band
     """
-    proc = Popen(["atagetskyfreq", "a"], stdout=PIPE, stderr=PIPE)
-    stdout, stderr = proc.communicate()
+    stdout, stderr = ata_remote.callObs(["atagetskyfreq", "a"])
     return float(stdout.strip())
 
 def get_ascii_status():
@@ -77,22 +72,10 @@ def get_ascii_status():
     Return an ascii table of lots of ATA
     status information.
     """
-    proc = Popen("ataasciistatus", stdout=PIPE, stderr=PIPE)
-    stdout, stderr = proc.communicate()
+    
+    stdout, stderr = ata_remote.callObs(["ataasciistatus","-l"])
     return stdout
 
-def point(source, freq, az_offset=0.0, el_offset=0.0, ants=['dummy'], writetodb=True):
-    """
-    Point the ATA at `source`, with an offset
-    from the source's position of `az_offset` degrees
-    in azimuth and `el_offset` degrees in elevation.
-    Tune to a center sky frequency of `freq` MHz
-    """
-
-    proc = Popen(["pointshift", source, "%f" % freq, "%f" % az_offset, "%f" % el_offset])
-    proc.wait()
-
-#def set_rf_switch(switch, sel):
 def set_rf_switch(ant_list):
     """
     Set RF switch `switch` (0..1) to connect the COM port
@@ -100,34 +83,40 @@ def set_rf_switch(ant_list):
     """
     logger = logger_defaults.getModuleLogger(__name__)
 
-    ant_list_stripped = str(ant_list).replace("'","").replace("[","").replace("]","").replace(" ","")
+    ants = ','.join(ant_list)
 
-    if socket.gethostname() == RF_SWITCH_HOST:
-        proc = Popen(["rfswitch", "%s" % ant_list_stripped], stdout=PIPE, stderr=PIPE)
-    else:
-        proc = Popen(["ssh", "sonata@%s" % RF_SWITCH_HOST, "rfswitch", "%s" % ant_list_stripped], stdout=PIPE, stderr=PIPE)
-    stdout, stderr = proc.communicate()
+    stdout, stderr = ata_remote.callSwitch(['rfswitch',ants])
+
     for line in stdout.splitlines():
-        logger.info("Set rfswitch for ants %s result: %s" % (ant_list_stripped, line))
+        logger.info("Set rfswitch for ants %s result: %s" % (ants, line))
+
     if stderr.startswith("OK"):
-        logger.info("Set rfswitch for ants %s result: SUCCESS" % ant_list_stripped)
+        logger.info("Set rfswitch for ants %s result: SUCCESS" % ants)
         return
     else:
         logger.info("Set switch 'rfswitch %s' failed!" % ant_list_stripped)
-        raise RuntimeError("Set switch 'rfswitch %s' failed!" % (ant_list_stripped))
+        raise RuntimeError("Set switch 'rfswitch %s' failed!" % (ants))
 
-def rf_switch_thread(ant_list, wait):
+def rf_switch_thread(ant_list):
+    """
+    start a thread to set rf switch,
+    ant list should consist of antennas from separate snaps
+    """
 
     logger = logger_defaults.getModuleLogger(__name__)
+    tcount = len(ant_list)
+    logger.info("starting concurrent execution of set_rf_switch with {} workers".format(tcount))
 
-    t = Thread(target=set_rf_switch, args=(ant_list,))
-    t.start()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=tcount) as executor:
+    #with concurrent.futures.ProcessPoolExecutor(max_workers=tcount) as executor:
+        tlist = []
+        for cant in ant_list:
 
-    if(wait == True):
-        t.join();
-        return None
+            t = executor.submit(set_rf_switch,[cant])
+            tlist.append(t)
 
-    return t
+        for t in tlist:
+            retval = t.result()
 
 
 def set_atten_thread(antpol_list_list, db_list_list):
@@ -141,6 +130,7 @@ def set_atten_thread(antpol_list_list, db_list_list):
         logger.error("set_atten_thread, antenna list list length != db_list list length.")
         raise RuntimeError("set_atten_thread, antenna list list length != db_list list length.")
 
+    logger.info("starting concurrent execution of set_atten with {} workers".format(tcount))
     with concurrent.futures.ThreadPoolExecutor(max_workers=tcount) as executor:
     #with concurrent.futures.ProcessPoolExecutor(max_workers=tcount) as executor:
         tlist = []
@@ -157,14 +147,6 @@ def set_atten_thread(antpol_list_list, db_list_list):
         for t in tlist:
             retval = t.result()
 
-    
-def wait_for_threads(tlist):
-    """
-    wait for all threads in the list to finish
-    """
-    for t in tlist:
-        t.join()
-
 def set_atten(antpol_list, db_list):
     """
     Set attenuation of antenna or ant-pol `ant`
@@ -174,17 +156,10 @@ def set_atten(antpol_list, db_list):
 
     antpol_str = ",".join(antpol_list)
     db_str = ",".join(map(str,db_list))
-    #ant_list_stripped = str(ant_list).replace("'","").replace("[","").replace("]","").replace(" ","")
-    #db_list_stripped = str(db_list).replace("'","").replace("[","").replace("]","").replace(" ","")
 
     logger = logger_defaults.getModuleLogger(__name__)
     logger.info("setting rfswitch attenuators %s %s" % (db_str, antpol_str))
 
-#    if socket.gethostname() == ATTEN_HOST:
-#    proc = Popen(["atten", "%s" % db_list_stripped, "%s" % ant_list_stripped],  stdout=PIPE, stderr=PIPE)
-#    else:
-    #proc = Popen(["ssh", "sonata@%s" % ATTEN_HOST, "sudo", "atten", "%s" % db_list_stripped, "%s" % ant_list_stripped],  stdout=PIPE, stderr=PIPE)
-    #stdout, stderr = proc.communicate()
     stdout, stderr = ata_remote.callSwitch(["atten",db_str,antpol_str])
 
     output = ""
@@ -199,45 +174,6 @@ def set_atten(antpol_list, db_list):
     else:
         logger.error("Set attenuation 'atten %s %s' failed! (STDERR=%s)" % (db_str, antpol_str,stderr))
         raise RuntimeError("ERROR: set_atten %s %s returned: %s" % (db_str, antpol_str, stderr))
-
-#def set_pam_atten_old(ant, pol, val):
-#    """
-#    Set the attenuation of antenna `ant`, polarization `pol` to `val` dB
-#    """
-#    logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
-#    logger.info("setting pam attenuator %s%s to %.1fdb" % (ant, pol, val))
-#    if(pol == ""):
-#        proc = Popen(["ssh", "obs@tumulus", "atasetpams", ant, "%f"%val, "%f"%val], stdout=PIPE)
-#    else:
-#        proc = Popen(["ssh", "obs@tumulus", "atasetpams", ant, "-%s"%pol, "%f"%val], stdout=PIPE)
-#    stdout, stderr = proc.communicate()
-#    proc.wait()
-#    # Log  returned result, but strip off the newline character
-#    logger.info(stdout.rstrip())
-
-#def set_pam_attens_old(ant, valx, valy):
-#    """
-#    Set the attenuation of antenna `ant`, both pols, to valx and valy dB
-#    """
-#    logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
-#    logger.info("setting pam attenuator %s to %.1f,%.1f db" % (ant, valx, valy))
-#    proc = Popen(["ssh", "obs@tumulus", "atasetpams", ant, "%f"%valx, "%f"%valy], stdout=PIPE)
-#    stdout, stderr = proc.communicate()
-#    proc.wait()
-#    # Log  returned result, but strip off the newline character
-#    logger.info(stdout.rstrip())
-
-#def get_pam_status(ant):
-#    """
-#    Get the PAM attenuation settings and power detector readings for antenna `ant`
-#    """
-#    logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
-#    logger.info("getting pam attenuator %s" % ant )
-#    proc = Popen(["getdetpams", ant],  stdout=PIPE, stderr=PIPE)
-#    stdout, stderr = proc.communicate()
-#    logger.info("getting pam attenuator stdout: %s" % stdout)
-#    x = stdout.split(',')
-#    return {'ant':x[0], 'atten_xf':float(x[1]), 'atten_xb':float(x[2]), 'atten_yf':float(x[3]), 'atten_yb':float(x[4]), 'det_x':float(x[5]), 'det_y':float(x[6])}
 
 def get_pams(antlist):
 
@@ -262,9 +198,9 @@ def move_ant_group(ants, from_group, to_group):
 
     logger = logger_defaults.getModuleLogger(__name__)
     logger.info("Reserving \"%s\" from %s to %s" % (snap_array_helpers.array_to_string(ants), from_group, to_group))
+    
+    stdout, stderr = ata_remote.callProg(["antreserve", from_group, to_group] + ants)
 
-    proc = Popen(["antreserve", from_group, to_group] + ants, stdout=PIPE, stderr=PIPE)
-    stdout, stderr = proc.communicate()
     lines = stdout.split('\n')
     for line in lines:
         cols = line.split()
@@ -272,8 +208,6 @@ def move_ant_group(ants, from_group, to_group):
             bfa = cols[1:]
     for ant in ants:
         if ant not in bfa:
-            #print nonegroup
-            #print(ants)
             logger.error("Failed to move antenna %s from %s to %s" % (ant, from_group, to_group))
             raise RuntimeError("Failed to move antenna %s from %s to %s" % (ant, from_group, to_group))
 
@@ -288,9 +222,6 @@ def release_antennas(ants, should_park):
     if(should_park):
         logger = logger_defaults.getModuleLogger(__name__)
         logger.info("Parking ants");
-        #proc = Popen(["ssh", "obs@tumulus", "park.csh"], stdout=PIPE, stderr=PIPE)
-        #stdout, stderr = proc.communicate()
-        #proc.wait()
         stdout, stderr = ata_remote.callObs(["park.csh", ','.join(ants)])
         logger.info(stdout.rstrip())
         logger.info(stderr.rstrip())
@@ -301,8 +232,7 @@ def get_ra_dec(source, deg=True):
     Get the J2000 RA / DEC of `source`. Return in decimal degrees (DEC) and hours (RA)
     by default, unless `deg`=False, in which case return in sexagesimal.
     """
-    proc = Popen(["atacheck", source], stdout=PIPE, stderr=PIPE)
-    stdout, stderr = proc.communicate()
+    stdout, stderr = ata_remote.callObs(["atacheck", source])
     for line in stdout.split("\n"):
         if "Found %s" % source in line:
             cols = line.split()
@@ -321,27 +251,32 @@ def get_ra_dec(source, deg=True):
 
 def create_ephems(source, az_offset, el_offset):
 
-    ssh = local["ssh"]
-    cmd = ssh[("obs@tumulus", "cd /home/obs/NSG;./create_ephems.rb %s %.2f %.2f" % (source, az_offset, el_offset))]
-    result = cmd()
+    #ssh = local["ssh"]
+    #cmd = ssh[("obs@tumulus", "cd /home/obs/NSG;./create_ephems.rb %s %.2f %.2f" % (source, az_offset, el_offset))]
+    #result = cmd()
+    result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./create_ephems.rb {0!s} {1:.2f} {2:.2f}'.format(source,az_offset,el_offset)])
     return ast.literal_eval(result)
 
 
-def point_ants(on_or_off, ant_list):
+def point_ants(on_or_off, ants):
 
-    ssh = local["ssh"]
-    cmd = ssh[("obs@tumulus", "cd /home/obs/NSG;./point_ants_onoff.rb %s %s" % (on_or_off, ant_list))]
-    result = cmd()
+    result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./point_ants_onoff.rb {} {}'.format(on_or_off, ants)]) 
+    #ssh = local["ssh"]
+    #cmd = ssh[("obs@tumulus", "cd /home/obs/NSG;./point_ants_onoff.rb %s %s" % (on_or_off, ants))]
+    #result = cmd()
     return ast.literal_eval(result)
 
 def set_freq(freq, ants):
 
-    ssh = local["ssh"]
-    cmd = ssh[("obs@tumulus", "atasetskyfreq a %.2f" % freq)]
-    result = cmd()
-    cmd = ssh[("obs@tumulus", "atasetfocus %s %.2f" % (ants, freq))]
-    result = cmd()
-    return result
+    freqstr = '{0:.2f}'.format(freq)
+    stdout, stderr = ata_remote.callObs(['atasetskyfreq','a',freqstr])
+    stdout, stderr = ata_remote.callObs(['atasetfocus',ants,freqstr])
+    #ssh = local["ssh"]
+    #cmd = ssh[("obs@tumulus", "atasetskyfreq a %.2f" % freq)]
+    #result = cmd()
+    #cmd = ssh[("obs@tumulus", "atasetfocus %s %.2f" % (ants, freq))]
+    #result = cmd()
+    #return result
 
 if __name__== "__main__":
 

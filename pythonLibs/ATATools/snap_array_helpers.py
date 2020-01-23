@@ -8,7 +8,6 @@ import sys
 import ast
 import re
 
-
 def dict_list_to_list(dictionary):
     dlist = [item for sublist in dictionary.values() for item in sublist]
     return dlist
@@ -26,7 +25,6 @@ def string_to_numeric_array(string):
     #arr = []
     #arr.append(eval('[%s]' % string))
     #return arr[0]
-
 
 # Convert a string, like "[0,0,0,1,1],[0,0,0,0,0]" to an array
 def string_to_array(string):
