@@ -9,10 +9,36 @@ from ATATools import logger_defaults,obs_db,ata_control
 import snap_defaults
 import snap_dirs
 import concurrent.futures
+import snap_recorder
 
 def single_snap_recording():
     logger = logger_defaults.getModuleLogger(__name__)
     raise NotImplementedError
+
+def setRMS(ant_dict,fpga_file=snap_defaults.spectra_snap_file,rms=snap_defaults.rms,srate=snap_defaults.srate):
+    """
+    set attenuators values for SNAP observation
+    """
+
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    ant_list = ant_dict.values()
+
+    snaps = ant_dict.keys()
+    nsnaps = len(snaps)
+
+    rdict = {}
+    with concurrent.futures.ProcessPoolExecutor(max_workers=nsnaps) as executor:
+        threads = []
+        for snap in snaps:
+            t = executor.submit(snap_recorder.setSnapRMS,snap,ant_dict[snap],fpga_file,rms)
+            threads.append(t)
+
+        for t in threads:
+            retval = t.result()
+            rdict[retval['ant']] = retval
+
+    return rdict
 
 
 def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,backend="SNAP",rms=None,
@@ -67,7 +93,7 @@ def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment
     snaps = ant_dict.keys()
     nsnaps = len(snaps)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=nsnaps) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=nsnaps) as executor:
         threads = []
         for snap in snaps:
             t = executor.submit(single_snap_recording)
@@ -84,8 +110,8 @@ def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment
 
 if __name__== "__main__":
     
-    ant_list = ['2j','2a','1c']
-    ant_dict = {'snap1': '2j', 'snap0': '2a', 'snap2': '1c'}
+    ant_list = ['1a','2a']
+    ant_dict = {'snap0': '2a', 'snap2': '1a'}
     freq = 1400.0
     source = 'casa'
     ncaptures = 16
@@ -93,7 +119,7 @@ if __name__== "__main__":
     obsuser='ataonoff'
     desc='ON rep 0'
     filefragment = 'on_000'
-    rms=None
+    rms=12.0
     az_offset=0
     el_offset=0
     fpga_file=snap_defaults.spectra_snap_file
@@ -105,9 +131,11 @@ if __name__== "__main__":
     ata_control.reserve_antennas(ant_list)
 
     try:
-        obsid = record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,rms,
-                        az_offset,el_offset,fpga_file,obs_set_id)
-        logger.info("ID: {}".format(obsid))
+        #obsid = record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,rms,
+        #                az_offset,el_offset,fpga_file,obs_set_id)
+        #logger.info("ID: {}".format(obsid))
+        retval = setRMS(ant_dict,fpga_file,rms) 
+        print(str(retval))
     except:
         logger.exception('Top level test')
         raise

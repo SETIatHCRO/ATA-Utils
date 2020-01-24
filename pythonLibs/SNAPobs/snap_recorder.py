@@ -7,7 +7,7 @@ import numpy as np
 import struct
 from ATATools import ata_control,logger_defaults
 import snap_defaults 
-
+import logging
 
 def setSnapRMS(host,ant,fpga_file,rms=snap_defaults.rms,srate=snap_defaults.srate):
     snap = getSnap(host,fpga_file)
@@ -16,8 +16,12 @@ def setSnapRMS(host,ant,fpga_file,rms=snap_defaults.rms,srate=snap_defaults.srat
     return retdict
 
 def getSnap(host, fpga_file):
+    #snap = casperfpga.CasperFpga(host,transport=casperfpga.transport_tapcp.TapcpTransport)
+    #we are silently omiting the logs from this call
+    logger = logging.getLogger('tornado')
+    logger.setLevel(logging.CRITICAL)
     snap = casperfpga.CasperFpga(host)
-    snap.get_system_information(fpgfile_file)
+    snap.get_system_information(fpga_file)
     return snap
 
 def syncFpgaClock(snap,srate=snap_defaults.srate):
@@ -53,22 +57,23 @@ def syncFpgaClock(snap,srate=snap_defaults.srate):
 def setRMS(snap,ant,rms=snap_defaults.rms):
     logger = logger_defaults.getModuleLogger(__name__)
     
-    logger.info("Trying to tune power levels of {} to RMS: {1:.2f}".format(ant, rms))
+    logger.info("Trying to tune power levels of {0!s} to RMS: {1:.2f}".format(ant, rms))
     
     assert (isinstance(ant,str) and len(ant) == 2),"ant has to be a short ant string" 
 
     num_snaps = 5
 
-    atteni = 0.0
-    attenq = 0.0
+    atteni = 20.0
+    attenq = 20.0
 
-    retdict = {'attenx' : 0, 'atteny':0, 'rmsx':0, 'rmsy':0}
+    retdict = {'ant':ant,'attenx' : 0, 'atteny':0, 'rmsx':0, 'rmsy':0}
 
+    antpol_list = [ant + 'x',ant + 'y']
     for attempt in range(snap_defaults.rms_attempts):
-        antpol_list = [ant + 'x',ant + 'y']
+        #db_list = [attenq, atteni]
         db_list = [atteni, attenq]
 
-        answer = ata_control.set_atten(atten_ants, atten_db)
+        answer = ata_control.set_atten(antpol_list, db_list)
         #if there is no attenuator, then attempt to adject the PAMs
         if "no attenuator for" in answer:
             errormsg = "no attenuator found for antpols: {}".format(','.join(antpol_list))
@@ -95,13 +100,13 @@ def setRMS(snap,ant,rms=snap_defaults.rms):
         delta_atteni = 20*np.log10(meas_stdy / rms)
         delta_attenq = 20*np.log10(meas_stdx / rms)
         
-        logger.info("{}x: Channel I ADC mean/std-dev/deltai: {1:.2f} / {2:.2f}, delta={3:.2f}".format(ant,
+        logger.info("{0!s}x: Channel I ADC mean/std-dev/deltai: {1:.2f} / {2:.2f}, delta={3:.2f}".format(ant,
                     chani.mean(), meas_stdx, delta_atteni))
-        logger.info("{}y: Channel Q ADC mean/std-dev/deltai: {1:.2f} / {2:.2f}, delta={3:.2f}".format(ant,
+        logger.info("{0!s}y: Channel Q ADC mean/std-dev/deltai: {1:.2f} / {2:.2f}, delta={3:.2f}".format(ant,
                     chanq.mean(), meas_stdy, delta_attenq))
         
-        if (delta_atteni < 1) and (delta_attenq < 1):
-            logger.info( "%s: Tuning complete" % args.ant)
+        if (np.abs(delta_atteni) < 1) and (np.abs(delta_attenq) < 1):
+            logger.info( "Tuning complete for {}".format(ant))
             return retdict
 
         else:
@@ -117,7 +122,7 @@ def setRMS(snap,ant,rms=snap_defaults.rms):
             if attenq < 0:
                 attenq = 0
 
-    logger.warning("RMS requirement not met. got I: {}, Q: {} target: {}".format(meas_stdx,meas_stdy,rms))
+    logger.warning("RMS requirement for {} not met. got I: {}, Q: {} target: {}".format(ant,meas_stdx,meas_stdy,rms))
     return retdict
 
 
