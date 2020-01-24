@@ -11,12 +11,14 @@ import datetime
 
 DEFAULT_DATA_DIR = "~/data"
 
-def set_output_dir_obsid(obsid,defaultdir=None):
+def set_output_dir_obsid(obsid=None,defaultdir=None):
 
     if not defaultdir:
         defaultdir = DEFAULT_DATA_DIR
-
-    id_string = "{0:d}".format(obsid)
+    if not obsid:
+        id_string = 'singles'
+    else:
+        id_string = "{0:d}".format(obsid)
     output_dir = os.path.expanduser("%s/id%s" % (os.path.expanduser(defaultdir), id_string))
     set_output_dir(output_dir)
 

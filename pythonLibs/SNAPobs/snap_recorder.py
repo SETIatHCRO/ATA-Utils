@@ -1,17 +1,126 @@
 #!/usr/bin/python
-import os
-import argparse
 import casperfpga
 import adc5g
+
 import time
 import numpy as np
-import matplotlib.pyplot as plt
 import struct
-import cPickle as pkl
-import sys, traceback
-from ATATools import ata_control
-import logging
-import time
+from ATATools import ata_control,logger_defaults
+import snap_defaults 
+
+
+def setSnapRMS(host,ant,fpga_file,rms=snap_defaults.rms,srate=snap_defaults.srate):
+    snap = getSnap(host,fpga_file)
+    fpga_clk = syncFpgaClock(snap,srate)
+    retdict = setRMS(snap,ant,rms)
+    return retdict
+
+def getSnap(host, fpga_file):
+    snap = casperfpga.CasperFpga(host)
+    snap.get_system_information(fpgfile_file)
+    return snap
+
+def syncFpgaClock(snap,srate=snap_defaults.srate):
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    acc_len = float(snap.read_int('timebase_sync_period') / (4096 / 4))
+    fpga_clk = snap.estimate_fpga_clock()
+    
+    logger.info('snap clock estimated at {}'.format(fpga_clk))
+
+    logger.info( "srate = %.1f" % (srate))
+
+    check_clock = np.abs((fpga_clk*4. / srate) - 1) < 0.01
+
+    # If bad clock, try several more times
+    num_check = 0
+    while(check_clock == False and num_check < snap_defaults.clock_attempts):
+        num_check = num_check + 1
+        time.sleep(1)
+        logger.info( "Estimating FPGA clock retry %d" % (num_check))
+        fpga_clk = snap.estimate_fpga_clock()
+        logger.info( "%s: Clock estimate is %.1f, try %d" % (fpga_clk, num_check))
+        check_clock = np.abs((fpga_clk*4. / srate) - 1) < 0.01
+
+    #If still bad clock, fail
+    if(check_clock == False):
+        errormsg = "unable to set up FPGA clock ({})".format(fpga_clk)
+        logger.error(errormsg)
+        raise RuntimeError(errormsg)
+
+    return fpga_clk
+
+def setRMS(snap,ant,rms=snap_defaults.rms):
+    logger = logger_defaults.getModuleLogger(__name__)
+    
+    logger.info("Trying to tune power levels of {} to RMS: {1:.2f}".format(ant, rms))
+    
+    assert (isinstance(ant,str) and len(ant) == 2),"ant has to be a short ant string" 
+
+    num_snaps = 5
+
+    atteni = 0.0
+    attenq = 0.0
+
+    retdict = {'attenx' : 0, 'atteny':0, 'rmsx':0, 'rmsy':0}
+
+    for attempt in range(snap_defaults.rms_attempts):
+        antpol_list = [ant + 'x',ant + 'y']
+        db_list = [atteni, attenq]
+
+        answer = ata_control.set_atten(atten_ants, atten_db)
+        #if there is no attenuator, then attempt to adject the PAMs
+        if "no attenuator for" in answer:
+            errormsg = "no attenuator found for antpols: {}".format(','.join(antpol_list))
+            logger.error(errormsg)
+            raise RuntimeError(errormsg)
+
+        retdict['attenx'] = atteni
+        retdict['atteny'] = attenq
+
+        chani = []
+        chanq = []
+        for i in range(num_snaps):
+            all_chan_data = adc5g.get_snapshot(snap, 'ss_adc')
+            chani += [all_chan_data[0::2][0::2]]
+            chanq += [all_chan_data[1::2][0::2]]
+        chani = np.array(chani)
+        chanq = np.array(chanq)
+
+        meas_stdx = chani.std()
+        meas_stdy = chanq.std()
+        retdict['rmsx'] = meas_stdx
+        retdict['rmsy'] = meas_stdy
+
+        delta_atteni = 20*np.log10(meas_stdy / rms)
+        delta_attenq = 20*np.log10(meas_stdx / rms)
+        
+        logger.info("{}x: Channel I ADC mean/std-dev/deltai: {1:.2f} / {2:.2f}, delta={3:.2f}".format(ant,
+                    chani.mean(), meas_stdx, delta_atteni))
+        logger.info("{}y: Channel Q ADC mean/std-dev/deltai: {1:.2f} / {2:.2f}, delta={3:.2f}".format(ant,
+                    chanq.mean(), meas_stdy, delta_attenq))
+        
+        if (delta_atteni < 1) and (delta_attenq < 1):
+            logger.info( "%s: Tuning complete" % args.ant)
+            return retdict
+
+        else:
+            # Attenuator has 0.25dB precision
+            atteni = int(4 * (atteni + delta_atteni)) / 4.0
+            attenq = int(4 * (attenq + delta_attenq)) / 4.0
+            if atteni > 30:
+                atteni = 30
+            if attenq > 30:
+                attenq = 30
+            if atteni < 0:
+                atteni = 0
+            if attenq < 0:
+                attenq = 0
+
+    logger.warning("RMS requirement not met. got I: {}, Q: {} target: {}".format(meas_stdx,meas_stdy,rms))
+    return retdict
+
+
 
 '''
 

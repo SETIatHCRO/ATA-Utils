@@ -49,7 +49,7 @@ def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment
 
     logger.info("got obs id {}".format(obsid))
 
-    snap_dirs.set_output_dir_obsid(obsid) 
+    snap_dirs.set_output_dir_obsid(obs_set_id) 
 
     ant_list = ant_dict.values()
     logger.info("updating database with antennas {}".format(", ".join(ant_list)))

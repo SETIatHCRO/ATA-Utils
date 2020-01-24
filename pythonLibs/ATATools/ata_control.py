@@ -47,9 +47,6 @@ def autotune(ants):
 
     assert isinstance(ants,str),"input parameter not a string"
 
-    logger.warning("autotune not implemented! fix it")
-    return
-
     logger.info("autotuning: {}".format(ants))
     str_out,str_err = ata_remote.callObs(['ataautotune',ants])
     #searching for warnings or errors
