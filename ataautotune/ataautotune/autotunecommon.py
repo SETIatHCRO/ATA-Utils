@@ -20,7 +20,7 @@ import ATASQL
 from mysql.connector import Error 
 
 
-defaultAntenna = '1c'
+defaultPax = 'PB-000'
 validAntennas = ['1a','1b','1c','1d','1e','1f', '1g', '1h', '1j', '1k', '2a', '2b',
                  '2c', '2d', '2e', '2f', '2g', '2h', '2j', '2k', '2l', '2m', '3c',
                  '3d', '3e', '3f', '3g', '3h', '3j', '3l', '4e', '4f', '4g', '4h',
@@ -76,42 +76,33 @@ def getPolynomials(alist):
     if missingAnts:
         logger.info("we are missing following antennas %s" % missingAnts)
         #we have some missing ants. lets check if we have already downloaded the default Antenna
-        if defaultAntenna in antennasgot:
-            for ant in missingAnts:
-                polydict[ant + 'x'] = polydict[defaultAntenna + 'x'] 
-                lowerdict[ant + 'x'] = lowerdict[defaultAntenna + 'x']
-                upperdict[ant + 'x'] = upperdict[defaultAntenna + 'x']
-                polydict[ant + 'y'] = polydict[defaultAntenna + 'y'] 
-                lowerdict[ant + 'y'] = lowerdict[defaultAntenna + 'y']
-                upperdict[ant + 'y'] = upperdict[defaultAntenna + 'y']
-        else:
-            logger.info("no default antenna in the set, quering default: %s" % defaultAntenna)
-            #next querry to get default antenna data
-            in_p = '%s'
-            query = queryPart % in_p;
-            cursor.execute(query, [defaultAntenna])
-            defaultdictpoly = {}
-            defaultdictlower = {}
-            defaultdictupper = {}
-            for (ant,sn,pol,isc,low,high,p0,p1,p2,p3,p4,p5) in cursor:
-                antpol = ant + pol;
-                defaultdictpoly[antpol] = numpy.poly1d([p5,p4,p3,p2,p1,p0]);
-                defaultdictlower[antpol] = low;
-                defaultdictupper[antpol] = high;
-            
-            #do we have both polarization of default one?
-            if not defaultAntenna + 'x' in defaultdictpoly or not defaultAntenna + 'y' in defaultdictpoly:
-                logger.warning("missing polarization for "  + defaultAntenna)
-                raise KeyError("missing polarization for "  + defaultAntenna)
+        logger.info("no default antenna in the set, quering default pax {}".format(defaultPax))
+        #next querry to get default antenna data
+        query = ("select pax_box_sn,pol,iscoherent,lowdet,highdet,p0,p1,p2,p3,p4,p5 "
+                 "from pbmeas where type='cw' and pax_box_sn = %(defpax)s")
+        dict1={'defpax':defaultPax}
+        cursor.execute(query, dict1)
+        defaultdictpoly = {}
+        defaultdictlower = {}
+        defaultdictupper = {}
+        for (sn,pol,isc,low,high,p0,p1,p2,p3,p4,p5) in cursor:
+            defaultdictpoly[pol] = numpy.poly1d([p5,p4,p3,p2,p1,p0]);
+            defaultdictlower[pol] = low;
+            defaultdictupper[pol] = high;
+           
+        #do we have both polarization of default one?
+        if not 'x' in defaultdictpoly or not 'y' in defaultdictpoly:
+            logger.warning("missing polarization for "  + defaultPax)
+            raise KeyError("missing polarization for "  + defaultPax)
                 
-            #now we have a new dictionary, we may fill the remaining parts
-            for ant in missingAnts:
-                polydict[ant + 'x'] = defaultdictpoly[defaultAntenna + 'x'] 
-                lowerdict[ant + 'x'] = defaultdictlower[defaultAntenna + 'x']
-                upperdict[ant + 'x'] = defaultdictupper[defaultAntenna + 'x']
-                polydict[ant + 'y'] = defaultdictpoly[defaultAntenna + 'y'] 
-                lowerdict[ant + 'y'] = defaultdictlower[defaultAntenna + 'y']
-                upperdict[ant + 'y'] = defaultdictupper[defaultAntenna + 'y']
+        #now we have a new dictionary, we may fill the remaining parts
+        for ant in missingAnts:
+            polydict[ant + 'x'] = defaultdictpoly['x'] 
+            lowerdict[ant + 'x'] = defaultdictlower['x']
+            upperdict[ant + 'x'] = defaultdictupper['x']
+            polydict[ant + 'y'] = defaultdictpoly['y'] 
+            lowerdict[ant + 'y'] = defaultdictlower['y']
+            upperdict[ant + 'y'] = defaultdictupper['y']
             
     return polydict,lowerdict,upperdict,missingAnts;
     
