@@ -15,6 +15,32 @@ def single_snap_recording():
     logger = logger_defaults.getModuleLogger(__name__)
     raise NotImplementedError
 
+
+def getRMS(ant_dict,fpga_file=snap_defaults.spectra_snap_file,srate=snap_defaults.srate):
+    """
+    for debug only - reading current RMS values of the snap
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    ant_list = ant_dict.values()
+
+    snaps = ant_dict.keys()
+    nsnaps = len(snaps)
+
+    rdict = {}
+    with concurrent.futures.ProcessPoolExecutor(max_workers=nsnaps) as executor:
+        threads = []
+        for snap in snaps:
+            t = executor.submit(snap_recorder.getSnapRMS,snap,ant_dict[snap],fpga_file)
+            threads.append(t)
+
+        for t in threads:
+            retval = t.result()
+            rdict[retval['ant']] = retval
+            retval.pop('ant')
+
+    return rdict
+
 def setRMS(ant_dict,fpga_file=snap_defaults.spectra_snap_file,rms=snap_defaults.rms,srate=snap_defaults.srate):
     """
     set attenuators values for SNAP observation
@@ -53,7 +79,7 @@ def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment
     Parameters
     -------------
     ant_dict : dict
-        the snap to antenna mapping for the recording. e.g. {'snap0': '2a','snap1': '2j'}
+        the snap to antenna mapping for the recording. e.g. {'snap2': '2a','snap1': '2j'}
     freq : float
         the frequency
     
@@ -107,8 +133,8 @@ def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment
 
 if __name__== "__main__":
     
-    ant_list = ['1a','2a']
-    ant_dict = {'snap0': '2a', 'snap2': '1a'}
+    ant_list = ['1a','2a','2j']
+    ant_dict = {'snap2': '2a', 'snap0': '1a', 'snap1':'2j'}
     freq = 1400.0
     source = 'casa'
     ncaptures = 16
@@ -131,7 +157,8 @@ if __name__== "__main__":
         #obsid = record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,
         #                az_offset,el_offset,fpga_file,obs_set_id)
         #logger.info("ID: {}".format(obsid))
-        retval = setRMS(ant_dict,fpga_file,rms) 
+        retval = getRMS(ant_dict,fpga_file) 
+        #retval = setRMS(ant_dict,fpga_file,rms) 
         print(str(retval))
     except:
         logger.exception('Top level test')

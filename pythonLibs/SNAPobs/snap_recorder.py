@@ -15,6 +15,12 @@ def setSnapRMS(host,ant,fpga_file,rms=snap_defaults.rms,srate=snap_defaults.srat
     retdict = setRMS(snap,ant,rms)
     return retdict
 
+def getSnapRMS(host,ant,fpga_file,srate=snap_defaults.srate):
+    snap = getSnap(host,fpga_file)
+    fpga_clk = syncFpgaClock(snap,srate)
+    rms = getRMS(snap,ant)
+    return {'ant':ant,'rms':rms}
+
 def getSnap(host, fpga_file):
     #snap = casperfpga.CasperFpga(host,transport=casperfpga.transport_tapcp.TapcpTransport)
     #we are silently omiting the logs from this call
@@ -53,6 +59,26 @@ def syncFpgaClock(snap,srate=snap_defaults.srate):
         raise RuntimeError(errormsg)
 
     return fpga_clk
+
+def getRMS(snap,ant):
+    logger = logger_defaults.getModuleLogger(__name__)
+    num_snaps = 5
+    chani = []
+    chanq = []
+    for i in range(num_snaps):
+        all_chan_data = adc5g.get_snapshot(snap, 'ss_adc')
+        chani += [all_chan_data[0::2][0::2]]
+        chanq += [all_chan_data[1::2][0::2]]
+    chani = np.array(chani)
+    chanq = np.array(chanq)
+
+    meas_stdx = chani.std()
+    meas_stdy = chanq.std()
+    retdict = {'rmsx': meas_stdx,'rmsy': meas_stdy, 'ant': ant}
+
+    logger.info("{0!s}x: Channel I ADC mean/std-dev: {1:.2f} / {2:.2f}".format(ant, chani.mean(), meas_stdx))
+    logger.info("{0!s}y: Channel Q ADC mean/std-dev: {1:.2f} / {2:.2f}".format(ant, chanq.mean(), meas_stdy))
+    return retdict
 
 def setRMS(snap,ant,rms=snap_defaults.rms):
     logger = logger_defaults.getModuleLogger(__name__)

@@ -115,14 +115,6 @@ def run_tests():
     #print string_to_array("2j,2d,2f,4k,3e,3j,5h,1d")
     testList =  ['2j', '2d', '2f', '4k', '3e', '3j', '5h', '1d']
     #print "Unflattened: %s" % testList
-    #print "Flatten: %s" % flatten(string_to_array(str(testList).replace("'", "")))
-
-
-    snaps = {
-            "snap0" : "2a,2b,2e,3l,1f,5c,4l,4g",
-            "snap1" : "2j,2d,4k,1d,2f,5h,3j,3e",
-            #"snap2" : "1ax,1bx,1gx,1hx,2kx,2mx,3dx,4jx,1ay,1by,1gy,1hy,2ky,2my,3dy,4jy"
-        }
     #snapList = dict_keys_to_array(snaps, True)
     #print(str(snapList))
     #snapList = dict_keys_to_array(snaps, False)
