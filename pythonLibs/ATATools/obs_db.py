@@ -349,4 +349,31 @@ def getSetData(setid):
 
     return ts,descr
 
+def updateAttenVals(cobsid,attendict):
+    """
+    update the antennas information with a given dictionary
+    dictionary example: 
+    { '1a': {'attenx': 17, 'rmsy': 0.3544, 'rmsx': 12.2489, 'atteny': 0},
+      '2a': {'attenx': 30, 'rmsy': 0.3846, 'rmsx': 26.9986, 'atteny': 0}   }
+
+    """
+
+    logger= logger_defaults.getModuleLogger(__name__)
+
+    mydb = ATASQL.connectObsDb()
+    mycursor = mydb.cursor()
+
+    insertcmd = ("update rec_ant set dsp_atten_x=%(attenx)s, dsp_atten_y=%(atteny)s, "
+            "dsp_rms_x=%(rmsx)s, dsp_rms_y=%(rmsy) where ant=%(ant)s and id=$(id)s")
+
+    for ant in attendict.keys():
+        cdict = attendict[ant].copy()
+        logger.info("updating attenuators row for ant {} and recording id {}".format(ant,cobsid))
+        cdict['ant'] = ant
+        cdict['id']=cobsid
+        mycursor.execute(insertcmd,cdict)
+        mydb.commit()
+
+    mycursor.close()
+    mydb.close()
 

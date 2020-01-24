@@ -37,18 +37,18 @@ def setRMS(ant_dict,fpga_file=snap_defaults.spectra_snap_file,rms=snap_defaults.
         for t in threads:
             retval = t.result()
             rdict[retval['ant']] = retval
+            retval.pop('ant')
 
     return rdict
 
 
-def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,backend="SNAP",rms=None,
+def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,backend="SNAP",
         az_offset=0,el_offset=0,fpga_file=snap_defaults.spectra_snap_file,obs_set_id=None):
     """
     basic recording scripts, where all antennas are pointed on in the same position
     NOTE:
     the frequency, antenna pointing and source has to be set up earlier. This function only 
     records data and populates the database with given information. 
-    optionaly, it changes the rms values for the attenuators, but that may be removed in future version
 
     Parameters
     -------------
@@ -81,10 +81,7 @@ def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment
     logger.info("updating database with antennas {}".format(", ".join(ant_list)))
     obs_db.initAntennasTable(obsid,ant_list,source,az_offset,el_offset,True)
 
-    if rms:
-        logger.info("starting observation {}. Target RMS {}".format(obsid,rms))
-    else:
-        logger.info("starting observation {}. No RMS provided".format(obsid))
+    logger.info("starting observation {}".format(obsid))
     obs_db.startRecording(obsid)
 
     #import pdb
@@ -131,7 +128,7 @@ if __name__== "__main__":
     ata_control.reserve_antennas(ant_list)
 
     try:
-        #obsid = record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,rms,
+        #obsid = record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,
         #                az_offset,el_offset,fpga_file,obs_set_id)
         #logger.info("ID: {}".format(obsid))
         retval = setRMS(ant_dict,fpga_file,rms) 

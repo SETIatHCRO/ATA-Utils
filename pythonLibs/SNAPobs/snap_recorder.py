@@ -70,7 +70,6 @@ def setRMS(snap,ant,rms=snap_defaults.rms):
 
     antpol_list = [ant + 'x',ant + 'y']
     for attempt in range(snap_defaults.rms_attempts):
-        #db_list = [attenq, atteni]
         db_list = [atteni, attenq]
 
         answer = ata_control.set_atten(antpol_list, db_list)
@@ -97,8 +96,8 @@ def setRMS(snap,ant,rms=snap_defaults.rms):
         retdict['rmsx'] = meas_stdx
         retdict['rmsy'] = meas_stdy
 
-        delta_atteni = 20*np.log10(meas_stdy / rms)
-        delta_attenq = 20*np.log10(meas_stdx / rms)
+        delta_atteni = 20*np.log10(meas_stdx / rms)
+        delta_attenq = 20*np.log10(meas_stdy / rms)
         
         logger.info("{0!s}x: Channel I ADC mean/std-dev/deltai: {1:.2f} / {2:.2f}, delta={3:.2f}".format(ant,
                     chani.mean(), meas_stdx, delta_atteni))
