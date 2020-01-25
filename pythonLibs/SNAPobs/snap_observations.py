@@ -142,7 +142,7 @@ if __name__== "__main__":
     obsuser='ataonoff'
     desc='ON rep 0'
     filefragment = 'on_000'
-    rms=12.0
+    rms=16.0
     az_offset=0
     el_offset=0
     fpga_file=snap_defaults.spectra_snap_file
@@ -157,8 +157,8 @@ if __name__== "__main__":
         #obsid = record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,
         #                az_offset,el_offset,fpga_file,obs_set_id)
         #logger.info("ID: {}".format(obsid))
-        retval = getRMS(ant_dict,fpga_file) 
-        #retval = setRMS(ant_dict,fpga_file,rms) 
+        #retval = getRMS(ant_dict,fpga_file) 
+        retval = setRMS(ant_dict,fpga_file,rms) 
         print(str(retval))
     except:
         logger.exception('Top level test')

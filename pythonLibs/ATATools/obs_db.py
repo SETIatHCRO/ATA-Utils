@@ -363,8 +363,8 @@ def updateAttenVals(cobsid,attendict):
     mydb = ATASQL.connectObsDb()
     mycursor = mydb.cursor()
 
-    insertcmd = ("update rec_ant set dsp_atten_x=%(attenx)s, dsp_atten_y=%(atteny)s, "
-            "dsp_rms_x=%(rmsx)s, dsp_rms_y=%(rmsy) where ant=%(ant)s and id=$(id)s")
+    insertcmd = ("update rec_ants set dsp_atten_x=%(attenx)s, dsp_atten_y=%(atteny)s, "
+            "dsp_rms_x=%(rmsx)s, dsp_rms_y=%(rmsy)s where ant=%(ant)s and id=%(id)s")
 
     for ant in attendict.keys():
         cdict = attendict[ant].copy()
