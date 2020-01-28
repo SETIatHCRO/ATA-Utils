@@ -11,4 +11,5 @@ rms_attempts = 5
 srate = 900.0
 clock_attempts = 5
 ifc = 629.1452
+mux_sel = {'auto':0, 'cross':1}
 

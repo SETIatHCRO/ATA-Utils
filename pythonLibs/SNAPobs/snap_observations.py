@@ -11,11 +11,18 @@ import snap_dirs
 import concurrent.futures
 import snap_recorder
 
-def single_snap_recording():
+def single_snap_recording(host,ant,ncaptures,fpga_file,freq,filefragment):
     logger = logger_defaults.getModuleLogger(__name__)
+
+    measDict = snap_recorder.getData(host,ant,ncaptures,fpga_file,freq)
+
+    import cPickle as pkl
+    pkl.dump(measDict, open('testing_save' + ant + '.pkl', 'w'))
+
     raise NotImplementedError
 
-
+    return rmsDict
+    
 def getRMS(ant_dict,fpga_file=snap_defaults.spectra_snap_file,srate=snap_defaults.srate):
     """
     for debug only - reading current RMS values of the snap
@@ -99,7 +106,7 @@ def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment
 
     obsid = obs_db.initRecording(freq,obstype,backend,desc,obsuser,obs_set_id)
 
-    logger.info("got obs id {}".format(obsid))
+    logger.info("got recording id {}".format(obsid))
 
     snap_dirs.set_output_dir_obsid(obs_set_id) 
 
@@ -107,11 +114,8 @@ def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment
     logger.info("updating database with antennas {}".format(", ".join(ant_list)))
     obs_db.initAntennasTable(obsid,ant_list,source,az_offset,el_offset,True)
 
-    logger.info("starting observation {}".format(obsid))
+    logger.info("starting recording {}".format(obsid))
     obs_db.startRecording(obsid)
-
-    #import pdb
-    #pdb.set_trace()
 
     snaps = ant_dict.keys()
     nsnaps = len(snaps)
@@ -119,9 +123,8 @@ def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment
     with concurrent.futures.ProcessPoolExecutor(max_workers=nsnaps) as executor:
         threads = []
         for snap in snaps:
-            t = executor.submit(single_snap_recording)
+            t = executor.submit(single_snap_recording,snap,ant_dict[snap],ncaptures,fpga_file,freq,filefragment)
             threads.append(t)
-
 
         for t in threads:
             retval = t.result()
@@ -133,11 +136,13 @@ def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment
 
 if __name__== "__main__":
     
-    ant_list = ['1a','2a','2j']
-    ant_dict = {'snap2': '2a', 'snap0': '1a', 'snap1':'2j'}
+    #ant_list = ['1a','2a','2j']
+    #ant_dict = {'snap2': '2a', 'snap0': '1a', 'snap1':'2j'}
+    ant_list = ['1a'] 
+    ant_dict = {'snap0': '1a'}
     freq = 1400.0
     source = 'casa'
-    ncaptures = 16
+    ncaptures = 4
     obstype='ON-OFF'
     obsuser='ataonoff'
     desc='ON rep 0'
@@ -154,12 +159,12 @@ if __name__== "__main__":
     ata_control.reserve_antennas(ant_list)
 
     try:
-        #obsid = record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,
-        #                az_offset,el_offset,fpga_file,obs_set_id)
-        #logger.info("ID: {}".format(obsid))
+        obsid = record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,
+                        "SNAP",az_offset,el_offset,fpga_file,obs_set_id)
+        logger.info("ID: {}".format(obsid))
         #retval = getRMS(ant_dict,fpga_file) 
-        retval = setRMS(ant_dict,fpga_file,rms) 
-        print(str(retval))
+        #retval = setRMS(ant_dict,fpga_file,rms) 
+        #print(str(retval))
     except:
         logger.exception('Top level test')
         raise
