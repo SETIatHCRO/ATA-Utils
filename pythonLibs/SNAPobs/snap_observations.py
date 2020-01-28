@@ -18,7 +18,7 @@ def single_snap_recording(host,ant,ncaptures,fpga_file,freq,filefragment):
 
     import cPickle as pkl
     pkl.dump(measDict, open('testing_save' + ant + '.pkl', 'w'))
-
+    print(measDict)
     raise NotImplementedError
 
     return rmsDict
