@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
@@ -9,9 +9,9 @@ Created Jan 2020
 @author: jkulpa
 """
 
+from . import logger_defaults
+from . import ata_control
 import ATASQL
-import logger_defaults
-import ata_control
 
 def getRecType(string):
     """

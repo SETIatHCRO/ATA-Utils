@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 testing flux functions
@@ -8,10 +8,8 @@ Created on Tue Dec 24 2019
 """
 
 import subprocess
-import logging
-import pdb
 import socket
-import logger_defaults
+from . import logger_defaults
 
 RF_SWITCH_HOST = "if-switch"
 RF_SWITCH_HOST_IP = "10.10.1.198"

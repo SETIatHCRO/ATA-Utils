@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
@@ -6,10 +6,8 @@ main functions for snap observations
 """
 
 from ATATools import logger_defaults,obs_db,ata_control
-import snap_defaults
-import snap_dirs
+from . import snap_defaults,snap_dirs,snap_recorder
 import concurrent.futures
-import snap_recorder
 
 def single_snap_recording(host,ant,ncaptures,fpga_file,freq,filefragment):
     logger = logger_defaults.getModuleLogger(__name__)

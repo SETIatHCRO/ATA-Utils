@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 ##
 # ATAPOsitions class
@@ -10,16 +10,15 @@
 
 import sys
 import numpy as np, scipy.io
-import plumbum
 import math
 import os
 import datetime as dt
-import ata_constants as ata_const
 import ephem
 import math
 from astropy import units as u
 from astropy.coordinates import Angle
-import logger_defaults
+from . import ata_constants as ata_const
+from . import logger_defaults
 
 MIN_MOON_SUN_DIST = 45.0
 MIN_ELEV = 23.0
@@ -143,7 +142,6 @@ class ATAPositions:
                     moon_angle = ATAPositions.angular_distance('moon', s, d)
                 is_up = pos.isUp(s, d)
                 if(is_up == True and sun_angle >= MIN_MOON_SUN_DIST and moon_angle >= MIN_MOON_SUN_DIST):
-                    print s
                     info = pos.getAzEl(d, s)
                     return { 'status' : 'next_up', 'source' : s, 'az' : info['az'], \
                             'el' : info['el'], "minutes" : future_minutes }
@@ -265,55 +263,55 @@ class ATAPositions:
 if __name__== "__main__":
 
     def run_tests():
-        print "ATA Position tests"
+        print("ATA Position tests")
         pos = ATAPositions()
         sun = pos.getAzEl(dt.datetime.now(), "Sun")
-        print sun
+        print(sun)
         moon = pos.getAzEl(dt.datetime.now(), "moon")
-        print moon
+        print(moon)
         casa = pos.getAzEl(dt.datetime.now(), "casa")
-        print casa
+        print(casa)
         taua = pos.getAzEl(dt.datetime.now(), "taua")
-        print taua
+        print(taua)
         vira = pos.getAzEl(dt.datetime.now(), "vira")
-        print vira
+        print(vira)
         radec = pos.getAzEl(dt.datetime.now(), None, 12.514, 12.391)
-        print radec
+        print(radec)
         goes_16 = pos.getAzEl(dt.datetime.now(), "goes-16")
-        print goes_16
-        print ATAPositions.angular_distance('moon', 'goes-16')
-        print ATAPositions.angular_distance('sun', 'goes-16')
+        print(goes_16)
+        print(ATAPositions.angular_distance('moon', 'goes-16'))
+        print(ATAPositions.angular_distance('sun', 'goes-16'))
 
         obj = sun
         up = pos.isUp(obj['name'])
-        print "%s el=%f, up=%s" % (obj['name'], obj['el'], up)
+        print("%s el=%f, up=%s" % (obj['name'], obj['el'], up))
 
         obj = moon
         up = pos.isUp(obj['name'])
-        print "%s el=%f, up=%s" % (obj['name'], obj['el'], up)
+        print( "%s el=%f, up=%s" % (obj['name'], obj['el'], up))
 
         obj = casa
         up = pos.isUp(obj['name'])
-        print "%s el=%f, up=%s" % (obj['name'], obj['el'], up)
+        print( "%s el=%f, up=%s" % (obj['name'], obj['el'], up))
 
         obj = taua
         up = pos.isUp(obj['name'])
-        print "%s el=%f, up=%s" % (obj['name'], obj['el'], up)
+        print( "%s el=%f, up=%s" % (obj['name'], obj['el'], up))
  
         obj = vira
-        print "%s el=%f, up=%s" % (obj['name'], obj['el'], up)
+        print( "%s el=%f, up=%s" % (obj['name'], obj['el'], up))
  
         obj = radec
         up = pos.isUp(None, None, radec['ra'], radec['dec'])
-        print "%s el=%f, up=%s" % (obj['name'], obj['el'], up)
+        print( "%s el=%f, up=%s" % (obj['name'], obj['el'], up))
 
         first_up = ATAPositions.getFirstInListThatIsUp(['moon', 'casa', 'taua', 'vira', 'goes-16']);
         if(first_up == None):
-            print "No sources are up and far enough from the sun/moon!"
+            print( "No sources are up and far enough from the sun/moon!")
         elif(first_up['status'] == 'next_up'):
-            print "No sources up, next is %s in %d minutes" % (first_up['source'], first_up['minutes'])
+            print( "No sources up, next is %s in %d minutes" % (first_up['source'], first_up['minutes']))
         else:
-            print"First in list that is up: %s: az=%.4f, el=%.4f" % (first_up['source'], first_up['az'], first_up['el'])
+            print("First in list that is up: %s: az=%.4f, el=%.4f" % (first_up['source'], first_up['az'], first_up['el']))
 
     run_tests()
 

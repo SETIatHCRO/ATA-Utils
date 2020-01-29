@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 """
 Python wrappers for various command line
@@ -8,10 +8,7 @@ tools at the ATA.
 import re
 import ast
 import concurrent.futures
-import ata_remote
-import ata_constants
-import snap_array_helpers
-import logger_defaults
+from . import ata_remote,ata_constants,snap_array_helpers,logger_defaults
 
 def get_snap_dictionary(array_list):
     """
