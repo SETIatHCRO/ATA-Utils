@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='ATA-Utils-pythonLibs',
-    install_requires=['ephem','astropy','numpy'],
+    install_requires=['ephem','astropy','numpy','tftpy'],
     version=version.__version__,
     description='python utility scripts for ATA (private repo)',
     license='MIT',

@@ -88,12 +88,14 @@ def set_rf_switch(ant_list):
 
     for line in stdout.splitlines():
         logger.info("Set rfswitch for ants %s result: %s" % (ants, line))
-
-    if stderr.startswith("OK"):
+    
+    if stderr.startswith(b"OK"):
         logger.info("Set rfswitch for ants %s result: SUCCESS" % ants)
         return
     else:
-        logger.info("Set switch 'rfswitch %s' failed!" % ant_list_stripped)
+        logger.error("Set switch 'rfswitch %s' failed!" % ants)
+        logger.error(stdout)
+        logger.error(stderr)
         raise RuntimeError("Set switch 'rfswitch %s' failed!" % (ants))
 
 def rf_switch_thread(ant_list):
@@ -171,7 +173,7 @@ def set_atten(antpol_list, db_list):
         output += "%s\n" % line
         logger.info("Set atten for ant %s to %s db result: %s" % (antpol_str, db_str, line))
 
-    if stderr.startswith("OK"):
+    if stderr.startswith(b"OK"):
         logger.info("Set atten for ant %s to %s db result: SUCCESS" % (antpol_str, db_str))
         return output
     else:

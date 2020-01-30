@@ -6,7 +6,10 @@ main functions for snap observations
 """
 
 from ATATools import logger_defaults,obs_db,ata_control
-from . import snap_defaults,snap_dirs,snap_recorder
+try:
+    from . import snap_defaults,snap_dirs,snap_recorder
+except:
+    import snap_defaults,snap_dirs,snap_recorder
 import concurrent.futures
 
 def single_snap_recording(host,ant,ncaptures,fpga_file,freq,filefragment):
@@ -136,8 +139,8 @@ if __name__== "__main__":
     
     #ant_list = ['1a','2a','2j']
     #ant_dict = {'snap2': '2a', 'snap0': '1a', 'snap1':'2j'}
-    ant_list = ['1a'] 
-    ant_dict = {'snap0': '1a'}
+    ant_list = ['1a','2j','4j'] 
+    ant_dict = {'snap0': '1a', 'snap1':'2j','snap2':'4j'}
     freq = 1400.0
     source = 'casa'
     ncaptures = 4
@@ -154,18 +157,22 @@ if __name__== "__main__":
     import logging
     logging.basicConfig(level=logging.INFO)
     logger = logger_defaults.getModuleLogger('snap_obs_test')
-    ata_control.reserve_antennas(ant_list)
+    logger2 = logging. getLogger('tftpy')
+    logger2.setLevel(logging.WARNING)
+    #ata_control.reserve_antennas(ant_list)
 
     try:
-        obsid = record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,
-                        "SNAP",az_offset,el_offset,fpga_file,obs_set_id)
-        logger.info("ID: {}".format(obsid))
+        #obsid = record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment,
+        #                "SNAP",az_offset,el_offset,fpga_file,obs_set_id)
+        #logger.info("ID: {}".format(obsid))
         #retval = getRMS(ant_dict,fpga_file) 
-        #retval = setRMS(ant_dict,fpga_file,rms) 
-        #print(str(retval))
+        ata_control.set_rf_switch(ant_list)
+        retval = setRMS(ant_dict,fpga_file,rms) 
+        print(str(retval))
     except:
         logger.exception('Top level test')
         raise
     finally:
-        ata_control.release_antennas(ant_list, True)
+        print('done')
+        #ata_control.release_antennas(ant_list, True)
 
