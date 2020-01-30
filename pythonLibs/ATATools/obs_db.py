@@ -56,7 +56,7 @@ def getNewObsSetID(description="n/a"):
 
     Returns
     -------------
-    long
+    int
         observation set id
 
     """
@@ -89,7 +89,7 @@ def initAntennasTable(recid,antlist,sources,azs=0.0,els=0.0, getpams=True):
 
     Parameters
     -------------
-    recid : long
+    recid : int
         recording id
     antlist : str list
         list of antennas, short names, ie ['1a','2b']
@@ -137,7 +137,7 @@ def initAntennasTable(recid,antlist,sources,azs=0.0,els=0.0, getpams=True):
             getpams = False
 
     #this is not the cleanest way. Probably the itertools.izip should be used
-    for x in xrange(nants):
+    for x in range(nants):
         cant = antlist[x]
         dict1 = {'id': recid, 'ant': cant, 'az': azs[x], 'el': els[x], 'src': sources[x]}
         if getpams:
@@ -174,12 +174,12 @@ def initRecording(frequency,obstype,obsbackend,description,observer="unknown",se
         observation description
     observer : str
         observer description. default unknown
-    setid : long
+    setid : int
         id of observation set. If observation does not belong to a set, leave None. default None
 
     Returns
     -------------
-    long
+    int
         recording id
 
     Raises
@@ -265,7 +265,8 @@ def markRecordingssBAD(obsid_list):
     mycursor = mydb.cursor()
 
     insertcmd_part = ("update recordings set status='BAD' where id in (%s)")
-    in_p=', '.join(map(lambda x: '%s', obsid_list))
+    #in_p=', '.join(map(lambda x: '%s', obsid_list))
+    in_p=', '.join(['%s'] * len(obsid_list))
     insertcmd = insertcmd_part % in_p;
     
     logger.info("changing status of recordings {} to BAD".format(', '.join(obsid_list)))
@@ -290,7 +291,8 @@ def markRecordingsOK(obsid_list):
     mycursor = mydb.cursor()
 
     insertcmd_part = ("update recordings set status='OK' where id in (%s)")
-    in_p=', '.join(map(lambda x: '%s', obsid_list))
+    #in_p=', '.join(map(lambda x: '%s', obsid_list))
+    in_p=', '.join(['%s'] * len(obsid_list))
     insertcmd = insertcmd_part % in_p;
     
     logger.info("changing status of recordings {} to OK".format(', '.join(obsid_list)))
@@ -307,7 +309,7 @@ def getSetData(setid):
 
     Parameters
     -------------
-        setid : long
+        setid : int
             
 
     Returns

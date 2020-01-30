@@ -5,11 +5,9 @@
 main functions for snap observations
 """
 
-from ATATools import logger_defaults,obs_db,ata_control
-try:
-    from . import snap_defaults,snap_dirs,snap_recorder
-except:
-    import snap_defaults,snap_dirs,snap_recorder
+from __future__ import absolute_import
+from ATATools import logger_defaults,obs_db,ata_control,snap_array_helpers
+from . import snap_defaults,snap_dirs,snap_recorder
 import concurrent.futures
 
 def single_snap_recording(host,ant,ncaptures,fpga_file,freq,filefragment):
@@ -30,7 +28,7 @@ def getRMS(ant_dict,fpga_file=snap_defaults.spectra_snap_file,srate=snap_default
     """
     logger = logger_defaults.getModuleLogger(__name__)
 
-    ant_list = ant_dict.values()
+    ant_list = snap_array_helpers.dict_to_list(ant_dict)
 
     snaps = ant_dict.keys()
     nsnaps = len(snaps)
@@ -56,7 +54,7 @@ def setRMS(ant_dict,fpga_file=snap_defaults.spectra_snap_file,rms=snap_defaults.
 
     logger = logger_defaults.getModuleLogger(__name__)
 
-    ant_list = ant_dict.values()
+    ant_list = snap_array_helpers.dict_to_list(ant_dict)
 
     snaps = ant_dict.keys()
     nsnaps = len(snaps)
@@ -111,7 +109,7 @@ def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment
 
     snap_dirs.set_output_dir_obsid(obs_set_id) 
 
-    ant_list = ant_dict.values()
+    ant_list = snap_array_helpers.dict_to_list(ant_dict)
     logger.info("updating database with antennas {}".format(", ".join(ant_list)))
     obs_db.initAntennasTable(obsid,ant_list,source,az_offset,el_offset,True)
 
@@ -137,10 +135,8 @@ def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment
 
 if __name__== "__main__":
     
-    #ant_list = ['1a','2a','2j']
-    #ant_dict = {'snap2': '2a', 'snap0': '1a', 'snap1':'2j'}
-    ant_list = ['1a','2j','4j'] 
-    ant_dict = {'snap0': '1a', 'snap1':'2j','snap2':'4j'}
+    ant_dict = {'snap0': '1d', 'snap1':'3c','snap2':'5b'}
+    ant_list = snap_array_helpers.dict_to_list(ant_dict)
     freq = 1400.0
     source = 'casa'
     ncaptures = 4
@@ -157,8 +153,6 @@ if __name__== "__main__":
     import logging
     logging.basicConfig(level=logging.INFO)
     logger = logger_defaults.getModuleLogger('snap_obs_test')
-    logger2 = logging. getLogger('tftpy')
-    logger2.setLevel(logging.WARNING)
     #ata_control.reserve_antennas(ant_list)
 
     try:

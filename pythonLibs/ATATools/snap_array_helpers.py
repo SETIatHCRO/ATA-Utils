@@ -20,7 +20,7 @@ def dict_to_list(dictionary):
     """
     this will convert {"snap0": 1, "snap2": 33} to [1,33]
     """
-    return dictionary.values() 
+    return list(dictionary.values())
 
 def dict_values_to_comma_string(dictionary):
     #dlist = [item for sublist in dictionary.values() for item in sublist]
@@ -49,33 +49,6 @@ def string_to_array(string):
            arr.append(rr.split(','))
     return arr
 
-    #arr = []
-    #had_brackets = True;
-    #string = string.replace("],[","<temp>")
-    #if(string[0] != '['):
-    #    had_brackets = False;
-    #    string = "['" + string + "']"
-    #else:
-    #    string = string.replace("[", "['")
-    #    string = string.replace("]", "']")
-    #string = string.replace(",", "','")
-    #string = string.replace("<temp>", "'],['")
-    #arr.append(eval('[%s]' % string))
-
-    #if(had_brackets):
-    #    return arr[0]
-    #return arr[0][0]
-
-#def dict_keys_to_array(dic, do_sort):
-#
-#    if(do_sort == False):
-#        return list(dic.keys())
-#    else:
-#        newList = [];
-#        for key, value in sorted(dic.iteritems(), key=lambda (k,v): (v,k)):
-#            newList.append(key)
-#        return newList
-
 def flatten(arr):
 
     return sum(arr, [])
@@ -87,7 +60,7 @@ def array_to_string(arr):
 def dict_values_to_array(dic):
 
     groups = []
-    for k,v in dic.iteritems():
+    for k,v in dic.items():
         groups.append(v)
     return groups
 

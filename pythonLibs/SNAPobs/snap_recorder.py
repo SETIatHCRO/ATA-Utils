@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
+from __future__ import absolute_import
 import casperfpga
 import adc5g
 
@@ -7,10 +9,7 @@ import time
 import numpy as np
 import struct
 from ATATools import ata_control,logger_defaults
-try:
-    from . import snap_defaults 
-except:
-    import snap_defaults 
+from . import snap_defaults 
 import logging
 
 def setSnapRMS(host,ant,fpga_file,rms=snap_defaults.rms,srate=snap_defaults.srate):
