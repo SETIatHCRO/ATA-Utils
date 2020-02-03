@@ -26,6 +26,24 @@ validAntennas = ['1a','1b','1c','1d','1e','1f', '1g', '1h', '1j', '1k', '2a', '2
                  '3d', '3e', '3f', '3g', '3h', '3j', '3l', '4e', '4f', '4g', '4h',
                  '4j', '4k', '4l', '5b', '5c', '5e', '5g', '5h']
 
+
+def getLimittedPower(ant,pol,detdict,upperdict,lowerdict):
+    powergot = 10*numpy.log10(detdict[ant + pol])
+
+    logger = logging.getLogger(__name__)
+
+    wassat = False
+    if powergot < lowerdict[ant + pol]:
+        powergot = lowerdict[ant + pol]
+        wassat = True
+        logger.info(ant + pol + " below polynomial limit, adjusting")
+    if powergot > upperdict[ant + pol]:
+        powergot = upperdict[ant + pol]
+        wassat = True
+        logger.info(ant + pol + " above polynomial limit, adjusting")
+
+    return powergot,wassat
+
 def getPolynomials(alist):
     """
     Function return 
@@ -45,8 +63,8 @@ def getPolynomials(alist):
                  "from (pbmeas inner join feed_parts on pbmeas.pax_box_sn = feed_parts.pax_box_sn) where pbmeas.type='cw' "
                  "and feed_parts.ant in (%s);")
     
-    
-    in_p=', '.join(map(lambda x: '%s', alist))
+    in_p=', '.join(['%s'] * len(obsid_list)) 
+    #in_p=', '.join(map(lambda x: '%s', alist))
     query = queryPart % in_p;
     cursor.execute(query, alist)
     

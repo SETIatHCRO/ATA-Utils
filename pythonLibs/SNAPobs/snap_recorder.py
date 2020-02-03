@@ -188,6 +188,7 @@ def gatherData(snap,ant,ncaptures,srate,ifc,rfc=None):
         adc0 += [all_chan_data[0::2][0::2]]
         adc1 += [all_chan_data[1::2][0::2]]
 
+    print(adc0)
     adc0 = np.array(adc0)
     adc1 = np.array(adc1)
 
@@ -219,7 +220,7 @@ def gatherData(snap,ant,ncaptures,srate,ifc,rfc=None):
             logger.info( "%s: Grabbing data (%d of %d)" % (ant, i+1, ncaptures))
             x,t = snap.snapshots.vacc_ss_ss.read_raw()
             d = np.array(struct.unpack('>%dL' % (x['length']/4), x['data'])) / acc_len
-            frange = np.linspace(out['rfc'] - (srate - ifc), out['rfc'] - (srate - ifc) + srate/2., d.shape[0])
+            frange = np.linspace(out['rfc'] - (srate - ifc), out['rfc'] - (srate - ifc) + srate/2., d.shape[0]//2)
             out['frange'] = frange
             out['auto0'] += [d[0::2]]
             out['auto0_timestamp'] += [t]

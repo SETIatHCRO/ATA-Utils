@@ -13,9 +13,8 @@ Created Jan 2020
 
 import sys
 
-sys.path.append('/home/obs/bin/')
 from ah import attributes
-import autotunecommon
+from . import autotunecommon
 from optparse import OptionParser
 import numpy
 import logging
@@ -66,29 +65,18 @@ def setPamsAutotune(antlist,polydict,lowerdict,upperdict,power=defaultPowerLevel
   logger = logging.getLogger(__name__)
   toDoList = list(antlist)
   for itercnt in range(retry):
-    antstr = ",".join(toDoList)
+    #antstr = ",".join(toDoList)
     if not toDoList:
       logger.info("iteration " + str(itercnt) + ": nothing to do" )
       break
-    retval,detdict = attributes.get_det(ant=antstr)
-    retval,pamdict = attributes.get_pam(ant=antstr)
+    retval,detdict = attributes.get_det(ant=toDoList)
+    retval,pamdict = attributes.get_pam(ant=toDoList)
+    #retval,detdict = attributes.get_det(ant=antstr)
+    #retval,pamdict = attributes.get_pam(ant=antstr)
 
     for ant in toDoList:
-      powerxgot = 10*numpy.log10(detdict['ant' + ant + 'x'])
-      powerygot = 10*numpy.log10(detdict['ant' + ant + 'y'])
-      
-      if powerxgot < lowerdict[ant + 'x']:
-        powerxgot = lowerdict[ant + 'x']
-        logger.info(ant + "x below polynomial limit, adjusting")
-      if powerygot < lowerdict[ant + 'y']:
-        powerygot = lowerdict[ant + 'y']
-        logger.info(ant + "y below polynomial limit, adjusting")
-      if powerxgot > upperdict[ant + 'x']:
-        powerxgot = upperdict[ant + 'x']
-        logger.info(ant + "x above polynomial limit, adjusting")
-      if powerygot > upperdict[ant + 'y']:
-        powerygot = upperdict[ant + 'y']
-        logger.info(ant + "y above polynomial limit, adjusting")
+      powerxgot,satx = autotunecommon.getLimittedPower(ant,'x',detdict,upperdict,lowerdict)
+      powerygot,saty = autotunecommon.getLimittedPower(ant,'y',detdict,upperdict,lowerdict)
 
       cpowx = polydict[ant + 'x'](powerxgot)
       cpowy = polydict[ant + 'y'](powerygot)
@@ -117,16 +105,18 @@ def setPamsAutotune(antlist,polydict,lowerdict,upperdict,power=defaultPowerLevel
 
   if logger.getEffectiveLevel() <= logging.INFO:
     #getting det and pam settings for each antenna
-    antstr = ",".join(antlist)
-    retval,detdict = attributes.get_det(ant=antstr)
-    retval,pamdict = attributes.get_pam(ant=antstr)
+    #antstr = ",".join(antlist)
+    retval,detdict = attributes.get_det(ant=antlist)
+    retval,pamdict = attributes.get_pam(ant=antlist)
+    #retval,detdict = attributes.get_det(ant=antstr)
+    #retval,pamdict = attributes.get_pam(ant=antstr)
     for ant in antlist:
-      powerxgot = 10*numpy.log10(detdict['ant' + ant + 'x'])
-      powerygot = 10*numpy.log10(detdict['ant' + ant + 'y'])
+      powerxgot = 10*numpy.log10(detdict[ant + 'x'])
+      powerygot = 10*numpy.log10(detdict[ant + 'y'])
       cpowx = polydict[ant + 'x'](powerxgot)
       cpowy = polydict[ant + 'y'](powerygot)
-      logger.info(ant + "x: det " + str( detdict['ant' + ant + 'x'] ) + " ( " +str(powerxgot)+ " dBm) translates to " + str(cpowx)+ " dBm pam " + str(pamdict[ant + 'x']) )
-      logger.info(ant + "y: det " + str( detdict['ant' + ant + 'y'] ) + " ( " +str(powerygot)+ " dBm) translates to " + str(cpowy)+ " dBm pam " + str(pamdict[ant + 'y']) )
+      logger.info(ant + "x: det " + str( detdict[ant + 'x'] ) + " ( " +str(powerxgot)+ " dBm) translates to " + str(cpowx)+ " dBm pam " + str(pamdict[ant + 'x']) )
+      logger.info(ant + "y: det " + str( detdict[ant + 'y'] ) + " ( " +str(powerygot)+ " dBm) translates to " + str(cpowy)+ " dBm pam " + str(pamdict[ant + 'y']) )
 
   return toDoList
 

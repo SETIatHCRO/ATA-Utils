@@ -13,57 +13,33 @@ Created Jan 2020
 
 import sys
 
-sys.path.append('/home/obs/bin/')
 from ah import attributes
-import autotunecommon
+from . import autotunecommon
 from optparse import OptionParser
 import numpy
 import logging
 import re
 import pdb
 
-defaultPowerLeveldBm = 2.0
-defaultPowerToldBm = 0.5
-defaultRetries = 5
-
 def getDetdBm_dict(antlist,polydict,lowerdict,upperdict,missingants):
   
   logger = logging.getLogger(__name__)
-  antstr = ",".join(antlist)
-  retval,detdict = attributes.get_det(ant=antstr)
+  #antstr = ",".join(antlist)
+  #retval,detdict = attributes.get_det(ant=antstr)
+  retval,detdict = attributes.get_det(ant=antlist)
 
   antDD = []
 
   for ant in antlist:
-    powerxgot = 10*numpy.log10(detdict['ant' + ant + 'x'])
-    powerygot = 10*numpy.log10(detdict['ant' + ant + 'y'])
+    powerxgot,wassatx = autotunecommon.getLimittedPower(ant,'x',detdict,upperdict,lowerdict)
+    powerygot,wassaty = autotunecommon.getLimittedPower(ant,'y',detdict,upperdict,lowerdict)
     
-    wassatx = False
-    wassaty = False
-
-    if powerxgot < lowerdict[ant + 'x']:
-      powerxgot = lowerdict[ant + 'x']
-      wassatx = True
-      logger.warning(ant + "x below polynomial limit, adjusting")
-    if powerygot < lowerdict[ant + 'y']:
-      wassaty = True
-      powerygot = lowerdict[ant + 'y']
-      logger.info(ant + "y below polynomial limit, adjusting")
-    if powerxgot > upperdict[ant + 'x']:
-      wassatx = True
-      powerxgot = upperdict[ant + 'x']
-      logger.info(ant + "x above polynomial limit, adjusting")
-    if powerygot > upperdict[ant + 'y']:
-      wassaty = True
-      powerygot = upperdict[ant + 'y']
-      logger.info(ant + "y above polynomial limit, adjusting")
-
     cpowx = polydict[ant + 'x'](powerxgot)
     cpowy = polydict[ant + 'y'](powerygot)
 
     ismissing = ant in missingants
 
-    antDD.append({'ant': ant, 'powx': cpowx, 'powy': cpowy, 'satx': wassatx, 'saty': wassaty, 'accurate': not ismissing,'rawx':detdict['ant' + ant + 'x'], 'rawy': detdict['ant' + ant + 'y']})
+    antDD.append({'ant': ant, 'powx': cpowx, 'powy': cpowy, 'satx': wassatx, 'saty': wassaty, 'accurate': not ismissing,'rawx':detdict[ant + 'x'], 'rawy': detdict[ant + 'y']})
 
   return antDD
     
