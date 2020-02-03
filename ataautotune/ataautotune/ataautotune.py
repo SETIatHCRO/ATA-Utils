@@ -149,6 +149,12 @@ def setPamsAutotune(antlist,polydict,lowerdict,upperdict,power=defaultPowerLevel
         #we may remove the antenna from the todolist.
         toDoList.remove(ant)
         logger.info("tuned " + ant + " in " + str(itercnt) + " iteration" )
+      elif numpy.abs(deltax) < tol and ((ant + 'y') in brokenPolList):
+        toDoList.remove(ant)
+        logger.info("tuned " + ant + "x in " + str(itercnt) + " iteration. y seems to have broken detector" )
+      elif numpy.abs(deltay) < tol and ((ant + 'x') in brokenPolList):
+        toDoList.remove(ant)
+        logger.info("tuned " + ant + "y in " + str(itercnt) + " iteration. x seems to have broken detector" )
       else:
         #we still need to fix it a bit. We are applying the 0.9 multiplier to limit oscilations
         #of +/- delta
