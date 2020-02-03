@@ -14,7 +14,7 @@ Created Jan 2020
 import sys
 
 from ah import attributes
-from . import autotunecommon
+import autotunecommon
 from optparse import OptionParser
 import numpy
 import logging
@@ -22,6 +22,59 @@ import logging
 defaultPowerLeveldBm = 2.0
 defaultPowerToldBm = 0.5
 defaultRetries = 5
+
+def autotune_multiprocess(antlist,power=defaultPowerLeveldBm,retry=defaultRetries,tolerance=defaultPowerToldBm):
+    """
+    call to tune the pam settings, adjusting the power going to RF-Fiber converter
+
+    Parameters
+    -------------
+    antlist : list
+        list of antennas to check. should be short string e.g. ['1a','2c']
+    power : float
+        desired power level in dBm. Default 2 dBm
+    retry : int
+        maximum number of steps taken to adjust power. default 5
+    tolerance : float
+        single-sided power level tolerance (i.e. output power will be power+/-tolerance).
+        default 0.5 dB
+        
+    Returns
+    -------------
+    int
+        return code
+    list 
+        list of not tuned antennas. Antenna is present on the list if one or both polarizations are not set
+        
+    Raises
+    -------------
+        KeyError (from autotunecommon.getPolynomials)
+    """
+
+    import concurrent.futures
+
+    polydict,lowerdict,upperdict,missingants = autotunecommon.getPolynomials(antlist)
+    
+    nworkers = len(antlist)
+    notTunedAnts = []
+
+    with concurrent.futures.ProcessPoolExecutor(max_workers=nworkers) as executor:
+        tlist = []
+        for cant in antlist:
+            t = executor.submit([cant],polydict,lowerdict,upperdict,power,retry,tolerance)
+            tlist.append(t)
+
+        for t in tlist:
+            retlist = t.result()
+            print(retlist)
+            notTunedAnts.extend(retlist)
+    
+    print(notTunedAnts)
+    retval = 0
+    if notTunedAnts:
+        retval = -1
+    
+    return retval,notTunedAnts
 
 def autotune(antlist,power=defaultPowerLeveldBm,retry=defaultRetries,tolerance=defaultPowerToldBm):
     """
@@ -159,7 +212,9 @@ def main():
     
     antstr,antlist = autotunecommon.getAntennas(args[0])
 
-    res,failed = autotune(antlist,options.power,options.retry,options.tolerance)
+    #res,failed = autotune(antlist,options.power,options.retry,options.tolerance)
+    res,failed = autotune_multiprocess(antlist,options.power,options.retry,options.tolerance)
+    
 
 if __name__ == '__main__':
     main()

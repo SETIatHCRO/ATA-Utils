@@ -14,7 +14,7 @@ Created Jan 2020
 import sys
 
 from ah import attributes
-from . import autotunecommon
+import autotunecommon
 from optparse import OptionParser
 import numpy
 import logging

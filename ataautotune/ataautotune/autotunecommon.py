@@ -63,7 +63,7 @@ def getPolynomials(alist):
                  "from (pbmeas inner join feed_parts on pbmeas.pax_box_sn = feed_parts.pax_box_sn) where pbmeas.type='cw' "
                  "and feed_parts.ant in (%s);")
     
-    in_p=', '.join(['%s'] * len(obsid_list)) 
+    in_p=', '.join(['%s'] * len(alist)) 
     #in_p=', '.join(map(lambda x: '%s', alist))
     query = queryPart % in_p;
     cursor.execute(query, alist)
