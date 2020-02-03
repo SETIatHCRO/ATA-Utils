@@ -127,6 +127,12 @@ def setPamsAutotune(antlist,polydict,lowerdict,upperdict,power=defaultPowerLevel
     #retval,detdict = attributes.get_det(ant=antstr)
     #retval,pamdict = attributes.get_pam(ant=antstr)
 
+    if itercnt == 0:
+        #storing the initial values
+        initdetdict = detdict.copy()
+        initpamdict = pamdict.copy()
+
+
     for ant in toDoList:
       powerxgot,satx = autotunecommon.getLimittedPower(ant,'x',detdict,upperdict,lowerdict)
       powerygot,saty = autotunecommon.getLimittedPower(ant,'y',detdict,upperdict,lowerdict)
@@ -150,11 +156,31 @@ def setPamsAutotune(antlist,polydict,lowerdict,upperdict,power=defaultPowerLevel
 
         newpamx = pamdict[ant + 'x'] - 0.9 * deltax
         newpamy = pamdict[ant + 'y'] - 0.9 * deltay
+        newpamx = max(autotunecommon.minattenuator,min(newpamx,autotunecommon.maxattenuator))
+        newpamy = max(autotunecommon.minattenuator,min(newpamy,autotunecommon.maxattenuator))
+        logger.info('setting pams {0:s} to {1:.2f},{2:.2f}'.format(ant,newpamx,newpamy))
         attributes.set_pam(ant=ant,x=newpamx,y=newpamy)
         
   #we may as well check only the todoList
   if itercnt == (retry - 1) and toDoList:
     logger.warning("all interation passed ant there are still untuned antennas: %s" % toDoList)
+    #checking if the detector is broken 
+    retval,detdict = attributes.get_det(ant=toDoList)
+    retval,pamdict = attributes.get_pam(ant=toDoList)
+    for ant in toDoList:
+      initpowerxgot,satx = autotunecommon.getLimittedPower(ant,'x',initdetdict,upperdict,lowerdict)
+      initpowerygot,saty = autotunecommon.getLimittedPower(ant,'y',initdetdict,upperdict,lowerdict)
+      powerxgot,satx = autotunecommon.getLimittedPower(ant,'x',detdict,upperdict,lowerdict)
+      powerygot,saty = autotunecommon.getLimittedPower(ant,'y',detdict,upperdict,lowerdict)
+
+      deltadetx = powerxgot - initpowerxgot
+      deltadety = powerygot - initpowerygot
+      deltapamx = pamdict[ant + 'x'] - initpamdict[ant + 'x']
+      deltapamy = pamdict[ant + 'y'] - initpamdict[ant + 'y']
+
+      logger.info('{0:s}x: detector delta {1:.2f}. pam delta {2:.2f}'.format(ant,deltadetx,deltapamx))
+      logger.info('{0:s}y: detector delta {1:.2f}. pam delta {2:.2f}'.format(ant,deltadety,deltapamy))
+
 
   if logger.getEffectiveLevel() <= logging.INFO:
     #getting det and pam settings for each antenna
@@ -212,8 +238,8 @@ def main():
     
     antstr,antlist = autotunecommon.getAntennas(args[0])
 
-    #res,failed = autotune(antlist,options.power,options.retry,options.tolerance)
-    res,failed = autotune_multiprocess(antlist,options.power,options.retry,options.tolerance)
+    res,failed = autotune(antlist,options.power,options.retry,options.tolerance)
+    #res,failed = autotune_multiprocess(antlist,options.power,options.retry,options.tolerance)
     
 
 if __name__ == '__main__':

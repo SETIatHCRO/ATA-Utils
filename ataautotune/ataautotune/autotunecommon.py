@@ -20,6 +20,8 @@ import ATASQL
 from mysql.connector import Error 
 
 
+minattenuator = 0
+maxattenuator = 63
 defaultPax = 'PB-000'
 validAntennas = ['1a','1b','1c','1d','1e','1f', '1g', '1h', '1j', '1k', '2a', '2b',
                  '2c', '2d', '2e', '2f', '2g', '2h', '2j', '2k', '2l', '2m', '3c',
