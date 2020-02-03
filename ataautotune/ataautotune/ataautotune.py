@@ -59,6 +59,7 @@ def autotune_multiprocess(antlist,power=defaultPowerLeveldBm,retry=defaultRetrie
     notTunedAnts = []
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=nworkers) as executor:
+    #with concurrent.futures.ThreadPoolExecutor(max_workers=nworkers) as executor:
         tlist = []
         for cant in antlist:
             t = executor.submit([cant],polydict,lowerdict,upperdict,power,retry,tolerance)
@@ -116,7 +117,11 @@ def autotune(antlist,power=defaultPowerLeveldBm,retry=defaultRetries,tolerance=d
 def setPamsAutotune(antlist,polydict,lowerdict,upperdict,power=defaultPowerLeveldBm,retry=defaultRetries,tol=defaultPowerToldBm):
   
   logger = logging.getLogger(__name__)
+  if power < autotunecommon.minpowerinspect + tol:
+    logger.error('settings error target power {} < min power check {} + tolerance {}'.format(power, autotunecommon.minpowerinspect, tol))
   toDoList = list(antlist)
+  brokenList = []
+  brokenPolList = []
   for itercnt in range(retry):
     #antstr = ",".join(toDoList)
     if not toDoList:
@@ -126,12 +131,6 @@ def setPamsAutotune(antlist,polydict,lowerdict,upperdict,power=defaultPowerLevel
     retval,pamdict = attributes.get_pam(ant=toDoList)
     #retval,detdict = attributes.get_det(ant=antstr)
     #retval,pamdict = attributes.get_pam(ant=antstr)
-
-    if itercnt == 0:
-        #storing the initial values
-        initdetdict = detdict.copy()
-        initpamdict = pamdict.copy()
-
 
     for ant in toDoList:
       powerxgot,satx = autotunecommon.getLimittedPower(ant,'x',detdict,upperdict,lowerdict)
@@ -153,34 +152,64 @@ def setPamsAutotune(antlist,polydict,lowerdict,upperdict,power=defaultPowerLevel
       else:
         #we still need to fix it a bit. We are applying the 0.9 multiplier to limit oscilations
         #of +/- delta
-
+        xwasbelow=False
+        ywasbelow=False
         newpamx = pamdict[ant + 'x'] - 0.9 * deltax
         newpamy = pamdict[ant + 'y'] - 0.9 * deltay
-        newpamx = max(autotunecommon.minattenuator,min(newpamx,autotunecommon.maxattenuator))
-        newpamy = max(autotunecommon.minattenuator,min(newpamy,autotunecommon.maxattenuator))
+            
+        #if det value was low and it's first iteration, we limit the change to cap and mark for check
+        if cpowx < autotunecommon.minpowerinspect and itercnt == 0:
+            newpamx = max(autotunecommon.minfirstiterattenuator,min(newpamx,autotunecommon.maxattenuator))
+            xwasbelow=True
+        else:
+            newpamx = max(autotunecommon.minattenuator,min(newpamx,autotunecommon.maxattenuator))
+
+        if cpowy < autotunecommon.minpowerinspect and itercnt == 0:
+            newpamy = max(autotunecommon.minfirstiterattenuator,min(newpamy,autotunecommon.maxattenuator))
+            ywasbelow=True
+        else:
+            newpamy = max(autotunecommon.minattenuator,min(newpamy,autotunecommon.maxattenuator))
+
+        
+        if ant + 'x' in brokenPolList:
+            newpamx = newpamy
+
+        if ant + 'y' in brokenPolList:
+            newpamy = newpamx
+
         logger.info('setting pams {0:s} to {1:.2f},{2:.2f}'.format(ant,newpamx,newpamy))
         attributes.set_pam(ant=ant,x=newpamx,y=newpamy)
+
+        if xwasbelow or ywasbelow:
+            #we had low value, need to recalculate and see if we have any broken pams
+            retval,temp_detdict = attributes.get_det(ant=ant)
+            if xwasbelow:
+                powerxgot,satx = autotunecommon.getLimittedPower(ant,'x',temp_detdict,upperdict,lowerdict)
+                tmp_cpowx = polydict[ant + 'x'](powerxgot)
+                if tmp_cpowx < autotunecommon.minpowerinspect:
+                    logger.warning('antpol {}x appear to have a broken detector'.format(ant))
+                    brokenPolList.append(ant+'x')
+            if ywasbelow:
+                powerygot,saty = autotunecommon.getLimittedPower(ant,'y',temp_detdict,upperdict,lowerdict)
+                tmp_cpowy = polydict[ant + 'y'](powerygot)
+                if tmp_cpowy < autotunecommon.minpowerinspect:
+                    logger.warning('antpol {}y appear to have a broken detector'.format(ant))
+                    brokenPolList.append(ant+'y')
+
+        #both polarizations have broken detector!
+        #removing antenna from toDoList and putting it to broken list
+        #also, setting a default value
+        if ((ant + 'x') in brokenPolList) and ((ant + 'y' in brokenPolList)):
+            logger.warning('ant {} has broken detector in both polarizations'.format(ant) )
+            brokenList.append(ant)
+            toDoList.remove(ant)
+            attributes.set_pam(ant=ant,source='default')
+
         
   #we may as well check only the todoList
   if itercnt == (retry - 1) and toDoList:
     logger.warning("all interation passed ant there are still untuned antennas: %s" % toDoList)
     #checking if the detector is broken 
-    retval,detdict = attributes.get_det(ant=toDoList)
-    retval,pamdict = attributes.get_pam(ant=toDoList)
-    for ant in toDoList:
-      initpowerxgot,satx = autotunecommon.getLimittedPower(ant,'x',initdetdict,upperdict,lowerdict)
-      initpowerygot,saty = autotunecommon.getLimittedPower(ant,'y',initdetdict,upperdict,lowerdict)
-      powerxgot,satx = autotunecommon.getLimittedPower(ant,'x',detdict,upperdict,lowerdict)
-      powerygot,saty = autotunecommon.getLimittedPower(ant,'y',detdict,upperdict,lowerdict)
-
-      deltadetx = powerxgot - initpowerxgot
-      deltadety = powerygot - initpowerygot
-      deltapamx = pamdict[ant + 'x'] - initpamdict[ant + 'x']
-      deltapamy = pamdict[ant + 'y'] - initpamdict[ant + 'y']
-
-      logger.info('{0:s}x: detector delta {1:.2f}. pam delta {2:.2f}'.format(ant,deltadetx,deltapamx))
-      logger.info('{0:s}y: detector delta {1:.2f}. pam delta {2:.2f}'.format(ant,deltadety,deltapamy))
-
 
   if logger.getEffectiveLevel() <= logging.INFO:
     #getting det and pam settings for each antenna
@@ -197,6 +226,9 @@ def setPamsAutotune(antlist,polydict,lowerdict,upperdict,power=defaultPowerLevel
       logger.info(ant + "x: det " + str( detdict[ant + 'x'] ) + " ( " +str(powerxgot)+ " dBm) translates to " + str(cpowx)+ " dBm pam " + str(pamdict[ant + 'x']) )
       logger.info(ant + "y: det " + str( detdict[ant + 'y'] ) + " ( " +str(powerygot)+ " dBm) translates to " + str(cpowy)+ " dBm pam " + str(pamdict[ant + 'y']) )
 
+  if brokenList:
+      logger.warning('the broken antenna list is {}'.format(','.join(brokenList)))
+  toDoList.extend(brokenList)
   return toDoList
 
 def main():

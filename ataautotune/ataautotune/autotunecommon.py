@@ -19,9 +19,13 @@ import re
 import ATASQL
 from mysql.connector import Error 
 
-
-minattenuator = 0
-maxattenuator = 63
+#the minimal attenuator value that can be set
+minattenuator = 0.0
+#the minimal attenuator value than can be set if the initial detected power is low
+minfirstiterattenuator = 10.0
+#if the power is lower than that, we set min attenuator to minfirstiterattenuator and need to check the output power
+minpowerinspect = -15.0 
+maxattenuator = 63.0
 defaultPax = 'PB-000'
 validAntennas = ['1a','1b','1c','1d','1e','1f', '1g', '1h', '1j', '1k', '2a', '2b',
                  '2c', '2d', '2e', '2f', '2g', '2h', '2j', '2k', '2l', '2m', '3c',
