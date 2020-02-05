@@ -41,7 +41,7 @@ def syncFpgaClock(snap,srate=snap_defaults.srate):
     
     logger.info('snap clock estimated at {}'.format(fpga_clk))
 
-    logger.info( "srate = %.1f" % (srate))
+    logger.info( "srate = {0:.1f}".format(srate))
 
     check_clock = np.abs((fpga_clk*4. / srate) - 1) < 0.01
 
@@ -50,9 +50,9 @@ def syncFpgaClock(snap,srate=snap_defaults.srate):
     while(check_clock == False and num_check < snap_defaults.clock_attempts):
         num_check = num_check + 1
         time.sleep(1)
-        logger.info( "Estimating FPGA clock retry %d" % (num_check))
+        logger.info( "Estimating FPGA clock retry {}".format(num_check))
         fpga_clk = snap.estimate_fpga_clock()
-        logger.info( "%s: Clock estimate is %.1f, try %d" % (fpga_clk, num_check))
+        logger.info( "Clock estimate is {0:.1f}, try {1:d}".format(fpga_clk, num_check))
         check_clock = np.abs((fpga_clk*4. / srate) - 1) < 0.01
 
     #If still bad clock, fail
@@ -157,6 +157,10 @@ def getData(host,ant,ncaptures,fpga_file,freq,srate=snap_defaults.srate,ifc=snap
     snap = getSnap(host,fpga_file)
     fpga_clk = syncFpgaClock(snap,srate)
     retdict = gatherData(snap,ant,ncaptures,srate,ifc,freq)
+    retdict['host'] = host
+    retdict['fpga_clk'] = fpga_clk
+    retdict['fpgfile'] = fpga_file
+    retdict['srate'] = srate
     return retdict
 
 def gatherData(snap,ant,ncaptures,srate,ifc,rfc=None):
@@ -165,6 +169,7 @@ def gatherData(snap,ant,ncaptures,srate,ifc,rfc=None):
 
     out = {}
     out['ant'] = ant
+    out['ifc'] = ifc
 
     if not rfc or rfc == 0.0:
         rfc = ata_control.get_sky_freq()

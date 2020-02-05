@@ -98,6 +98,49 @@ def set_rf_switch(ant_list):
         logger.error(stderr)
         raise RuntimeError("Set switch 'rfswitch %s' failed!" % (ants))
 
+def getRaDec(ant_list):
+    """
+    get the Ra-Dec pointings of each antenna
+    returns dictionary with 1x2 list e.g. {'1a':[0.134 1.324]}
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+    antstr = ",".join(ant_list)
+    stdout, stderr = ata_remote.callObs(["atagetradec", antstr])
+
+    retdict = {}
+    for line in stdout.splitlines():
+        if line.startswith('ant'):
+            sln = line.split()
+            ant = sln[0][3:]
+            ra = float(sln[1])
+            dec = float(sln[2])
+            retdict[ant] = [ra,dec]
+        else:
+            logger.info('not processed line: {}'.format(line))
+    return retdict
+
+def get_ant_pos(ant_list):
+    """
+    get the NEU position of the antenna w.r.t telescope center
+    returns dictionary with 1x3 list e.g. {'1a':[-74.7315    65.9487    0.5466]}
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+    stdout, stderr = ata_remote.callObs(["fxconf.rb", "antpos"])
+
+    retdict = {}
+    for line in stdout.splitlines():
+        if not line.startswith('#'):
+            sln = line.split()
+            ant = sln[3]
+            pos_n = float(sln[0])
+            pos_e = float(sln[1])
+            pos_u = float(sln[2])
+            if ant in ant_list:
+                retdict[ant] = [pos_n,pos_e,pos_u]
+
+    return retdict
+
+
 def rf_switch_thread(ant_list):
     """
     start a thread to set rf switch,

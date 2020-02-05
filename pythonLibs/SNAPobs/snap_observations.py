@@ -10,12 +10,16 @@ from ATATools import logger_defaults,obs_db,ata_control,snap_array_helpers
 from . import snap_defaults,snap_dirs,snap_recorder
 import concurrent.futures
 
-def single_snap_recording(host,ant,ncaptures,fpga_file,freq,filefragment):
+def single_snap_recording(host,ant,ncaptures,fpga_file,freq,filefragment,source,az_offset,el_offset):
     logger = logger_defaults.getModuleLogger(__name__)
 
     measDict = snap_recorder.getData(host,ant,ncaptures,fpga_file,freq)
+    measDict['source'] = source
+    ant_radec = ata_control.getRaDec([ant])
+    measDict['ra'] = ant_radec[ant][0]
+    measDict['dec'] = ant_radec[ant][1]
 
-    import cPickle as pkl
+    import pickle as pkl
     pkl.dump(measDict, open('testing_save' + ant + '.pkl', 'w'))
     print(measDict)
     raise NotImplementedError
@@ -122,7 +126,7 @@ def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment
     with concurrent.futures.ProcessPoolExecutor(max_workers=nsnaps) as executor:
         threads = []
         for snap in snaps:
-            t = executor.submit(single_snap_recording,snap,ant_dict[snap],ncaptures,fpga_file,freq,filefragment)
+            t = executor.submit(single_snap_recording,snap,ant_dict[snap],ncaptures,fpga_file,freq,filefragment,source,az_offset,el_offset)
             threads.append(t)
 
         for t in threads:
