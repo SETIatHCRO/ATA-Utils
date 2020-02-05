@@ -6,14 +6,15 @@ save functions for snap uvh5 file
 """
 
 from ATATools import logger_defaults,ata_constants,ata_control
-import snap_dirs
+from . import snap_dirs
 import pyuvdata
 from astropy.time import Time
 import datetime
 import numpy
 import datetime
+import os
 
-def create_snap_uvdata(snapdict,azoffset,eloffset):
+def create_snap_uvdata(snapdict,azoffset,eloffset,recid,setid=None):
     logger_defaults.getModuleLogger(__name__)
     obj = pyuvdata.UVData()
 
@@ -29,7 +30,7 @@ def create_snap_uvdata(snapdict,azoffset,eloffset):
     if azoffset == 0 and eloffset == 0:
         obj.object_name = snapdict['source']
     else:
-        obj.object_name = '{0:s}off{1:03.1f}_{2:03.1f}'.format(snapdict['source'],azoffset,eloffset)
+        obj.object_name = '{0:s}_off_{1:03.1f}_{2:03.1f}'.format(snapdict['source'],azoffset,eloffset)
     obj.history = 'OnOff Measurement'
     obj.phase_type = 'phased'
     obj.Nants_data = 1
@@ -120,12 +121,21 @@ def create_snap_uvdata(snapdict,azoffset,eloffset):
     ek['rfc'] = snapdict['rfc']
     ek['ifc'] = snapdict['ifc']
     ek['fpgfile'] = snapdict['fpgfile']
+    if not setid:
+        ek['setid'] = -1
+    else:
+        ek['setid'] = setid
+    ek['recid'] = recid
+    ek['ant'] = ant
 
     obj.extra_keywords = ek
     return obj
 
-def saveFile(filename):
+def saveFile(filepart,snapdict,azoffset,eloffset,recid,setid):
     logger_defaults.getModuleLogger(__name__)
+    uvdat = create_snap_uvdata(snapdict,azoffset,eloffset,recid,setid=None)
+    filename = os.path.join(snap_dirs.get_output_dir(),'snap_' + str(recid) + '_' + filepart + '_' + snapdict['ant'] + '.h5')
+    uvdat.write_uvh5(filename)
 
 if __name__== "__main__":
     import pickle

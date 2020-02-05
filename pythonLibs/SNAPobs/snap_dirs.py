@@ -39,7 +39,7 @@ def set_output_dir(dirname):
     
     logger = logger_defaults.getModuleLogger(__name__)
 
-    output_dir = dirname
+    output_dir = os.path.expanduser(dirname)
 
     try:
         if not os.path.exists(output_dir):
@@ -48,6 +48,7 @@ def set_output_dir(dirname):
         logger.error("Error: Creating directory %s" %  output_dir)
         raise
     
+    snap_output_dir = output_dir
     logger.info('Storage directory set to {}'.format(output_dir))
 
 def get_output_dir():

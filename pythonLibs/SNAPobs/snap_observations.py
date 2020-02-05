@@ -7,10 +7,10 @@ main functions for snap observations
 
 from __future__ import absolute_import
 from ATATools import logger_defaults,obs_db,ata_control,snap_array_helpers
-from . import snap_defaults,snap_dirs,snap_recorder
+from . import snap_defaults,snap_dirs,snap_recorder,snap_h5
 import concurrent.futures
 
-def single_snap_recording(host,ant,ncaptures,fpga_file,freq,filefragment,source,az_offset,el_offset):
+def single_snap_recording(host,ant,ncaptures,fpga_file,freq,filefragment,source,az_offset,el_offset,recid,setid=None):
     logger = logger_defaults.getModuleLogger(__name__)
 
     measDict = snap_recorder.getData(host,ant,ncaptures,fpga_file,freq)
@@ -19,11 +19,10 @@ def single_snap_recording(host,ant,ncaptures,fpga_file,freq,filefragment,source,
     measDict['ra'] = ant_radec[ant][0]
     measDict['dec'] = ant_radec[ant][1]
 
-    import pickle as pkl
-    pkl.dump(measDict, open('testing_save' + ant + '.pkl', 'w'))
-    print(measDict)
-    raise NotImplementedError
+    snap_h5.saveFile(filefragment,measDict,az_offset,el_offset,recid,setid)
 
+    rmsDict = {ant: {'rmsx' : measDict['adc0_stats']['dev'], 'rmsy' :  measDict['adc1_stats']['dev']}}
+    obs_db.updateRMSVals(recid,rmsDict)
     return rmsDict
     
 def getRMS(ant_dict,fpga_file=snap_defaults.spectra_snap_file,srate=snap_defaults.srate):
@@ -107,9 +106,9 @@ def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment
     logger = logger_defaults.getModuleLogger(__name__)
     #setting up the observation and starting it
 
-    obsid = obs_db.initRecording(freq,obstype,backend,desc,obsuser,obs_set_id)
+    recid = obs_db.initRecording(freq,obstype,backend,desc,obsuser,obs_set_id)
 
-    logger.info("got recording id {}".format(obsid))
+    logger.info("got recording id {}".format(recid))
 
     snap_dirs.set_output_dir_obsid(obs_set_id) 
 
@@ -117,8 +116,8 @@ def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment
     logger.info("updating database with antennas {}".format(", ".join(ant_list)))
     obs_db.initAntennasTable(obsid,ant_list,source,az_offset,el_offset,True)
 
-    logger.info("starting recording {}".format(obsid))
-    obs_db.startRecording(obsid)
+    logger.info("starting recording {}".format(recid))
+    obs_db.startRecording(recid)
 
     snaps = ant_dict.keys()
     nsnaps = len(snaps)
@@ -126,15 +125,15 @@ def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment
     with concurrent.futures.ProcessPoolExecutor(max_workers=nsnaps) as executor:
         threads = []
         for snap in snaps:
-            t = executor.submit(single_snap_recording,snap,ant_dict[snap],ncaptures,fpga_file,freq,filefragment,source,az_offset,el_offset)
+            t = executor.submit(single_snap_recording,snap,ant_dict[snap],ncaptures,fpga_file,freq,filefragment,source,az_offset,el_offset,recid,obs_set_id)
             threads.append(t)
 
         for t in threads:
             retval = t.result()
 
-    obs_db.stopRecording(obsid)
+    obs_db.stopRecording(recid)
 
-    return obsid
+    return recid
 
 
 if __name__== "__main__":

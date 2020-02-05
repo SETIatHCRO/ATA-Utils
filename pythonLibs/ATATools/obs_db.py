@@ -351,7 +351,7 @@ def getSetData(setid):
 
     return ts,descr
 
-def updateAttenVals(cobsid,attendict):
+def updateAttenRMSVals(cobsid,attendict):
     """
     update the antennas information with a given dictionary
     dictionary example: 
@@ -370,9 +370,59 @@ def updateAttenVals(cobsid,attendict):
 
     for ant in attendict.keys():
         cdict = attendict[ant].copy()
-        logger.info("updating attenuators row for ant {} and recording id {}".format(ant,cobsid))
+        logger.info("updating attenuators/rms row for ant {} and recording id {}".format(ant,cobsid))
         cdict['ant'] = ant
         cdict['id']=cobsid
+        mycursor.execute(insertcmd,cdict)
+        mydb.commit()
+
+    mycursor.close()
+    mydb.close()
+
+def updateAttenVals(cobsid,attendict):
+    """
+    update the antennas information with a given dictionary
+    dictionary example: 
+    { '1a': {'attenx': 17, 'atteny': 0},
+      '2a': {'attenx': 30, 'atteny': 0}   }
+
+    """
+
+    logger= logger_defaults.getModuleLogger(__name__)
+
+    mydb = ATASQL.connectObsDb()
+    mycursor = mydb.cursor()
+
+    insertcmd = ("update rec_ants set dsp_atten_x=%(attenx)s, dsp_atten_y=%(atteny)s, where ant=%(ant)s and id=%(id)s")
+
+    for ant in attendict.keys():
+        cdict = {'ant' : ant, 'id':cobsid, 'attenx' = attendict[ant]['attenx'], 'atteny' = attendict[ant]['atteny']}
+        logger.info("updating attenuators row for ant {} and recording id {}".format(ant,cobsid))
+        mycursor.execute(insertcmd,cdict)
+        mydb.commit()
+
+    mycursor.close()
+    mydb.close()
+
+def updateRMSVals(cobsid,attendict):
+    """
+    update the antennas information with a given dictionary
+    dictionary example: 
+    { '1a': {'rmsy': 0.3544, 'rmsx': 12.2489},
+      '2a': {'rmsy': 0.3846, 'rmsx': 26.9986}   }
+
+    """
+
+    logger= logger_defaults.getModuleLogger(__name__)
+
+    mydb = ATASQL.connectObsDb()
+    mycursor = mydb.cursor()
+
+    insertcmd = ("update rec_ants set dsp_rms_x=%(rmsx)s, dsp_rms_y=%(rmsy)s where ant=%(ant)s and id=%(id)s")
+
+    for ant in attendict.keys():
+        cdict = {'ant' : ant, 'id':cobsid, 'rmsx' = attendict[ant]['rmsx'], 'rmsy' = attendict[ant]['rmsy']}
+        logger.info("updating rms row for ant {} and recording id {}".format(ant,cobsid))
         mycursor.execute(insertcmd,cdict)
         mydb.commit()
 
