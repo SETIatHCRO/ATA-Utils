@@ -229,8 +229,8 @@ def setPamsAutotune(antlist,polydict,lowerdict,upperdict,power=defaultPowerLevel
       powerygot = 10*numpy.log10(detdict[ant + 'y'])
       cpowx = polydict[ant + 'x'](powerxgot)
       cpowy = polydict[ant + 'y'](powerygot)
-      logger.info(ant + "x: det " + str( detdict[ant + 'x'] ) + " ( " +str(powerxgot)+ " dBm) translates to " + str(cpowx)+ " dBm pam " + str(pamdict[ant + 'x']) )
-      logger.info(ant + "y: det " + str( detdict[ant + 'y'] ) + " ( " +str(powerygot)+ " dBm) translates to " + str(cpowy)+ " dBm pam " + str(pamdict[ant + 'y']) )
+      logger.info(ant + "x: det " + str( detdict[ant + 'x'] ) + " ( " +str(powerxgot)+ " dB) translates to " + str(cpowx)+ " dBm pam " + str(pamdict[ant + 'x']) )
+      logger.info(ant + "y: det " + str( detdict[ant + 'y'] ) + " ( " +str(powerygot)+ " dB) translates to " + str(cpowy)+ " dBm pam " + str(pamdict[ant + 'y']) )
 
   if brokenList:
       logger.warning('the broken antenna list is {}'.format(','.join(brokenList)))
