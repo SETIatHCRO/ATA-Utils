@@ -114,7 +114,7 @@ def record_same(ant_dict,freq,source,ncaptures,obstype,obsuser,desc,filefragment
 
     ant_list = snap_array_helpers.dict_to_list(ant_dict)
     logger.info("updating database with antennas {}".format(", ".join(ant_list)))
-    obs_db.initAntennasTable(obsid,ant_list,source,az_offset,el_offset,True)
+    obs_db.initAntennasTable(recid,ant_list,source,az_offset,el_offset,True)
 
     logger.info("starting recording {}".format(recid))
     obs_db.startRecording(recid)
