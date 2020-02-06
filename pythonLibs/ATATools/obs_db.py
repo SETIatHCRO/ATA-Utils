@@ -256,10 +256,13 @@ def markRecordingsBAD(obsid_list):
     mark recordings as bad. 
     """
 
+    logger= logger_defaults.getModuleLogger(__name__)
+    if not obsid_list:
+        logger.warning('List is empty!')
+        return
+
     if not isinstance(obsid_list,list) and len(obsid_list) == 1:
         obsid_list = [obsid_list]
-
-    logger= logger_defaults.getModuleLogger(__name__)
 
     mydb = ATASQL.connectObsDb()
     mycursor = mydb.cursor()
@@ -281,11 +284,14 @@ def markRecordingsOK(obsid_list):
     """
     mark recordings as ok. 
     """
+    logger= logger_defaults.getModuleLogger(__name__)
+    if not obsid_list:
+        logger.warning('List is empty!')
+        return
 
     if not isinstance(obsid_list,list) and len(obsid_list) == 1:
         obsid_list = [obsid_list]
 
-    logger= logger_defaults.getModuleLogger(__name__)
 
     mydb = ATASQL.connectObsDb()
     mycursor = mydb.cursor()
