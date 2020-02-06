@@ -31,7 +31,7 @@ def create_snap_uvdata(snapdict,azoffset,eloffset,recid,setid=None):
         obj.object_name = snapdict['source']
     else:
         obj.object_name = '{0:s}_off_{1:03.1f}_{2:03.1f}'.format(snapdict['source'],azoffset,eloffset)
-    obj.history = 'OnOff Measurement'
+    obj.history = 'Snap Waterfall measurement'
     obj.phase_type = 'phased'
     obj.Nants_data = 1
     obj.Nants_telescope = len(ata_constants.ant_names)
@@ -53,7 +53,7 @@ def create_snap_uvdata(snapdict,azoffset,eloffset,recid,setid=None):
     #obj.time_array = tt.to_value('mjd', 'long')
     obj.time_array = tt.mjd
     obj.lst_array = numpy.array(tt.sidereal_time('apparent'))/12*numpy.pi
-    obj.integration_time = [ashape[1]/snapdict['srate']] *ashape[0]
+    obj.integration_time = [ashape[1]/snapdict['srate']] *ashape[0]/1e6
     tmparray = numpy.zeros((1,len(snapdict['frange'])))
     tmparray[0][:] = snapdict['frange']*1e6
     obj.freq_array = tmparray
@@ -84,11 +84,11 @@ def create_snap_uvdata(snapdict,azoffset,eloffset,recid,setid=None):
     obj.timesys = datetime.datetime.utcfromtimestamp(snapdict['auto0_timestamp'][0]).strftime('%Y-%m-%d %H:%M:%S')
 
     if 'ra' in snapdict:
-        obj.phase_center_ra = snapdict['ra']
+        obj.phase_center_ra = snapdict['ra']/12*numpy.pi
     else:
         obj.phase_center_ra = 0
     if 'dec' in snapdict:
-        obj.phase_center_dec = snapdict['dec']
+        obj.phase_center_dec = snapdict['dec']/12*numpy.pi
     else:
         obj.phase_center_dec = 0
     #J2000.0
