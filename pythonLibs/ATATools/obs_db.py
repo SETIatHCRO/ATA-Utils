@@ -396,7 +396,7 @@ def updateAttenVals(cobsid,attendict):
     insertcmd = ("update rec_ants set dsp_atten_x=%(attenx)s, dsp_atten_y=%(atteny)s, where ant=%(ant)s and id=%(id)s")
 
     for ant in attendict.keys():
-        cdict = {'ant' : ant, 'id':cobsid, 'attenx' = attendict[ant]['attenx'], 'atteny' = attendict[ant]['atteny']}
+        cdict = {'ant' : ant, 'id':cobsid, 'attenx': attendict[ant]['attenx'], 'atteny': attendict[ant]['atteny']}
         logger.info("updating attenuators row for ant {} and recording id {}".format(ant,cobsid))
         mycursor.execute(insertcmd,cdict)
         mydb.commit()
@@ -421,7 +421,7 @@ def updateRMSVals(cobsid,attendict):
     insertcmd = ("update rec_ants set dsp_rms_x=%(rmsx)s, dsp_rms_y=%(rmsy)s where ant=%(ant)s and id=%(id)s")
 
     for ant in attendict.keys():
-        cdict = {'ant' : ant, 'id':cobsid, 'rmsx' = attendict[ant]['rmsx'], 'rmsy' = attendict[ant]['rmsy']}
+        cdict = {'ant' : ant, 'id':cobsid, 'rmsx': attendict[ant]['rmsx'], 'rmsy': attendict[ant]['rmsy']}
         logger.info("updating rms row for ant {} and recording id {}".format(ant,cobsid))
         mycursor.execute(insertcmd,cdict)
         mydb.commit()
