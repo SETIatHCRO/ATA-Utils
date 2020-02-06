@@ -251,7 +251,7 @@ def stopRecording(obsid):
     mycursor.close()
     mydb.close()
 
-def markRecordingssBAD(obsid_list):
+def markRecordingsBAD(obsid_list):
     """
     mark recordings as bad. 
     """
