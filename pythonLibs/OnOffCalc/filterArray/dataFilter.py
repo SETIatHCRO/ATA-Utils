@@ -6,8 +6,7 @@ Created on Thu Dec 3 2019
 @author: jkulpa
 """
 
-import simple
-import MADSEFD
+from . import simple,MADSEFD
 
 
 filterType = 'MADall'

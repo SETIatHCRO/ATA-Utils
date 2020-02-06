@@ -6,8 +6,7 @@ Created on Thu Jul 18 2019
 @author: jkulpa
 """
 
-import casaFlux
-import moonFlux
+from . import casaFlux,moonFlux
 import datetime
 import pdb
 

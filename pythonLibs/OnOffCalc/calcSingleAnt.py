@@ -59,7 +59,7 @@ def calcSingleAnt(source, frequency, measdate, onArray, offArray):
     temps = numpy.zeros(Larray,dtype=float)
     
     
-    for iK in xrange(Larray):
+    for iK in range(Larray):
         cOn = onArray[iK]
         
         if doDebug:

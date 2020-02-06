@@ -6,7 +6,7 @@ Created on Thu Jul 18 2019
 @author: jkulpa
 """
 
-import constants
+from . import constants
 import numpy
 import OnOffCalc.filterArray
 
@@ -105,7 +105,7 @@ def calcSEFD(onArray, offArray, srcFlux):
     powOn = numpy.zeros(Larray,dtype=float)
     powOff = numpy.zeros(Larray,dtype=float)
     
-    for iK in xrange(Larray):
+    for iK in range(Larray):
         SEFDs[iK],powOn[iK],powOff[iK] = calcOnOffParamVec(onArrayM[iK],offArrayM[iK],maskedBinsArray[iK])
         
     #normalization towars 0?
