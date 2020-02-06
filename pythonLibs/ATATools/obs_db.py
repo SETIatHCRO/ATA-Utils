@@ -269,7 +269,7 @@ def markRecordingsBAD(obsid_list):
     in_p=', '.join(['%s'] * len(obsid_list))
     insertcmd = insertcmd_part % in_p;
     
-    logger.info("changing status of recordings {} to BAD".format(', '.join(obsid_list)))
+    logger.info("changing status of recordings {} to BAD".format(', '.join(map(str,obsid_list))))
 
     mycursor.execute(insertcmd,obsid_list)
     mydb.commit()
@@ -295,7 +295,7 @@ def markRecordingsOK(obsid_list):
     in_p=', '.join(['%s'] * len(obsid_list))
     insertcmd = insertcmd_part % in_p;
     
-    logger.info("changing status of recordings {} to OK".format(', '.join(obsid_list)))
+    logger.info("changing status of recordings {} to OK".format(', '.join(map(str,obsid_list))))
 
     mycursor.execute(insertcmd,obsid_list)
     mydb.commit()
