@@ -162,6 +162,8 @@ def setPamsAutotune(antlist,polydict,lowerdict,upperdict,power=defaultPowerLevel
         ywasbelow=False
         newpamx = pamdict[ant + 'x'] - 0.9 * deltax
         newpamy = pamdict[ant + 'y'] - 0.9 * deltay
+        newpamx = autotunecommon.round_five(newpamx)
+        newpamy = autotunecommon.round_five(newpamy)
             
         #if det value was low and it's first iteration, we limit the change to cap and mark for check
         if cpowx < autotunecommon.minpowerinspect and itercnt == 0:
@@ -195,12 +197,16 @@ def setPamsAutotune(antlist,polydict,lowerdict,upperdict,power=defaultPowerLevel
                 if tmp_cpowx < autotunecommon.minpowerinspect:
                     logger.warning('antpol {}x appear to have a broken detector'.format(ant))
                     brokenPolList.append(ant+'x')
+                    logger.info("setting both pams to {}".format(newpamy))
+                    attributes.set_pam(ant=ant,x=newpamy,y=newpamy)
             if ywasbelow:
                 powerygot,saty = autotunecommon.getLimittedPower(ant,'y',temp_detdict,upperdict,lowerdict)
                 tmp_cpowy = polydict[ant + 'y'](powerygot)
                 if tmp_cpowy < autotunecommon.minpowerinspect:
                     logger.warning('antpol {}y appear to have a broken detector'.format(ant))
                     brokenPolList.append(ant+'y')
+                    logger.info("setting both pams to {}".format(newpamx))
+                    attributes.set_pam(ant=ant,x=newpamx,y=newpamx)
 
         #both polarizations have broken detector!
         #removing antenna from toDoList and putting it to broken list

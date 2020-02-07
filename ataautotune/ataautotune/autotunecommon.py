@@ -32,6 +32,12 @@ validAntennas = ['1a','1b','1c','1d','1e','1f', '1g', '1h', '1j', '1k', '2a', '2
                  '3d', '3e', '3f', '3g', '3h', '3j', '3l', '4e', '4f', '4g', '4h',
                  '4j', '4k', '4l', '5b', '5c', '5e', '5g', '5h']
 
+def round_twentyfive(num):
+    return round(num*4.0)*0.25
+
+def round_five(num):
+        return round(num*2.0)*0.5
+
 
 def getLimittedPower(ant,pol,detdict,upperdict,lowerdict):
     powergot = 10*numpy.log10(detdict[ant + pol])
