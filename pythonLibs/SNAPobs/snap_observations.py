@@ -19,6 +19,7 @@ def single_snap_recording(host,ant,ncaptures,fpga_file,freq,filefragment,source,
     measDict['ra'] = ant_radec[ant][0]
     measDict['dec'] = ant_radec[ant][1]
 
+    logger.info('saving h5 file {}'.format(filefragment))
     snap_h5.saveFile(filefragment,measDict,az_offset,el_offset,recid,setid)
 
     rmsDict = {ant: {'rmsx' : measDict['adc0_stats']['dev'], 'rmsy' :  measDict['adc1_stats']['dev']}}
