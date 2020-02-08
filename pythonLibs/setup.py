@@ -10,7 +10,7 @@ setuptools.setup(
     version=version.__version__,
     description='python utility scripts for ATA (private repo)',
     license='MIT',
-    packages=['ATATools','SNAPobs','OnOffCalc','OnOffCalc.flux','OnOffCalc.yFactor','OnOffCalc.misc','OnOffCalc.filterArray'],
+    packages=['ATATools','ATAobs','SNAPobs','OnOffCalc','OnOffCalc.flux','OnOffCalc.yFactor','OnOffCalc.misc','OnOffCalc.filterArray'],
     author='Dr. Janusz S. Kulpa',
     author_email='kulpaj.dev@gmail.com',
     keywords=['ATA'],

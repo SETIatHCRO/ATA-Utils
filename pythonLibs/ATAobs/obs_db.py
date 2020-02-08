@@ -9,41 +9,9 @@ Created Jan 2020
 @author: jkulpa
 """
 
-from . import logger_defaults
-from . import ata_control
+from ATATools import logger_defaults,ata_control
+from . import obs_common
 import ATASQL
-
-def getRecType(string):
-    """
-    supported types: frb, calibration, on-off, pulsar, other        
-    """
-    lstring = string.lower()
-    if lstring in ['frb']:
-        return 'FRB'
-    elif lstring in ['calibration','cal']:
-        return 'CALIBRATION'
-    elif lstring in ['onoff','on-off']:
-        return 'ON-OFF'
-    elif lstring in ['pulsar']:
-        return 'PULSAR'
-    else:
-        return 'OTHER'
-
-def getRecBackend(string):
-    """
-    supported backends: frb, beamformer, correlator, snap
-    """
-    lstring = string.lower()
-    if lstring in ['bf','beamformer']:
-        return 'BEAMFORMER'
-    elif lstring in ['frb']:
-        return 'FRB'
-    elif lstring in ['correlator']:
-        return 'CORRELATOR'
-    elif lstring in ['snap']:
-        return 'SNAP'
-    else:
-        raise KeyError('Unknown backend')
 
 def getNewObsSetID(description="n/a"):
     """
@@ -81,6 +49,43 @@ def getNewObsSetID(description="n/a"):
     mydb.close()
 
     return myid
+
+def getLatestSetID(obstype=None):
+    """
+    returns the highest (latest?) obsid from the recordings (only checks recordings with 'OK' status
+    If type is provided, it returns the hightest setid that contains recordings of that type
+    """
+
+    logger= logger_defaults.getModuleLogger(__name__)
+
+    if obstype:
+        dict1 = {'obstype' : obs_common.getRecType(obstype)}
+        insertcmd = ("select setid from recordings where status='OK' and type=%(obstype)s order by setid desc limit 1")
+        linfo = ("fetching latest setid from type {}".format(dict1['obstype']))
+    else:
+        dict1 = {}
+        insertcmd = ("select setid from recordings where status='OK' order by setid desc limit 1")
+        linfo = ("fetching latest setid") 
+
+    mydb = ATASQL.connectObsDb()
+    mycursor = mydb.cursor()
+
+    logger.info(linfo)
+    
+    mycursor.execute(insertcmd,dict1)
+    row = mycursor.fetchone()
+    if not row:
+        logger.error("No matching recordings found")
+        raise KeyError("No matching recordings found")
+
+
+    setid = row[0]
+    logger.info("SET {} is the latest found".format(setid))
+
+    mycursor.close()
+    mydb.close()
+
+    return setid
 
 def initAntennasTable(recid,antlist,sources,azs=0.0,els=0.0, getpams=True):
     """
@@ -167,9 +172,9 @@ def initRecording(frequency,obstype,obsbackend,description,observer="unknown",se
     frequency: float
         center frequency
     obstype : str
-        type of the recording. see getRecType
+        type of the recording. see obs_common.getRecType
     obsbackend : str
-        backend of the recording. see getRecBackend
+        backend of the recording. see obs_common.getRecBackend
     description : str
         observation description
     observer : str
@@ -195,10 +200,10 @@ def initRecording(frequency,obstype,obsbackend,description,observer="unknown",se
 
     if setid:
         insertcmd = ("insert into recordings set freq=%(freq)s, type=%(obstype)s, backend=%(obsbackend)s, observer=%(observer)s, description=%(desc)s, setid=%(setid)s")
-        dict1 = {'freq': frequency, 'obstype' : getRecType(obstype), 'obsbackend' : getRecBackend(obsbackend), 'observer' : observer, 'desc' : description, 'setid' : setid}
+        dict1 = {'freq': frequency, 'obstype' : obs_common.getRecType(obstype), 'obsbackend' : obs_common.getRecBackend(obsbackend), 'observer' : observer, 'desc' : description, 'setid' : setid}
     else:
         insertcmd = ("insert into recordings set freq=%(freq)s, type=%(obstype)s, backend=%(obsbackend)s, observer=%(observer)s, description=%(desc)s")
-        dict1 = {'freq': frequency, 'obstype' : getRecType(obstype), 'obsbackend' : getRecBackend(obsbackend), 'observer' : observer, 'desc' : description}
+        dict1 = {'freq': frequency, 'obstype' : obs_common.getRecType(obstype), 'obsbackend' : obs_common.getRecBackend(obsbackend), 'observer' : observer, 'desc' : description}
 
     logger.info("adding new observation {}".format( str(dict1) ))
     mycursor.execute(insertcmd,dict1)
@@ -347,7 +352,6 @@ def getSetData(setid):
         logger.error("Key {} not found in database".format(setid))
         raise KeyError("ID not found in the database")
 
-
     descr = row[1]
     ts = row[0]
     logger.info("SET {}: at {} ( {} )".format(setid,ts,descr))
@@ -434,4 +438,52 @@ def updateRMSVals(cobsid,attendict):
 
     mycursor.close()
     mydb.close()
+
+def getAntRecordings(obs_set_id):
+    """
+    Returns a list of recordings/antenna information for given observation setid
+    """
+
+    logger= logger_defaults.getModuleLogger(__name__)
+
+    if not obs_set_id:
+        logger.error("no obsid provided")
+        raise RuntimeError("no obsid provided")
+
+    mydb = ATASQL.connectObsDb()
+    mycursor = mydb.cursor()
+
+    insertcmd = ("select recordings.id, recordings.setid, recordings.tstart, recordings.tstop, "
+                "recordings.freq, recordings.type, recordings.description, rec_ants.ant, "
+                "rec_ants.az, rec_ants.el, rec_ants.source "
+                "from rec_ants inner join recordings on recordings.id = rec_ants.id "
+                "where recordings.status='OK' and recordings.setid=%(id)s "
+                "order by rec_ants.ant, recordings.freq, recordings.description"
+                )
+    dict1 = {'id': obs_set_id}
+
+    logger.info("fetching ant/recordings from set {}".format(obs_set_id))
+    
+    mycursor.execute(insertcmd,dict1)
+    rows = mycursor.fetchall()
+    
+    retList = []
+
+    if not rows:
+        logger.warning("no recordings found")
+        mycursor.close()
+        mydb.close()
+        return retList
+
+    logger.info("found {} recordings".format(len(rows)))
+
+    for row in rows:
+        cdict = {'setid':row[1],'recid':row[0],'ant': row[7], 'freq': row[4],
+            'desc':row[6],'tstart':row[2],'tstop':row[3],'type':row[5],'source':row[10],'az':row[8],'el':row[9]}
+        retList.append(cdict)
+
+    mycursor.close()
+    mydb.close()
+
+    return retList
 

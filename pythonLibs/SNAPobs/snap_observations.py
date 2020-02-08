@@ -6,7 +6,8 @@ main functions for snap observations
 """
 
 from __future__ import absolute_import
-from ATATools import logger_defaults,obs_db,ata_control,snap_array_helpers
+from ATATools import logger_defaults,ata_control,snap_array_helpers
+from ATAobs import obs_db
 from . import snap_defaults,snap_dirs,snap_recorder,snap_h5
 import concurrent.futures
 

@@ -14,7 +14,7 @@ import logging
 import OnOffCalc
 from SNAPobs import snap_dirs
 from ATATools import logger_defaults
-from ATATools import obs_db
+from ATAobs import obs_db,obs_list
 import sys
 
 def main():
@@ -27,14 +27,14 @@ def main():
 
     parser.add_option('-v', '--verbose', dest='verbose', action="store_true", default=False,
             help ="More on-screen information")
-    parser.add_option('-f', dest='freqs', type=str, action="store", default=None,
+    parser.add_option('-f','--freqs',dest='freqs', type=str, action="store", default=None,
             help ='Comma separated list of sky tuning frequencies, in MHz. Only one set of frequencies, eg: \"2000,3000,4000\. If none, all frequencies will be processed"')
-    parser.add_option('-a', dest='ants', type=str, action="store", default=None,
+    parser.add_option('-a','--ants', dest='ants', type=str, action="store", default=None,
             help ='Comma separated array list of ATA antennas, eg: \"2j,2d,4k\". If none, all antennas will be processed')
     parser.add_option('--all', dest='all', action="store_true", default=False,
             help ="Process all avaliable antennas and frequencies")
     parser.add_option('-l','--list', dest='do_list', action="store_true", default=False,
-            help ="List avaliable antenna and frequencies. Then exit. Ignores -a and -f flags")
+            help ="List avaliable antenna and frequencies. Then exit.")
     parser.add_option('-i', dest='obs_set', type=int, action="store", default=None,
             help ='Observation set ID. If not present, the last on-off measurement set will be processed')
     #probably should add a -d, --dir option to specify the dir directly. Different way of file fetching would be necessary. 
@@ -57,6 +57,39 @@ def main():
         logger.warning("no options provided")
         parser.print_help()
         sys.exit(1)
+
+
+    if options.obs_set:
+        try:
+            obs_set_id = options.obs_set
+            obs_db.getSetData(obs_set_id)
+        except:
+            logger.error("Data set id {} does not exist".format(obs_set_id))
+            sys.exit(1)
+    else:
+        obs_set_id = obs_db.getLatestSetID("ON-OFF")
+
+    if options.all and (options.ants or options.freqs):
+        logger.error("option --all cannot be specified together with --ants or --freqs")
+        sys.exit(1)
+
+    if options.freqs:
+        freq_filter = map(float,options.freqs.split(','))
+    else:
+        freq_filter = None
+    if options.ants:
+        ant_filter = options.ants.split(',')
+    else:
+        ant_filter = None
+
+    if options.do_list:
+        rec_list = obs_db.getAntRecordings(obs_set_id)
+        rec_list = obs_list.filter_ant_recording_list(rec_list,"ON-OFF",freq_filter,ant_filter)
+        obs_list.print_ant_recording_list(rec_list,headers=None)
+        sys.exit(1)
+
+    datadir = snap_dirs.get_dir_obsid(obs_set_id)
+    
 
 if __name__== "__main__":
     main()
