@@ -101,6 +101,8 @@ def set_rf_switch(ant_list):
 def getRaDec(ant_list):
     """
     get the Ra-Dec pointings of each antenna
+    Ra is in decimal hours [0,24)
+    Dec is in decimal degree [-90,90]
     returns dictionary with 1x2 list e.g. {'1a':[0.134 1.324]}
     """
     logger = logger_defaults.getModuleLogger(__name__)
@@ -115,6 +117,29 @@ def getRaDec(ant_list):
             ra = float(sln[1])
             dec = float(sln[2])
             retdict[ant] = [ra,dec]
+        else:
+            logger.info('not processed line: {}'.format(line))
+    return retdict
+
+def getAzEl(ant_list):
+    """
+    get the Az-El pointings of each antenna
+    Az is in decimal degree 
+    Dec is in decimal degree 
+    returns dictionary with 1x2 list e.g. {'1a':[0.134 1.324]}
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+    antstr = ",".join(ant_list)
+    stdout, stderr = ata_remote.callObs(["atagetazel", antstr])
+
+    retdict = {}
+    for line in stdout.splitlines():
+        if line.startswith('ant'):
+            sln = line.split()
+            ant = sln[0][3:]
+            az = float(sln[1])
+            el = float(sln[2])
+            retdict[ant] = [az,el]
         else:
             logger.info('not processed line: {}'.format(line))
     return retdict

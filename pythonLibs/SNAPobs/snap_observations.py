@@ -14,11 +14,14 @@ import concurrent.futures
 def single_snap_recording(host,ant,ncaptures,fpga_file,freq,filefragment,source,az_offset,el_offset,recid,setid=None):
     logger = logger_defaults.getModuleLogger(__name__)
 
+    ant_azel = ata_control.getAzEl([ant])
+    ant_radec = ata_control.getRaDec([ant])
     measDict = snap_recorder.getData(host,ant,ncaptures,fpga_file,freq)
     measDict['source'] = source
-    ant_radec = ata_control.getRaDec([ant])
     measDict['ra'] = ant_radec[ant][0]
     measDict['dec'] = ant_radec[ant][1]
+    measDict['az'] = ant_azel[ant][0]
+    measDict['el'] = ant_azel[ant][1]
 
     logger.info('saving h5 file {}'.format(filefragment))
     snap_h5.saveFile(filefragment,measDict,az_offset,el_offset,recid,setid)

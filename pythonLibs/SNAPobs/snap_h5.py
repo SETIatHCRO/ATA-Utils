@@ -88,7 +88,7 @@ def create_snap_uvdata(snapdict,azoffset,eloffset,recid,setid=None):
     else:
         obj.phase_center_ra = 0
     if 'dec' in snapdict:
-        obj.phase_center_dec = snapdict['dec']/12*numpy.pi
+        obj.phase_center_dec = snapdict['dec']/180*numpy.pi
     else:
         obj.phase_center_dec = 0
     #J2000.0
@@ -96,7 +96,7 @@ def create_snap_uvdata(snapdict,azoffset,eloffset,recid,setid=None):
 
     #now we are creating an extra keywords dictionary
     ek = {}
-    ek['ata_version'] = '0.1'
+    ek['ata_version'] = '0.2'
     ek['fft_shift'] = snapdict['fft_shift']
     ek['adc0_bitsnaps'] = snapdict['adc0_bitsnaps']
     ek['adc1_bitsnaps'] = snapdict['adc1_bitsnaps']
@@ -127,6 +127,14 @@ def create_snap_uvdata(snapdict,azoffset,eloffset,recid,setid=None):
         ek['setid'] = setid
     ek['recid'] = recid
     ek['ant'] = ant
+    if 'az' in snapdict:
+        ek['ant_az'] = snapdict['az']
+    else:
+        ek['ant_az'] = 0.0
+    if 'el' in snapdict:
+        ek['ant_el'] = snapdict['el']
+    else:
+        ek['ant_el'] = 0.0
 
     obj.extra_keywords = ek
     return obj

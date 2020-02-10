@@ -58,7 +58,9 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-
+    #TODO: probably the whole next section should be conditional
+    #and the directory-related way of creating rec_list should
+    #be implemented
     if options.obs_set:
         try:
             obs_set_id = options.obs_set
@@ -82,14 +84,19 @@ def main():
     else:
         ant_filter = None
 
+    rec_list = obs_db.getAntRecordings(obs_set_id)
+    rec_list = obs_list.filter_ant_recording_list(rec_list,"ON-OFF",freq_filter,ant_filter)
+
     if options.do_list:
-        rec_list = obs_db.getAntRecordings(obs_set_id)
-        rec_list = obs_list.filter_ant_recording_list(rec_list,"ON-OFF",freq_filter,ant_filter)
         obs_list.print_ant_recording_list(rec_list,headers=None)
         sys.exit(1)
 
+    method = options.method
+    compareflag = options.compare
+    uploadflag = options.upload
+
     datadir = snap_dirs.get_dir_obsid(obs_set_id)
-    
+
 
 if __name__== "__main__":
     main()
