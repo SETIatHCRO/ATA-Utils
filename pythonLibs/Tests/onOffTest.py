@@ -14,7 +14,7 @@ sys.path.append("..")
 #import OnOff.flux
 #import OnOff.misc
 #import OnOff.yFactor
-import OnOff
+import OnOffCalc
 import datetime
 import pickle
 
@@ -60,8 +60,8 @@ source= onDict['source']
 #print('TsysX = %f K',TsysX)
 #print('TsysY = %f K',TsysY)
 
-SEFD_X = OnOff.calcSEFDSingleAnt(source, freq, datetime_stamp, onDict['auto0'], offDict['auto0'])
-SEFD_Y = OnOff.calcSEFDSingleAnt(source, freq, datetime_stamp, onDict['auto1'], offDict['auto1'])
+SEFD_X = OnOffCalc.calcSEFDSingleAnt(source, freq, datetime_stamp, onDict['auto0'], offDict['auto0'])
+SEFD_Y = OnOffCalc.calcSEFDSingleAnt(source, freq, datetime_stamp, onDict['auto1'], offDict['auto1'])
             
 print('SEFD_X = %f Jy',SEFD_X)
 print('SEFD_Y = %f Jy',SEFD_Y)

@@ -8,4 +8,4 @@ from .dataFilter import setMADall
 from .dataFilter import setMAD
 from .dataFilter import getFilterType
 from .dataFilter import useCFAR
-
+from .configs import *

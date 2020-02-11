@@ -58,7 +58,7 @@ def calcOnOffParamVec(onVectIn, offVectIn, maskedVect):
     #plt.show()
     return onoffparam,powOn,powOff
 
-def calcSEFD(onArray, offArray, srcFlux):
+def calcSEFD(onArrayM, offArrayM, srcFlux, method=OnOffCalc.filterArray.defaultFilterType):
     """
     Calculation of SFED for signle frequency
         
@@ -84,18 +84,15 @@ def calcSEFD(onArray, offArray, srcFlux):
     array_like
         indexes used for calculation
            
-    """  
+    """
     
-    onArrayM = numpy.array(onArray)
-    offArrayM = numpy.array(offArray)
+    maskedBinsArray = OnOffCalc.filterArray.filterFun(onArrayM,offArrayM,method)
     
-    maskedBinsArray = OnOffCalc.filterArray.filterFun(onArrayM,offArrayM)
-    
-    plt.imshow(offArrayM[:,OnOffCalc.misc.constants.dataRange],aspect='auto', interpolation='none')
-    plt.show()
-    plt.clf()
-    plt.imshow(maskedBinsArray[:,OnOffCalc.misc.constants.dataRange],aspect='auto', interpolation='none')
-    plt.show()
+    #plt.imshow(offArrayM[:,OnOffCalc.misc.constants.dataRange],aspect='auto', interpolation='none')
+    #plt.show()
+    #plt.clf()
+    #plt.imshow(maskedBinsArray[:,OnOffCalc.misc.constants.dataRange],aspect='auto', interpolation='none')
+    #plt.show()
     #numpy.sum(maskedBinsArray)
     #pdb.set_trace()
     
