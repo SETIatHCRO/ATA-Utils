@@ -18,6 +18,7 @@ from ATAobs import obs_db,obs_list,obs_h5
 import sys
 import pyuvdata
 import numpy
+import sefd_db
 #import sefd_graphs
 
 def sortOnOff(cList):
@@ -37,11 +38,12 @@ def sortOnOff(cList):
 
     return onList,offList
 
-def processSignleAntFreqSEFDfiles(datadir,cList,method,compareflag,uploadflag):
+def processSignleAntFreqSEFDfiles(datadir,cList,method,compareflag,uploadflag,dbflag):
     logger = logger_defaults.getModuleLogger(__name__)
 
     cant = cList[0]['ant']
     cfreq = cList[0]['freq']
+    csetid = cList[0]['setid']
     #TODO: check if all data is from cant and cfreq
 
     onList,offList = sortOnOff(cList)
@@ -80,11 +82,20 @@ def processSignleAntFreqSEFDfiles(datadir,cList,method,compareflag,uploadflag):
         retsimple = None
 
     ret = OnOffCalc.calcSEFDpyuv(onData, offData, method, updateFlags=True)
-    #{'sefd_x', 'sefd_y', 'sefd_x_var', 'sefd_y_var','sefd_ts', 'power_x', 'power_y', 'ts's, 'source'}
-    import pdb
-    pdb.set_trace()
 
-def processSEFDfiles(datadir,rec_list,method=OnOffCalc.defaultFilterType,compareflag=False,uploadflag=False):
+    if dbflag:
+        for ii in range(len(onData)):
+            sefd_db.insertSEFD(cant,cfreq,csetid,method,ret['sefd_ts'][ii],ret['sefd_x'][ii],ret['sefd_x_var'][ii],ret['sefd_y'][ii],ret['sefd_y_var'][ii])
+
+        if compareflag:
+            for ii in range(len(onData)):
+                sefd_db.insertSEFD(cant,cfreq,csetid,'simple',retsimple['sefd_ts'][ii],retsimple['sefd_x'][ii],retsimple['sefd_x_var'][ii],retsimple['sefd_y'][ii],retsimple['sefd_y_var'][ii])
+
+    #{'sefd_x', 'sefd_y', 'sefd_x_var', 'sefd_y_var','sefd_ts', 'power_x', 'power_y', 'ts', 'source'}
+    #import pdb
+    #pdb.set_trace()
+
+def processSEFDfiles(datadir,rec_list,method=OnOffCalc.defaultFilterType,compareflag=False,uploadflag=False, dbflag = True):
     logger = logger_defaults.getModuleLogger(__name__)
 
     if not len(rec_list):
@@ -98,7 +109,7 @@ def processSEFDfiles(datadir,rec_list,method=OnOffCalc.defaultFilterType,compare
         cList,rec_list = obs_list.split_ant_recording_list(rec_list,[cfreq],[cant])
         #this part can be executed by calling in separate threads/processes
         try:
-            rval = processSignleAntFreqSEFDfiles(datadir,cList,method,compareflag,uploadflag)
+            rval = processSignleAntFreqSEFDfiles(datadir,cList,method,compareflag,uploadflag,dbflag)
             retlist.append(rval)
         except Exception, e:
             logger.error("error while processing antena {} freq {} : {}".format(cant,cfreq,e))
@@ -182,11 +193,12 @@ def main():
     method = options.method
     compareflag = options.compare
     uploadflag = options.upload
+    dbflag = True
 
     datadir = snap_dirs.get_dir_obsid(obs_set_id)
 
     logger.info('processing {} data files'.format(len(rec_list)))
-    processSEFDfiles(datadir,rec_list,method,compareflag,uploadflag)
+    processSEFDfiles(datadir,rec_list,method,compareflag,uploadflag,dbflag)
 
 if __name__== "__main__":
     main()
