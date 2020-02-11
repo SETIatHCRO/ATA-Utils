@@ -3,9 +3,7 @@
 
 from __future__ import division
 
-import sys
 import numpy as np, scipy.io
-import pickle
 import os
 import glob
 # This way of importing matplotlib.pyplot allows running without an active X Server
@@ -75,23 +73,6 @@ HTML_FILENAME = "latest_sefds_"
 HTML_DIR = "www"
 
 """START OF VALUES TO CHANGE"""
-
-#sources = ["moon","casa"]
-sources = ["moon"]
-#antennas =  ['1c', '2h','2a','2b','2e','2j','4j']
-antennas = ['2a', '2b', '2j',  '3c', '1c']
-#antennas =  ['1c']
-#antennas = ['1a','1b','1c','1d','1f','1g','2a','2b','2c','2d','2e','2f','2h','2j','2k','2l','3e','3j','3l','4g','4j','4k','4l','5b','5e','5g','5h']
-tunings = ["1000.00", "1400.00", "2500.00", "3000.00", "3500.00","4500.00","5500.00","6500.00"]
-#tunings = ["1400.00",
-#        "2500.00",
-#        "3500.00",
-#        "4500.00",
-#        "5500.00",                      
-#        "6500.00",
-#        "7500.00",
-#        "8500.00",
-#       "9500.00"]
 
 obs_id = -1
 last_num_groups = 1 

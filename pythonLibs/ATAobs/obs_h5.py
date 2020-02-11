@@ -46,7 +46,7 @@ def checkIfWaterfall(dat,freq=None,ant=None):
     #data from only 1 antenna, all indexes equal and all uvw == 0
     cc = dat.Nants_data == 1 and all(dat.ant_1_array == dat.ant_2_array ) and not numpy.any(dat.uvw_array)
     if freq:
-        cc = cc and dat.freq_array[0,0] <= freq and dat.freq_array[-1,-1] >= freq 
+        cc = cc and dat.freq_array[0,0] <= freq and dat.freq_array[0,-1] >= freq 
 
     if ant:
         cc = cc and dat.antenna_names[dat.ant_1_array[0]] == ant

@@ -17,6 +17,8 @@ from ATATools import logger_defaults
 from ATAobs import obs_db,obs_list,obs_h5
 import sys
 import pyuvdata
+import numpy
+#import sefd_graphs
 
 def sortOnOff(cList):
     logger = logger_defaults.getModuleLogger(__name__)
@@ -72,6 +74,13 @@ def processSignleAntFreqSEFDfiles(datadir,cList,method,compareflag,uploadflag):
         logger.error('unable to get the same number of files for on and off observations ({} vs {})'.format( len(onData), len(offData)  ))
         raise RuntimeError("number of On files does not match number of Off files")
 
+    if compareflag:
+        retsimple = OnOffCalc.calcSEFDpyuv(onData, offData, 'simple', updateFlags=False)
+    else:
+        retsimple = None
+
+    ret = OnOffCalc.calcSEFDpyuv(onData, offData, method, updateFlags=True)
+    #{'sefd_x', 'sefd_y', 'sefd_x_var', 'sefd_y_var','sefd_ts', 'power_x', 'power_y', 'ts's, 'source'}
     import pdb
     pdb.set_trace()
 

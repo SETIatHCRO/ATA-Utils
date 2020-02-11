@@ -3,9 +3,4 @@
 #from .simple import simple
 
 from .dataFilter import filterFun
-from .dataFilter import setSimple
-from .dataFilter import setMADall
-from .dataFilter import setMAD
-from .dataFilter import getFilterType
-from .dataFilter import useCFAR
 from .configs import *
