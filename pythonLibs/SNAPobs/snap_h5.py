@@ -52,6 +52,7 @@ def create_snap_uvdata(snapdict,azoffset,eloffset,recid,setid=None):
     tt = Time(snapdict['auto0_timestamp'],format='unix',location=(ata_constants.ATA_LON,ata_constants.ATA_LAT,ata_constants.ATA_ELEV))
     #obj.time_array = tt.to_value('mjd', 'long')
     obj.time_array = tt.mjd
+    #utils.get_lst_for_time?
     obj.lst_array = numpy.array(tt.sidereal_time('apparent'))/12*numpy.pi
     obj.integration_time = [ashape[1]/(snapdict['srate']*1e6)] *ashape[0]
     tmparray = numpy.zeros((1,len(snapdict['frange'])))

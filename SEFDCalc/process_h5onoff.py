@@ -14,8 +14,87 @@ import logging
 import OnOffCalc
 from SNAPobs import snap_dirs
 from ATATools import logger_defaults
-from ATAobs import obs_db,obs_list
+from ATAobs import obs_db,obs_list,obs_h5
 import sys
+import pyuvdata
+
+def sortOnOff(cList):
+    logger = logger_defaults.getModuleLogger(__name__)
+    onList = []
+    offList = []
+    for cc in cList:
+        #checking if both az and el is 0 (on source)
+        if cc['az'] == 0.0 and cc['el'] == 0.0:
+            onList.append(cc)
+        else:
+            offList.append(cc)
+
+    #sorting by start time
+    onList.sort(key=lambda sd: sd['tstart'])
+    offList.sort(key=lambda sd: sd['tstart'])
+
+    return onList,offList
+
+def processSignleAntFreqSEFDfiles(datadir,cList,method,compareflag,uploadflag):
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    cant = cList[0]['ant']
+    cfreq = cList[0]['freq']
+    #TODO: check if all data is from cant and cfreq
+
+    onList,offList = sortOnOff(cList)
+    onData=[]
+    offData=[]
+    for cdat in onList:
+        try:
+            cpyuv = obs_h5.getUVData(datadir,cdat)
+            if (obs_h5.checkIfWaterfall(cpyuv,cfreq*1e6,cant)):
+                onData.append(cpyuv)
+            else:
+                logger.warning('file {} does not seem to have h5 waterfall data'.format(cdat))
+        except:
+            logger.warning('unable to get the file corresponding to {}'.format(cdat))
+            raise
+            #pass
+    for cdat in offList:
+        try:
+            cpyuv = obs_h5.getUVData(datadir,cdat)
+            if (obs_h5.checkIfWaterfall(cpyuv,cfreq*1e6,cant)):
+                offData.append(cpyuv)
+            else:
+                logger.warning('file {} does not seem to have h5 waterfall data'.format(cdat))
+        except:
+            logger.warning('unable to get the file corresponding to {}'.format(cdat))
+            raise
+            #pass
+
+    if len(onData) != len(offData):
+        logger.error('unable to get the same number of files for on and off observations ({} vs {})'.format( len(onData), len(offData)  ))
+        raise RuntimeError("number of On files does not match number of Off files")
+
+    import pdb
+    pdb.set_trace()
+
+def processSEFDfiles(datadir,rec_list,method=OnOffCalc.defaultFilterType,compareflag=False,uploadflag=False):
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    if not len(rec_list):
+        logger.error('Rec list is empty')
+        raise RuntimeError('List is empty')
+
+    retlist = []
+    while(rec_list):
+        cant = rec_list[0]['ant']
+        cfreq = rec_list[0]['freq']
+        cList,rec_list = obs_list.split_ant_recording_list(rec_list,[cfreq],[cant])
+        #this part can be executed by calling in separate threads/processes
+        try:
+            rval = processSignleAntFreqSEFDfiles(datadir,cList,method,compareflag,uploadflag)
+            retlist.append(rval)
+        except Exception, e:
+            logger.error("error while processing antena {} freq {} : {}".format(cant,cfreq,e))
+            raise
+            #pass
 
 def main():
     # Define the argumants
@@ -97,6 +176,8 @@ def main():
 
     datadir = snap_dirs.get_dir_obsid(obs_set_id)
 
+    logger.info('processing {} data files'.format(len(rec_list)))
+    processSEFDfiles(datadir,rec_list,method,compareflag,uploadflag)
 
 if __name__== "__main__":
     main()
