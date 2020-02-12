@@ -11,6 +11,23 @@ import datetime
 
 DEFAULT_DATA_DIR = "~/data"
 
+def get_imgdir_obsid(obsid,defaultdir=None):
+    dirbase = get_dir_obsid(obsid,defaultdir)
+    outputdir = os.path.join(dirbase,'images')
+    create_dir(outputdir)
+    return outputdir
+
+def create_dir(dirname):
+    logger = logger_defaults.getModuleLogger(__name__)
+    output_dir = os.path.expanduser(dirname)
+    try:
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+            logger.info('directory {} created'.format(output_dir))
+    except OSError:
+        logger.error("Error: Creating directory %s" %  output_dir)
+        raise
+
 def get_dir_obsid(obsid,defaultdir=None):
     if not defaultdir:
         defaultdir = DEFAULT_DATA_DIR

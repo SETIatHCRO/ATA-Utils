@@ -3,23 +3,19 @@
 
 from __future__ import division
 
-import numpy as np, scipy.io
 import os
-import glob
 # This way of importing matplotlib.pyplot allows running without an active X Server
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import json
-import plumbum
 import math
-import get_filenames
 from collections import OrderedDict
 import datetime
 import random
-
-import OnOffCalc as OnOff
+import plumbum
+import numpy
 
 """
 sefd_graphs.py
@@ -29,10 +25,11 @@ NOTES: The website and server are at antfeeds.setiquest.info.
        After successfully running this script, view
          http://antfeeds.setiquest.info with the new graphs
 
+Feb 2020: JKulpa
+    The file was significantly changed - now it operates as a lib file
+
 This will:
 
-  1) Read data from groups of SNAP on/off pkl files
-  2) Calculate the average SEFD for each pol 
   3) Create SEFD power graphs as PNGs
   4) The png files can be scp'd to the server.
   5) Create the HTML pages for viewing the graphs and scp's the HTML file 
@@ -42,27 +39,10 @@ This will:
 
 The operator of this script can select specify many options:
 
-  1) The user can select which sources, ants, tunings, etc in the 
-     "START OF VALUES TO CHANGE" section.
-  2) To process just one observation id (one group of 3) specify
-     a value for obs_id. The default is -1, which means do not use
-     obs_id as a selection criteria.
-  3) To process just the last "n" on/off observations, change the
-     value of "last_num_groups". -1 means ALL on/off observations, which
-     may be too much to display. "1" will display just the most recent
-     on/off observation. A good value is "9" because 9 on/off observations
-     fit well in a graph.
-  4) "ssh_pngs_to_server" to True will:
-       a) scp the resulting png files to the server for viewing
-       b) The sefd.jsonp wile will be scp'd to the server
-  5) "create_html" to True will create an HTML for viewing the graphs
-     all on one page, one page for each source. If "ssh_pngs_to_server"
-     is True the HTML files will be scp'd to the server.
   6) "show_graphs" will display each graph in an X window popup as
      they are created. This is useful for looking at a few graphs to
      make sure one or two are working, but not useful if you have a
      lot to process.
-  7) "compare_RFI" will calculate SEFD with and without RFI mitigation techniques. Additional images will be stored
  """
 
 # NOTE: after 1536561956 I used the auto attenuator settings - JR
@@ -74,77 +54,130 @@ HTML_DIR = "www"
 
 """START OF VALUES TO CHANGE"""
 
-obs_id = -1
-last_num_groups = 1 
-png_suffix = "_1"
-ssh_pngs_to_server = True
-show_graphs = True
-create_html = True
-compare_RFI = True
+show_graphs = False
 
 """END OF VALUES TO CHANGE"""
 
-def make_html(source, antennas, pngs):
+def makeJson(sefddict):
+    jsonp = OrderedDict()
+    antennas = sefddict.keys()
+    jsonp["ants"] = antennas
+    #TODO:this part is hardcoded. This is because previous scripts made distinction on
+    #the source. in new code, we don't care that much what the source was and all sources
+    #goes into one processing scheme. But that would need changing java on the website
+    jsonp["sources"] = "moon"
+    source = "moon"
 
-    filename = "%s%s.html" % (HTML_FILENAME, source)
+    jsonp[source] = OrderedDict()
+    for ant in sefddict:
+        jsonp[source][ant] = OrderedDict()
+        jsonp[source][ant]['x'] = []
+        jsonp[source][ant]['y'] = []
+        for freq in sefddict[ant]:
+            cdict = sefddict[ant][freq]
+            #getting one number 
+            avg_sefd = numpy.average(cdict['sefd_x'], weights=numpy.divide(1,cdict['sefd_x_var']))
+            fname = os.path.basename(cdict['powerplots']['x'])
+            jsonp[source][ant]['x'].append([[freq],[str(int(avg_sefd))],[fname]])
+            avg_sefd = numpy.average(cdict['sefd_y'], weights=numpy.divide(1,cdict['sefd_y_var']))
+            fname = os.path.basename(cdict['powerplots']['y'])
+            jsonp[source][ant]['y'].append([[freq],[str(int(avg_sefd))],[fname]])
+
+    file = open("sefd.jsonp", "w")
+    j = "sefd(" + json.dumps(jsonp) + ")"
+    file.write(j)
+    file.close()
+
+    r = plumbum.machines.SshMachine(SEFD_SERVER)
+    fro = plumbum.local.path("sefd.jsonp")
+    to =  r.path(SEFD_SERVER_DIR)
+    plumbum.path.utils.copy(fro, to);
+    os.remove("sefd.jsonp");
+
+def makeHtml( sefddict ):
+    filename = "%s%s.html" % (HTML_FILENAME, 'moon')
+
     file = open(filename, "w")
 
     file.write('<html>\n<head>\n\t<link rel="stylesheet" type="text/css" href="css_sefd.css">\n')
-    file.write('<title>%s Latest On/Off SEFDs</title>\n' % source)
+    file.write('<title>Latest On/Off SEFDs</title>\n')
     file.write('</head>\n<body>\n')
 
-    #creating the navbar
-    file.write('<div class="navbar">\n')
-    
     #filling the navigation tab
-    for ant in antennas:
-        if ant not in pngs:
-            continue
+    antkeys = sefddict.keys()
+    antkeys.sort()
+    for ant in antkeys:
 
         file.write('<div class="dropdown">')
-        s = '<button class="dropbtn">%s' % ant
+        s = '<button class="dropbtn">{0:s}'.format(ant)
         file.write(s)
         file.write('\t<i class="fa fa-caret-down"></i>\n</button>\n')
 
         #Now adding the frequencies
         file.write('<div class="dropdown-content">\n')
-        fkeys = pngs[ant].keys()
+        fkeys = sefddict[ant].keys()
         fkeys.sort()
         for freq in fkeys:
-           link_name = '%s_%d' % (ant, int(float(freq)))
-           s =  '<a href="#%s">%d</a>\n' % (link_name, int(float(freq)))
-           file.write(s)
+            link_name = '{0:s}_{1:d}'.format(ant, int(float(freq)))
+            s =  '<a href="#{0:s}">{1:d}</a>\n'.format(link_name, int(float(freq)))
+            file.write(s)
         file.write('</div>\n</div>\n')
     file.write('</div>\n')
 
-    file.write("<h1>%s Latest On/Off SEFDs</h1>\n" % source)
+    file.write("<h1>Latest On/Off SEFDs</h1>\n")
     t = datetime.datetime.today().strftime('%Y-%m-%d&nbsp;%H:%M:%S')
-    file.write("Calculated: %s UTC\n" % t)
+    file.write("Calculated: {} UTC\n".format(t))
 
     rand = random.randint(1,50000)
 
-    for ant in antennas:
-        if ant not in pngs:
-            continue
-        file.write('<p id=%s>\n' % ant)
-        s = "<h2>%s</h2>\n" % ant
+    for ant in antkeys:
+        file.write('<p id={0:s}>\n'.format(ant))
+        s = "<h2>{0:s}</h2>\n".format(ant)
         file.write(s)
 
-        fkeys = pngs[ant].keys()
+        fkeys = sefddict[ant].keys()
         fkeys.sort()
         for freq in fkeys:
-            id_str = '%s_%d' % (ant, int(float(freq)))
-            s = '<p id=%s>' % id_str
+            cdict = sefddict[ant][freq]
+            link_name = '{0:s}_{1:d}'.format(ant, int(float(freq)))
+            s = '<p id={0:s}>'.format(link_name)
             file.write(s)
-            i = 0
-            for img in pngs[ant][freq]:
 
-                s = "<img src=\"http://%s/sefd/%s?x=%d\" width=\"400\">\n" % (SEFD_SERVER, img, rand)
-                file.write(s)
-                i += 1
-                if i == 2:
-                    file.write("<BR>\n")
-                    i = 0
+            #printing power plots
+            file.write(s)
+            iname1 = os.path.basename(cdict['powerplots']['x'])
+            s = "<img src=\"http://%s/sefd/%s?x=%d\" width=\"400\">\n" % (SEFD_SERVER, iname1, rand)
+            file.write(s)
+            iname2 = os.path.basename(cdict['powerplots']['y'])
+            s = "<img src=\"http://%s/sefd/%s?x=%d\" width=\"400\">\n" % (SEFD_SERVER, iname2, rand)
+            file.write(s)
+            file.write("<BR>\n")
+    
+            #checking if there are any spectrograms
+            if cdict['specplots']:
+                cplotlist = cdict['specplots']['x']
+                i = 0
+                for img in cplotlist:
+                    imgbase = os.path.basename(img)
+                    s = "<img src=\"http://%s/sefd/%s?x=%d\" width=\"400\">\n" % (SEFD_SERVER, imgbase, rand)
+                    file.write(s)
+                    i += 1
+                    if i == 2:
+                        file.write("<BR>\n")
+                        i = 0
+                file.write("<BR>\n")
+
+                cplotlist = cdict['specplots']['y']
+                i = 0
+                for img in cplotlist:
+                    imgbase = os.path.basename(img)
+                    s = "<img src=\"http://%s/sefd/%s?x=%d\" width=\"400\">\n" % (SEFD_SERVER, imgbase, rand)
+                    file.write(s)
+                    i += 1
+                    if i == 2:
+                        file.write("<BR>\n")
+                        i = 0
+
 
             file.write("<BR><BR>");
             file.write('</p>\n')
@@ -154,18 +187,41 @@ def make_html(source, antennas, pngs):
 
     file.close()
 
-    # SSH to server
-    if ssh_pngs_to_server:
-        r = plumbum.machines.SshMachine(SEFD_SERVER)
-        fro = plumbum.local.path(filename)
-        to =  r.path(HTML_DIR)
-        plumbum.path.utils.copy(fro, to);
-        os.remove(filename);
+    r = plumbum.machines.SshMachine(SEFD_SERVER)
+    fro = plumbum.local.path(filename)
+    to =  r.path(HTML_DIR)
+    plumbum.path.utils.copy(fro, to);
+    os.remove(filename);
 
-        url = "http://%s/%s" % (SEFD_SERVER, filename)
-        return url
+    url = "http://%s/%s" % (SEFD_SERVER, filename)
+    return url
 
-    return filename
+def genImages(onData,offData,sefddict,comparedict=None,upload=True,genspectrograms=True,directory='.'):
+    directoryfull = os.path.abspath(directory)
+    
+    #'x' and 'y'
+    powerplots = {}
+    spectrogramplots = {}
+    
+    cant = sefddict['ant']
+    cfreq = sefddict['freq']
+    csrc = sefddict['source']
+
+    if comparedict:
+        powerplots['x'] = makePowerGraph([sefddict['power_x'],comparedic['power_x']],cant,'x',cfreq,csrc,directoryfull,upload)
+        powerplots['y'] = makePowerGraph([sefddict['power_y'],comparedic['power_y']],cant,'y',cfreq,csrc,directoryfull,upload)
+    else:
+        powerplots['x'] = makePowerGraph(sefddict['power_x'],cant,'x',cfreq,csrc,directoryfull,upload)
+        powerplots['y'] = makePowerGraph(sefddict['power_y'],cant,'y',cfreq,csrc,directoryfull,upload)
+
+    if genspectrograms:
+        spectrogramplots = makeSpectrograms(onData,offData,sefddict,comparedict,upload,directoryfull,flatspectra=False)
+
+    return powerplots,spectrogramplots
+
+def makeSpectrograms(onData,offData,sefddict,comparedict,upload,directoryfull,flatspectra=False):
+    print('foo')
+
 
 def redo_spectrogram_data(data,plotStart,plotStop,idx_filtered):
     dataArray1 = np.array(data);
@@ -241,6 +297,26 @@ def make_spectrogram_graph(antenna, tuning, source, number, onArray, offArray, i
 
     return [fname1,fname2,fname3,fname4],[fname5,fname6,fname7,fname8]
 
+def makePowerGraph(power,ant,pol,freq,src,directoryfull,upload):
+    plt.figure()
+    plt.plot(numpy.transpose(power))
+    ptitle = "Antenna: "+ ant + pol + " Frequency: "+ freq + " MHz source: " + src
+    plt.title(ptitle)
+    fname = 'power_'ant + pol + "_" + freq + "_" + source + ".png"
+    fullname = os.path.join(directoryfull,fname)
+    plt.savefig(fname)
+
+    if show_graphs:
+        plt.show()
+    plt.close()
+
+    if upload:
+        r = plumbum.machines.SshMachine(SEFD_SERVER)
+        fro = plumbum.local.path(fullname)
+        to =  r.path(SEFD_SERVER_DIR)
+        plumbum.path.utils.copy(fro, to);
+
+    return fullname
 
 def make_graph(antenna, pol, tuning, source, power, markers, avg_sefd):
     plt.figure()
@@ -259,7 +335,7 @@ def make_graph(antenna, pol, tuning, source, power, markers, avg_sefd):
 
     fname = antenna + pol + "_" + tuning + "_" + source + png_suffix + ".png"
     plt.savefig(fname)
-
+    
     # Display the graph
     if show_graphs:
         plt.show()
@@ -273,213 +349,5 @@ def make_graph(antenna, pol, tuning, source, power, markers, avg_sefd):
         plumbum.path.utils.copy(fro, to);
         os.remove(fname);
 
-    jsonp[source][antenna][pol].append([[tuning],[str(int(avg_sefd))],[fname]])
-
     return fname
 
-
-"""
-Go through the pkl data files and create the graphs.
-"""
-
-# The png files created are stored in a dict for creating the
-# HTML file.
-pngs = {};
-
-# The list of HTML URLs are saved and printed out
-# at the end for the user to reference.
-html = []
-
-jsonp = OrderedDict()
-jsonp["ants"] = antennas
-jsonp["sources"] = sources
-
-for source in sources:
-
-    jsonp[source] = OrderedDict()
-    pngs ={} 
-
-    for antenna in antennas:
-
-        jsonp[source][antenna] = OrderedDict()
-        jsonp[source][antenna]['x'] = []
-        jsonp[source][antenna]['y'] = []
-
-        pngs[antenna] = {}
-
-        for tuning in tunings:	
-            pngs[antenna][tuning] = []
-            xPolSpectrogramNames=[]
-            yPolSpectrogramNames=[]
-
-            print("Processing %s, %s, %s" % (antenna, source, tuning))
-
-            # Get groups of three on/off pkl files
-            groups = get_filenames.get_all_file_groups(3, antenna, source, tuning, obs_id, last_num_groups)
-
-            print "NUMBER GROUPS of 3 = " + str(len(groups))
-
-            # Markers are the data used to decorate the graph with
-            # extra information such as average SEFD, obsid, etc.
-            markers_x = []
-            markers_y = []
-
-            # Init the power x/y data array. make the first value be
-            # 0.0 so all the graphs have basically the same scale
-            # when plotted.
-            power_x = np.zeros(1)
-            power_y = np.zeros(1)
-            
-            power_x_s = np.zeros(1)
-            power_y_s = np.zeros(1)
-
-            sefd_mean_x = []
-            sefd_mean_y = []
-
-            for g in groups:
-
-                # Get the groups of 3 on/off file names
-                file_on0 = g[0][0]
-                file_off0 = g[0][1]
-                file_on1 = g[1][0]
-                file_off1 = g[1][1]
-                file_on2 = g[2][0]
-                file_off2 = g[2][1]
-
-                # Get the data from the files
-                on_0_dict = pickle.load( open( file_on0, "rb" )  )
-                off_0_dict = pickle.load( open( file_off0, "rb" ) )
-                on_1_dict = pickle.load( open( file_on1, "rb" )  )
-                off_1_dict = pickle.load( open( file_off1, "rb" ) )
-                on_2_dict = pickle.load( open( file_on2, "rb" )  )
-                off_2_dict = pickle.load( open( file_off2, "rb" ) )
-
-                # Calculate the SEFD
-                OnOff.filterArray.setMADall()
-                #OnOff.filterArray.setMAD()
-                SEFD_X,SEFD_var_X,SEFD_Y,SEFD_var_Y,timeStamps,powerX,powerY,idx_plot,idy_plot = OnOff.calcSEFDThreeDict(on_0_dict, off_0_dict, on_1_dict, off_1_dict, on_2_dict, off_2_dict)
-                if compare_RFI:
-                    OnOff.filterArray.setSimple()
-                    SEFD_X_s,SEFD_var_X_s,SEFD_Y_s,SEFD_var_Y_s,timeStamps_s,powerX_s,powerY_s,idx_plot_s,idy_plot_s = OnOff.calcSEFDThreeDict(on_0_dict, off_0_dict, on_1_dict, off_1_dict, on_2_dict, off_2_dict)
-
-                    fname1,fname2 = make_spectrogram_graph(antenna, tuning, source,0, on_0_dict, off_0_dict, idx_plot_s[0], idx_plot[0])
-                    for x in fname1:
-                        xPolSpectrogramNames.append(x)
-                    for x in fname2:
-                        yPolSpectrogramNames.append(x)
-                    fname1,fname2 = make_spectrogram_graph(antenna, tuning, source,1, on_1_dict, off_1_dict, idx_plot_s[1], idx_plot[1])
-                    for x in fname1:
-                        xPolSpectrogramNames.append(x)
-                    for x in fname2:
-                        yPolSpectrogramNames.append(x)
-                    fname1,fname2 = make_spectrogram_graph(antenna, tuning, source,2, on_2_dict, off_2_dict, idx_plot_s[2], idx_plot[2])
-                    for x in fname1:
-                        xPolSpectrogramNames.append(x)
-                    for x in fname2:
-                        yPolSpectrogramNames.append(x)
-                
-                # Get the observation id for this group
-                filename_parts = get_filenames.get_filename_parts(file_on0)
-                obsid = filename_parts.obsid
-
-                # Calc the mean of the SEFD values. If the mean is
-                # less than 500, there is obviously a problem. So
-                # set to 0. 500 was arbitrarily selected as a
-                # threshold value, you may wish to change this.
-                # Also added > 200000, that is way too large
-                obs_sefd_mean_x = np.mean(SEFD_X)
-                obs_sefd_mean_y = np.mean(SEFD_Y)
-                if obs_sefd_mean_x < 500 or obs_sefd_mean_x > 200000:
-                    obs_sefd_mean_x = 0
-                if obs_sefd_mean_y < 500 or obs_sefd_mean_y > 200000:
-                    obs_sefd_mean_y = 0
-
-                # For graphing, append the power data
-                #power_x.extend(powerX)
-                #power_y.extend(powerY)
-                power_x = np.hstack((power_x,powerX))
-                power_y = np.hstack((power_y,powerY))
-                if compare_RFI:
-                    power_x_s = np.hstack((power_x_s,powerX_s))
-                    power_y_s = np.hstack((power_y_s,powerY_s))
-
-                # If the SEFD is > 0, thus no error calulating the 
-                # SEFD, add it to the sefd_mean_x/y array.
-                # Add the data necessary for the graphing markers.
-                if obs_sefd_mean_x > 0:
-                    sefd_mean_x.append(obs_sefd_mean_x)
-                    markers_x.append([len(power_x), obsid, int(obs_sefd_mean_x)])
-                else:
-                    markers_x.append([len(power_x), obsid, 0])
-
-                if obs_sefd_mean_y > 0:
-                    sefd_mean_y.append(obs_sefd_mean_y)
-                    markers_y.append([len(power_y), obsid, int(obs_sefd_mean_y)])
-                else:
-                    markers_y.append([len(power_y), obsid, 0])
-            
-            # If there are no SEFD mean values, probably due to 
-            # bad data or RFI, create an array [0.0] so the
-            # mean calculates to 0 for making hte graph.
-            if len(sefd_mean_x) == 0:
-                sefd_mean_x.append(0.0)
-            if len(sefd_mean_y) == 0:
-                sefd_mean_y.append(0.0)
-            
-            # Make the x and y pol graphs.
-            #fname_x = make_graph(antenna, 'x', tuning, 
-            #        source, [int(x) for x in power_x], 
-            #        markers_x, int(np.mean(sefd_mean_x)))
-            #fname_y = make_graph(antenna, 'y', tuning, 
-            #        source, [int(x) for x in power_y], 
-            #        markers_y, int(np.mean(sefd_mean_y)))
-            if compare_RFI:
-                fname_x = make_graph(antenna, 'x', tuning, 
-                    source, [power_x,power_x_s], 
-                    markers_x, int(np.mean(sefd_mean_x)))
-                fname_y = make_graph(antenna, 'y', tuning, 
-                    source, [power_y,power_y_s], 
-                    markers_y, int(np.mean(sefd_mean_y)))
-
-            else:
-                fname_x = make_graph(antenna, 'x', tuning, 
-                    source, power_x, 
-                    markers_x, int(np.mean(sefd_mean_x)))
-                fname_y = make_graph(antenna, 'y', tuning, 
-                    source, power_y, 
-                    markers_y, int(np.mean(sefd_mean_y)))
-
-            # For making the HTML file add the filenames
-            # to a dict.
-            pngs[antenna][tuning].append(fname_x)
-            pngs[antenna][tuning].append(fname_y)
-            for x in xPolSpectrogramNames:
-                pngs[antenna][tuning].append(x)
-            for x in yPolSpectrogramNames:
-                pngs[antenna][tuning].append(x)
-
-
-    if create_html:
-        url = make_html(source, antennas, pngs)
-        html.append(url)
-
-# A the end, print out the URLs for the user to view, if create_html is True
-if create_html:
-    for url in html:
-        print("View at %s" % url)
-
-# Push the sefd.jsonp file to the server
-if ssh_pngs_to_server:
-
-    file = open("sefd.jsonp", "w")
-    j = "sefd(" + json.dumps(jsonp) + ")"
-    file.write(j)
-    file.close()
-
-    r = plumbum.machines.SshMachine(SEFD_SERVER)
-    fro = plumbum.local.path("sefd.jsonp")
-    to =  r.path(SEFD_SERVER_DIR)
-    plumbum.path.utils.copy(fro, to);
-    os.remove("sefd.jsonp");
-
-# Whew! the end!
