@@ -9,6 +9,7 @@ Created Feb 2020
 @author: jkulpa
 """
 
+import sefd_graphs
 from optparse import OptionParser
 import logging
 import OnOffCalc
@@ -19,7 +20,6 @@ import sys
 import pyuvdata
 import numpy
 import sefd_db
-#import sefd_graphs
 
 def sortOnOff(cList):
     logger = logger_defaults.getModuleLogger(__name__)

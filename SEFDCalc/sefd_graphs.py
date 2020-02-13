@@ -65,7 +65,7 @@ def makeJson(sefddict):
     #TODO:this part is hardcoded. This is because previous scripts made distinction on
     #the source. in new code, we don't care that much what the source was and all sources
     #goes into one processing scheme. But that would need changing java on the website
-    jsonp["sources"] = "moon"
+    jsonp["sources"] = ["moon"]
     source = "moon"
 
     jsonp[source] = OrderedDict()
@@ -78,10 +78,14 @@ def makeJson(sefddict):
             #getting one number 
             avg_sefd = numpy.average(cdict['sefd_x'], weights=numpy.divide(1,cdict['sefd_x_var']))
             fname = os.path.basename(cdict['powerplots']['x'])
-            jsonp[source][ant]['x'].append([[freq],[str(int(avg_sefd))],[fname]])
+            jsonp[source][ant]['x'].append([['{0:.2f}'.format(freq)],[str(int(avg_sefd))],[fname]])
             avg_sefd = numpy.average(cdict['sefd_y'], weights=numpy.divide(1,cdict['sefd_y_var']))
             fname = os.path.basename(cdict['powerplots']['y'])
-            jsonp[source][ant]['y'].append([[freq],[str(int(avg_sefd))],[fname]])
+            jsonp[source][ant]['y'].append([['{0:.2f}'.format(freq)],[str(int(avg_sefd))],[fname]])
+
+        #sorting by frequency
+        jsonp[source][ant]['x'].sort(key=lambda sd: float(sd[0][0]))
+        jsonp[source][ant]['y'].sort(key=lambda sd: float(sd[0][0]))
 
     file = open("sefd.jsonp", "w")
     j = "sefd(" + json.dumps(jsonp) + ")"
@@ -104,6 +108,7 @@ def makeHtml( sefddict ):
     file.write('</head>\n<body>\n')
 
     #filling the navigation tab
+    file.write('<div class="navbar">\n')
     antkeys = sefddict.keys()
     antkeys.sort()
     for ant in antkeys:
@@ -143,8 +148,9 @@ def makeHtml( sefddict ):
             s = '<p id={0:s}>'.format(link_name)
             file.write(s)
 
-            #printing power plots
+            s = "<h3>power vs time</h3>\n"
             file.write(s)
+            #printing power plots
             iname1 = os.path.basename(cdict['powerplots']['x'])
             s = "<img src=\"http://%s/sefd/%s?x=%d\" width=\"400\">\n" % (SEFD_SERVER, iname1, rand)
             file.write(s)
@@ -155,6 +161,8 @@ def makeHtml( sefddict ):
     
             #checking if there are any spectrograms
             if cdict['specplots']:
+                s = "<h3>spectrograms (waterfalls)</h3>\n"
+                file.write(s)
                 cplotlist = cdict['specplots']['x']
                 i = 0
                 for img in cplotlist:
@@ -208,8 +216,8 @@ def genImages(onData,offData,sefddict,comparedict=None,upload=True,genspectrogra
     csrc = sefddict['source']
 
     if comparedict:
-        powerplots['x'] = makePowerGraph([sefddict['power_x'],comparedic['power_x']],cant,'x',cfreq,csrc,directoryfull,upload)
-        powerplots['y'] = makePowerGraph([sefddict['power_y'],comparedic['power_y']],cant,'y',cfreq,csrc,directoryfull,upload)
+        powerplots['x'] = makePowerGraph([sefddict['power_x'],comparedict['power_x']],cant,'x',cfreq,csrc,directoryfull,upload)
+        powerplots['y'] = makePowerGraph([sefddict['power_y'],comparedict['power_y']],cant,'y',cfreq,csrc,directoryfull,upload)
     else:
         powerplots['x'] = makePowerGraph(sefddict['power_x'],cant,'x',cfreq,csrc,directoryfull,upload)
         powerplots['y'] = makePowerGraph(sefddict['power_y'],cant,'y',cfreq,csrc,directoryfull,upload)
@@ -300,11 +308,11 @@ def make_spectrogram_graph(antenna, tuning, source, number, onArray, offArray, i
 def makePowerGraph(power,ant,pol,freq,src,directoryfull,upload):
     plt.figure()
     plt.plot(numpy.transpose(power))
-    ptitle = "Antenna: "+ ant + pol + " Frequency: "+ freq + " MHz source: " + src
+    ptitle = "Antenna: "+ ant + pol + " Frequency: "+ '{0:.2f}'.format(freq) + " MHz source: " + src
     plt.title(ptitle)
-    fname = 'power_'ant + pol + "_" + freq + "_" + source + ".png"
+    fname = 'power_' + ant + pol + "_" + '{0:.2f}'.format(freq) + "_" + src + ".png"
     fullname = os.path.join(directoryfull,fname)
-    plt.savefig(fname)
+    plt.savefig(fullname)
 
     if show_graphs:
         plt.show()
