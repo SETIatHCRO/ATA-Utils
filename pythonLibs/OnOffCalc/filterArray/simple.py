@@ -41,9 +41,10 @@ def simple(onArray, offArray):
     #offFiltered = numpy.array(offArray)[:,OnOff.misc.constants.dataRange]
     
     #return onFiltered,offFiltered,OnOff.misc.constants.dataRange
-    
+    drange = OnOffCalc.misc.getDatarange(onArray.shape[1])
     dataMask = numpy.ones(onArray.shape)
-    dataMask[:,OnOffCalc.misc.constants.dataRange] = 0
+    #dataMask[:,OnOffCalc.misc.constants.dataRange] = 0
+    dataMask[:,drange] = 0
     
     return dataMask
     

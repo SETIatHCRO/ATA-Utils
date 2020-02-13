@@ -19,4 +19,6 @@ kBoltzman = 1.38064852;
 TCold = 3
 """the valid data range for the array"""
 #dataRange = range(768,1700)
-dataRange = numpy.array(range(700,1800))
+lowerval = 700
+upperval = 1800
+#dataRange = numpy.array(range(700,1800))

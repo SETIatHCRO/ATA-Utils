@@ -148,7 +148,7 @@ def makeHtml( sefddict ):
             s = '<p id={0:s}>'.format(link_name)
             file.write(s)
 
-            s = "<h3>power vs time</h3>\n"
+            s = "<h3>power vs time ({0:.2f} MHz)</h3>\n".format(freq)
             file.write(s)
             #printing power plots
             iname1 = os.path.basename(cdict['powerplots']['x'])
@@ -228,6 +228,9 @@ def genImages(onData,offData,sefddict,comparedict=None,upload=True,genspectrogra
     return powerplots,spectrogramplots
 
 def makeSpectrograms(onData,offData,sefddict,comparedict,upload,directoryfull,flatspectra=False):
+    nReps = len(onData)
+    assert (nReps == len(offData)), "data list mismatch"
+
     print('foo')
 
 

@@ -41,12 +41,12 @@ def MADSEFD(onArray, offArray):
     
     #onFiltered = []
     #offFiltered = []
-    
+    drange = OnOffCalc.misc.getDatarange(onArray.shape[1])
     dataMask = numpy.ones(onArray.shape)
     
     for iK in range(Larray):
-        onVectSel = onArray[iK,OnOffCalc.misc.constants.dataRange]
-        offVectSel = offArray[iK,OnOffCalc.misc.constants.dataRange]
+        onVectSel = onArray[iK,drange]
+        offVectSel = offArray[iK,drange]
         tmpVect = numpy.divide(offVectSel,(onVectSel - offVectSel),dtype='float')
     
         xMed = numpy.median(tmpVect);
@@ -59,7 +59,7 @@ def MADSEFD(onArray, offArray):
         #offFiltered.append(offVectSel[indexList])
         
         #uniqueIdList = list(set(uniqueIdList.append(indexList)))
-        dataMask[iK,OnOffCalc.misc.constants.dataRange[indexList]] = 0
+        dataMask[iK,drange[indexList]] = 0
     
     #return onFiltered,offFiltered,OnOff.misc.constants.dataRange[uniqueIdList]
     return dataMask
@@ -90,10 +90,11 @@ def MADSEFDAll(onArray, offArray):
     
     assert Larray == Larray2, "both arrays should have the same size"
     
+    drange = OnOffCalc.misc.getDatarange(onArray.shape[1])
     dataMask = numpy.ones(onArray.shape)
     
-    onSum = numpy.sum(onArray[:,OnOffCalc.misc.constants.dataRange],axis=0)
-    offSum = numpy.sum(offArray[:,OnOffCalc.misc.constants.dataRange],axis=0)
+    onSum = numpy.sum(onArray[:,drange],axis=0)
+    offSum = numpy.sum(offArray[:,drange],axis=0)
     
     tmpVect = numpy.divide(offSum,(onSum - offSum),dtype='float')
     
@@ -103,7 +104,7 @@ def MADSEFDAll(onArray, offArray):
     # extracting indexes of values in tmpVect being median +/- 3*MAD
     indexList = numpy.asarray( (tmpVect < (xMed + MADMultiplier*xMAD)) * (tmpVect > (xMed - MADMultiplier*xMAD)) ).nonzero()[0]
     
-    dataMask[:,OnOffCalc.misc.constants.dataRange[indexList]] = 0
+    dataMask[:,drange[indexList]] = 0
     
     #pdb.set_trace()
     

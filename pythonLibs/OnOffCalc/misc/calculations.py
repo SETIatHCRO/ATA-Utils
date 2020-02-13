@@ -13,6 +13,14 @@ import OnOffCalc.filterArray
 import pdb
 import matplotlib.pyplot as plt
 
+def getDatarange(veclen):
+    if veclen == 2048:
+        return numpy.array(range(constants.lowerval,constants.upperval))
+    else:
+        lv =  int(numpy.floor(constants.lowerval/2048.0*veclen))
+        uv =  int(numpy.floor(constants.upperval/2048.0*veclen))
+        return numpy.array(range(lv,uv))
+
 def calcOnOffParamVec(onVectIn, offVectIn, maskedVect):
     """
     Calculation of vector of SFED values
