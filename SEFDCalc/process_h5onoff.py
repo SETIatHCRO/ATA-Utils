@@ -118,7 +118,7 @@ def processSEFDfiles(datadir,rec_list,method=OnOffCalc.defaultFilterType,compare
         raise RuntimeError('List is empty')
 
     retlist = {}
-    with concurrent.futures.ProcessPoolExecutor(max_workers=2) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=8) as executor:
         threads = []
         while(rec_list):
             cant = rec_list[0]['ant']
@@ -153,7 +153,7 @@ def processSEFDfiles(datadir,rec_list,method=OnOffCalc.defaultFilterType,compare
 
     return retlist
 
-def processSEFDfiles_single(datadir,rec_list,method=OnOffCalc.defaultFilterType,compareflag=False,uploadflag=False, dbflag = True):
+def processSEFDfiles_s(datadir,rec_list,method=OnOffCalc.defaultFilterType,compareflag=False,uploadflag=False, dbflag = True):
     logger = logger_defaults.getModuleLogger(__name__)
 
     if not len(rec_list):

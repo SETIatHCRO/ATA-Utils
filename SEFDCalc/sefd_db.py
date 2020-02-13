@@ -33,7 +33,7 @@ def insertSEFDs(ant,freq,setid,method,ts_list,sefdx_list,sefdx_var_list,sefdy_li
                  "where ant=%(ant)s and freq=%(freq)s and setid=%(setid)s and "
                  "method=%(method)s and meastime=%(ts)s ")
 
-    for ii in len(ts_list):
+    for ii in range(len(ts_list)):
         dict1 = {'ant':ant,'freq':freq,'setid':setid,'method':method,'ts':ts_list[ii],
                 'sefdx':sefdx_list[ii],'sefdx_var':sefdx_var_list[ii],
                 'sefdy':sefdy_list[ii],'sefdy_var':sefdy_var_list[ii] }
