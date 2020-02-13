@@ -16,6 +16,7 @@ import datetime
 import random
 import plumbum
 import numpy
+import OnOffCalc.misc
 
 """
 sefd_graphs.py
@@ -223,90 +224,169 @@ def genImages(onData,offData,sefddict,comparedict=None,upload=True,genspectrogra
         powerplots['y'] = makePowerGraph(sefddict['power_y'],cant,'y',cfreq,csrc,directoryfull,upload)
 
     if genspectrograms:
-        spectrogramplots = makeSpectrograms(onData,offData,sefddict,comparedict,upload,directoryfull,flatspectra=False)
+        spectrogramplots = makeSpectrograms(onData,offData,sefddict,comparedict,upload,directoryfull,flatspectra=True)
 
     return powerplots,spectrogramplots
+
+def flatSpectraVector(offData,drange):
+    """
+    returns dictionary with 'x' and 'y' being numpy vector(array) to correct passband spectra
+    """
+
+    polyorder = 32
+    usepoly = False
+
+    xdata = offData[0].data_array[:,0,drange,0].real.copy()
+    ydata = offData[0].data_array[:,0,drange,1].real.copy()
+
+    for ii in range(len(offData)-1):
+        xdata = numpy.concatenate((xdata,offData[ii+1].data_array[:,0,drange,0].real.copy()),axis=0)
+        ydata = numpy.concatenate((ydata,offData[ii+1].data_array[:,0,drange,1].real.copy()),axis=0)
+
+
+    if usepoly:
+        #xaxes for polynomial. probably best conditioning if -1:1
+        xxt = numpy.linspace(-1,1,xdata.shape[1])
+        xyt = numpy.linspace(-1,1,ydata.shape[1])
+
+        #y data for polynomial. 
+        yxt_tmp = numpy.mean(xdata,axis=0)
+        xmaxval = max(yxt_tmp)
+        yxt = yxt_tmp/xmaxval
+        yyt_tmp = numpy.mean(ydata,axis=0)
+        ymaxval = max(yyt_tmp)
+        yyt = yyt_tmp/ymaxval
+    
+        #weights
+        #wx = 1.0/(numpy.std(xdata,axis=0)/xmaxval)
+        #wy = 1.0/(numpy.std(xdata,axis=0)/xmaxval)
+
+        polyx = numpy.poly1d(numpy.polyfit(xxt,yxt,polyorder))
+        polyy = numpy.poly1d(numpy.polyfit(xyt,yyt,polyorder))
+        #polyx = numpy.poly1d(numpy.polyfit(xxt,yxt,polyorder,w=wx))
+        #polyy = numpy.poly1d(numpy.polyfit(xyt,yyt,polyorder,w=wy))
+
+        pvalsx = polyx(xxt)*xmaxval
+        pvalsy = polyy(xyt)*ymaxval
+
+    else:
+        pvalsx = numpy.mean(xdata,axis=0)
+        pvalsy = numpy.mean(ydata,axis=0)
+
+    return {'x':pvalsx,'y':pvalsy}
 
 def makeSpectrograms(onData,offData,sefddict,comparedict,upload,directoryfull,flatspectra=False):
     nReps = len(onData)
     assert (nReps == len(offData)), "data list mismatch"
+    drange = OnOffCalc.misc.getDatarange(onData[0].data_array[:,0,:,0].shape[1])
+    retdict = {'x':[],'y':[]}
 
-    print('foo')
+    if flatspectra:
+        specvector = flatSpectraVector(offData,drange)
+    else:
+        specvector = None
 
+    for ii in range(nReps):
+        if comparedict:
+            retx,rety = makeXYSpectrograms(onData[ii],drange,"ON",ii,sefddict,useflags=False,upload=upload,directory=directoryfull,spectracorrectionvector=specvector)
+            retdict['x'].append(retx)
+            retdict['y'].append(rety)
 
-def redo_spectrogram_data(data,plotStart,plotStop,idx_filtered):
-    dataArray1 = np.array(data);
-    dataArray = np.array(data);
-    data_s = dataArray1[:,plotStart:plotStop];
-    #data_f_tmp = dataArray;
-    #rtozero = np.arange(0,data_f_tmp.shape[1]-1)
-    #rr = np.delete(rtozero,idx_filtered)
-    #data_f_tmp[:,rr] = 0
-    dataArray[idx_filtered <> 0] = 0
-    data_f = dataArray[:,plotStart:plotStop];
+        retx,rety = makeXYSpectrograms(onData[ii],drange,"ON",ii,sefddict,useflags=True,upload=upload,directory=directoryfull,spectracorrectionvector=specvector)
+        retdict['x'].append(retx)
+        retdict['y'].append(rety)
+
+        if comparedict:
+            retx,rety = makeXYSpectrograms(offData[ii],drange,"OFF",ii,sefddict,useflags=False,upload=upload,directory=directoryfull,spectracorrectionvector=specvector)
+            retdict['x'].append(retx)
+            retdict['y'].append(rety)
+
+        retx,rety = makeXYSpectrograms(offData[ii],drange,"OFF",ii,sefddict,useflags=True,upload=upload,directory=directoryfull,spectracorrectionvector=specvector)
+        retdict['x'].append(retx)
+        retdict['y'].append(rety)
+
+    return retdict
+
+def makeXYSpectrograms(uvdata,drange,onoffstr,seqnum,sefddict,useflags,upload,directory,spectracorrectionvector):
+
+    #copying is not time efficient, but we will be modifying values here and we don't want to affect the underlaying arrays
+    xdata = uvdata.data_array[:,0,drange,0].real.copy()
+    ydata = uvdata.data_array[:,0,drange,1].real.copy()
+
+    freqrange = uvdata.freq_array[0,drange]/1e6 #in MHz
+    ant = sefddict['ant']
+    freq = sefddict['freq']
+    src = sefddict['source']
+
+    dataExtent=[freqrange[0],freqrange[-1],1,xdata.shape[0]];
+
+    #correcting for the pass-band ripples
+    #TODO: check if division is better, so expected value is 1
+    #the multiplicative approach seems better, but values near 0 will be an issue
+    if spectracorrectionvector:
+        xdata = xdata - spectracorrectionvector['x']
+        ydata = ydata - spectracorrectionvector['y']
+        scstr = 'spectral_correction'
+    else:
+        scstr = ''
+
+    #after correcting (or not) the ripples, dealing with the flags
+    if useflags:
+        method = sefddict['method']
+        xflags = uvdata.flag_array[:,0,drange,0]
+        yflags = uvdata.flag_array[:,0,drange,1]
+        xdata[xflags] = 0
+        ydata[yflags] = 0
+    else:
+        method = 'simple'
+
+    freqstr = '{0:.2f}'.format(freq)
+    indexstr = '{0:d}'.format(seqnum)
+    fnamex = "spectr_" + ant + "x_" + freqstr + "_" + onoffstr + indexstr + "_" + method + "_" + src + ".png"
+    xtitle = "Ant " + ant + 'x freq ' + freqstr + " "  + onoffstr + indexstr + " (" + method + scstr + ") " + src
+    fnamey = "spectr_" + ant + "y_" + freqstr + "_" + onoffstr + indexstr + "_" + method + "_" + src + ".png"
+    ytitle = "Ant " + ant + 'y freq ' + freqstr + " "  + onoffstr + indexstr + " (" + method + scstr + ") " + src
     
-    return data_s,data_f
-    
-
-def make_single_spectrogram_graph(antenna, pol, tuning, source, number,ptype, plotStart, plotStop, idx_filtered, frange, dataArray):
-    data_s,data_f = redo_spectrogram_data(dataArray,plotStart,plotStop,idx_filtered)
-
-    dataExtent=[frange[plotStart],frange[plotStop],1,data_s.shape[0]];
+    xnamefull = os.path.join(directory,fnamex)
+    ynamefull = os.path.join(directory,fnamey)
 
     plt.figure()
-    plt.imshow(data_s,aspect='auto', interpolation='none', extent=dataExtent)
-    ptitle = "Antenna: " + antenna + pol + " Frequency: "+ tuning+ " MHz SEFD: rec " + str(number) + " " + ptype + " orig"
-    plt.title(ptitle)
-    
-    fname1 = antenna + pol + "_" + tuning + "_" + source + "_rec" + str(number) + ptype + "orig" + png_suffix + ".png"
-    plt.savefig(fname1)
+    plt.imshow(xdata,aspect='auto', interpolation='none', extent=dataExtent,vmin=0)
+    #plt.imshow(xdata,aspect='auto', interpolation='none', extent=dataExtent)
+    plt.title(xtitle)
+    plt.xlabel('freq [MHz]')
+    plt.ylabel('snapshot no.')
+    plt.colorbar()
+
+    plt.savefig(xnamefull)
 
     if show_graphs:
         plt.show()
     plt.close()
 
-    # SSH to server
-    if ssh_pngs_to_server:
-        r = plumbum.machines.SshMachine(SEFD_SERVER)
-        fro = plumbum.local.path(fname1)
-        to =  r.path(SEFD_SERVER_DIR)
-        plumbum.path.utils.copy(fro, to);
-        os.remove(fname1);
-
     plt.figure()
-    plt.imshow(data_f,aspect='auto', interpolation='none', extent=dataExtent)
-    ptitle = "Antenna: " + antenna + pol + " Frequency: "+ tuning+ " MHz SEFD: rec " + str(number) + " " + ptype
-    plt.title(ptitle)
-    
-    fname2 = antenna + pol + "_" + tuning + "_" + source + "_rec" + str(number) + ptype + png_suffix + ".png"
-    plt.savefig(fname2)
+    plt.imshow(ydata,aspect='auto', interpolation='none', extent=dataExtent,vmin=0)
+    #plt.imshow(ydata,aspect='auto', interpolation='none', extent=dataExtent)
+    plt.title(ytitle)
+    plt.xlabel('freq [MHz]')
+    plt.ylabel('snapshot no.')
+    plt.colorbar()
+
+    plt.savefig(ynamefull)
 
     if show_graphs:
         plt.show()
     plt.close()
 
-    # SSH to server
-    if ssh_pngs_to_server:
+    if upload:
         r = plumbum.machines.SshMachine(SEFD_SERVER)
-        fro = plumbum.local.path(fname2)
+        fro = plumbum.local.path(xnamefull)
         to =  r.path(SEFD_SERVER_DIR)
         plumbum.path.utils.copy(fro, to);
-        os.remove(fname2);
+        fro = plumbum.local.path(ynamefull)
+        plumbum.path.utils.copy(fro, to);
 
-    return fname1,fname2;
-
-def make_spectrogram_graph(antenna, tuning, source, number, onArray, offArray, idx_simple, idx_filtered):
-    #TODO: check if frange are the same in both!
-    frange = onArray['frange']
-    plotStart = OnOff.misc.constants.dataRange[0]
-    plotStop = OnOff.misc.constants.dataRange[-1]
-
-    fname1,fname2=make_single_spectrogram_graph(antenna, 'x', tuning, source, number,'ON', plotStart, plotStop, idx_filtered, frange, onArray['auto0'])
-    fname3,fname4=make_single_spectrogram_graph(antenna, 'x', tuning, source, number,'OFF', plotStart, plotStop, idx_filtered, frange, offArray['auto0'])
-    fname5,fname6=make_single_spectrogram_graph(antenna, 'y', tuning, source, number,'ON', plotStart, plotStop, idx_filtered, frange, onArray['auto1'])
-    fname7,fname8=make_single_spectrogram_graph(antenna, 'y', tuning, source, number,'OFF', plotStart, plotStop, idx_filtered, frange, offArray['auto1'])
-
-    return [fname1,fname2,fname3,fname4],[fname5,fname6,fname7,fname8]
+    return xnamefull,ynamefull
 
 def makePowerGraph(power,ant,pol,freq,src,directoryfull,upload):
     plt.figure()

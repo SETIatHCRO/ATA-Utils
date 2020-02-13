@@ -81,6 +81,7 @@ def processSignleAntFreqSEFDfiles(datadir,cList,method,compareflag,uploadflag,db
         retsimple['ant'] = cant
         retsimple['freq'] = cfreq
         retsimple['setid'] = csetid
+        retsimple['method'] = 'simple'
     else:
         retsimple = None
 
@@ -88,28 +89,71 @@ def processSignleAntFreqSEFDfiles(datadir,cList,method,compareflag,uploadflag,db
     ret['ant'] = cant
     ret['freq'] = cfreq
     ret['setid'] = csetid
+    ret['method'] = method
 
     if dbflag:
-        for ii in range(len(onData)):
-            sefd_db.insertSEFD(cant,cfreq,csetid,method,ret['sefd_ts'][ii],ret['sefd_x'][ii],ret['sefd_x_var'][ii],ret['sefd_y'][ii],ret['sefd_y_var'][ii])
+        sefd_db.insertSEFDs(cant,cfreq,csetid,method,ret['sefd_ts'],ret['sefd_x'],ret['sefd_x_var'],ret['sefd_y'],ret['sefd_y_var'])
 
         if compareflag:
-            for ii in range(len(onData)):
-                sefd_db.insertSEFD(cant,cfreq,csetid,'simple',retsimple['sefd_ts'][ii],retsimple['sefd_x'][ii],retsimple['sefd_x_var'][ii],retsimple['sefd_y'][ii],retsimple['sefd_y_var'][ii])
+            sefd_db.insertSEFDs(cant,cfreq,csetid,'simple',retsimple['sefd_ts'],retsimple['sefd_x'],retsimple['sefd_x_var'],retsimple['sefd_y'],retsimple['sefd_y_var'])
 
     if uploadflag:
         imgdir = snap_dirs.get_imgdir_obsid(csetid)
-        powerplotnames,spectrogramplotnames = sefd_graphs.genImages(onData, offData, ret, comparedict=retsimple, upload=True, genspectrograms=False, directory=imgdir)
+        powerplotnames,spectrogramplotnames = sefd_graphs.genImages(onData, offData, ret, comparedict=retsimple, upload=True, genspectrograms=True, directory=imgdir)
         ret['powerplots'] = powerplotnames
         ret['specplots'] = spectrogramplotnames
     else:
         ret['powerplots'] = None
         ret['specplots'] = None
 
-    #{'sefd_x', 'sefd_y', 'sefd_x_var', 'sefd_y_var','sefd_ts', 'power_x', 'power_y', 'ts', 'source','ant','freq','setid','powerplots','specplots'}
+    #{'sefd_x', 'sefd_y', 'sefd_x_var', 'sefd_y_var','sefd_ts', 'power_x', 'power_y', 'ts', 'source','ant','freq','setid','powerplots','specplots','method'}
     return ret
 
 def processSEFDfiles(datadir,rec_list,method=OnOffCalc.defaultFilterType,compareflag=False,uploadflag=False, dbflag = True):
+    import concurrent.futures
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    if not len(rec_list):
+        logger.error('Rec list is empty')
+        raise RuntimeError('List is empty')
+
+    retlist = {}
+    with concurrent.futures.ProcessPoolExecutor(max_workers=2) as executor:
+        threads = []
+        while(rec_list):
+            cant = rec_list[0]['ant']
+            cfreq = rec_list[0]['freq']
+            cList,rec_list = obs_list.split_ant_recording_list(rec_list,[cfreq],[cant])
+            #this part can be executed by calling in separate threads/processes
+            t = executor.submit(processSignleAntFreqSEFDfiles,datadir,cList,method,compareflag,uploadflag,dbflag)
+            threads.append(t)
+
+
+        for t in concurrent.futures.as_completed(threads):
+            try:
+                rval = t.result()
+                #preparation for multicore
+                cant = rval['ant']
+                cfreq = rval['freq']
+                #if this is the first freq for that antenna
+                if cant not in retlist:
+                    retlist[cant] = {}
+                if cfreq in retlist[cant]:
+                    logger.warning("for some reason, we already have a data in {}:{}".format(cant,cfreq))
+                retlist[cant][cfreq] = rval
+                
+            except Exception as e:
+                logger.error("error while processing antena {} freq {} : {}".format(cant,cfreq,e))
+                raise
+                #pass
+    
+    if uploadflag:
+        sefd_graphs.makeHtml(retlist)
+        sefd_graphs.makeJson(retlist)
+
+    return retlist
+
+def processSEFDfiles_single(datadir,rec_list,method=OnOffCalc.defaultFilterType,compareflag=False,uploadflag=False, dbflag = True):
     logger = logger_defaults.getModuleLogger(__name__)
 
     if not len(rec_list):
@@ -134,7 +178,7 @@ def processSEFDfiles(datadir,rec_list,method=OnOffCalc.defaultFilterType,compare
                 logger.warning("for some reason, we already have a data in {}:{}".format(cant,cfreq))
             retlist[cant][cfreq] = rval
             
-        except Exception, e:
+        except Exception as e:
             logger.error("error while processing antena {} freq {} : {}".format(cant,cfreq,e))
             raise
             #pass
