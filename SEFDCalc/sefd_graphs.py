@@ -228,13 +228,12 @@ def genImages(onData,offData,sefddict,comparedict=None,upload=True,genspectrogra
 
     return powerplots,spectrogramplots
 
-def flatSpectraVector(offData,drange):
+def flatSpectraVector(onData,offData,drange):
     """
     returns dictionary with 'x' and 'y' being numpy vector(array) to correct passband spectra
     """
 
-    polyorder = 32
-    usepoly = False
+    method = 'globmin'
 
     xdata = offData[0].data_array[:,0,drange,0].real.copy()
     ydata = offData[0].data_array[:,0,drange,1].real.copy()
@@ -244,7 +243,10 @@ def flatSpectraVector(offData,drange):
         ydata = numpy.concatenate((ydata,offData[ii+1].data_array[:,0,drange,1].real.copy()),axis=0)
 
 
-    if usepoly:
+    if method == 'poly':
+
+        polyorder = 32
+
         #xaxes for polynomial. probably best conditioning if -1:1
         xxt = numpy.linspace(-1,1,xdata.shape[1])
         xyt = numpy.linspace(-1,1,ydata.shape[1])
@@ -269,45 +271,70 @@ def flatSpectraVector(offData,drange):
         pvalsx = polyx(xxt)*xmaxval
         pvalsy = polyy(xyt)*ymaxval
 
-    else:
+    elif method == 'mean':
         pvalsx = numpy.mean(xdata,axis=0)
         pvalsy = numpy.mean(ydata,axis=0)
 
+    elif method == 'min':
+        pvalsx = numpy.min(xdata,axis=0)
+        pvalsy = numpy.min(ydata,axis=0)
+
+    elif method == 'globmin':
+
+        xminoff = numpy.min(xdata,axis=0)
+        yminoff = numpy.min(ydata,axis=0)
+
+        xdata = onData[0].data_array[:,0,drange,0].real.copy()
+        ydata = onData[0].data_array[:,0,drange,1].real.copy()
+
+        for ii in range(len(offData)-1):
+            xdata = numpy.concatenate((xdata,onData[ii+1].data_array[:,0,drange,0].real.copy()),axis=0)
+            ydata = numpy.concatenate((ydata,onData[ii+1].data_array[:,0,drange,1].real.copy()),axis=0)
+
+        xminon = numpy.min(xdata,axis=0)
+        yminon = numpy.min(ydata,axis=0)
+
+        pvalsx = numpy.min((xminoff,xminon),axis=0)
+        pvalsy = numpy.min((yminoff,yminon),axis=0)
+
+    else:
+        raise NotImplementedError("unknown flat band method")
+
     return {'x':pvalsx,'y':pvalsy}
 
-def makeSpectrograms(onData,offData,sefddict,comparedict,upload,directoryfull,flatspectra=False):
+def makeSpectrograms(onData,offData,sefddict,comparedict,upload,directoryfull,flatspectra=False, dbscale=True):
     nReps = len(onData)
     assert (nReps == len(offData)), "data list mismatch"
     drange = OnOffCalc.misc.getDatarange(onData[0].data_array[:,0,:,0].shape[1])
     retdict = {'x':[],'y':[]}
 
     if flatspectra:
-        specvector = flatSpectraVector(offData,drange)
+        specvector = flatSpectraVector(onData,offData,drange)
     else:
         specvector = None
 
     for ii in range(nReps):
         if comparedict:
-            retx,rety = makeXYSpectrograms(onData[ii],drange,"ON",ii,sefddict,useflags=False,upload=upload,directory=directoryfull,spectracorrectionvector=specvector)
+            retx,rety = makeXYSpectrograms(onData[ii],drange,"ON",ii,sefddict,useflags=False,upload=upload,directory=directoryfull,spectracorrectionvector=specvector, dbscale=dbscale)
             retdict['x'].append(retx)
             retdict['y'].append(rety)
 
-        retx,rety = makeXYSpectrograms(onData[ii],drange,"ON",ii,sefddict,useflags=True,upload=upload,directory=directoryfull,spectracorrectionvector=specvector)
+        retx,rety = makeXYSpectrograms(onData[ii],drange,"ON",ii,sefddict,useflags=True,upload=upload,directory=directoryfull,spectracorrectionvector=specvector, dbscale=dbscale)
         retdict['x'].append(retx)
         retdict['y'].append(rety)
 
         if comparedict:
-            retx,rety = makeXYSpectrograms(offData[ii],drange,"OFF",ii,sefddict,useflags=False,upload=upload,directory=directoryfull,spectracorrectionvector=specvector)
+            retx,rety = makeXYSpectrograms(offData[ii],drange,"OFF",ii,sefddict,useflags=False,upload=upload,directory=directoryfull,spectracorrectionvector=specvector, dbscale=dbscale)
             retdict['x'].append(retx)
             retdict['y'].append(rety)
 
-        retx,rety = makeXYSpectrograms(offData[ii],drange,"OFF",ii,sefddict,useflags=True,upload=upload,directory=directoryfull,spectracorrectionvector=specvector)
+        retx,rety = makeXYSpectrograms(offData[ii],drange,"OFF",ii,sefddict,useflags=True,upload=upload,directory=directoryfull,spectracorrectionvector=specvector, dbscale=dbscale)
         retdict['x'].append(retx)
         retdict['y'].append(rety)
 
     return retdict
 
-def makeXYSpectrograms(uvdata,drange,onoffstr,seqnum,sefddict,useflags,upload,directory,spectracorrectionvector):
+def makeXYSpectrograms(uvdata,drange,onoffstr,seqnum,sefddict,useflags,upload,directory,spectracorrectionvector, dbscale=True):
 
     #copying is not time efficient, but we will be modifying values here and we don't want to affect the underlaying arrays
     xdata = uvdata.data_array[:,0,drange,0].real.copy()
@@ -324,12 +351,22 @@ def makeXYSpectrograms(uvdata,drange,onoffstr,seqnum,sefddict,useflags,upload,di
     #TODO: check if division is better, so expected value is 1
     #the multiplicative approach seems better, but values near 0 will be an issue
     if spectracorrectionvector:
-        xdata = xdata - spectracorrectionvector['x']
-        ydata = ydata - spectracorrectionvector['y']
+        if dbscale:
+            xdata = numpy.divide(xdata,spectracorrectionvector['x'])
+            ydata = numpy.divide(ydata,spectracorrectionvector['y'])
+        else:
+            xdata = xdata - spectracorrectionvector['x']
+            ydata = ydata - spectracorrectionvector['y']
+
         scstr = 'spectral_correction'
     else:
         scstr = ''
 
+    if dbscale:
+        scalestr = 'dB'
+    else:
+        scalestr = 'lin'
+    
     #after correcting (or not) the ripples, dealing with the flags
     if useflags:
         method = sefddict['method']
@@ -343,15 +380,18 @@ def makeXYSpectrograms(uvdata,drange,onoffstr,seqnum,sefddict,useflags,upload,di
     freqstr = '{0:.2f}'.format(freq)
     indexstr = '{0:d}'.format(seqnum)
     fnamex = "spectr_" + ant + "x_" + freqstr + "_" + onoffstr + indexstr + "_" + method + "_" + src + ".png"
-    xtitle = "Ant " + ant + 'x freq ' + freqstr + " "  + onoffstr + indexstr + " (" + method + scstr + ") " + src
+    xtitle = "Ant " + ant + 'x freq ' + freqstr + " "  + onoffstr + indexstr + " (" + method + scstr + " " + scalestr + ") " + src
     fnamey = "spectr_" + ant + "y_" + freqstr + "_" + onoffstr + indexstr + "_" + method + "_" + src + ".png"
-    ytitle = "Ant " + ant + 'y freq ' + freqstr + " "  + onoffstr + indexstr + " (" + method + scstr + ") " + src
+    ytitle = "Ant " + ant + 'y freq ' + freqstr + " "  + onoffstr + indexstr + " (" + method + scstr + " " + scalestr + ") " + src
     
     xnamefull = os.path.join(directory,fnamex)
     ynamefull = os.path.join(directory,fnamey)
 
     plt.figure()
-    plt.imshow(xdata,aspect='auto', interpolation='none', extent=dataExtent,vmin=0)
+    if dbscale:
+        plt.imshow(10*numpy.log10(xdata),aspect='auto', interpolation='none', extent=dataExtent,vmin=0)
+    else:
+        plt.imshow(xdata,aspect='auto', interpolation='none', extent=dataExtent,vmin=0)
     #plt.imshow(xdata,aspect='auto', interpolation='none', extent=dataExtent)
     plt.title(xtitle)
     plt.xlabel('freq [MHz]')
@@ -365,7 +405,10 @@ def makeXYSpectrograms(uvdata,drange,onoffstr,seqnum,sefddict,useflags,upload,di
     plt.close()
 
     plt.figure()
-    plt.imshow(ydata,aspect='auto', interpolation='none', extent=dataExtent,vmin=0)
+    if dbscale:
+        plt.imshow(10*numpy.log10(ydata),aspect='auto', interpolation='none', extent=dataExtent,vmin=0)
+    else:
+        plt.imshow(ydata,aspect='auto', interpolation='none', extent=dataExtent,vmin=0)
     #plt.imshow(ydata,aspect='auto', interpolation='none', extent=dataExtent)
     plt.title(ytitle)
     plt.xlabel('freq [MHz]')
