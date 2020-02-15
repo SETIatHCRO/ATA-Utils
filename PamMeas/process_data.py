@@ -114,11 +114,17 @@ def checkData(data):
 def plotData(data):
     plt.plot(10*numpy.log10(data[keyXNoise][0,:]),data[keyXNoise ][1,:],10*numpy.log10(data[keyXCW][0,:]),data[keyXCW][1,:])
     plt.title(pb_name + ' x')
+    plt.legend(['noise', 'single_tone'])
+    plt.xlabel('detector value [dB]')
+    plt.ylabel('measured power [dBm]')
     plt.show()
     
     plt.clf()
     plt.plot(10*numpy.log10(data[keyYNoise][0,:]),data[keyYNoise][1,:],10*numpy.log10(data[keyYCW][0,:]),data[keyYCW][1,:])
     plt.title(pb_name + ' y')
+    plt.legend(['noise', 'single_tone'])
+    plt.xlabel('detector value [dB]')
+    plt.ylabel('measured power [dBm]')
     plt.show()
 
 def getDataTxt(filename):
@@ -141,16 +147,27 @@ def makePolynomial(ar,doPolyTest=0):
         #pdb.set_trace()
         valid[ftrue:ftrue+id_to_clear] = False
     
+    #we are also eliminating the lower power points, if that seems to saturate
+    id_to_clear_new = numpy.argmin(numpy.abs(numpy.diff(10*numpy.log10(ar[0,valid]))) > discardDiff)
+    if id_to_clear_new:
+        ftrue = numpy.argmax(valid)
+        valid[ftrue+id_to_clear_new+1:] = False
+
     maxval = 10*numpy.log10(numpy.max(ar[0,valid]));
     minval = 10*numpy.log10(numpy.min(ar[0,valid]));
     rest=[minval,maxval]
     pp = numpy.polyfit(10*numpy.log10(ar[0,valid]),ar[1,valid],polyOrd)
-    
+
     if doPolyTest:
         plt.clf()
         pv = numpy.poly1d(pp);
-        xx = pv(10*numpy.log10(ar[0,valid]))
-        plt.plot(10*numpy.log10(ar[0,valid]),xx,10*numpy.log10(ar[0,valid]),ar[1,valid])
+        polybase = numpy.linspace(minval,maxval,100)
+        xx = pv(polybase)
+        #plt.plot(10*numpy.log10(ar[0,valid]),xx,10*numpy.log10(ar[0,valid]),ar[1,valid])
+        plt.plot(polybase,xx,10*numpy.log10(ar[0,valid]),ar[1,valid])
+        plt.legend(['polynomial', 'raw data'])
+        plt.xlabel('detector value [dB]')
+        plt.ylabel('measured power [dBm]')
         plt.show()
 
 
@@ -308,6 +325,8 @@ if __name__ == '__main__':
     polys = dict()
     rest = dict()
     for k in keys:
+        if options.verbose:
+            print(k)
         polys[k],rest[k] = makePolynomial(data[k],options.verbose)
         
     genDatabaseQuery(pb_name,data,polys,rest,isok)
