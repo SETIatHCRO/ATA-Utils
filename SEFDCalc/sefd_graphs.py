@@ -110,8 +110,7 @@ def makeHtml( sefddict ):
 
     #filling the navigation tab
     file.write('<div class="navbar">\n')
-    antkeys = sefddict.keys()
-    antkeys.sort()
+    antkeys = sorted(sefddict.keys())
     for ant in antkeys:
 
         file.write('<div class="dropdown">')
@@ -121,8 +120,7 @@ def makeHtml( sefddict ):
 
         #Now adding the frequencies
         file.write('<div class="dropdown-content">\n')
-        fkeys = sefddict[ant].keys()
-        fkeys.sort()
+        fkeys = sorted(sefddict[ant].keys())
         for freq in fkeys:
             link_name = '{0:s}_{1:d}'.format(ant, int(float(freq)))
             s =  '<a href="#{0:s}">{1:d}</a>\n'.format(link_name, int(float(freq)))
@@ -141,8 +139,7 @@ def makeHtml( sefddict ):
         s = "<h2>{0:s}</h2>\n".format(ant)
         file.write(s)
 
-        fkeys = sefddict[ant].keys()
-        fkeys.sort()
+        fkeys = sorted(sefddict[ant].keys())
         for freq in fkeys:
             cdict = sefddict[ant][freq]
             link_name = '{0:s}_{1:d}'.format(ant, int(float(freq)))

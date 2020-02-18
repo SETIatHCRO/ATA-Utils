@@ -15,7 +15,7 @@ import sys
 from mysql.connector import Error  
 import ATASQL as atasql
 
-satval = 0.88
+satval = 1.0
 polyOrd = 5 #up to 5
 polyTable = 5 # Must be 5
 discardDiff = 0.3 #what [dB] values on front of the table should we discard (if diff is <=)
@@ -156,7 +156,11 @@ def makePolynomial(ar,doPolyTest=0):
     maxval = 10*numpy.log10(numpy.max(ar[0,valid]));
     minval = 10*numpy.log10(numpy.min(ar[0,valid]));
     rest=[minval,maxval]
-    pp = numpy.polyfit(10*numpy.log10(ar[0,valid]),ar[1,valid],polyOrd)
+    weights = numpy.ones(numpy.sum(valid))
+    weights[10*numpy.log10(ar[0,valid])< -25] = 0.5
+    weights[0] = 0.25
+    weights[-1] = 0.25
+    pp = numpy.polyfit(10*numpy.log10(ar[0,valid]),ar[1,valid],polyOrd, w=weights)
 
     if doPolyTest:
         plt.clf()

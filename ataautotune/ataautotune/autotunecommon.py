@@ -24,7 +24,7 @@ minattenuator = 0.0
 #the minimal attenuator value than can be set if the initial detected power is low
 minfirstiterattenuator = 10.0
 #if the power is lower than that, we set min attenuator to minfirstiterattenuator and need to check the output power
-minpowerinspect = -15.0 
+minpowerinspect = -20.0 
 maxattenuator = 63.0
 defaultPax = 'PB-000'
 validAntennas = ['1a','1b','1c','1d','1e','1f', '1g', '1h', '1j', '1k', '2a', '2b',
@@ -72,7 +72,7 @@ def getPolynomials(alist):
     cursor = mydb.cursor()
     
     queryPart = ("select feed_parts.ant,pbmeas.pax_box_sn,pbmeas.pol,pbmeas.iscoherent,pbmeas.lowdet,pbmeas.highdet,pbmeas.p0,pbmeas.p1,pbmeas.p2,pbmeas.p3,pbmeas.p4,pbmeas.p5 "
-                 "from (pbmeas inner join feed_parts on pbmeas.pax_box_sn = feed_parts.pax_box_sn) where pbmeas.type='cw' "
+                 "from (pbmeas inner join feed_parts on pbmeas.pax_box_sn = feed_parts.pax_box_sn) where pbmeas.type='n' "
                  "and feed_parts.ant in (%s);")
     
     in_p=', '.join(['%s'] * len(alist)) 
@@ -109,7 +109,7 @@ def getPolynomials(alist):
         logger.info("no default antenna in the set, quering default pax {}".format(defaultPax))
         #next querry to get default antenna data
         query = ("select pax_box_sn,pol,iscoherent,lowdet,highdet,p0,p1,p2,p3,p4,p5 "
-                 "from pbmeas where type='cw' and pax_box_sn = %(defpax)s")
+                 "from pbmeas where type='n' and pax_box_sn = %(defpax)s")
         dict1={'defpax':defaultPax}
         cursor.execute(query, dict1)
         defaultdictpoly = {}

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
@@ -271,7 +271,7 @@ def main():
     datadir = snap_dirs.get_dir_obsid(obs_set_id)
 
     logger.info('processing {} data files'.format(len(rec_list)))
-    processSEFDfiles(datadir,rec_list,method,compareflag,uploadflag,dbflag)
+    processSEFDfiles_s(datadir,rec_list,method,compareflag,uploadflag,dbflag)
 
 if __name__== "__main__":
     main()
