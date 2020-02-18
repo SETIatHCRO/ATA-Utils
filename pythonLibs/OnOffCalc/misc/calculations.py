@@ -118,8 +118,8 @@ def calcSEFD(onArrayM, offArrayM, srcFlux, method=OnOffCalc.filterArray.defaultF
     powOn = powOn - mean_off
     powOff = powOff - mean_off
 
-    SEFD = srcFlux * numpy.median(SEFDs)
-    SEFD_var = srcFlux * numpy.std(SEFDs)
+    SEFD = srcFlux * numpy.nanmedian(SEFDs)
+    SEFD_var = srcFlux * numpy.nanstd(SEFDs)
     
     #pdb.set_trace()
     

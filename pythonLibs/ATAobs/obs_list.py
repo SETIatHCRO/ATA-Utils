@@ -75,7 +75,6 @@ def filter_ant_recording_list(rec_list,r_type,freq_filter=None,ant_filter=None):
     
     retList = []
 
-
     if not freq_filter and not ant_filter:
         #filtering just types
         logger.info('filtering for {}'.format(prop_r_type))

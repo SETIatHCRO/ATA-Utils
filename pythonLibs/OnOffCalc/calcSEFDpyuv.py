@@ -69,5 +69,7 @@ def calcSEFDpyuv(onList, offList, method, updateFlags=False):
             offList[nn].flag_array[:,0,:,1] = indexesY
 
 
+    #import pdb
+    #pdb.set_trace()
     return {'sefd_x' : SEFD_X, 'sefd_y' : SEFD_Y, 'sefd_x_var': SEFD_var_X, 'sefd_y_var': SEFD_var_Y, 'sefd_ts': SEFD_ts, 'power_x': powerX, 'power_y': powerY, 'ts': timestamps, 'source':source}
 

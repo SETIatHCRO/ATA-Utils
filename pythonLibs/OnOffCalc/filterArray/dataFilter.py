@@ -6,7 +6,7 @@ Created on Thu Dec 3 2019
 @author: jkulpa
 """
 
-from . import simple,MADSEFD
+from . import simple,MADSEFD,ata_aoflag
 
 
 def filterFun(onArray, offArray, method):
@@ -35,6 +35,7 @@ def filterFun(onArray, offArray, method):
             'MAD': MADSEFD.MADSEFD,
             'MADall': MADSEFD.MADSEFDAll,
             'simple': simple.simple,
+            'aoflagger': ata_aoflag.simple,
                 }
     
     func = switcher.get(method)

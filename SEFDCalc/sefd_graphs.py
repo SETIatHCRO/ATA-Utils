@@ -62,7 +62,7 @@ show_graphs = False
 def makeJson(sefddict):
     jsonp = OrderedDict()
     antennas = sefddict.keys()
-    jsonp["ants"] = antennas
+    jsonp["ants"] = list(antennas)
     #TODO:this part is hardcoded. This is because previous scripts made distinction on
     #the source. in new code, we don't care that much what the source was and all sources
     #goes into one processing scheme. But that would need changing java on the website

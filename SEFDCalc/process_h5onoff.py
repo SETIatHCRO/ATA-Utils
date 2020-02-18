@@ -248,7 +248,7 @@ def main():
         sys.exit(1)
 
     if options.freqs:
-        freq_filter = map(float,options.freqs.split(','))
+        freq_filter = list(map(float,options.freqs.split(',')))
     else:
         freq_filter = None
     if options.ants:
@@ -271,7 +271,7 @@ def main():
     datadir = snap_dirs.get_dir_obsid(obs_set_id)
 
     logger.info('processing {} data files'.format(len(rec_list)))
-    processSEFDfiles_s(datadir,rec_list,method,compareflag,uploadflag,dbflag)
+    processSEFDfiles(datadir,rec_list,method,compareflag,uploadflag,dbflag)
 
 if __name__== "__main__":
     main()

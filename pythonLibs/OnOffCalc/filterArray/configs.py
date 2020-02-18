@@ -6,7 +6,7 @@ Created on Feb 7 2020
 @author: jkulpa
 """
 
-filterTypes = ['MADall','simple','MAD']
-defaultFilterType = 'MADall'
+filterTypes = ['MADall','simple','MAD','aoflagger']
+defaultFilterType = 'aoflagger'
 
 
