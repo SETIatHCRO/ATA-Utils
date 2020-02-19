@@ -6,7 +6,7 @@ from __future__ import division
 import os
 # This way of importing matplotlib.pyplot allows running without an active X Server
 import matplotlib as mpl
-mpl.use('Agg')
+#mpl.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import json
@@ -157,6 +157,17 @@ def makeHtml( sefddict ):
             file.write(s)
             file.write("<BR>\n")
     
+            s = "<h3>SEFD vs time ({0:.2f} MHz)</h3>\n".format(freq)
+            file.write(s)
+            #printing power plots
+            iname1 = os.path.basename(cdict['sefdplots']['x'])
+            s = "<img src=\"http://%s/sefd/%s?x=%d\" width=\"400\">\n" % (SEFD_SERVER, iname1, rand)
+            file.write(s)
+            iname2 = os.path.basename(cdict['sefdplots']['y'])
+            s = "<img src=\"http://%s/sefd/%s?x=%d\" width=\"400\">\n" % (SEFD_SERVER, iname2, rand)
+            file.write(s)
+            file.write("<BR>\n")
+    
             #checking if there are any spectrograms
             if cdict['specplots']:
                 s = "<h3>spectrograms (waterfalls)</h3>\n"
@@ -208,22 +219,27 @@ def genImages(onData,offData,sefddict,comparedict=None,upload=True,genspectrogra
     #'x' and 'y'
     powerplots = {}
     spectrogramplots = {}
-    
+    sefdplots = {}
+
     cant = sefddict['ant']
     cfreq = sefddict['freq']
     csrc = sefddict['source']
 
     if comparedict:
-        powerplots['x'] = makePowerGraph([sefddict['power_x'],comparedict['power_x']],cant,'x',cfreq,csrc,directoryfull,upload)
-        powerplots['y'] = makePowerGraph([sefddict['power_y'],comparedict['power_y']],cant,'y',cfreq,csrc,directoryfull,upload)
+        powerplots['x'] = make1dGraph([sefddict['power_x'],comparedict['power_x']],cant,'x',cfreq,csrc,directoryfull,upload)
+        powerplots['y'] = make1dGraph([sefddict['power_y'],comparedict['power_y']],cant,'y',cfreq,csrc,directoryfull,upload)
+        sefdplots['x'] = make1dGraph([sefddict['sefd_vec_x'],comparedict['sefd_vec_x']],cant,'x',cfreq,csrc,directoryfull,upload,'sefd')
+        sefdplots['y'] = make1dGraph([sefddict['sefd_vec_y'],comparedict['sefd_vec_y']],cant,'y',cfreq,csrc,directoryfull,upload,'sefd')
     else:
-        powerplots['x'] = makePowerGraph(sefddict['power_x'],cant,'x',cfreq,csrc,directoryfull,upload)
-        powerplots['y'] = makePowerGraph(sefddict['power_y'],cant,'y',cfreq,csrc,directoryfull,upload)
+        powerplots['x'] = make1dGraph(sefddict['power_x'],cant,'x',cfreq,csrc,directoryfull,upload)
+        powerplots['y'] = make1dGraph(sefddict['power_y'],cant,'y',cfreq,csrc,directoryfull,upload)
+        sefdplots['x'] = make1dGraph(sefddict['sefd_vec_x'],cant,'x',cfreq,csrc,directoryfull,upload,'sefd')
+        sefdplots['y'] = make1dGraph(sefddict['sefd_vec_y'],cant,'y',cfreq,csrc,directoryfull,upload,'sefd')
 
     if genspectrograms:
         spectrogramplots = makeSpectrograms(onData,offData,sefddict,comparedict,upload,directoryfull,flatspectra=True)
 
-    return powerplots,spectrogramplots
+    return powerplots,spectrogramplots,sefdplots
 
 def flatSpectraVector(onData,offData,drange):
     """
@@ -428,12 +444,12 @@ def makeXYSpectrograms(uvdata,drange,onoffstr,seqnum,sefddict,useflags,upload,di
 
     return xnamefull,ynamefull
 
-def makePowerGraph(power,ant,pol,freq,src,directoryfull,upload):
+def make1dGraph(power,ant,pol,freq,src,directoryfull,upload,prefix='power'):
     plt.figure()
     plt.plot(numpy.transpose(power))
     ptitle = "Antenna: "+ ant + pol + " Frequency: "+ '{0:.2f}'.format(freq) + " MHz source: " + src
     plt.title(ptitle)
-    fname = 'power_' + ant + pol + "_" + '{0:.2f}'.format(freq) + "_" + src + ".png"
+    fname = prefix + '_' + ant + pol + "_" + '{0:.2f}'.format(freq) + "_" + src + ".png"
     fullname = os.path.join(directoryfull,fname)
     plt.savefig(fullname)
 
@@ -448,37 +464,4 @@ def makePowerGraph(power,ant,pol,freq,src,directoryfull,upload):
         plumbum.path.utils.copy(fro, to);
 
     return fullname
-
-def make_graph(antenna, pol, tuning, source, power, markers, avg_sefd):
-    plt.figure()
-    plt.plot(np.transpose(power))
-    ptitle = "Antenna: "+ antenna + pol + " Frequency: "+ tuning+ " MHz SEFD: " + str(int(avg_sefd)) + " Jy"
-    plt.title(ptitle)
-    id_text = "id:"
-    sefd_text = "sefd:"
-    if len(markers) > 4:
-        id_text = ""
-        sefd_text = "s"
-    for m in markers:
-       obs_sefd = m[2]
-       plt.axvline(x=m[0], color='grey', linestyle='--')
-       plt.text(m[0]-1, 0, id_text + m[1] + "\n" + sefd_text + str(obs_sefd), horizontalalignment='right')
-
-    fname = antenna + pol + "_" + tuning + "_" + source + png_suffix + ".png"
-    plt.savefig(fname)
-    
-    # Display the graph
-    if show_graphs:
-        plt.show()
-    plt.close()				
-
-    # SSH to server
-    if ssh_pngs_to_server:
-        r = plumbum.machines.SshMachine(SEFD_SERVER)
-        fro = plumbum.local.path(fname)
-        to =  r.path(SEFD_SERVER_DIR)
-        plumbum.path.utils.copy(fro, to);
-        os.remove(fname);
-
-    return fname
 

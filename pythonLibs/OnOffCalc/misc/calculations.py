@@ -112,7 +112,8 @@ def calcSEFD(onArrayM, offArrayM, srcFlux, method=OnOffCalc.filterArray.defaultF
     
     for iK in range(Larray):
         SEFDs[iK],powOn[iK],powOff[iK] = calcOnOffParamVec(onArrayM[iK],offArrayM[iK],maskedBinsArray[iK])
-        
+    #import pdb
+    #pdb.set_trace()
     #normalization towars 0?
     mean_off = numpy.mean(powOff)
     powOn = powOn - mean_off
@@ -123,7 +124,7 @@ def calcSEFD(onArrayM, offArrayM, srcFlux, method=OnOffCalc.filterArray.defaultF
     
     #pdb.set_trace()
     
-    return SEFD,SEFD_var,powOn,powOff,maskedBinsArray
+    return SEFD,SEFD_var,powOn,powOff,maskedBinsArray,(srcFlux*SEFDs)
     
 
 def calcAntennaTemp(yFactor, TSrc, localTCold = constants.TCold):

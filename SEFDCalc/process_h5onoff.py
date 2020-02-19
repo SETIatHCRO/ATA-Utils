@@ -99,12 +99,14 @@ def processSignleAntFreqSEFDfiles(datadir,cList,method,compareflag,uploadflag,db
 
     if uploadflag:
         imgdir = snap_dirs.get_imgdir_obsid(csetid)
-        powerplotnames,spectrogramplotnames = sefd_graphs.genImages(onData, offData, ret, comparedict=retsimple, upload=True, genspectrograms=True, directory=imgdir)
+        powerplotnames,spectrogramplotnames,sefdplotnames = sefd_graphs.genImages(onData, offData, ret, comparedict=retsimple, upload=True, genspectrograms=True, directory=imgdir)
         ret['powerplots'] = powerplotnames
         ret['specplots'] = spectrogramplotnames
+        ret['sefdplots'] = sefdplotnames
     else:
         ret['powerplots'] = None
         ret['specplots'] = None
+        ret['sefdplots'] = None
 
     #{'sefd_x', 'sefd_y', 'sefd_x_var', 'sefd_y_var','sefd_ts', 'power_x', 'power_y', 'ts', 'source','ant','freq','setid','powerplots','specplots','method'}
     return ret
@@ -215,7 +217,9 @@ def main():
     parser.add_option('-c', '--compare', dest='compare', action="store_true", default=False,
             help ="Make comparison between choosen/default method and 'simple' method")
     parser.add_option('-m', '--method', dest='method', type=str, action="store", default=OnOffCalc.defaultFilterType,
-            help ='method to be used in rfi rejection. Possible methods: \"{}\"'.format('\", \"'.join( OnOffCalc.filterTypes )))
+            help ='Method to be used in rfi rejection. Possible methods: \"{}\"'.format('\", \"'.join( OnOffCalc.filterTypes )))
+    parser.add_option('--debug', dest='do_debug', action="store_true", default=False,
+            help ="More printouts and run in single thread mode")
     
     
     (options,args) = parser.parse_args()
@@ -224,6 +228,9 @@ def main():
         logger = logger_defaults.getProgramLogger("ON_OFF_CALC",loglevel=logging.INFO)
     else:
         logger = logger_defaults.getProgramLogger("ON_OFF_CALC",loglevel=logging.WARNING)
+
+    if(options.do_debug):
+        logger = logger_defaults.getProgramLogger("ON_OFF_CALC",loglevel=logging.DEBUG)
 
     if (len(sys.argv) <= 1):
         logger.warning("no options provided")
@@ -270,8 +277,12 @@ def main():
 
     datadir = snap_dirs.get_dir_obsid(obs_set_id)
 
-    logger.info('processing {} data files'.format(len(rec_list)))
-    processSEFDfiles(datadir,rec_list,method,compareflag,uploadflag,dbflag)
+    if(options.do_debug):
+        logger.info('processing {} data files (debug mode)'.format(len(rec_list)))
+        processSEFDfiles_s(datadir,rec_list,method,compareflag,uploadflag,dbflag)
+    else:
+        logger.info('processing {} data files'.format(len(rec_list)))
+        processSEFDfiles(datadir,rec_list,method,compareflag,uploadflag,dbflag)
 
 if __name__== "__main__":
     main()

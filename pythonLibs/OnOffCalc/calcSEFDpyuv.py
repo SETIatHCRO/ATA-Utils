@@ -51,15 +51,19 @@ def calcSEFDpyuv(onList, offList, method, updateFlags=False):
     SEFD_ts = [] 
     powerX = numpy.zeros(0,dtype='float')
     powerY = numpy.zeros(0,dtype='float')
+    sefd_vec_X = numpy.zeros(0,dtype='float')
+    sefd_vec_Y = numpy.zeros(0,dtype='float')
     timestamps = numpy.zeros(0,dtype='float')
 
     for nn in range(nTries):
-        SEFD_X[nn],SEFD_var_X[nn],powOn0X,powOff0X,indexesX = OnOffCalc.misc.calcSEFD(onList[nn].data_array[:,0,:,0].real, offList[nn].data_array[:,0,:,0].real,flx,method)
-        SEFD_Y[nn],SEFD_var_Y[nn],powOn0Y,powOff0Y,indexesY = OnOffCalc.misc.calcSEFD(onList[nn].data_array[:,0,:,1].real, offList[nn].data_array[:,0,:,1].real,flx,method)
+        SEFD_X[nn],SEFD_var_X[nn],powOn0X,powOff0X,indexesX,sefdvx = OnOffCalc.misc.calcSEFD(onList[nn].data_array[:,0,:,0].real, offList[nn].data_array[:,0,:,0].real,flx,method)
+        SEFD_Y[nn],SEFD_var_Y[nn],powOn0Y,powOff0Y,indexesY,sefdvy = OnOffCalc.misc.calcSEFD(onList[nn].data_array[:,0,:,1].real, offList[nn].data_array[:,0,:,1].real,flx,method)
         SEFD_ts.append( datetime.datetime.utcfromtimestamp(Time(onList[nn].time_array[0],format='mjd').unix) )
 
         powerX = numpy.concatenate( (powerX,powOn0X,powOff0X) )
         powerY = numpy.concatenate( (powerY,powOn0Y,powOff0Y) )
+        sefd_vec_X = numpy.concatenate( (sefd_vec_X,sefdvx) )
+        sefd_vec_Y = numpy.concatenate( (sefd_vec_Y,sefdvy) )
         timestamps = numpy.concatenate( (timestamps,onList[nn].time_array,offList[nn].time_array) )
 
         if updateFlags:
@@ -71,5 +75,5 @@ def calcSEFDpyuv(onList, offList, method, updateFlags=False):
 
     #import pdb
     #pdb.set_trace()
-    return {'sefd_x' : SEFD_X, 'sefd_y' : SEFD_Y, 'sefd_x_var': SEFD_var_X, 'sefd_y_var': SEFD_var_Y, 'sefd_ts': SEFD_ts, 'power_x': powerX, 'power_y': powerY, 'ts': timestamps, 'source':source}
+    return {'sefd_x' : SEFD_X, 'sefd_y' : SEFD_Y, 'sefd_x_var': SEFD_var_X, 'sefd_y_var': SEFD_var_Y, 'sefd_ts': SEFD_ts, 'power_x': powerX, 'power_y': powerY, 'ts': timestamps, 'source':source, 'sefd_vec_x':sefd_vec_X, 'sefd_vec_y': sefd_vec_Y}
 
