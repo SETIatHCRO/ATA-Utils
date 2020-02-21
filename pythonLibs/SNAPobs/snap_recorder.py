@@ -238,3 +238,24 @@ def gatherData(snap,ant,ncaptures,srate,ifc,rfc=None):
     logger.info("recording finished for {}".format(ant))
     return out 
 
+def selectMux(snap,a_sel):
+    logger = logger_defaults.getModuleLogger(__name__)
+    logger.info( "Setting snapshot select to %s (%d)" % (a_sel, snap_defaults.mux_sel[a_sel]))
+    snap.write_int('vacc_ss_sel', snap_defaults.mux_sel[a_sel])
+
+def get_log_data(snap, a_sel, rfc, srate=snap_defaults.srate, ifc=snap_defaults.ifc):
+    x,t = snap.snapshots.vacc_ss_ss.read_raw()
+    d = np.array(struct.unpack('>%dl' % (x['length']/4), x['data']))
+    # Calculate Frequency scale of plots
+    # d array holds twice as many values as there are freq channels (either xx & yy, or xy_r & xy_i
+    frange = np.linspace(rfc - (srate - ifc), rfc - (srate - ifc) + srate/2., d.shape[0]//2)
+    # Make two plots -- either xx, yy. Or abs(xy), phase(xy)
+    if a_sel == "auto":
+        xx = d[0::2]
+        yy = d[1::2]
+        return frange, 10*np.log10(xx), 10*np.log10(yy)
+    else:
+        xy = np.array(d[0::2] + 1j*d[1::2], dtype=np.complex32)
+        return frange, 10*np.log10(np.abs(xy)), np.angle(xy)
+
+

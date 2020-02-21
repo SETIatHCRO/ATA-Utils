@@ -47,11 +47,11 @@ def autotune(ants):
     logger.info("autotuning: {}".format(ants))
     str_out,str_err = ata_remote.callObs(['ataautotune',ants])
     #searching for warnings or errors
-    rwarn = str_out.find("warning")
+    rwarn = str_out.find(b"warning")
     logger.info(str_err)
     if rwarn != -1:
         logger.warning(str_out)
-    rerr = str_err.find("error")
+    rerr = str_err.find(b"error")
     if rerr != -1:
         logger.error(str_out)
         raise RuntimeError("Autotune execution error")
@@ -62,7 +62,7 @@ def get_sky_freq():
     tuned to the center of the ATA band
     """
     stdout, stderr = ata_remote.callObs(["atagetskyfreq", "a"])
-    return float(stdout.strip())
+    return float(stdout.decode().strip())
 
 def get_ascii_status():
     """
@@ -71,7 +71,7 @@ def get_ascii_status():
     """
     
     stdout, stderr = ata_remote.callObs(["ataasciistatus","-l"])
-    return stdout
+    return stdout.decode()
 
 def set_rf_switch(ant_list):
     """
@@ -111,8 +111,8 @@ def getRaDec(ant_list):
 
     retdict = {}
     for line in stdout.splitlines():
-        if line.startswith('ant'):
-            sln = line.split()
+        if line.startswith(b'ant'):
+            sln = line.decode().split()
             ant = sln[0][3:]
             ra = float(sln[1])
             dec = float(sln[2])
@@ -134,8 +134,8 @@ def getAzEl(ant_list):
 
     retdict = {}
     for line in stdout.splitlines():
-        if line.startswith('ant'):
-            sln = line.split()
+        if line.startswith(b'ant'):
+            sln = line.decode().split()
             ant = sln[0][3:]
             az = float(sln[1])
             el = float(sln[2])
@@ -154,8 +154,8 @@ def get_ant_pos(ant_list):
 
     retdict = {}
     for line in stdout.splitlines():
-        if not line.startswith('#'):
-            sln = line.split()
+        if not line.startswith(b'#'):
+            sln = line.decode().split()
             ant = sln[3]
             pos_n = float(sln[0])
             pos_e = float(sln[1])
@@ -263,7 +263,7 @@ def get_pams(antlist):
     retdict = {}
     lines = str_out.splitlines()
     for line in lines:
-        regroups = re.search('ant(?P<ant>..)\s*on\s*(?P<x>[\d.]+)\s*on\s*(?P<y>[\d.]+)',line);
+        regroups = re.search('ant(?P<ant>..)\s*on\s*(?P<x>[\d.]+)\s*on\s*(?P<y>[\d.]+)',line.decode());
         if regroups:
             ant = regroups.group('ant')
             xval = float(regroups.group('x'))
@@ -290,7 +290,7 @@ def get_dets(antlist):
     retdict = {}
     lines = str_out.splitlines()
     for line in lines:
-        regroups = re.search('ant(?P<ant>..)\s*(?P<x>[\d.]+)\s*(?P<y>[\d.]+)',line);
+        regroups = re.search('ant(?P<ant>..)\s*(?P<x>[\d.]+)\s*(?P<y>[\d.]+)',line.decode());
         if regroups:
             ant = regroups.group('ant')
             xval = float(regroups.group('x'))
@@ -311,7 +311,8 @@ def move_ant_group(antlist, from_group, to_group):
     
     stdout, stderr = ata_remote.callProg(["antreserve", from_group, to_group] + antlist)
 
-    lines = stdout.split('\n')
+    bfa = None
+    lines = stdout.decode().split('\n')
     for line in lines:
         cols = line.split()
         if (len(cols) > 0) and (cols[0]  == to_group):
@@ -343,7 +344,7 @@ def get_ra_dec(source, deg=True):
     by default, unless `deg`=False, in which case return in sexagesimal.
     """
     stdout, stderr = ata_remote.callObs(["atacheck", source])
-    for line in stdout.split("\n"):
+    for line in stdout.decode().split("\n"):
         if "Found %s" % source in line:
             cols = line.split()
             ra  = float(cols[-1].split(',')[-2])
@@ -358,6 +359,21 @@ def get_ra_dec(source, deg=True):
         decs = (decm % 1) * 60
         dec_sg = "%+d:%d:%.4f" % (int(dec), int(decm), decs)
         return ra_sg, dec_sg
+
+def make_and_track_ephems(source,antstr):
+    logger = logger_defaults.getModuleLogger(__name__)
+    result,errormsg = ata_remote.callObs(['ataephem',source])
+    logger.info(result)
+    if errormsg:
+        logger.error(errormsg)
+
+    logger.info("Tracking source {} with {}".format(source,antstr))
+    result,errormsg = ata_remote.callObs(['atatrackephem','-w',antstr,source+'.ephem'])
+    logger.info(result)
+    if errormsg:
+        logger.error(errormsg)
+
+    return result
 
 def create_ephems(source, az_offset, el_offset):
 

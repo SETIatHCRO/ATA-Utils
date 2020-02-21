@@ -24,7 +24,10 @@ def create_snap_uvdata(snapdict,azoffset,eloffset,recid,setid=None):
     #obj.latitude = ata_constants.ATA_LAT
     #obj.longitude = ata_constants.ATA_LON
     #obj.altitude = ata_constants.ATA_ELEV
-    obj.telescope_location = pyuvdata.uvutils.XYZ_from_LatLonAlt(ata_constants.ATA_LAT/180.0*numpy.pi,ata_constants.ATA_LON/180.0*numpy.pi,ata_constants.ATA_ELEV) 
+    try:
+        obj.telescope_location = pyuvdata.uvutils.XYZ_from_LatLonAlt(ata_constants.ATA_LAT/180.0*numpy.pi,ata_constants.ATA_LON/180.0*numpy.pi,ata_constants.ATA_ELEV) 
+    except AttributeError:
+        obj.telescope_location = pyuvdata.utils.XYZ_from_LatLonAlt(ata_constants.ATA_LAT/180.0*numpy.pi,ata_constants.ATA_LON/180.0*numpy.pi,ata_constants.ATA_ELEV) 
     obj.telescope_name = ata_constants.ATA_NAME
     obj.instrument = ata_constants.ATA_NAME + snapdict['host']
     if azoffset == 0 and eloffset == 0:
