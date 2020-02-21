@@ -11,7 +11,7 @@ from ATAobs import obs_db
 import ATAComm 
 
 default_fpga_file = snap_defaults.spectra_snap_file
-default_captures = 16
+default_captures = 120
 default_rms = snap_defaults.rms
 
 def single_snap_recording(ant_dict,obs_set_id,obstype,obsuser,obsdesc,freq,fpga_file,source,ncaptures):
@@ -173,6 +173,7 @@ def do_snap_rec(ant_str,freq, source, ncaptures, obs_set_id, fpga_file, obsuser,
 
     logger.info("starting observations")
     try:
+        ata_control.try_on_lnas(ant_list)
         source_status = ata_positions.ATAPositions.getFirstInListThatIsUp([source])
         if not source_status:
             errormsg = 'source {} is not up (or too close to sun/moon)... terminating observation set {}'.format(source,obs_set_id)

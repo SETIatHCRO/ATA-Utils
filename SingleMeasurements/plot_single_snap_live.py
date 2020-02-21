@@ -96,7 +96,6 @@ def do_snap_plot(ant_str,freq, source, fpga_file):
         snaphost = csnap
         currAnt = ant_groups[csnap][0]
     
-
     logger.info("Reserving antennas %s in bfa antgroup" % full_ant_str)
     try:
         ata_control.reserve_antennas(ant_list)
@@ -107,6 +106,7 @@ def do_snap_plot(ant_str,freq, source, fpga_file):
 
     logger.info("starting plotting")
     try:
+        ata_control.try_on_lna(currAnt)
         source_status = ata_positions.ATAPositions.getFirstInListThatIsUp([source])
         if not source_status:
             errormsg = 'source {} is not up (or too close to sun/moon)... terminating observation set {}'.format(source,obs_set_id)

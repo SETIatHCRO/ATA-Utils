@@ -375,6 +375,51 @@ def make_and_track_ephems(source,antstr):
 
     return result
 
+
+def try_on_lna(singleantstr):
+
+    paxstartdefault = '30'
+    wasError = False
+    logger = logger_defaults.getModuleLogger(__name__)
+    
+    result,errormsg = ata_remote.callObsIgnoreError(['atagetlnas',singleantstr])
+    logger.info(result)
+    if errormsg:
+        logger.error(errormsg)
+        
+    if result.startswith(b'LNA bias is off'):
+        logger.warning('LNA {} is OFF'.format(singleantstr))
+        logger.info('Setting pax to {}'.format(paxstartdefault))
+        result,errormsg = ata_remote.callObs(['atasetpams',singleantstr,paxstartdefault,paxstartdefault])
+        logger.info(result)
+        if errormsg:
+            logger.error(errormsg)
+        logger.info('switching on the LNA')
+        result,errormsg = ata_remote.callObs(['atalnaon',singleantstr])
+        logger.info(result)
+        if errormsg:
+            logger.error(errormsg)
+    else:
+        logger.info('LNA was already on')
+
+def try_on_lnas(ant_list):
+
+    logger = logger_defaults.getModuleLogger(__name__)
+    tcount = len(ant_list)
+
+    logger.info("starting concurrent execution of try_on_lna with {} workers".format(tcount))
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=tcount) as executor:
+    #with concurrent.futures.ProcessPoolExecutor(max_workers=tcount) as executor:
+        tlist = []
+        for singleantstr in ant_list:
+
+            t = executor.submit(try_on_lna,singleantstr)
+            tlist.append(t)
+
+        for t in tlist:
+            retval = t.result()
+
 def create_ephems(source, az_offset, el_offset):
 
     #ssh = local["ssh"]

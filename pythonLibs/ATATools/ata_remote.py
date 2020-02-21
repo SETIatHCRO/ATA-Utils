@@ -80,6 +80,29 @@ def callProgIgnoreError(myargs):
 
     return str_out,str_err
 
+def callObsIgnoreError(myargs):
+    """
+    Call process and ensure it is run on OBS machine
+
+    Parameters
+    -------------
+    myargs : string list
+        
+    Returns
+    -------------
+    string
+        standard output of the process
+    string
+        standard error of the process
+        
+    """
+    if socket.gethostname() == OBS_HOST:
+        str_out,str_err = callProgIgnoreError(myargs);
+    else:
+        str_out,str_err = callProgIgnoreError( ['ssh', OBS_USER +'@' + OBS_HOST ] + myargs )
+        
+    return str_out,str_err
+
 def callObs(myargs):
     """
     Call process and ensure it is run on OBS machine
