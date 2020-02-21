@@ -28,6 +28,8 @@ def main():
                         help ='observation frequency, in MHz. Only one set of frequencies')
     parser.add_option('-v', '--verbose', dest='verbose', action="store_true", default=False,
                         help ="More on-screen information")
+    parser.add_option('-p', '--park', dest='do_park', action="store_true", default=False,
+                        help ="Park the antennas afterwards")
 
     (options,args) = parser.parse_args()
 
@@ -60,12 +62,12 @@ def main():
         raise RuntimeError("no source string")
 
     fpga_file = options.fpga_file
-    
-    do_snap_plot(ant_str,freq, source, fpga_file)
+    do_park = options.do_park
+    do_snap_plot(ant_str,freq, source, fpga_file, do_park)
 
     exit()
 
-def do_snap_plot(ant_str,freq, source, fpga_file):
+def do_snap_plot(ant_str,freq, source, fpga_file, do_park = False):
 
     logger = logger_defaults.getModuleLogger(__name__)
 
@@ -140,7 +142,7 @@ def do_snap_plot(ant_str,freq, source, fpga_file):
         raise
     finally: 
         logger.info("shutting down")
-        ata_control.release_antennas(ant_list, False)
+        ata_control.release_antennas(ant_list, do_park)
 
 if __name__== "__main__":
     main()

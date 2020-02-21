@@ -62,6 +62,8 @@ def main():
                         help ='observation type, eg: \"CALIBRATION\", \"OTHER\", \"PULSAR\", \"FRB\".')
     parser.add_option('-d','--desc', dest='obs_desc', type=str, action="store", default="single observation",
                         help ='observation description, eg: \"long Pulsar description\"')
+    parser.add_option('-p', '--park', dest='do_park', action="store_true", default=False,
+                        help ="Park the antennas afterwards")
 
     (options,args) = parser.parse_args()
 
@@ -118,16 +120,17 @@ def main():
     obsuser = options.obs_user
     obstype = options.obs_type
     obsdesc = options.obs_desc
+    do_park = options.do_park
 
     if obsuser == 'unknown':
         logger.warning("user {} specified. You should put the observer name as -u option. C-c to cancel. Resuming in 5s".format(obsuser))
         time.sleep(5)
     
-    do_snap_rec(ant_str,freq, source, ncaptures, obs_set_id, fpga_file, obsuser, obstype, obsdesc)
+    do_snap_rec(ant_str,freq, source, ncaptures, obs_set_id, fpga_file, obsuser, obstype, obsdesc, do_park)
 
     exit()
 
-def do_snap_rec(ant_str,freq, source, ncaptures, obs_set_id, fpga_file, obsuser, obstype, obsdesc):
+def do_snap_rec(ant_str,freq, source, ncaptures, obs_set_id, fpga_file, obsuser, obstype, obsdesc, do_park=False):
 
     logger = logger_defaults.getModuleLogger(__name__)
 
@@ -213,7 +216,7 @@ def do_snap_rec(ant_str,freq, source, ncaptures, obs_set_id, fpga_file, obsuser,
         raise
     finally: 
         logger.info("shutting down")
-        ata_control.release_antennas(ant_list, False)
+        ata_control.release_antennas(ant_list, do_park)
 
 if __name__== "__main__":
     main()
