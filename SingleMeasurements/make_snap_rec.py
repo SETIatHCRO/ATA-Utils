@@ -162,8 +162,8 @@ def do_snap_rec(ant_str,freq, source, ncaptures, obs_set_id, fpga_file, obsuser,
 
 
     logger.info(info_string)
-    #ATAComm.sendMail("SNAP Obs started",info_string)
-    #ATAComm.postSlackMsg(info_string)
+    ATAComm.sendMail("SNAP Obs started",info_string)
+    ATAComm.postSlackMsg(info_string)
 
     logger.info("Reserving antennas %s in bfa antgroup" % full_ant_str)
     try:
@@ -211,8 +211,8 @@ def do_snap_rec(ant_str,freq, source, ncaptures, obs_set_id, fpga_file, obsuser,
     except Exception as e:
         logger.exception("something went wrong")
         errmsg = "Finishing recording - failed, obsid {}: {}".format(obs_set_id,e)
-        #ATAComm.sendMail("SNAP recording ended",errmsg)
-        #ATAComm.postSlackMsg(errmsg)
+        ATAComm.sendMail("SNAP recording ended",errmsg)
+        ATAComm.postSlackMsg(errmsg)
         raise
     finally: 
         logger.info("shutting down")

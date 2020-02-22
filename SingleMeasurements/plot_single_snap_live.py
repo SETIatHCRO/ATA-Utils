@@ -15,7 +15,7 @@ def main():
 
     # Define the argumants
     parser = OptionParser(usage= 'Usage %prog options',
-            description='Run an recording with multiple antennas')
+            description='Plot spectra on the screen with a single antenna')
 
     #parser.add_argument('hosts', type=str, help = hostnamesHelpString)
     parser.add_option('--fpga', dest='fpga_file', type=str, action="store", default=default_fpga_file,

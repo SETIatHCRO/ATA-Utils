@@ -358,7 +358,7 @@ def makeXYSpectrograms(uvdata,drange,onoffstr,seqnum,sefddict,useflags,upload,di
     freq = sefddict['freq']
     src = sefddict['source']
 
-    dataExtent=[freqrange[0],freqrange[-1],1,xdata.shape[0]];
+    dataExtent=[freqrange[0],freqrange[-1],xdata.shape[0],1];
 
     #correcting for the pass-band ripples
     #TODO: check if division is better, so expected value is 1
