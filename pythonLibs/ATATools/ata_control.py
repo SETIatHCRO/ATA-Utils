@@ -71,7 +71,7 @@ def get_ascii_status():
     """
     
     stdout, stderr = ata_remote.callObs(["ataasciistatus","-l"])
-    return stdout.decode()
+    return stdout
 
 def set_rf_switch(ant_list):
     """

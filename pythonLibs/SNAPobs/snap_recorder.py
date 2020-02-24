@@ -207,33 +207,60 @@ def gatherData(snap,ant,ncaptures,srate,ifc,rfc=None):
     out['fft_shift'] = snap.read_int('fft_shift')
 
     ant_settings = ['auto']
-    out['auto0'] = []
-    out['auto0_timestamp'] = []
-    out['auto0_of_count'] = []
-    out['fft_of0'] = []
-    out['auto1'] = []
-    out['auto1_timestamp'] = []
-    out['auto1_of_count'] = []
-    out['fft_of1'] = []
+    #out['auto0'] = []
+    #out['auto0_timestamp'] = []
+    #out['auto0_of_count'] = []
+    #out['fft_of0'] = []
+    #out['auto1'] = []
+    #out['auto1_timestamp'] = []
+    #out['auto1_of_count'] = []
+    #out['fft_of1'] = []
 
-    for i in range(ncaptures):
+    a_set = ant_settings[0]
+    logger.info( "%s: Setting snapshot select to %s (%d)" % (ant, a_set, snap_defaults.mux_sel[a_set]))
+    snap.write_int('vacc_ss_sel', snap_defaults.mux_sel[a_set])
+    for ii in range(ncaptures):
 
-        for a_set in ant_settings:
-            logger.info( "%s: Setting snapshot select to %s (%d)" % (ant, a_set, snap_defaults.mux_sel[a_set]))
-            snap.write_int('vacc_ss_sel', snap_defaults.mux_sel[a_set])
-            logger.info( "%s: Grabbing data (%d of %d)" % (ant, i+1, ncaptures))
-            x,t = snap.snapshots.vacc_ss_ss.read_raw()
-            d = np.array(struct.unpack('>%dL' % (x['length']/4), x['data'])) / acc_len
+        logger.info( "%s: Grabbing data (%d of %d)" % (ant, ii+1, ncaptures))
+        x,t = snap.snapshots.vacc_ss_ss.read_raw()
+        d = np.array(struct.unpack('>%dL' % (x['length']/4), x['data'])) / acc_len
+
+        if ii == 0:
+            data0 = np.zeros((ncaptures,d.shape[0]//2))
+            data1 = np.zeros((ncaptures,d.shape[0]//2))
+            tarray = np.zeros(ncaptures)
+            data0cnt = np.zeros(ncaptures)
+            data1cnt = np.zeros(ncaptures)
+            fft0cnt = np.zeros(ncaptures)
+            fft1cnt = np.zeros(ncaptures)
             frange = np.linspace(out['rfc'] - (srate - ifc), out['rfc'] - (srate - ifc) + srate/2., d.shape[0]//2)
-            out['frange'] = frange
-            out['auto0'] += [d[0::2]]
-            out['auto0_timestamp'] += [t]
-            out['auto0_of_count'] += [snap.read_int('power_vacc0_of_count')]
-            out['fft_of0'] += [snap.read_int('fft_of')]
-            out['auto1'] += [d[1::2]]
-            out['auto1_timestamp'] += [t]
-            out['auto1_of_count'] += [snap.read_int('power_vacc1_of_count')]
-            out['fft_of1'] += [snap.read_int('fft_of')]
+
+        data0[ii,:] = d[0::2]
+        data1[ii,:] = d[1::2]
+        tarray[ii] = t
+        data0cnt[ii] = snap.read_int('power_vacc0_of_count')
+        fft0cnt[ii] = snap.read_int('fft_of')
+        data1cnt[ii] = snap.read_int('power_vacc1_of_count')
+        #is this read necessary?
+        fft1cnt[ii] = snap.read_int('fft_of')
+        #out['auto0'] += [d[0::2]]
+        #out['auto0_timestamp'] += [t]
+        #out['auto0_of_count'] += [snap.read_int('power_vacc0_of_count')]
+        #out['fft_of0'] += [snap.read_int('fft_of')]
+        #out['auto1'] += [d[1::2]]
+        #out['auto1_timestamp'] += [t]
+        #out['auto1_of_count'] += [snap.read_int('power_vacc1_of_count')]
+        #out['fft_of1'] += [snap.read_int('fft_of')]
+
+    out['frange'] = frange
+    out['auto0'] = data0
+    out['auto0_timestamp'] = tarray
+    out['auto0_of_count'] = data0cnt
+    out['fft_of0'] = fft0cnt
+    out['auto1'] = data1
+    out['auto1_timestamp'] = tarray
+    out['auto1_of_count'] = data1cnt
+    out['fft_of1'] = fft1cnt
 
     logger.info("recording finished for {}".format(ant))
     return out 
