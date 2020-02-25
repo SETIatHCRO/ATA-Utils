@@ -102,6 +102,28 @@ def plotWaterfalls(filename, db_scale=True, use_flags=True, use_passband=False, 
 
     antstr = UV.antenna_names[UV.ant_1_array[0]]
     
+    ldata = UV.extra_keywords['lfft_of0']
+    for ii  in range(ldata):
+        xxval = UV.extra_keywords['fft_of0_{}'.format(ii)]
+        if xxval:
+            logger.warning('fft_of0[{}] nonzero'.format(ii))
+    ldata = UV.extra_keywords['lfft_of1']
+    for ii  in range(ldata):
+        xxval = UV.extra_keywords['fft_of1_{}'.format(ii)]
+        if xxval:
+            logger.warning('fft_of1[{}] nonzero'.format(ii))
+    ldata = UV.extra_keywords['lauto0_of_count']
+    for ii  in range(ldata):
+        xxval = UV.extra_keywords['auto0_of_count_{}'.format(ii)]
+        if xxval:
+            logger.warning('auto0_of_count[{}] nonzero'.format(ii))
+    ldata = UV.extra_keywords['lauto1_of_count']
+    for ii  in range(ldata):
+        xxval = UV.extra_keywords['auto1_of_count_{}'.format(ii)]
+        if xxval:
+            logger.warning('auto1_of_count[{}] nonzero'.format(ii))
+
+
     dataExtent = [freq_mhz[0],freq_mhz[-1],len(timevec)-1,0]
     #fig, ax = plt.subplots(1,3,sharey=True)
     fig, ax = plt.subplots(1,2,sharey=True)
@@ -120,6 +142,8 @@ def plotWaterfalls(filename, db_scale=True, use_flags=True, use_passband=False, 
     #ax[2].set_xlabel(tlab)
     plt.show()
     
+    #import pdb
+    #pdb.set_trace()
     plt.plot(range(len(timevec)-1),numpy.diff(timevec))
     plt.title('Difference of ' +tlab +'between each data snap' )
     plt.show()
