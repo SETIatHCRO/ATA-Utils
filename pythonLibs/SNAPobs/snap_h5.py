@@ -54,10 +54,11 @@ def create_snap_uvdata(snapdict,azoffset,eloffset,recid,setid=None):
     obj.uvw_array = numpy.zeros((ashape[0],3),dtype=float)
     tt = Time(snapdict['auto0_timestamp'],format='unix',location=(ata_constants.ATA_LON,ata_constants.ATA_LAT,ata_constants.ATA_ELEV))
     #obj.time_array = tt.to_value('mjd', 'long')
-    obj.time_array = tt.mjd
+    obj.time_array = tt.jd
     #utils.get_lst_for_time?
     obj.lst_array = numpy.array(tt.sidereal_time('apparent'))/12*numpy.pi
-    obj.integration_time = [ashape[1]/(snapdict['srate']*1e6)] *ashape[0]
+    #obj.integration_time = [ashape[1]/(snapdict['srate']*1e6)] *ashape[0]
+    obj.integration_time = [snapdict['tint']] *ashape[0]
     tmparray = numpy.zeros((1,len(snapdict['frange'])))
     tmparray[0][:] = snapdict['frange']*1e6
     obj.freq_array = tmparray
@@ -100,7 +101,7 @@ def create_snap_uvdata(snapdict,azoffset,eloffset,recid,setid=None):
 
     #now we are creating an extra keywords dictionary
     ek = {}
-    ek['ata_version'] = '0.2'
+    ek['ata_version'] = '0.3'
     ek['fft_shift'] = snapdict['fft_shift']
     ek['adc0_bitsnaps'] = snapdict['adc0_bitsnaps']
     ek['adc1_bitsnaps'] = snapdict['adc1_bitsnaps']

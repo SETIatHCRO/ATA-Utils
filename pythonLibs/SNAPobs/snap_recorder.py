@@ -183,7 +183,10 @@ def gatherData(snap,ant,ncaptures,srate,ifc,rfc=None):
     out['ata_pam_dict'] = ata_control.get_pams([ant])
     out['ata_det_dict'] = ata_control.get_dets([ant])
 
-    acc_len = float(snap.read_int('timebase_sync_period') / (4096 / 4))
+    tb_syn_period = snap.read_int('timebase_sync_period')
+    acc_len = float(tb_syn_period / (4096 / 4))
+    int_time = float(4.0*tb_syn_period/(srate*1e6))
+    out['tint'] = int_time
 
     logger.info( "%s: Grabbing ADC statistics to write to file" % ant)
     adc0 = []
@@ -219,6 +222,8 @@ def gatherData(snap,ant,ncaptures,srate,ifc,rfc=None):
     a_set = ant_settings[0]
     logger.info( "%s: Setting snapshot select to %s (%d)" % (ant, a_set, snap_defaults.mux_sel[a_set]))
     snap.write_int('vacc_ss_sel', snap_defaults.mux_sel[a_set])
+    import pdb
+    pdb.set_trace()
     for ii in range(ncaptures):
 
         logger.info( "%s: Grabbing data (%d of %d)" % (ant, ii+1, ncaptures))
@@ -287,3 +292,11 @@ def get_log_data(snap, a_sel, rfc, srate=snap_defaults.srate, ifc=snap_defaults.
         return frange, 10*np.log10(np.abs(xy)), np.angle(xy)
 
 
+if __name__ == "__main__":
+    ncaptures = 40
+    host = 'snap0'
+    ant = '1c'
+    fpga_file = snap_defaults.spectra_snap_file
+    snap = getSnap(host,fpga_file)
+    fpga_clk = syncFpgaClock(snap,snap_defaults.srate)
+    retdict = gatherData(snap,ant,ncaptures,snap_defaults.srate,snap_defaults.ifc)
