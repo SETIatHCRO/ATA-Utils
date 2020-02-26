@@ -222,8 +222,6 @@ def gatherData(snap,ant,ncaptures,srate,ifc,rfc=None):
     a_set = ant_settings[0]
     logger.info( "%s: Setting snapshot select to %s (%d)" % (ant, a_set, snap_defaults.mux_sel[a_set]))
     snap.write_int('vacc_ss_sel', snap_defaults.mux_sel[a_set])
-    import pdb
-    pdb.set_trace()
     for ii in range(ncaptures):
 
         logger.info( "%s: Grabbing data (%d of %d)" % (ant, ii+1, ncaptures))
@@ -293,10 +291,30 @@ def get_log_data(snap, a_sel, rfc, srate=snap_defaults.srate, ifc=snap_defaults.
 
 
 if __name__ == "__main__":
-    ncaptures = 40
+    import logging
+    ncaptures = 60
     host = 'snap0'
     ant = '1c'
+    logger = logging.getLogger("main")
+    fh = logging.FileHandler('/tmp/python.log',mode='w')
+    lf = logging.Formatter(fmt='%(asctime)s.%(msecs)03d %(levelname)s %(name)s: %(message)s',datefmt='%Y-%m-%d,%H:%M:%S')
+    fh.setFormatter(lf)
+    fh.setLevel(logging.INFO)
+    logger.addHandler(fh)
     fpga_file = snap_defaults.spectra_snap_file
     snap = getSnap(host,fpga_file)
     fpga_clk = syncFpgaClock(snap,snap_defaults.srate)
+    logger = logging.getLogger('tftpy')
+    logger.addHandler(fh)
+    logger.setLevel(logging.INFO)
+    casperfpga.transport_tapcp.set_log_level(logging.DEBUG)
+    logger = logging.getLogger('casperfpga.transport_tapcp')
+    logger.addHandler(fh)
+    logger.setLevel(logging.INFO)
     retdict = gatherData(snap,ant,ncaptures,snap_defaults.srate,snap_defaults.ifc)
+    tdiff = np.diff(retdict['auto0_timestamp'])-retdict['tint']
+    import matplotlib.pyplot as plt
+    plt.plot(tdiff)
+    plt.show()
+    import pdb
+    pdb.set_trace()
