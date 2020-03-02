@@ -31,7 +31,7 @@ def dict_values_to_comma_string(dictionary):
 def string_to_numeric_array(string):
 
     arr = string_to_array(string)
-    return map(float,arr)
+    return list(map(float,arr))
     #arr = []
     #arr.append(eval('[%s]' % string))
     #return arr[0]
