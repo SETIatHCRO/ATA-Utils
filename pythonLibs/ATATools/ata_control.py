@@ -429,7 +429,7 @@ def create_ephems(source, az_offset, el_offset):
     if errormsg:
         logger = logger_defaults.getModuleLogger(__name__)
         logger.error(errormsg)
-    return ast.literal_eval(result)
+    return ast.literal_eval(result.decode())
 
 
 def point_ants(on_or_off, ants):
@@ -443,7 +443,7 @@ def point_ants(on_or_off, ants):
     #ssh = local["ssh"]
     #cmd = ssh[("obs@tumulus", "cd /home/obs/NSG;./point_ants_onoff.rb %s %s" % (on_or_off, ants))]
     #result = cmd()
-    return ast.literal_eval(result)
+    return ast.literal_eval(result.decode())
 
 def set_freq(freq, ants):
 
