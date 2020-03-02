@@ -13,6 +13,7 @@ from astropy.time import Time
 from pkg_resources import parse_version
 import numpy
 import matplotlib.pyplot as plt
+import pdb
 
 def main():
 
@@ -31,14 +32,19 @@ def main():
                         help ="convert time to UTC")
     parser.add_option('--db', dest='do_db', action="store_true", default=False,
                         help ="plot in logarithmic scale")
+    parser.add_option('--debug', dest='do_debug', action="store_true", default=False,
+                        help ="pdb debug mode")
 
     (options,args) = parser.parse_args()
 
-    if(options.verbose):
-        logger = logger_defaults.getProgramLogger("SNAP_OBS",loglevel=logging.INFO)
+    if options.do_debug:
+        logger = logger_defaults.getProgramLogger("DISP_SNAP_H5",loglevel=logging.DEBUG)
     else:
-        logger = logger_defaults.getProgramLogger("SNAP_OBS",loglevel=logging.WARNING)
-
+        if(options.verbose):
+            logger = logger_defaults.getProgramLogger("DISP_SNAP_H5",loglevel=logging.INFO)
+        else:
+            logger = logger_defaults.getProgramLogger("DISP_SNAP_H5",loglevel=logging.WARNING)
+    
     if len(args) != 1:
         logger.warning("need file name")
         parser.print_help()
@@ -49,12 +55,13 @@ def main():
     use_utc = options.do_utc
     db_scale = options.do_db
     filename = args[0]
-    
-    plotWaterfalls(filename, db_scale, use_flags, use_passband, use_utc)
+    do_debug = options.do_debug
+
+    plotWaterfalls(filename, db_scale, use_flags, use_passband, use_utc, do_debug)
 
     exit()
 
-def plotWaterfalls(filename, db_scale=True, use_flags=True, use_passband=False, use_utc=False):
+def plotWaterfalls(filename, db_scale=True, use_flags=True, use_passband=False, use_utc=False, do_debug=False):
     logger = logger_defaults.getModuleLogger(__name__)
 
     UV = pyuvdata.UVData()
@@ -143,7 +150,8 @@ def plotWaterfalls(filename, db_scale=True, use_flags=True, use_passband=False, 
     plt.show()
     
     #import pdb
-    #pdb.set_trace()
+    if do_debug:
+        pdb.set_trace()
     plt.plot(range(len(timevec)-1),numpy.diff(timevec))
     plt.title('Difference of ' +tlab +'between each data snap' )
     plt.show()

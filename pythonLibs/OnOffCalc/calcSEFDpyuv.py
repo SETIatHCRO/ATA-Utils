@@ -40,7 +40,8 @@ def calcSEFDpyuv(onList, offList, method, updateFlags=False):
     freq = onList[0].freq_array[0,freqLen//2]/1e6
     source = onList[0].object_name
 
-    datetime_stamp = datetime.datetime.utcfromtimestamp(Time(onList[0].time_array[0],format='mjd').unix)
+    datetime_stamp = datetime.datetime.utcfromtimestamp(Time(onList[0].time_array[0],format='jd').unix)
+    #datetime_stamp = datetime.datetime.utcfromtimestamp(Time(onList[0].time_array[0],format='mjd').unix)
 
     flx = OnOffCalc.flux.sourceFlux(source,freq,datetime_stamp)
         
@@ -58,7 +59,8 @@ def calcSEFDpyuv(onList, offList, method, updateFlags=False):
     for nn in range(nTries):
         SEFD_X[nn],SEFD_var_X[nn],powOn0X,powOff0X,indexesX,sefdvx = OnOffCalc.misc.calcSEFD(onList[nn].data_array[:,0,:,0].real, offList[nn].data_array[:,0,:,0].real,flx,method)
         SEFD_Y[nn],SEFD_var_Y[nn],powOn0Y,powOff0Y,indexesY,sefdvy = OnOffCalc.misc.calcSEFD(onList[nn].data_array[:,0,:,1].real, offList[nn].data_array[:,0,:,1].real,flx,method)
-        SEFD_ts.append( datetime.datetime.utcfromtimestamp(Time(onList[nn].time_array[0],format='mjd').unix) )
+        #SEFD_ts.append( datetime.datetime.utcfromtimestamp(Time(onList[nn].time_array[0],format='mjd').unix) )
+        SEFD_ts.append( datetime.datetime.utcfromtimestamp(Time(onList[nn].time_array[0],format='jd').unix) )
 
         powerX = numpy.concatenate( (powerX,powOn0X,powOff0X) )
         powerY = numpy.concatenate( (powerY,powOn0Y,powOff0Y) )

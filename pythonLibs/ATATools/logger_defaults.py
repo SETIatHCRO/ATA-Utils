@@ -85,3 +85,17 @@ def getProgramLogger(name,loglevel = logging.WARNING):
 
     return logger
 
+def setFileHandler(filename,logger,level=None):
+    """
+    add a file logging to the existing logger
+
+    """
+    fh = logging.FileHandler(filename,mode='a')
+    lf = logging.Formatter(fmt=FORMAT,datefmt='%Y-%m-%d,%H:%M:%S')
+    fh.setFormatter(lf)
+    if level:
+        fh.setLevel(level)
+    else:
+        fh.setLevel(logger.getEffectiveLevel())
+    logger.addHandler(fh)
+
