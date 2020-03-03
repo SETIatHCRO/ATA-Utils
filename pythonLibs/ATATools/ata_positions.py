@@ -79,6 +79,7 @@ class ATAPositions:
         #since we are here, the prefered source is not up
         preference_uptime = 0
         now_date = d
+        preference=None
         for s in sources:
             c_uptime = 0
             future_minutes = 1
@@ -217,6 +218,7 @@ class ATAPositions:
 
     def isUp(self, name, d=None, ra=-99.0, dec=-99):
         
+        #TODO: JK: I am very hesitant to leave it here
         if(name == 'goes-16'):
             return True
 
