@@ -35,7 +35,7 @@ def getFileLogger(name,filename,loglevel = logging.WARNING):
 
     logger = logging.getLogger(name)
     FORMAT = '%(asctime)s %(levelname)s %(name)s: %(message)s'
-    logging.basicConfig(filename=filename, level=loglevel, format=FORMAT, datefmt='%Y-%m-%d %H:%M:%S')
+    logging.basicConfig(filename=filename, filemode='a', level=loglevel, format=FORMAT, datefmt='%Y-%m-%d %H:%M:%S')
 
     return logger
 
@@ -56,8 +56,8 @@ def getModuleLogger(name):
     """
 
     logger = logging.getLogger(name)
-    FORMAT = '%(asctime)s %(levelname)s %(name)s: %(message)s'
-    logging.basicConfig(format=FORMAT, datefmt='%Y-%m-%d %H:%M:%S')
+    #FORMAT = '%(asctime)s %(levelname)s %(name)s: %(message)s'
+    #logging.basicConfig(format=FORMAT, datefmt='%Y-%m-%d %H:%M:%S')
 
     return logger
 
@@ -85,17 +85,4 @@ def getProgramLogger(name,loglevel = logging.WARNING):
 
     return logger
 
-def setFileHandler(filename,logger,level=None):
-    """
-    add a file logging to the existing logger
-
-    """
-    fh = logging.FileHandler(filename,mode='a')
-    lf = logging.Formatter(fmt=FORMAT,datefmt='%Y-%m-%d,%H:%M:%S')
-    fh.setFormatter(lf)
-    if level:
-        fh.setLevel(level)
-    else:
-        fh.setLevel(logger.getEffectiveLevel())
-    logger.addHandler(fh)
 
