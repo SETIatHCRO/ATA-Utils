@@ -42,7 +42,7 @@ def get_snap_dictionary(array_list):
 def autotune(ants):
     logger = logger_defaults.getModuleLogger(__name__)
 
-    assert isinstance(ants,str),"input parameter not a string"
+    ants = snap_array_helpers.input_to_string(ants) 
 
     logger.info("autotuning: {}".format(ants))
     str_out,str_err = ata_remote.callObs(['ataautotune',ants])
@@ -80,9 +80,7 @@ def set_rf_switch(ant_list):
     """
     logger = logger_defaults.getModuleLogger(__name__)
 
-    assert isinstance(ant_list,list),"input parameter not a list"
-
-    ants = ','.join(ant_list)
+    ants = snap_array_helpers.input_to_string(ant_list) 
 
     stdout, stderr = ata_remote.callSwitch(['rfswitch',ants])
 
@@ -106,7 +104,7 @@ def getRaDec(ant_list):
     returns dictionary with 1x2 list e.g. {'1a':[0.134 1.324]}
     """
     logger = logger_defaults.getModuleLogger(__name__)
-    antstr = ",".join(ant_list)
+    antstr = snap_array_helpers.input_to_string(ant_list) 
     stdout, stderr = ata_remote.callObs(["atagetradec", antstr])
 
     retdict = {}
@@ -129,7 +127,7 @@ def getAzEl(ant_list):
     returns dictionary with 1x2 list e.g. {'1a':[0.134 1.324]}
     """
     logger = logger_defaults.getModuleLogger(__name__)
-    antstr = ",".join(ant_list)
+    antstr = snap_array_helpers.input_to_string(ant_list) 
     stdout, stderr = ata_remote.callObs(["atagetazel", antstr])
 
     retdict = {}
@@ -152,6 +150,8 @@ def get_ant_pos(ant_list):
     logger = logger_defaults.getModuleLogger(__name__)
     stdout, stderr = ata_remote.callObs(["fxconf.rb", "antpos"])
 
+    ant_list = snap_array_helpers.input_to_list(ant_list) 
+
     retdict = {}
     for line in stdout.splitlines():
         if not line.startswith(b'#'):
@@ -173,6 +173,7 @@ def rf_switch_thread(ant_list):
     """
 
     logger = logger_defaults.getModuleLogger(__name__)
+    ant_list = snap_array_helpers.input_to_list(ant_list) 
     tcount = len(ant_list)
 
     logger.info("starting concurrent execution of set_rf_switch with {} workers".format(tcount))
@@ -250,10 +251,8 @@ def set_atten(antpol_list, db_list):
 
 def get_pams(antlist):
 
-    assert isinstance(antlist,list),"input parameter not a list"
-
     logger = logger_defaults.getModuleLogger(__name__)
-    antstr = ",".join(antlist)
+    antstr = snap_array_helpers.input_to_string(antlist) 
     logger.info("getting pams: {}".format(antstr))
     str_out,str_err = ata_remote.callObs(['atagetpams','-q',antstr])
 
@@ -277,10 +276,8 @@ def get_pams(antlist):
 
 def get_dets(antlist):
 
-    assert isinstance(antlist,list),"input parameter not a list"
-
     logger = logger_defaults.getModuleLogger(__name__)
-    antstr = ",".join(antlist)
+    antstr = snap_array_helpers.input_to_string(antlist) 
     logger.info("getting dets: {}".format(antstr))
     str_out,str_err = ata_remote.callObs(['atagetdet','-q',antstr])
 
@@ -367,6 +364,8 @@ def make_and_track_ephems(source,antstr):
     if errormsg:
         logger.error(errormsg)
 
+    antstr = snap_array_helpers.input_to_string(antstr) 
+
     logger.info("Tracking source {} with {}".format(source,antstr))
     result,errormsg = ata_remote.callObs(['atatrackephem','-w',antstr,source+'.ephem'])
     logger.info(result)
@@ -405,6 +404,7 @@ def try_on_lna(singleantstr):
 def try_on_lnas(ant_list):
 
     logger = logger_defaults.getModuleLogger(__name__)
+    ant_list = snap_array_helpers.input_to_list(ant_list) 
     tcount = len(ant_list)
 
     logger.info("starting concurrent execution of try_on_lna with {} workers".format(tcount))
@@ -434,7 +434,7 @@ def create_ephems(source, az_offset, el_offset):
 
 def point_ants(on_or_off, ants):
 
-    assert isinstance(ants,str),"input parameter not a string"
+    ants = snap_array_helpers.input_to_string(ants) 
 
     result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./point_ants_onoff.rb {} {}'.format(on_or_off, ants)]) 
     if errormsg:
@@ -447,7 +447,7 @@ def point_ants(on_or_off, ants):
 
 def set_freq(freq, ants):
 
-    assert isinstance(ants,str),"input parameter not a string"
+    ants = snap_array_helpers.input_to_string(ants) 
 
     logger = logger_defaults.getModuleLogger(__name__)
 

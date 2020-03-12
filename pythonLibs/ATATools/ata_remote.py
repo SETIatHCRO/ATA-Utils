@@ -12,10 +12,10 @@ import socket
 from . import logger_defaults
 
 RF_SWITCH_HOST = "if-switch"
-RF_SWITCH_HOST_IP = "10.10.1.198"
+RF_SWITCH_HOST_IP = "if-switch"
 RF_SWITCH_USER = 'sonata'
 ATTEN_HOST = "if-switch"
-ATTEN_HOST_IP = "10.10.1.198"
+ATTEN_HOST_IP = "if-switch"
 ATTEN_USER = 'sonata'
 OBS_HOST = 'tumulus'
 OBS_USER = 'obs'

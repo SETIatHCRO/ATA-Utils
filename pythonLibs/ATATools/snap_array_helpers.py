@@ -9,6 +9,23 @@ import sys
 import ast
 import re
 
+def input_to_string(ants):
+    if (isinstance(ants,str)):
+        return ants
+    elif (isinstance(ants,list)):
+        return array_to_string(ants)
+    else:
+        raise RuntimeError("unsupported parameter type {}".format(type(ants)))
+
+def input_to_list(ants):
+    if (isinstance(ants,list)):
+        return ants
+    elif (isinstance(ants,str)):
+        return string_to_array(ants)
+    else:
+        raise RuntimeError("unsupported parameter type {}".format(type(ants)))
+
+
 def dict_list_to_list(dictionary):
     """
     this will convert {"snap0": [1,2,3], "snap2": [33,23]} to [1,2,3,33,23]
