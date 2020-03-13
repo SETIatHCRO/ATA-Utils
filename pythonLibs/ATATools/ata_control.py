@@ -299,7 +299,38 @@ def get_dets(antlist):
 
     return retdict
 
+def test_all_antennas_in_str(lines, antlist):
+    """
+    test if all antennas from antlist are in white space separated lines. returns difference between sets
+    empty set means all antennas from the list were in the line
+    """
+    aset = set(antlist)
+    antsinline = set(lines.split())
+    setdiff = aset - antsinline
+    return list(setdiff)
+
 def move_ant_group(antlist, from_group, to_group):
+
+    logger = logger_defaults.getModuleLogger(__name__)
+    antlist = snap_array_helpers.input_to_list(antlist) 
+    logger.info("Reserving \"{}\" from {} to {}".format(snap_array_helpers.array_to_string(antlist), from_group, to_group))
+
+    stdout, stderr = ata_remote.callObs(['fxconf.rb','sals',from_group])
+    notants = test_all_antennas_in_str(stdout.decode(),antlist)
+    if notants:
+        logger.error("Antennas {} are not in group {}".format(snap_array_helpers.array_to_string(notants),from_group))
+        raise RuntimeError("Failed to move antenna {} from {} to {} (not in from_group)".format(snap_array_helpers.array_to_string(notants), from_group, to_group))
+
+    stdout, stderr = ata_remote.callObs(['fxconf.rb','sagive', from_group, to_group] + antlist)
+
+    stdout, stderr = ata_remote.callObs(['fxconf.rb','sals',to_group])
+    notants = test_all_antennas_in_str(stdout.decode(),antlist)
+    if notants:
+        logger.error("Failed to move antennas {} to group {}, reversing sagive".format(snap_array_helpers.array_to_string(notants),to_group))
+        stdout, stderr = ata_remote.callObs(['fxconf.rb','sagive',to_group,from_group] + antlist)
+        raise RuntimeError("Failed to move antenna {} from {} to {}".format(snap_array_helpers.array_to_string(notants), from_group, to_group))
+
+def move_ant_group_old(antlist, from_group, to_group):
 
     assert isinstance(antlist,list),"input parameter not a list"
 
@@ -323,7 +354,7 @@ def reserve_antennas(antlist):
 
     move_ant_group(antlist, "none", "bfa")
 
-def release_antennas(antlist, should_park):
+def release_antennas(antlist, should_park=True):
 
     move_ant_group(antlist, "bfa", "none")
 
