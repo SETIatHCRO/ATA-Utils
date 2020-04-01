@@ -22,6 +22,7 @@ import logging
 defaultPowerLeveldBm = 0.0
 defaultPowerToldBm = 0.5
 defaultRetries = 5
+satTestUpperPower = -12
 
 def autotune_multiprocess(antlist,power=defaultPowerLeveldBm,retry=defaultRetries,tolerance=defaultPowerToldBm):
     """
@@ -121,6 +122,7 @@ def setPamsAutotune(antlist,polydict,lowerdict,upperdict,power=defaultPowerLevel
     logger.error('settings error target power {} < min power check {} + tolerance {}'.format(power, autotunecommon.minpowerinspect, tol))
   toDoList = list(antlist)
   brokenList = []
+  satPolList = []
   brokenPolList = []
   for itercnt in range(retry):
     #antstr = ",".join(toDoList)
@@ -184,6 +186,23 @@ def setPamsAutotune(antlist,polydict,lowerdict,upperdict,power=defaultPowerLevel
 
         if ant + 'y' in brokenPolList:
             newpamy = newpamx
+
+        #saturated on the upper limit, adding to sat list and broken list
+        if satx and cpowx > satTestUpperPower:
+            logger.warning('antpol {}x saturated on upper limit'.format(ant))
+            satPolList.append(ant+'x')
+            brokenPolList.append(ant+'x')
+
+        if saty and cpowy > satTestUpperPower:
+            logger.warning('antpol {}y saturated on upper limit'.format(ant))
+            satPolList.append(ant+'y')
+            brokenPolList.append(ant+'y')
+
+        if ant + 'x' in satPolList:
+            newpamx = pamdict[ant + 'x']
+
+        if ant + 'y' in satPolList:
+            newpamy = pamdict[ant + 'y']
 
         logger.info('setting pams {0:s} to {1:.2f},{2:.2f}'.format(ant,newpamx,newpamy))
         attributes.set_pam(ant=ant,x=newpamx,y=newpamy)
