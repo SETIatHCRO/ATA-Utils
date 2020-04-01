@@ -19,7 +19,7 @@ from optparse import OptionParser
 import numpy
 import logging
 
-defaultPowerLeveldBm = 2.0
+defaultPowerLeveldBm = 0.0
 defaultPowerToldBm = 0.5
 defaultRetries = 5
 
