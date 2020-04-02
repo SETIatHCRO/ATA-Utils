@@ -1,8 +1,15 @@
 #!/usr/bin/python3
 
 """
-Python wrappers for various command line
-tools at the ATA.
+Python wrappers for various command calls controlling the ATA.
+
+Most functions that allows array_list, if not specified otherwise,
+allows both list of antennas call, e.g. ['1a','2c'], or 
+comma separated string call, e.g. '1a,1b'
+
+most functions are using logger to log warnings and are rising
+various exceptions on error (most can raise RuntimeError if the 
+system call fails)
 """
 
 import re
@@ -12,9 +19,14 @@ from . import ata_remote,ata_constants,snap_array_helpers,logger_defaults
 
 def get_snap_dictionary(array_list):
     """
-    returns the dictionary for snap0-3 antennas
+    returns the dictionary for snap0-3 antennas. This is suggested way of 
+    knowing which antennas are connected to which snap via rfswitch.
 
-    Raises KeyError if antenna is not in list
+    The input value is a list of antennas, e.g. ['1a','2c']
+    the return value is a dictionary of lists, e.g.
+    {'snap0':['1a',1b'],'snap2':['5c']}
+
+    Raises KeyError if antenna is not in known/not connected
     """
     s0 = []
     s1 = []
@@ -40,6 +52,16 @@ def get_snap_dictionary(array_list):
     return retval
 
 def autotune(ants):
+    """
+    calls autotune functionality (Power level for RF-Fiber conversion)
+    on selected antennas.
+    ants is either a list of antennas, e.g. ['1a','1b']
+    or comma separated string, e.g. '1a,1b'
+
+    logger is used for autotune response
+
+    Raises RuntimeError if autotune execution fails.
+    """
     logger = logger_defaults.getModuleLogger(__name__)
 
     ants = snap_array_helpers.input_to_string(ants) 
@@ -68,6 +90,11 @@ def get_ascii_status():
     """
     Return an ascii table of lots of ATA
     status information.
+    
+    This call should only be used to display information, to get
+    a particular information, other function should be used.
+    (there is a white space separation between columns, but also
+    there __MAY__ be white space separation within a column)
     """
     
     stdout, stderr = ata_remote.callObs(["ataasciistatus","-l"])
@@ -76,7 +103,10 @@ def get_ascii_status():
 def set_rf_switch(ant_list):
     """
     Set RF switch `switch` (0..1) to connect the COM port
-    to port `sel` (1..8)
+    to port `sel` (1..8) based on antenna call. 
+
+    Calling this function on multiple antenna may be slow, consider calling
+    rf_switch_thread
     """
     logger = logger_defaults.getModuleLogger(__name__)
 
@@ -170,6 +200,9 @@ def rf_switch_thread(ant_list):
     """
     start a thread to set rf switch,
     ant list should consist of antennas from separate snaps
+
+    the call execute parallel threads for each RF switch.
+    and internally calls set_rf_switch
     """
 
     logger = logger_defaults.getModuleLogger(__name__)
@@ -193,6 +226,15 @@ def rf_switch_thread(ant_list):
 def set_atten_thread(antpol_list_list, db_list_list):
     """
     start a thread to set attenuator value
+    each list member should be from separate snaps
+    
+    eg. set_atten_thread([['1ax','1ay'],['5ax','5ay']],[[12,12],[13,15]])
+    It's possible to set only one polarization. Second parameter is
+    attenuation value in dB. The shape of db_list_list must match the 
+    shape of antpol_list_list
+
+    the call execute parallel threads for each attenuator.
+    and internally calls set_atten
     """
 
     logger = logger_defaults.getModuleLogger(__name__)
@@ -223,6 +265,9 @@ def set_atten(antpol_list, db_list):
     Set attenuation of antenna or ant-pol `ant`
     to `db` dB.
     Allowable values are 0.0 to 31.75
+
+    Calling the function for multiple antennas may be slow. consider calling 
+    set_atten_thread instead
     """
 
     assert isinstance(antpol_list,list),"input parameter not a list"
@@ -250,7 +295,12 @@ def set_atten(antpol_list, db_list):
         raise RuntimeError("ERROR: set_atten %s %s returned: %s" % (db_str, antpol_str, stderr))
 
 def get_pams(antlist):
+    """
+    get PAM attenuator values for given antennas
 
+    the return value is a dictionary:
+    e.g. {'ant1ax':12.5,'ant1ay':20,'ant2ax':11,'ant2ay':13}
+    """
     logger = logger_defaults.getModuleLogger(__name__)
     antstr = snap_array_helpers.input_to_string(antlist) 
     logger.info("getting pams: {}".format(antstr))
@@ -275,7 +325,13 @@ def get_pams(antlist):
     return retdict
 
 def get_dets(antlist):
+    """
+    get PAM detector values for given antennas
 
+    the return value is a dictionary:
+    e.g. {'ant1ax':0.23,'ant1ay':0.2,'ant2ax':0.11,'ant2ay':0.83}
+
+    """
     logger = logger_defaults.getModuleLogger(__name__)
     antstr = snap_array_helpers.input_to_string(antlist) 
     logger.info("getting dets: {}".format(antstr))
@@ -310,7 +366,12 @@ def test_all_antennas_in_str(lines, antlist):
     return list(setdiff)
 
 def move_ant_group(antlist, from_group, to_group):
-
+    """
+    call to move antennas between two sals groups
+    see: reserve_antennas, release_antennas
+    
+    raises RuntimeError if the move is not possible
+    """
     logger = logger_defaults.getModuleLogger(__name__)
     antlist = snap_array_helpers.input_to_list(antlist) 
     logger.info("Reserving \"{}\" from {} to {}".format(snap_array_helpers.array_to_string(antlist), from_group, to_group))
@@ -330,6 +391,7 @@ def move_ant_group(antlist, from_group, to_group):
         stdout, stderr = ata_remote.callObs(['fxconf.rb','sagive',to_group,from_group] + antlist)
         raise RuntimeError("Failed to move antenna {} from {} to {}".format(snap_array_helpers.array_to_string(notants), from_group, to_group))
 
+"""
 def move_ant_group_old(antlist, from_group, to_group):
 
     assert isinstance(antlist,list),"input parameter not a list"
@@ -349,12 +411,30 @@ def move_ant_group_old(antlist, from_group, to_group):
         if ant not in bfa:
             logger.error("Failed to move antenna {} from {} to {}".format(ant, from_group, to_group))
             raise RuntimeError("Failed to move antenna {} from {} to {}".format(ant, from_group, to_group))
+"""
 
 def reserve_antennas(antlist):
-
+    """
+    move antennas from group none to bfa
+    this function should be called before any other function call
+    changing the antenna settings. If call fails, that measn the
+    antennas were already in use by someone
+    """
     move_ant_group(antlist, "none", "bfa")
 
 def release_antennas(antlist, should_park=True):
+    """
+    move antennas from group bfa to none
+    this function should be called at the end of observations, 
+    most likely in the "finally" statement to ensure it's always executed
+
+    failing to call the release means that any other user will
+    see the antennas as "still in use"
+
+    should_park flag determines if the antennas should be
+    moved to default position, or leave it be (usefull for code debugging
+    to cut down the antenna movement time)
+    """
 
     move_ant_group(antlist, "bfa", "none")
 
@@ -389,6 +469,11 @@ def get_ra_dec(source, deg=True):
         return ra_sg, dec_sg
 
 def make_and_track_ephems(source,antstr):
+    """
+    set the antennas to track a source.
+    source has to be a valid catalogue name
+    the function call returns only after the antennas are pointed.
+    """
     logger = logger_defaults.getModuleLogger(__name__)
     result,errormsg = ata_remote.callObs(['ataephem',source])
     logger.info(result)
@@ -407,6 +492,14 @@ def make_and_track_ephems(source,antstr):
 
 
 def try_on_lna(singleantstr):
+    """
+    check if the LNA for given antenna is on. 
+    if LNA was already on, nothing happens
+    if LNA was off, the pams are set to default value (30 dB)
+    and then LNA is switched on
+
+    for mutliple antennas, call try_on_lnas
+    """
 
     paxstartdefault = '30'
     wasError = False
@@ -433,7 +526,9 @@ def try_on_lna(singleantstr):
         logger.info('LNA was already on')
 
 def try_on_lnas(ant_list):
-
+    """
+    a multithread call for try_on_lna
+    """
     logger = logger_defaults.getModuleLogger(__name__)
     ant_list = snap_array_helpers.input_to_list(ant_list) 
     tcount = len(ant_list)
@@ -452,7 +547,11 @@ def try_on_lnas(ant_list):
             retval = t.result()
 
 def create_ephems(source, az_offset, el_offset):
-
+    """
+    a script call to create 2 ephemeris files, one on target, one
+    shifted by az_ and el_offset. Mainly used for ON-OFF observations
+    together with point_ants function
+    """
     #ssh = local["ssh"]
     #cmd = ssh[("obs@tumulus", "cd /home/obs/NSG;./create_ephems.rb %s %.2f %.2f" % (source, az_offset, el_offset))]
     #result = cmd()
@@ -464,7 +563,12 @@ def create_ephems(source, az_offset, el_offset):
 
 
 def point_ants(on_or_off, ants):
+    """
+    on_or_off is a string, either "on" or "off". If "on", the antennas are pointed to the source
+    if "off", the antennas are pointed away from the source by az_ and el_offset given to create_ephems 
 
+    requires earlier call of create_ephems
+    """
     ants = snap_array_helpers.input_to_string(ants) 
 
     result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./point_ants_onoff.rb {} {}'.format(on_or_off, ants)]) 
@@ -477,7 +581,10 @@ def point_ants(on_or_off, ants):
     return ast.literal_eval(result.decode())
 
 def set_freq(freq, ants):
-
+    """
+    Sets both LO A frequency and antenna focus frequency to
+    given freq in MHz
+    """
     ants = snap_array_helpers.input_to_string(ants) 
 
     logger = logger_defaults.getModuleLogger(__name__)
