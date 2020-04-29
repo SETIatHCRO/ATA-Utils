@@ -13,8 +13,7 @@ Python program to perform specific attenuations on selected attenuator(s).
 You can clone the repository and install the program from there directly. At the command line, run:  
 `git clone https://github.com/SETIatHCRO/ATA-Utils`   
 Then find the file where you've cloned this repository in, go into the file by typing  
-`cd ATA-Utils
-cd 12xGainControlModule`  
+`cd ATA-Utils/12xGainControlModule/`  
 Install the program by typing:  
 `python setup.py install`  
 
