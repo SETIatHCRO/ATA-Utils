@@ -38,5 +38,5 @@ The program provides logging for tracking usage and debugging. A log file called
 
 
 ## Acknowledgment
-Alexander Pollak for credits of design and mentorship through the whole project
-Wael Farah for code improvements 
+Alexander Pollak for credits of design and mentorship through the whole project  
+Wael Farah for code improvements
