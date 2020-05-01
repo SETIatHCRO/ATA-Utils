@@ -37,6 +37,6 @@ This will return a list of arguments that the program takes and specific instruc
 The program provides logging for tracking usage and debugging. A log file called Attenuator.log will be automatically generated when the program is run. Access the log file directly for information.
 
 
-## Acknowledgment
-Alexander Pollak for credits of design and mentorship through the whole project  
-Wael Farah for code improvements
+## Acknowledgments
+* Alexander Pollak for credits of design and mentorship through the whole project  
+* Wael Farah for code improvements
