@@ -4,8 +4,12 @@ import time                    # calling for time to provide delays in program
 import sys
 import logging
 import logging.config
-from optparse import OptionParser
 import argparse
+import pickle
+from filelock import FileLock
+LOCK_FILE = "/var/lock/attenuator.lock"
+LOCK = FileLock(LOCK_FILE)
+
 logger = logging.getLogger()
 IO.setwarnings(False)           # do not show any warnings
 IO.setmode (IO.BCM)            # programming the GPIO by BCM pin numbers. (like PIN29 as‘GPIO5’)
@@ -30,19 +34,20 @@ def attenuate(attenuation):
     logger.debug("#Send data at every rising clock")
     for x in range(6):          #assign every bit to output
         IO.output(4,digits[x])            # pull up/down the data pin for every bit.
-        time.sleep(0.1)            # wait for 100ms
+        time.sleep(0.01)            # wait for 10ms
         IO.output(5,1)            # pull CLOCK pin high
-        time.sleep(0.1)
+        time.sleep(0.01)
         IO.output(5,0)            # pull down the SHIFT pin
+        time.sleep(0.01)
     latchEnable()
-    
+
 def latchEnable():
     logger.debug("#Outputing all the values")
     IO.output(4,0)       # clear the DATA pin
     IO.output(6,1)       # pull the SHIFT pin high to put the 8 bit data out parallel
-    time.sleep(0.1)
+    time.sleep(0.01)
     IO.output(6,0)       # pull down the SHIFT pin
-    
+
 def select_att(attenuator):
     logger.debug("#Selecting attenuator")
     binary = (format(attenuator-1, '05b')[::-1])
@@ -59,45 +64,90 @@ def select_att(attenuator):
     logger.debug("A1-A5 should be" + str(b1) + str(b2) + str(b3) + str(b4) + str(b5))
 
 def main():
-    parser = argparse.ArgumentParser(description='Select an attenuator to attenuate inputs at different levels')
-    parser.add_argument('-a', '--attenuation', type=float, metavar='', required=True, help='Attenuation level from 0-31.5dB, in steps of 0.5')
-    parser.add_argument('-n', '--number', type=int, metavar='', required=True, help='Input the selected attenuator number from 1 to 24, select 0 to program all attenuators')
-    parser.add_argument('-v','--verbose', action='store_true', help='Prints the actions done by the program')
-    args = parser.parse_args()
-
     #Create and configure logger
     log_format = "%(levelname)s %(asctime)s - %(message)s"
     logging.basicConfig(filename = "Attenuator.log", level = logging.DEBUG, format = log_format, filemode = 'w')
-    
-    if not len(sys.argv) > 1:
-        logger.warning("no input provided")
-        parser.print_help()
-        sys.exit(1)
-    
-    if args.attenuation>31.5 or args.attenuation<0 or (args.attenuation/0.5)%1 != 0:
-            logger.error("attenuation must be numbers between [0,31.5] that are divisible by 0.5")
-            print("Illegal input for attenuation, -h for help")
+    #Parsing arguments
+    parser = argparse.ArgumentParser(description='Select an attenuator to attenuate inputs at different levels')
+    parser.add_argument('-a', '--attenuation', type=float, metavar='', nargs='+', help='Attenuation level from 0-31.5dB, in steps of 0.5; can select multiple values(in sequence matched by the selected attenuator#) by typing multiple inputs separated by single spaces')
+    parser.add_argument('-n', '--number', type=int, metavar='', nargs='+', help='Input the selected attenuator number from 1 to 24, select 0 to program all attenuators;can select multiple by typing selected numbers separated by single spaces')
+    parser.add_argument('-v','--verbose', action='store_true', help='Prints the actions done by the program')
+    parser.add_argument('-g', '--getvalue', action='store_true', help='Returns the last programmed value for the specific attenuator')
+    parser.add_argument('-i', '--initialize', action='store_true', help='initializes all the attenuators to last programmed values')
+    #validate arguments
+    args = parser.parse_args()
+    if args.attenuation and args.number:
+        alist = args.attenuation
+        nlist = args.number
+        if len(alist) != len(nlist):
+            logger.error("number of attenuators does not match number of attenuation inputs")
+            print("Number of attenuators selected must match number of attenuation level selected")
             exit()
-    if not (args.number>=0 and args.number<=24):
-            logger.error("Attenuator# must be from 1 to 24")
-            print("Invalid attenuator selection, -h for help")
+    #initialize
+    with LOCK:
+        dict = pickle.load(open("history.p", "rb"))
+        if args.initialize:
+            for n, a in dict.items():
+                n = int(n)
+                a = float(a)
+                if n != 0:
+                    select_att(n)
+                    attenuate(a)
+                    latchEnable()
+            if args.verbose:
+                print("Successfully initialized all attenuators")
             exit()
-    if args.number == 0:                                #program all attenuators
-        attenuate(args.attenuation)
-        for i in range(24):
-            select_att(i+1)
+
+    #getvalue
+    with LOCK:
+        dict = pickle.load(open("history.p", "rb"))
+        if args.getvalue and len(args.number) == 1:
+            if not args.number[0] in dict:
+                print(0)
+            else:
+                print(dict[args.number[0]])
+            exit()
+
+    #attenuate
+    with LOCK:
+        #case for programming all attenuators
+        if len(nlist) == 1 and nlist[0]== 0 and alist[0]<31.5 and alist[0]>0 and (alist[0]/0.5)%1 == 0:
+            attenuate(args.attenuation[0])
+            for i in range(24):
+                select_att(i+1)
+                latchEnable()
+                dict = pickle.load(open("history.p", "rb"))
+                dict[i] = args.attenuation[0]
+                pickle.dump(dict, open("history.p", "wb"))
+            exit()
+        #validate all arguments
+        for i in range(len(alist)):
+            if alist[i]>31.5 or alist[i]<0 or (alist[i]/0.5)%1 != 0:
+                logger.error("attenuation must be numbers between [0,31.5] that are divisible by 0.5")
+                print("Illegal input for attenuation, -h for help")
+                exit()
+            if not (nlist[i]>=0 and nlist[i]<=24):
+                logger.error("Attenuator# must be from 1 to 24")
+                print("Invalid attenuator selection, -h for help")
+                exit()
+            #attenuate
+            select_att(nlist[i])
+            attenuate(alist[i])
             latchEnable()
-    else:
-        select_att(args.number)
-        attenuate(args.attenuation)
-        
-    if args.verbose:
-        if args.number == 0:
-            print("Successfully selected all attenuators")
-        else:
-            print("Successfuly selected attenuator#" + str(args.number))
-        print("Successfully attenuated to " + str(args.attenuation) + "dB")
-    exit()
-    
+            #saving h h to pickle file
+            dict = pickle.load(open("history.p", "rb"))
+            dict[nlist[i]] = alist[i]
+            pickle.dump(dict, open("history.p", "wb"))
+
+        #verbose mode
+        if args.verbose:
+            if args.number == 0:
+                print("Successfully selected all attenuators")
+            else:
+                print("Successfuly selected attenuator#" + str(nlist))
+            print("Successfully attenuated to " + str(alist) + "dB")
+
+        exit()
+
 if __name__== "__main__":
     main()
