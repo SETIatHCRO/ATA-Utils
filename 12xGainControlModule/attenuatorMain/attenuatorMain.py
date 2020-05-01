@@ -1,14 +1,19 @@
 # -*- coding: utf-8 -*-s
 import RPi.GPIO as IO         # calling for header file which helps us use GPIO’s of PI
 import time                    # calling for time to provide delays in program
-import sys
+import sys,os
 import logging
 import logging.config
 import argparse
 import pickle
 from filelock import FileLock
+
 LOCK_FILE = "/var/lock/attenuator.lock"
 LOCK = FileLock(LOCK_FILE)
+
+HISTORY_FILE = "./history.p"
+if not os.path.exists(HISTORY_FILE):
+    pickle.dump({}, open(HISTORY_FILE, "wb"))
 
 logger = logging.getLogger()
 IO.setwarnings(False)           # do not show any warnings
@@ -82,12 +87,12 @@ def main():
         if len(alist) != len(nlist):
             logger.error("number of attenuators does not match number of attenuation inputs")
             print("Number of attenuators selected must match number of attenuation level selected")
-            exit()
+            exit(-1)
     #initialize
     with LOCK:
-        dict = pickle.load(open("history.p", "rb"))
+        hist_dict = pickle.load(open(HISTORY_FILE, "rb"))
         if args.initialize:
-            for n, a in dict.items():
+            for n, a in hist_dict.items():
                 n = int(n)
                 a = float(a)
                 if n != 0:
@@ -100,12 +105,17 @@ def main():
 
     #getvalue
     with LOCK:
-        dict = pickle.load(open("history.p", "rb"))
-        if args.getvalue and len(args.number) == 1:
-            if not args.number[0] in dict:
-                print(0)
+        dict = pickle.load(open(HISTORY_FILE, "rb"))
+        if args.getvalue:
+            if not args.number:
+                number_list = dict.keys()
             else:
-                print(dict[args.number[0]])
+                number_list = args.number
+            for eachNumb in number_list:
+                if not eachNumb in dict:
+                    print(eachNumb, -1)
+                else:
+                    print(eachNumb, dict[eachNumb])
             exit()
 
     #attenuate
@@ -116,9 +126,9 @@ def main():
             for i in range(24):
                 select_att(i+1)
                 latchEnable()
-                dict = pickle.load(open("history.p", "rb"))
-                dict[i] = args.attenuation[0]
-                pickle.dump(dict, open("history.p", "wb"))
+                hist_dict = pickle.load(open(HISTORY_FILE, "rb"))
+                hist_dict[i] = args.attenuation[0]
+                pickle.dump(hist_dict, open(HISTORY_FILE, "wb"))
             exit()
         #validate all arguments
         for i in range(len(alist)):
@@ -135,9 +145,9 @@ def main():
             attenuate(alist[i])
             latchEnable()
             #saving h h to pickle file
-            dict = pickle.load(open("history.p", "rb"))
-            dict[nlist[i]] = alist[i]
-            pickle.dump(dict, open("history.p", "wb"))
+            hist_dict = pickle.load(open(HISTORY_FILE, "rb"))
+            hist_dict[nlist[i]] = alist[i]
+            pickle.dump(hist_dict, open(HISTORY_FILE, "wb"))
 
         #verbose mode
         if args.verbose:
