@@ -75,9 +75,9 @@ def main():
     #Parsing arguments
     parser = argparse.ArgumentParser(description='Select an attenuator to attenuate inputs at different levels')
     parser.add_argument('-a', '--attenuation', type=float, metavar='', nargs='+', help='Attenuation level from 0-31.5dB, in steps of 0.5; can select multiple values(in sequence matched by the selected attenuator#) by typing multiple inputs separated by single spaces')
-    parser.add_argument('-n', '--number', type=int, metavar='', nargs='+', help='Input the selected attenuator number from 1 to 24, select 0 to program all attenuators;can select multiple by typing selected numbers separated by single spaces')
+    parser.add_argument('-n', '--number', type=int, metavar='', nargs='+', help='Input the selected attenuator number from 1 to 24, select 0 to program all attenuators. Can select multiple by typing selected numbers separated by single spaces')
     parser.add_argument('-v','--verbose', action='store_true', help='Prints the actions done by the program')
-    parser.add_argument('-g', '--getvalue', action='store_true', help='Returns the last programmed value for the specific attenuator')
+    parser.add_argument('-g', '--getvalue', action='store_true', help='Returns the last programmed value for all attenuators if no number specified. Else specify attenuator number(s) with -n command.')
     parser.add_argument('-i', '--initialize', action='store_true', help='initializes all the attenuators to last programmed values')
     #validate arguments
     args = parser.parse_args()
