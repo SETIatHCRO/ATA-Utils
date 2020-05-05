@@ -23,6 +23,8 @@ defaultPowerLeveldBm = 0.0
 defaultPowerToldBm = 0.5
 defaultRetries = 5
 satTestUpperPower = -12
+detdict_upper_sat = 0.4
+detdict_upper_sat_pam_val = 30
 
 def autotune_multiprocess(antlist,power=defaultPowerLeveldBm,retry=defaultRetries,tolerance=defaultPowerToldBm):
     """
@@ -63,6 +65,7 @@ def autotune_multiprocess(antlist,power=defaultPowerLeveldBm,retry=defaultRetrie
     #with concurrent.futures.ThreadPoolExecutor(max_workers=nworkers) as executor:
         tlist = []
         for cant in antlist:
+            #it seems that this should be submit(autotune,[cant],polydict,lowerdict,upperdict,power,retry,tolerance)
             t = executor.submit([cant],polydict,lowerdict,upperdict,power,retry,tolerance)
             tlist.append(t)
 
@@ -137,6 +140,27 @@ def setPamsAutotune(antlist,polydict,lowerdict,upperdict,power=defaultPowerLevel
     for ant in toDoList:
       powerxgot,satx = autotunecommon.getLimittedPower(ant,'x',detdict,upperdict,lowerdict)
       powerygot,saty = autotunecommon.getLimittedPower(ant,'y',detdict,upperdict,lowerdict)
+      #in first iteration we may experiance saturation already
+      if itercnt == 0:
+        needredo=False
+        newpamx = pamdict[ant + 'x']
+        newpamy = pamdict[ant + 'y']
+        if (satx and (detdict[ant + 'x'] > detdict_upper_sat ) ):
+            #saturation on upper X, need to push pams down
+            newpamx = detdict_upper_sat_pam_val
+            needredo=True
+        if (saty and (detdict[ant + 'y'] > detdict_upper_sat ) ):
+            #saturation on upper X, need to push pams down
+            newpamy = detdict_upper_sat_pam_val
+            needredo=True
+        if needredo:
+            attributes.set_pam(ant=ant,x=newpamx,y=newpamy)
+            retval,tmpdetdict = attributes.get_det(ant=ant)
+            powerxgot,satx = autotunecommon.getLimittedPower(ant,'x',tmpdetdict,upperdict,lowerdict)
+            powerygot,saty = autotunecommon.getLimittedPower(ant,'y',tmpdetdict,upperdict,lowerdict)
+            pamdict[ant + 'x'] = newpamx
+            pamdict[ant + 'y'] = newpamy
+
 
       cpowx = polydict[ant + 'x'](powerxgot)
       cpowy = polydict[ant + 'y'](powerygot)
