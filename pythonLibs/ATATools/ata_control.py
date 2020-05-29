@@ -348,7 +348,9 @@ def get_eph_source(antlist):
             ant = regroups.group('ant')
             if ant in ant_list:
                 src = regroups.group('name')
-                retdict['ant' + ant] = src
+                #retdict['ant' + ant] = src
+                # keep consistency with getRADec and getAzEl
+                retdict[ant] = src
 
     return retdict
 
