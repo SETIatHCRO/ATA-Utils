@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import os
 
 """
 defaults values for snap observations
@@ -13,4 +14,9 @@ srate = 900.0
 clock_attempts = 5
 ifc = 629.1452
 mux_sel = {'auto':0, 'cross':1}
-
+bw = srate/2 #MHz
+nchan = 2048
+base_name = "frb-snap"
+template_header = "template_header.txt"
+discone_name = 'rfi'
+share_dir = os.path.join(os.environ['PSRHOME'], 'share')
