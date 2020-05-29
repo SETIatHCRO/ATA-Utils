@@ -8,7 +8,8 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name='ATA-Utils-pythonLibs',
     version=version.__version__,
-    install_requires=['ephem','astropy','numpy','tftpy','pyuvdata<=1.4;python_version<"3"','pyuvdata;python_version>"3.5"'],
+    #install_requires=['ephem','astropy','numpy','tftpy','pyuvdata<=1.4;python_version<"3"','pyuvdata;python_version>"3.5"'],
+    install_requires=['ephem','astropy','numpy','tftpy'],
     description='python utility scripts for ATA (private repo)',
     license='MIT',
     packages=['ATATools','ATAobs','SNAPobs','OnOffCalc','OnOffCalc.flux','OnOffCalc.yFactor','OnOffCalc.misc','OnOffCalc.filterArray'],

@@ -324,6 +324,35 @@ def get_pams(antlist):
 
     return retdict
 
+def get_eph_source(antlist):
+    """
+    get the ephemeris file name of where the antennas are pointing
+    returns dictionary e.g. {'ant1a':'casa'}
+    """
+
+    logger = logger_defaults.getModuleLogger(__name__)
+    ant_list = snap_array_helpers.input_to_list(antlist) 
+
+    antstr = snap_array_helpers.input_to_string(antlist) 
+    logger.info("getting sources: {}".format(antstr))
+
+    str_out,str_err = ata_remote.callObs(['ataasciistatus','-l','--header','Name,Source'])
+    if str_err:
+        logger.error("ataasciistatus got error: {}".format(str_err))
+
+    retdict = {}
+    lines = str_out.splitlines()
+    for line in lines:
+        regroups = re.search('ant(?P<ant>..)\s*(?P<name>.+)',line.decode());
+        if regroups:
+            ant = regroups.group('ant')
+            if ant in ant_list:
+                src = regroups.group('name')
+                retdict['ant' + ant] = src
+
+    return retdict
+
+
 def get_dets(antlist):
     """
     get PAM detector values for given antennas
