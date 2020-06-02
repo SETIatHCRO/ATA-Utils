@@ -327,7 +327,7 @@ def get_pams(antlist):
 def get_eph_source(antlist):
     """
     get the ephemeris file name of where the antennas are pointing
-    returns dictionary e.g. {'ant1a':'casa'}
+    returns dictionary e.g. {'1a':'casa'}
     """
 
     logger = logger_defaults.getModuleLogger(__name__)
