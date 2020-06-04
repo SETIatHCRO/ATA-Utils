@@ -8,6 +8,8 @@ Created on Thu Jul 18 2019
 
 from . import constants
 import numpy
+import numpy as np
+import bottleneck as bn
 import OnOffCalc.filterArray
 
 import pdb
@@ -66,6 +68,54 @@ def calcOnOffParamVec(onVectIn, offVectIn, maskedVect):
     #plt.show()
     return onoffparam,powOn,powOff
 
+def calcOnOffParamMat(onMatIn, offMatIn, maskedMat):
+    """
+    Calculation of vector of SFED values
+        
+    Parameters
+    -------------
+    onMat : array_like
+        freq-time mat of On data
+    offMat : array_like
+        freq-time mat of Off data
+        
+    Returns
+    -------------
+    float
+        the SEFD value
+    float
+        power on    
+    float
+        power off
+        
+    """   
+    
+    assert len(onMatIn) == len(offMatIn), "both vectors should have the same size"
+    assert len(onMatIn) == len(maskedMat), "mask vector should have the same size as the others"
+    
+    onMat = onMatIn
+    offMat = offMatIn
+
+    unq = np.unique(maskedMat)
+    assert len(unq) == 2, "mask vector should be a binary"
+    assert np.all(unq == np.array([0,1])), "mask vector should be a binary"
+
+
+    onMat[maskedMat == 1] = np.nan
+    offMat[maskedMat == 1] = np.nan
+    maskedArrOkNsamps = maskedMat.shape[1] - maskedMat.sum(axis=1)
+    
+    #pdb.set_trace()
+    
+    tmpMat = numpy.divide(offMat, (onMat - offMat))
+
+    onoffparam = bn.nanmedian(tmpMat, axis=1)
+
+    powOn = np.sqrt(bn.nansum(onMat*onMat, axis=1))/maskedArrOkNsamps
+    powOff = np.sqrt(bn.nansum(offMat*offMat, axis=1))/maskedArrOkNsamps
+    
+    return onoffparam,powOn,powOff
+
 def calcSEFD(onArrayM, offArrayM, srcFlux, method=OnOffCalc.filterArray.defaultFilterType):
     """
     Calculation of SFED for signle frequency
@@ -104,14 +154,18 @@ def calcSEFD(onArrayM, offArrayM, srcFlux, method=OnOffCalc.filterArray.defaultF
     #numpy.sum(maskedBinsArray)
     #pdb.set_trace()
     
-    Larray = len(onArrayM)
-    
-    SEFDs = numpy.zeros(Larray,dtype=float)
-    powOn = numpy.zeros(Larray,dtype=float)
-    powOff = numpy.zeros(Larray,dtype=float)
-    
-    for iK in range(Larray):
-        SEFDs[iK],powOn[iK],powOff[iK] = calcOnOffParamVec(onArrayM[iK],offArrayM[iK],maskedBinsArray[iK])
+    mat_method = True
+    if mat_method:
+        SEFDs, powOn, powOff = calcOnOffParamMat(onArrayM, offArrayM, maskedBinsArray)
+    else:
+        Larray = len(onArrayM)
+        
+        SEFDs = numpy.zeros(Larray,dtype=float)
+        powOn = numpy.zeros(Larray,dtype=float)
+        powOff = numpy.zeros(Larray,dtype=float)
+        
+        for iK in range(Larray):
+            SEFDs[iK],powOn[iK],powOff[iK] = calcOnOffParamVec(onArrayM[iK],offArrayM[iK],maskedBinsArray[iK])
     #import pdb
     #pdb.set_trace()
     #normalization towars 0?
@@ -119,11 +173,14 @@ def calcSEFD(onArrayM, offArrayM, srcFlux, method=OnOffCalc.filterArray.defaultF
     powOn = powOn - mean_off
     powOff = powOff - mean_off
 
-    SEFD = srcFlux * numpy.nanmedian(SEFDs)
-    SEFD_var = srcFlux * numpy.nanstd(SEFDs)
+    SEFD = srcFlux * bn.nanmedian(SEFDs)
+    SEFD_var = srcFlux * bn.nanstd(SEFDs)
     
     #pdb.set_trace()
     
+    print (np.array(SEFDs))
+    print (np.array(powOn))
+    print (np.array(powOff))
     return SEFD,SEFD_var,powOn,powOff,maskedBinsArray,(srcFlux*SEFDs)
     
 

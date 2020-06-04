@@ -9,7 +9,7 @@ setuptools.setup(
     name='ATA-Utils-pythonLibs',
     version=version.__version__,
     #install_requires=['ephem','astropy','numpy','tftpy','pyuvdata<=1.4;python_version<"3"','pyuvdata;python_version>"3.5"'],
-    install_requires=['ephem','astropy','numpy','tftpy', 'pandas'],
+    install_requires=['ephem','astropy','numpy','tftpy', 'pandas', 'bottleneck'],
     description='python utility scripts for ATA (private repo)',
     license='MIT',
     packages=['ATATools','ATAobs','SNAPobs','SNAPobs.snap_dada','OnOffCalc','OnOffCalc.flux','OnOffCalc.yFactor','OnOffCalc.misc','OnOffCalc.filterArray'],
