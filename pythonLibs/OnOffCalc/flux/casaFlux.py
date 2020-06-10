@@ -12,7 +12,8 @@ def casaFlux(freqMHz,date):
     """
     a flux calculation of Cassiopea A
     
-    based on Baars et al 1977
+    based on Baars et al 1977:
+    https://ui.adsabs.harvard.edu/abs/1977A%26A....61...99B/abstract
 
     Parameters
     -------------

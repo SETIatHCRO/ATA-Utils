@@ -324,6 +324,37 @@ def get_pams(antlist):
 
     return retdict
 
+def get_eph_source(antlist):
+    """
+    get the ephemeris file name of where the antennas are pointing
+    returns dictionary e.g. {'1a':'casa'}
+    """
+
+    logger = logger_defaults.getModuleLogger(__name__)
+    ant_list = snap_array_helpers.input_to_list(antlist) 
+
+    antstr = snap_array_helpers.input_to_string(antlist) 
+    logger.info("getting sources: {}".format(antstr))
+
+    str_out,str_err = ata_remote.callObs(['ataasciistatus','-l','--header','Name,Source'])
+    if str_err:
+        logger.error("ataasciistatus got error: {}".format(str_err))
+
+    retdict = {}
+    lines = str_out.splitlines()
+    for line in lines:
+        regroups = re.search('ant(?P<ant>..)\s*(?P<name>.+)',line.decode());
+        if regroups:
+            ant = regroups.group('ant')
+            if ant in ant_list:
+                src = regroups.group('name')
+                #retdict['ant' + ant] = src
+                # keep consistency with getRADec and getAzEl
+                retdict[ant] = src
+
+    return retdict
+
+
 def get_dets(antlist):
     """
     get PAM detector values for given antennas
@@ -603,6 +634,41 @@ def set_freq(freq, ants):
     #cmd = ssh[("obs@tumulus", "atasetfocus %s %.2f" % (ants, freq))]
     #result = cmd()
     #return result
+
+def get_freq(ant_list):
+    """
+    gets the LO A and focus frequency in MHz
+    for every antenna
+    returns a dictionary with a list as values, i.e. {'1a': [1400,1400]}
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+    antstr = snap_array_helpers.input_to_string(ant_list)
+
+    # get LO A freq
+    stdout, stderr = ata_remote.callObs(["atagetskyfreq", "a"])
+    skyfreq = float(stdout.decode().strip())
+    retdict = {}
+    for ant in ant_list:
+        retdict[ant] = [skyfreq]
+
+    # get focus frequency
+    stdout, stderr = ata_remote.callObs(["atagetfocus", antstr])
+    for line in stdout.splitlines():
+        if line.startswith(b'ant'):
+            sln = line.decode().split()
+            ant = sln[0][3:]
+            try:
+                focusfreq = float(sln[1])
+            except ValueError as e:
+                focusfreq = "NaN"
+            finally:
+                retdict[ant].append(focusfreq)
+        else:
+            logger.info('not processed line: {}'.format(line))
+    return retdict
+
+
+
 
 if __name__== "__main__":
 

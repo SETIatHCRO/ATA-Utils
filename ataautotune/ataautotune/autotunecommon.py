@@ -38,7 +38,6 @@ def round_twentyfive(num):
 def round_five(num):
         return round(num*2.0)*0.5
 
-
 def getLimittedPower(ant,pol,detdict,upperdict,lowerdict):
     powergot = 10*numpy.log10(detdict[ant + pol])
 
@@ -91,6 +90,7 @@ def getPolynomials(alist):
         polydict[antpol] = numpy.poly1d([p5,p4,p3,p2,p1,p0]);
         lowerdict[antpol] = low;
         upperdict[antpol] = high;
+        logger.info('got {}{}:{}'.format(ant,pol,sn))
         if not isc:
           logger.warning("antenna's " + ant + pol + " pambox is marked for uncertain measurement")
     
