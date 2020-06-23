@@ -10,7 +10,7 @@ def init_snaps(snap_list):
     logger = logger_defaults.getModuleLogger(__name__)
     logger.info("Initialising snaps: %s" %snap_list)
     snaps = [casperfpga.CasperFpga(snap,
-        transport = casperfpga.TapcpTransport) for snap in snap_list]
+        transport = casperfpga.KatcpTransport) for snap in snap_list]
     return snaps
 
 
