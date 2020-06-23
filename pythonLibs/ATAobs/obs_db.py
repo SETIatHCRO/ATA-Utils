@@ -217,17 +217,25 @@ def initRecording(frequency,obstype,obsbackend,description,observer="unknown",se
 
     return myid
 
-def startRecording(obsid):
+def startRecording(obsid, mydate=None):
     """
-    updates recording start time of obsid recording to now()
+    Parameters:
+      obsid: (int)
+      mydate: (datetime.datetime)
+
+    updates recording start time of obsid recording to now() or mydate
     """
     logger= logger_defaults.getModuleLogger(__name__)
 
     mydb = ATASQL.connectObsDb()
     mycursor = mydb.cursor()
     
-    insertcmd = ("update recordings set tstart=now(), status='STARTED' where id=%(id)s")
-    dict1 = {'id': obsid}
+    if mydate:
+        insertcmd = ("update recordings set tstart=%(strttime)s, status='STARTED' where id=%(id)s")
+        dict1 = {'id': obsid, 'strttime': mydate.strftime('%Y-%m-%d %H:%M:%S')}
+    else:
+        insertcmd = ("update recordings set tstart=now(), status='STARTED' where id=%(id)s")
+        dict1 = {'id': obsid}
 
     logger.info("updating start time of the recording")
     mycursor.execute(insertcmd,dict1)
