@@ -178,9 +178,6 @@ def calcSEFD(onArrayM, offArrayM, srcFlux, method=OnOffCalc.filterArray.defaultF
     
     #pdb.set_trace()
     
-    print (np.array(SEFDs))
-    print (np.array(powOn))
-    print (np.array(powOff))
     return SEFD,SEFD_var,powOn,powOff,maskedBinsArray,(srcFlux*SEFDs)
     
 

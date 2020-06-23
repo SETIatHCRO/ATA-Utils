@@ -9,12 +9,13 @@ import time
 import os,sys
 import numpy as np
 import pandas as pd
+from pathlib import Path
 
 
 ATA_SHARE_DIR = snap_defaults.share_dir
 ATA_CFG = ata_helpers.parse_cfg(os.path.join(ATA_SHARE_DIR, 
     'ata.cfg'))
-ATA_BASE_OBS_DIR = ATA_CFG['RESULTSDIR']
+ATA_BASE_OBS_DIR = ATA_CFG['OBSDIR']
 
 #ATA_SNAP_TAB = np.loadtxt(os.path.join(ATA_SHARE_DIR, 'ata_snap.tab'),
 #        dtype=str)
@@ -27,6 +28,10 @@ MYCWD = os.path.dirname(os.path.realpath(__file__))
 TEMPLATE_HDR_PATH = os.path.join(MYCWD, snap_defaults.template_header)
 
 UTCFMT = ATA_CFG['UTCFMT']
+
+
+def write_obs_finished(obs_basedir):
+    Path(os.path.join(obs_basedir, "obs.finished")).touch()
 
 
 def get_utc_dada_now(t_sec):
@@ -58,9 +63,6 @@ def gather_ants(radec, azel, skyfreq, source):
     return obsDict
 
 
-
-def prep_obs(ant_list):
-    return
 
 def create_header_line(key, val):
     h = ""
@@ -96,7 +98,7 @@ def add_discone(obsParams):
     obsParams[snap_defaults.discone_name]['DEC'] = 0.0
     obsParams[snap_defaults.discone_name]['AZ'] = 0.0
     obsParams[snap_defaults.discone_name]['EL'] = 0.0
-    obsParams[snap_defaults.discone_name]['ANT'] = 'RFI'
+    obsParams[snap_defaults.discone_name]['ANT'] = snap_defaults.discone_name
     obsParams[snap_defaults.discone_name]['FOCUSFREQ'] = 0.0
 
 
@@ -153,6 +155,7 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False):
     s = snap_control.init_snaps(snap_names)
     for iant,ant in enumerate(ant_list):
         snaps[ant] = s[iant]
+    snap_control.stop_snaps(list(snaps.values()))
 
     obsParams = get_obs_params(ant_list)
 
@@ -221,7 +224,7 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False):
 
     headers = create_headers(obsParams)
     header_paths = []
-    for ant in obsParams:
+    for ant in sub_tab.ANT_name:
         header_paths.append(os.path.join(base_obs, ant,
             "obs.header"))
         write_dada_header(header_paths[-1], headers[ant])
@@ -257,14 +260,17 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False):
     time.sleep(0.5)
 
     snap_dada_control.destroy_buffers(keylist, buflogfile)
+    # This takes insanely long with katcp, I'm just going to ignore it
+    for isnap in snaps:
+        snaps[isnap].transport._timeout = 0.5
     snap_control.disconnect_snaps(list(snaps.values()))
     logger.info("Obs ended")
+    write_obs_finished(base_obs)
 
     return utc_str
 
 if __name__ == "__main__":
     logger = logger_defaults.getProgramLogger("TEST", loglevel=logging.INFO)
     ant_list = ["1a", "2b", "rfi"]
-    prep_obs(ant_list)
     tobs = 10 #seconds
     start_recording(ant_list, tobs, npolout=2, ics=False)
