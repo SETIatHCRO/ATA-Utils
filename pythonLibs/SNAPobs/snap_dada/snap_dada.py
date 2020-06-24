@@ -42,6 +42,11 @@ def get_utc_dada_now(t_sec):
 def rfc_to_cfreq(rfreq, ifc, srate):
     return rfreq - (srate*3./4 - ifc)
 
+def get_nearest_pow_2(n):
+    lgn = np.log2(n)
+    pos = np.ceil(lgn)
+    return np.int(pow(2, pos))
+
 
 def gather_ants(radec, azel, skyfreq, source):
     """
@@ -158,8 +163,10 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
         snaps[ant] = s[iant]
 
     # set accumulation length if provided
-    if acclen:
-        snap_control.set_acc_len(list(snaps.values()), acclen)
+    if not acclen:
+        acclen = snap_dada_defaults.acclen
+    snap_control.set_acc_len(list(snaps.values()), acclen)
+
     snap_control.stop_snaps(list(snaps.values()))
 
     obsParams = get_obs_params(ant_list)
@@ -193,14 +200,18 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
 
     #buflogfile = os.path.join(base_obs, "dadadb.log")
     buflogfile = os.path.join(ATA_CFG['LOGDIR'], "dadadb.log")
+    
+    #reduce size of buffers in case low time resolution
+    fact = get_nearest_pow_2(acclen//snap_dada_defaults.acclen)
 
     if ics:
         keylist = snap_dada_control.gen_key_list(len(snaps)+1)
-        bufsze_list = [snap_dada_defaults.bufsze]*(len(snaps)+1)
+        bufsze_list = [snap_dada_defaults.bufsze//fact]*(len(snaps)+1)
         snap_dada_control.create_buffers(keylist, bufsze_list, buflogfile)
     else:
         keylist = snap_dada_control.gen_key_list(len(snaps))
-        bufsze_list = [snap_dada_defaults.bufsze]*len(snaps)
+#        bufsze_list = [snap_dada_defaults.bufsze]*len(snaps)
+        bufsze_list = [snap_dada_defaults.bufsze//fact]*(len(snaps))
         snap_dada_control.create_buffers(keylist, bufsze_list, buflogfile)
 
     unix_time_start = time.time() + grace_period
