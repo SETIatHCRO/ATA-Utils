@@ -141,7 +141,8 @@ def check_if_valid_ants(ant_list):
                 %(ant_list, valid_ants))
 
 
-def start_recording(ant_list, tobs, npolout = 2, ics=False):
+def start_recording(ant_list, tobs, npolout = 2, ics=False, 
+        acclen=None):
     logger =  logger_defaults.getModuleLogger(__name__)
 
     check_if_valid_ants(ant_list)
@@ -155,6 +156,10 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False):
     s = snap_control.init_snaps(snap_names)
     for iant,ant in enumerate(ant_list):
         snaps[ant] = s[iant]
+
+    # set accumulation length if provided
+    if acclen:
+        snap_control.set_acc_len(list(snaps.values()), acclen)
     snap_control.stop_snaps(list(snaps.values()))
 
     obsParams = get_obs_params(ant_list)

@@ -21,6 +21,15 @@ def disconnect_snaps(snaps):
         snap.disconnect()
 
 
+def set_acc_len(snaps, acclen):
+    logger = logger_defaults.getModuleLogger(__name__)
+    hosts = [snap.host for snap in snaps]
+    logger.info("Setting accumulation of snaps: %s to "\
+            "a length of: %i" %(",".join(hosts), acclen))
+    for snap in snaps:
+        snap.write_int('timebase_sync_period', acclen * 4096 // 4) # convert to FPGA clocks (4096-point FFT, adc is operating as demux 4
+
+
 def arm_snaps(snaps):
     logger = logger_defaults.getModuleLogger(__name__)
     logger.info("Arming snaps...")
