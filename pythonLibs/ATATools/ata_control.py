@@ -17,6 +17,81 @@ import ast
 import concurrent.futures
 from . import ata_remote,ata_constants,snap_array_helpers,logger_defaults
 
+
+def getalarm():
+    """
+    function querrys the ata alarm state 
+    returns dictionary with fields: 
+    - trigger
+    - state
+    - user
+    - reason
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+    str_out,str_err = ata_remote.callObs(['atagetalarm','-l'])
+    if str_err:
+        logger.error("atagetalarm got error: {}".format(str_err))
+
+    retdict = {}
+    lines = str_out.splitlines()
+    for line in lines:
+        regroups = re.search('(?P<trig>\w*)/(?P<com>\w*)\s*:\s*(?P<user>\w*)\s*:\s*(?P<reason>.*)',line.decode());
+        if regroups:
+            retdict['trigger'] = regroups.group('trig')
+            retdict['state'] = regroups.group('com')
+            retdict['user'] = regroups.group('user')
+            retdict['reason'] = regroups.group('reason')
+        else:
+            logger.warning('unable to parse line: {}'.format(line))
+
+    return retdict
+
+def setalarm(reason, user):
+    """
+    function to set an ata alarm. be mindful about how it works
+    and don't use any automatic scripts to set it up. 
+    The alarm should be set to inform that you are starting working
+    on the array (started your session, not your observation), 
+    and should be unset after you finished your last observation
+    The alarm internally sends mails to various users so please avoid 
+    mail flood
+    """
+    return _setalarm(reason,user,'on')
+
+def unsetalarm(reason, user):
+    """
+    function to set an ata alarm. be mindful about how it works
+    and don't use any automatic scripts to set it up. 
+    The alarm should be set to inform that you are starting working
+    on the array (started your session, not your observation), 
+    and should be unset after you finished your last observation
+    The alarm internally sends mails to various users so please avoid 
+    mail flood
+    """
+    return _setalarm(reason,user,'off')
+
+def _setalarm(reason, user=None, alarmstate='off'):
+    """
+    This is an internal function. Should not be called by the user!
+    """
+    
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    if alarmstate not in ['on','off']:
+        logger.error("set/unset alarm error: bad state {}".format(alarmstate))
+        raise RuntimeError('bad alarm state')
+
+    if not user:
+        user = 'obsuser'
+    reason = "\'{0:s}\'".format(reason)
+
+    str_out,str_err = ata_remote.callObs(['atasetalarm','-c',alarmstate,'-u',user,'-m',reason])
+
+    if str_err:
+        logger.error("atagetalarm got error: {}".format(str_err))
+
+    return str_out
+
 def get_snap_dictionary(array_list):
     """
     returns the dictionary for snap0-3 antennas. This is suggested way of 
