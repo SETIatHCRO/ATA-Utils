@@ -222,6 +222,21 @@ def get_az_el(ant_list):
             logger.info('not processed line: {}'.format(line))
     return retdict
 
+def set_az_el(ant_list, az, el):
+    """
+    Set the antenna pointing to given Az-El
+    Az is in decimal degree 
+    Dec is in decimal degree 
+
+    Function does not confirm if the values are set correctly. 
+    Check it with get_az_el
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+    antstr = snap_array_helpers.input_to_string(ant_list) 
+    stdout, stderr = ata_remote.callObs(["atasetazel", "-w",antstr, "{0:f}".format(az), "{0:f}".format(el)])
+    if stderr:
+        logger.error(stderr)
+
 def get_eph_source(antlist):
     """
     get the ephemeris file name of where the antennas are pointing
@@ -252,11 +267,15 @@ def get_eph_source(antlist):
 
     return retdict
 
+#discouraged in the future code
 def make_and_track_ephems(source,antstr):
+    return make_and_track_source(source,antstr)
+
+def make_and_track_source(source,antstr):
     """
     set the antennas to track a source.
     source has to be a valid catalogue name
-    the function call returns only after the antennas are pointed.
+    the function call returns after the antennas are pointed.
     """
     logger = logger_defaults.getModuleLogger(__name__)
     result,errormsg = ata_remote.callObs(['ataephem',source])
@@ -268,6 +287,30 @@ def make_and_track_ephems(source,antstr):
 
     logger.info("Tracking source {} with {}".format(source,antstr))
     result,errormsg = ata_remote.callObs(['atatrackephem','-w',antstr,source+'.ephem'])
+    logger.info(result)
+    if errormsg:
+        logger.error(errormsg)
+
+    return result
+
+def make_and_track_ra_dec(ra,dec,antstr):
+    """
+    create ra-dec based ephemeris and track it with given antennas
+    Ra is in decimal hours [0,24)
+    Dec is in decimal degree [-90,90]
+    the function call returns after the antennas are pointed.
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+    ephem_name = "{0:.6f}-{1:.6f}".format(ra,dec)
+    result,errormsg = ata_remote.callObs(['ataephem','--radec','{0:f},{1:f}'.format(ra,dec)])
+    logger.info(result)
+    if errormsg:
+        logger.error(errormsg)
+
+    antstr = snap_array_helpers.input_to_string(antstr) 
+
+    logger.info("Tracking radec: {} {} with {}".format(ra,dec,antstr))
+    result,errormsg = ata_remote.callObs(['atatrackephem','-w',antstr,ephem_name+'.ephem'])
     logger.info(result)
     if errormsg:
         logger.error(errormsg)
