@@ -129,7 +129,7 @@ def getRaDec(ant_list):
 
 #backward compatibility. Don't use in new code
 def getAzEl(ant_list):
-    return get_az_el(ant_list):
+    return get_az_el(ant_list)
 
 def get_ant_pos(ant_list):
     """
@@ -588,6 +588,7 @@ def release_antennas(antlist, should_park=True):
         logger.info(stderr.rstrip())
         logger.info("Parked");
 
+    return
 
 #####
 #
