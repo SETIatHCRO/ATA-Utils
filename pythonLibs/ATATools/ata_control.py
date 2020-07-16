@@ -474,6 +474,60 @@ def get_sky_freq():
     stdout, stderr = ata_remote.callObs(["atagetskyfreq", "a"])
     return float(stdout.decode().strip())
 
+def set_freq_focus(freq, ants, callibrate=False):
+    """
+    sets the feed focus for given antennas. 
+    This call is done automatically when calling set_freq, 
+    however, when in piggyback mode, when set_freq can't be called
+    set_freq_focus should still be called to ensure that feed is 
+    moved to a desired position.
+    By default no feed position callibration is executed, but 
+    this behaviour can be changed
+    function return immediately, but it may take a bit more time 
+    to actually set the focus
+    """
+    ants = snap_array_helpers.input_to_string(ants) 
+
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    if callibrate:
+        stdout, stderr = ata_remote.callObs(['atasetfocus','--cal',ants,freqstr])
+    else:
+        stdout, stderr = ata_remote.callObs(['atasetfocus',ants,freqstr])
+    if stderr:
+        logger.error(errormsg)
+
+def get_freq_focus(ant_list):
+    """
+    get the antenna frequency focus (feed position).
+    This call is done automatically while calling get_freq
+    The intention of this function is to make sure that the focus
+    in piggyback mode is set correctly to the observation frequency.
+    Note that due to the step motor accuracy, the actual focus is not 
+    exactly equal to requested value.
+    e.g. requesting 2000 MHz may end up with {'1a': 2000.2057161454934}
+
+    returns dictionary with a value for each requested antenna (or NaN string)
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+    antstr = snap_array_helpers.input_to_string(ant_list)
+
+    retdict = {}
+    stdout, stderr = ata_remote.callObs(["atagetfocus", antstr])
+    for line in stdout.splitlines():
+        if line.startswith(b'ant'):
+            sln = line.decode().split()
+            ant = sln[0][3:]
+            try:
+                focusfreq = float(sln[1])
+            except ValueError as e:
+                focusfreq = "NaN"
+            finally:
+                retdict[ant] = focusfreq
+        else:
+            logger.info('not processed line: {}'.format(line))
+    return retdict
+
 def set_freq(freq, ants):
     """
     Sets both LO A frequency and antenna focus frequency to
