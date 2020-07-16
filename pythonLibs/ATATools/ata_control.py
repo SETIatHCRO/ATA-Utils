@@ -540,7 +540,7 @@ def get_freq(ant_list):
 #
 #####
 
-def test_all_antennas_in_str(lines, antlist):
+def _test_all_antennas_in_str(lines, antlist):
     """
     test if all antennas from antlist are in white space separated lines. returns difference between sets
     empty set means all antennas from the list were in the line
@@ -549,6 +549,45 @@ def test_all_antennas_in_str(lines, antlist):
     antsinline = set(lines.split())
     setdiff = aset - antsinline
     return list(setdiff)
+
+def list_antenna_group(ant_group):
+    """
+    list all antennas in the given group
+    returns antenna list
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+    logger.info("Querying group {}".format(ant_group))
+
+    stdout, stderr = ata_remote.callObs(['fxconf.rb','sals',ant_group])
+
+    rval = stdout.decode().split()
+    #very rough test 
+    if rval and rval[0] == '500:':
+        logger.error("ERROR while listing group {} : {}".format(ant_group,stdout.decode()))
+        raise RuntimeError("ERROR while listing group {} : {}".format(ant_group,stdout.decode()))
+
+    return rval
+
+def list_released_antennas():
+    """
+    list all antennas in the 'none' group
+    returns antenna list
+    """
+    return list_antenna_group('none');
+
+def list_reserved_antennas():
+    """
+    list all antennas in the 'bfa' group
+    returns antenna list
+    """
+    return list_antenna_group('bfa');
+
+def list_maintenance_antennas():
+    """
+    list all antennas in the 'maint' group
+    returns antenna list
+    """
+    return list_antenna_group('maint');
 
 def move_ant_group(antlist, from_group, to_group):
     """
@@ -562,7 +601,7 @@ def move_ant_group(antlist, from_group, to_group):
     logger.info("Reserving \"{}\" from {} to {}".format(snap_array_helpers.array_to_string(antlist), from_group, to_group))
 
     stdout, stderr = ata_remote.callObs(['fxconf.rb','sals',from_group])
-    notants = test_all_antennas_in_str(stdout.decode(),antlist)
+    notants = _test_all_antennas_in_str(stdout.decode(),antlist)
     if notants:
         logger.error("Antennas {} are not in group {}".format(snap_array_helpers.array_to_string(notants),from_group))
         raise RuntimeError("Failed to move antenna {} from {} to {} (not in from_group)".format(snap_array_helpers.array_to_string(notants), from_group, to_group))
@@ -570,7 +609,7 @@ def move_ant_group(antlist, from_group, to_group):
     stdout, stderr = ata_remote.callObs(['fxconf.rb','sagive', from_group, to_group] + antlist)
 
     stdout, stderr = ata_remote.callObs(['fxconf.rb','sals',to_group])
-    notants = test_all_antennas_in_str(stdout.decode(),antlist)
+    notants = _test_all_antennas_in_str(stdout.decode(),antlist)
     if notants:
         logger.error("Failed to move antennas {} to group {}, reversing sagive".format(snap_array_helpers.array_to_string(notants),to_group))
         stdout, stderr = ata_remote.callObs(['fxconf.rb','sagive',to_group,from_group] + antlist)
