@@ -487,13 +487,14 @@ def set_freq_focus(freq, ants, calibrate=False):
     to actually set the focus
     """
     ants = snap_array_helpers.input_to_string(ants) 
+    freqstr = '{0:.2f}'.format(freq)
 
     logger = logger_defaults.getModuleLogger(__name__)
 
     if calibrate:
-        stdout, stderr = ata_remote.callObs(['atasetfocus','--cal',ants,freq])
+        stdout, stderr = ata_remote.callObs(['atasetfocus','--cal',ants,freqstr])
     else:
-        stdout, stderr = ata_remote.callObs(['atasetfocus',ants,freq])
+        stdout, stderr = ata_remote.callObs(['atasetfocus',ants,freqstr])
     if stderr:
         logger.error(errormsg)
 
