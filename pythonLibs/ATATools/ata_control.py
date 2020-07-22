@@ -474,14 +474,14 @@ def get_sky_freq():
     stdout, stderr = ata_remote.callObs(["atagetskyfreq", "a"])
     return float(stdout.decode().strip())
 
-def set_freq_focus(freq, ants, callibrate=False):
+def set_freq_focus(freq, ants, calibrate=False):
     """
     sets the feed focus for given antennas. 
     This call is done automatically when calling set_freq, 
     however, when in piggyback mode, when set_freq can't be called
     set_freq_focus should still be called to ensure that feed is 
     moved to a desired position.
-    By default no feed position callibration is executed, but 
+    By default no feed position calibration is executed, but 
     this behaviour can be changed
     function return immediately, but it may take a bit more time 
     to actually set the focus
@@ -490,10 +490,10 @@ def set_freq_focus(freq, ants, callibrate=False):
 
     logger = logger_defaults.getModuleLogger(__name__)
 
-    if callibrate:
-        stdout, stderr = ata_remote.callObs(['atasetfocus','--cal',ants,freqstr])
+    if calibrate:
+        stdout, stderr = ata_remote.callObs(['atasetfocus','--cal',ants,freq])
     else:
-        stdout, stderr = ata_remote.callObs(['atasetfocus',ants,freqstr])
+        stdout, stderr = ata_remote.callObs(['atasetfocus',ants,freq])
     if stderr:
         logger.error(errormsg)
 
