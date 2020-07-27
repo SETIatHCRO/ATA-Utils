@@ -159,7 +159,7 @@ def get_source_ra_dec(source, deg=True):
     Get the J2000 RA / DEC of `source`. Return in decimal degrees (DEC) and hours (RA)
     by default, unless `deg`=False, in which case return in sexagesimal.
     """
-    stdout, stderr = ata_remote.callObs(["atacheck", source])
+    stdout, stderr = ata_remote.callObsIgnoreError(["atacheck", source])
     for line in stdout.decode().split("\n"):
         if "Found %s" % source in line:
             cols = line.split()
