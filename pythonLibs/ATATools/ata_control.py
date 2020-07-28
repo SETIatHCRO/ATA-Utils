@@ -910,6 +910,9 @@ def create_ephems(source, az_offset, el_offset):
     a script call to create 2 ephemeris files, one on target, one
     shifted by az_ and el_offset. Mainly used for ON-OFF observations
     together with point_ants function
+    
+    if multiple observers use that at a time, the call in ambigous and you may not point into desired source
+    safer option is to use point_ants2
     """
     #ssh = local["ssh"]
     #cmd = ssh[("obs@tumulus", "cd /home/obs/NSG;./create_ephems.rb %s %.2f %.2f" % (source, az_offset, el_offset))]
@@ -927,6 +930,8 @@ def point_ants(on_or_off, ants):
     if "off", the antennas are pointed away from the source by az_ and el_offset given to create_ephems 
 
     requires earlier call of create_ephems
+    if multiple observers use that at a time, the call in ambigous and you may not point into desired source
+    safer option is to use point_ants2
     """
     ants = snap_array_helpers.input_to_string(ants) 
 
@@ -939,6 +944,38 @@ def point_ants(on_or_off, ants):
     #result = cmd()
     return ast.literal_eval(result.decode())
 
+def create_ephems2_radec(ra,dec,az_offset,el_offset):
+    """
+    JSK: edited version of 'create_ephems2' to use 'radec_on' and off
+    ephem files
+    a script call to create 2 ephemeris files, one on target, one
+    shifted by az_ and el_offset. Mainly used for ON-OFF observations
+    together with point_ants2_radec function
+    """
+    result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./create_ephems_radec_source.rb {0:.6f} {1:.6f} {2:.2f} {3:.2f}'.format(ra,dec,az_offset,el_offset)])
+    if errormsg:
+        logger = logger_defaults.getModuleLogger(__name__)
+        logger.error(errormsg)
+    return ast.literal_eval(result.decode())
+
+
+def point_ants2_radec(ra,dec, on_or_off, ants):
+    """
+    JSK: edited version of 'point_ants' to use 'radec_on' and off
+    ephem files
+    on_or_off is a string, either "on" or "off". If "on", the antennas are pointed to the source
+    if "off", the antennas are pointed away from the source by az_ and el_offset given to create_ephems2_radec
+
+    requires earlier call of create_ephems
+    """
+    ants = snap_array_helpers.input_to_string(ants) 
+
+    result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./point_ants_onoff_radec_source.rb {0!s} {1!s} {2:.6f} {3:.6f}'.format(on_or_off, ants, ra, dec)]) 
+    if errormsg:
+        logger = logger_defaults.getModuleLogger(__name__)
+        logger.error(errormsg)
+    return ast.literal_eval(result.decode())
+
 
 def create_ephems2(source, az_offset, el_offset):
     """
@@ -948,9 +985,6 @@ def create_ephems2(source, az_offset, el_offset):
     shifted by az_ and el_offset. Mainly used for ON-OFF observations
     together with point_ants function
     """
-    #ssh = local["ssh"]
-    #cmd = ssh[("obs@tumulus", "cd /home/obs/NSG;./create_ephems.rb %s %.2f %.2f" % (source, az_offset, el_offset))]
-    #result = cmd()
     result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./create_ephems_source.rb {0!s} {1:.2f} {2:.2f}'.format(source,az_offset,el_offset)])
     if errormsg:
         logger = logger_defaults.getModuleLogger(__name__)
@@ -972,9 +1006,6 @@ def point_ants2(source, on_or_off, ants):
     if errormsg:
         logger = logger_defaults.getModuleLogger(__name__)
         logger.error(errormsg)
-    #ssh = local["ssh"]
-    #cmd = ssh[("obs@tumulus", "cd /home/obs/NSG;./point_ants_onoff.rb %s %s" % (on_or_off, ants))]
-    #result = cmd()
     return ast.literal_eval(result.decode())
 
 
