@@ -15,6 +15,7 @@ import sys
 from mysql.connector import Error  
 import ATASQL as atasql
 
+duplicate_entry_errno = 1062
 satval = 1.0
 polyOrd = 5 #up to 5
 polyTable = 5 # Must be 5
@@ -22,6 +23,7 @@ discardDiff = 0.3 #what [dB] values on front of the table should we discard (if 
 
 #attenuation = [0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,60]
 
+allowed_db = ["none","google"]
 keyXCW = 'x1'
 keyXNoise = 'x2'
 keyYCW = 'y1'
@@ -36,18 +38,6 @@ def genFileNamesTxt(pb_name, directory):
     name = os.path.join(directory,pb_name + 'y-a.txt')
     filenames[keyYCW] = name
     name = os.path.join(directory,pb_name + 'y-b.txt')
-    filenames[keyYNoise] = name
-    return filenames
-
-def genFileNamesBin(pb_name, directory):
-    filenames = dict()
-    name = os.path.join(directory,pb_name + 'x-a.bin')
-    filenames[keyXCW] = name
-    name = os.path.join(directory,pb_name + 'x-b.bin')
-    filenames[keyXNoise] = name
-    name = os.path.join(directory,pb_name + 'y-a.bin')
-    filenames[keyYCW] = name
-    name = os.path.join(directory,pb_name + 'y-b.bin')
     filenames[keyYNoise] = name
     return filenames
 
@@ -113,7 +103,7 @@ def checkData(data):
 
 def plotData(data):
     plt.plot(10*numpy.log10(data[keyXNoise][0,:]),data[keyXNoise ][1,:],10*numpy.log10(data[keyXCW][0,:]),data[keyXCW][1,:])
-    plt.title(pb_name + ' x')
+    plt.title(pb_name + ' x [raw data]')
     plt.legend(['noise', 'single_tone'])
     plt.xlabel('detector value [dB]')
     plt.ylabel('measured power [dBm]')
@@ -121,7 +111,7 @@ def plotData(data):
     
     plt.clf()
     plt.plot(10*numpy.log10(data[keyYNoise][0,:]),data[keyYNoise][1,:],10*numpy.log10(data[keyYCW][0,:]),data[keyYCW][1,:])
-    plt.title(pb_name + ' y')
+    plt.title(pb_name + ' y [raw data]')
     plt.legend(['noise', 'single_tone'])
     plt.xlabel('detector value [dB]')
     plt.ylabel('measured power [dBm]')
@@ -184,50 +174,70 @@ def makePolynomial(ar,doPolyTest=0):
 
     return pp,rest        
 
-def genDatabaseQuery(pb,data,polys,rest,isok):
+def genDatabaseQuery(pb,data,polys,rest,isok,database_name, update_flag):
     
     #check if db exist?
-    try:
-        dict1 = {'pbstr' : pb, 'pol': 'x', 'type': 'cw', 'ok': isok[0]}
-        for a in numpy.arange(21):
-            dict1['m' + str(a)] = data[keyXCW][1,a];
-            dict1['d' + str(a)] = data[keyXCW][0,a];
-        for a in numpy.arange(6):
-            dict1['p' + str(a)] = polys[keyXCW][-a-1];
-        dict1['vallow'] = rest[keyXCW][0]
-        dict1['valhigh'] = rest[keyXCW][1]
-            
-        dict2 = {'pbstr' : pb, 'pol': 'x', 'type': 'n', 'ok': isok[0]}
-        for a in numpy.arange(21):
-            dict2['m' + str(a)] = data[keyXNoise][1,a];
-            dict2['d' + str(a)] = data[keyXNoise][0,a];
-        for a in numpy.arange(6):
-            dict2['p' + str(a)] = polys[keyXNoise][-a-1];
-        dict2['vallow'] = rest[keyXNoise][0]
-        dict2['valhigh'] = rest[keyXNoise][1]
+    dict1 = {'pbstr' : pb, 'pol': 'x', 'type': 'cw', 'ok': isok[0]}
+    for a in numpy.arange(21):
+        dict1['m' + str(a)] = data[keyXCW][1,a];
+        dict1['d' + str(a)] = data[keyXCW][0,a];
+    for a in numpy.arange(6):
+        dict1['p' + str(a)] = polys[keyXCW][-a-1];
+    dict1['vallow'] = rest[keyXCW][0]
+    dict1['valhigh'] = rest[keyXCW][1]
         
-        dict3 = {'pbstr' : pb, 'pol': 'y', 'type': 'cw', 'ok': isok[1]}
-        for a in numpy.arange(21):
-            dict3['m' + str(a)] = data[keyYCW][1,a];
-            dict3['d' + str(a)] = data[keyYCW][0,a];
-        for a in numpy.arange(6):
-            dict3['p' + str(a)] = polys[keyYCW][-a-1];
-        dict3['vallow'] = rest[keyYCW][0]
-        dict3['valhigh'] = rest[keyYCW][1]
-            
-        dict4 = {'pbstr' : pb, 'pol': 'y', 'type': 'n', 'ok': isok[1]}
-        for a in numpy.arange(21):
-            dict4['m' + str(a)] = data[keyYNoise][1,a];
-            dict4['d' + str(a)] = data[keyYNoise][0,a];
-        for a in numpy.arange(6):
-            dict4['p' + str(a)] = polys[keyYNoise][-a-1];
-        dict4['vallow'] = rest[keyYNoise][0]
-        dict4['valhigh'] = rest[keyYNoise][1]
+    dict2 = {'pbstr' : pb, 'pol': 'x', 'type': 'n', 'ok': isok[0]}
+    for a in numpy.arange(21):
+        dict2['m' + str(a)] = data[keyXNoise][1,a];
+        dict2['d' + str(a)] = data[keyXNoise][0,a];
+    for a in numpy.arange(6):
+        dict2['p' + str(a)] = polys[keyXNoise][-a-1];
+    dict2['vallow'] = rest[keyXNoise][0]
+    dict2['valhigh'] = rest[keyXNoise][1]
+    
+    dict3 = {'pbstr' : pb, 'pol': 'y', 'type': 'cw', 'ok': isok[1]}
+    for a in numpy.arange(21):
+        dict3['m' + str(a)] = data[keyYCW][1,a];
+        dict3['d' + str(a)] = data[keyYCW][0,a];
+    for a in numpy.arange(6):
+        dict3['p' + str(a)] = polys[keyYCW][-a-1];
+    dict3['vallow'] = rest[keyYCW][0]
+    dict3['valhigh'] = rest[keyYCW][1]
         
-        db = atasql.connectDefaultRW();
-        cx = db.cursor()
-        
-        query = ("INSERT INTO pbmeas ( " 
+    dict4 = {'pbstr' : pb, 'pol': 'y', 'type': 'n', 'ok': isok[1]}
+    for a in numpy.arange(21):
+        dict4['m' + str(a)] = data[keyYNoise][1,a];
+        dict4['d' + str(a)] = data[keyYNoise][0,a];
+    for a in numpy.arange(6):
+        dict4['p' + str(a)] = polys[keyYNoise][-a-1];
+    dict4['vallow'] = rest[keyYNoise][0]
+    dict4['valhigh'] = rest[keyYNoise][1]
+    
+    if database_name != "none":
+        if database_name == "google":
+            db = atasql.connectDefaultRW();
+            cx = db.cursor()
+        else:
+            raise RuntimeError("unknown db")
+    
+        if update_flag:
+            query = ("UPDATE pbmeas set iscoherent=%(ok)s,"
+                " meas0=%(m0)s, meas1=%(m1)s, meas2=%(m2)s, meas3=%(m3)s,"
+                " meas4=%(m4)s, meas5=%(m5)s, meas6=%(m6)s, meas7=%(m7)s,"
+                " meas8=%(m8)s, meas9=%(m9)s, meas10=%(m10)s, meas11=%(m11)s,"
+                " meas12=%(m12)s, meas13=%(m13)s, meas14=%(m14)s, meas15=%(m15)s,"
+                " meas16=%(m16)s, meas17=%(m17)s, meas18=%(m18)s, meas19=%(m19)s,"
+                " meas20=%(m20)s, "
+                " det0=%(d0)s, det1=%(d1)s, det2=%(d2)s, det3=%(d3)s, det4=%(d4)s, "
+                " det5=%(d5)s, det6=%(d6)s, det7=%(d7)s, det8=%(d8)s, det9=%(d9)s, "
+                " det10=%(d10)s, det11=%(d11)s, det12=%(d12)s, det13=%(d13)s, det14=%(d14)s, "
+                " det15=%(d15)s, det16=%(d16)s, det17=%(d17)s, det18=%(d18)s, det19=%(d19)s, "
+                " det20=%(d20)s, " 
+                " lowdet=%(vallow)s, highdet= %(valhigh)s, "
+                " p0=%(p0)s, p1=%(p1)s, p2=%(p2)s, p3=%(p3)s, p4=%(p4)s, p5=%(p5)s "
+                " where pax_box_sn=%(pbstr)s and pol=%(pol)s and type=%(type)s ;")
+        else:
+            query = ("INSERT INTO pbmeas ( " 
                 "pax_box_sn, pol, type, iscoherent,"
                 " meas0, meas1, meas2, meas3, meas4, meas5, meas6, meas7, "
                 " meas8, meas9, meas10, meas11, meas12, meas13, meas14, "
@@ -246,45 +256,54 @@ def genDatabaseQuery(pb,data,polys,rest,isok):
                 " %(vallow)s, %(valhigh)s, "
                 " %(p0)s, %(p1)s, %(p2)s, %(p3)s, %(p4)s, %(p5)s ); "
                 )
-        cx.execute(query,dict1)
-        db.commit()
-        cx.execute(query,dict2)
-        db.commit()
-        cx.execute(query,dict3)
-        db.commit()
-        cx.execute(query,dict4)
-        db.commit()
-        cx.close()
-        db.close()
-    except Error as e:
-        print("Error reading data from MySQL table", e)
-        print(cx._executed)
-        print(query)
 
-    
+        try:
+            cx.execute(query,dict1)
+            db.commit()
+            cx.execute(query,dict2)
+            db.commit()
+            cx.execute(query,dict3)
+            db.commit()
+            cx.execute(query,dict4)
+            db.commit()
+            cx.close()
+            db.close()
+        except Error as e:
+            print("Error reading data from MySQL table", e)
+            print(cx._executed)
+            print(query)
+            if e.errno == duplicate_entry_errno:
+                print("try running with -u flag")
+    else:
+        #none db, so only printing
+        outstr="{0[pbstr]}{0[pol]}({0[type]}): {0[p0]} {0[p1]} {0[p2]} {0[p3]} {0[p4]} {0[p5]} max/min: {0[valhigh]}/{0[vallow]}"
+        #import pdb
+        #pdb.set_trace()
+        print(outstr.format(dict1))
+        print(outstr.format(dict2))
+        print(outstr.format(dict3))
+        print(outstr.format(dict4))
 
 if __name__ == '__main__':
     
-    usage = "Usage %prog [options] PB_NUMBER"
+    usage = ("Usage %prog [options] PB_NUMBER \n"
+             "\n"
+             "The software requires that files PB_NUMBER{xy}-{ab}.txt\n"
+             "are present in measurement directory. '-a.txt' is for CW, whereas\n"
+             "'-b.txt' for noise measurements")
     parser = OptionParser(usage=usage)    
-    parser.add_option("-f", "--file",
-            action="store_true", dest="file", default=True,
-            help="fetch data from file")
-    parser.add_option("-s", "--sql",
-            action="store_false", dest="file",
-            help="Fetch data from SQL and update polynomial NOT IMPLEMENTED")
-    parser.add_option("-t", "--text",
-            action="store_true", dest="text", default=True,
-            help="process text file [default]. File names PB_NUMBER{xy}-{ab}.txt. Only with -f")
-    parser.add_option("-b", "--binary",
-            action="store_false", dest="text",
-            help="Only with -f. NOT IMPLEMENTED")
+    parser.add_option("-u", "--update",
+            action="store_true", dest="update",
+            help="update database if row exist. By default without this flag the program will crash if data exist in DB")
     parser.add_option("-d","--dir", action="store", type="str",
             dest="dir", default="meas",
             help="directory containing data")
     parser.add_option("-v", "--verbose",
             action="store_true", dest="verbose", default=False,
             help="more information and enables plots")
+    parser.add_option("--db",
+            action="store", dest="db_string", default="google",
+            help="specify which db to populate [" + "|".join(allowed_db) + "]. Selecting none prints values to stdout")
 
     (options, args) = parser.parse_args()
 
@@ -292,32 +311,18 @@ if __name__ == '__main__':
         parser.print_help()
         sys.exit(1)
 
-    if not options.text:
-        print("binary not supported yet")
+    if options.db_string not in allowed_db:
+        print("unrecognized DB. use [" + "|".join(allowed_db) + "]")
         sys.exit(1)
-        
-    if not options.file:
-        print("fetching from sql not supported yet")
-        sys.exit(1)
-
 
     pb_name = args[0];
     
-    if options.file:
-        if options.text:
-            fnames = genFileNamesTxt(pb_name,options.dir)
-            keys = fnames.keys()
+    fnames = genFileNamesTxt(pb_name,options.dir)
+    keys = fnames.keys()
     
-            data = dict()
-            for k in keys:
-                data[k] = getDataTxt(fnames[k])
-        else:
-            fnames = genFileNamesBin(pb_name,options.dir)
-            keys = fnames.keys()
-    
-            data = dict()
-            #for k in keys:
-            #   data[k] = getDataBin(fnames[k])
+    data = dict()
+    for k in keys:
+        data[k] = getDataTxt(fnames[k])
 
     keys = data.keys()
     
@@ -333,4 +338,4 @@ if __name__ == '__main__':
             print(k)
         polys[k],rest[k] = makePolynomial(data[k],options.verbose)
         
-    genDatabaseQuery(pb_name,data,polys,rest,isok)
+    genDatabaseQuery(pb_name,data,polys,rest,isok,options.db_string,options.update)
