@@ -18,6 +18,7 @@ import logging
 import re
 import ATASQL
 from mysql.connector import Error 
+from ah import cmaps
 
 #the minimal attenuator value that can be set
 minattenuator = 0.0
@@ -55,6 +56,23 @@ def getLimittedPower(ant,pol,detdict,upperdict,lowerdict):
 
     return powergot,wassat
 
+def getPBNames(alist):
+    """
+    return mapping dictionaries: antenna -> pax box name and reverse: pax box name -> antenna
+    """
+    dictforward = dict()
+    dictreverse = dict()
+    for cant in alist:
+        retcode, results = cmaps.get_component(key=cant)
+        if retcode != 0:
+            raise RuntimeError ("bad component check for {}".format(cant))
+        pbname = results['paxbox']['name']
+        dictforward[cant] = pbname
+        dictreverse[pbname] = cant
+
+    return dictforward,dictreverse
+
+
 def getPolynomials(alist):
     """
     Function return 
@@ -70,21 +88,30 @@ def getPolynomials(alist):
     mydb = ATASQL.connectATAROnly()
     cursor = mydb.cursor()
     
-    queryPart = ("select feed_parts.ant,pbmeas.pax_box_sn,pbmeas.pol,pbmeas.iscoherent,pbmeas.lowdet,pbmeas.highdet,pbmeas.p0,pbmeas.p1,pbmeas.p2,pbmeas.p3,pbmeas.p4,pbmeas.p5 "
-                 "from (pbmeas inner join feed_parts on pbmeas.pax_box_sn = feed_parts.pax_box_sn) where pbmeas.type='n' "
-                 "and feed_parts.ant in (%s);")
+    dictforward,dictreverse = getPBNames(alist)
+
+    #queryPart = ("select feed_parts.ant,pbmeas.pax_box_sn,pbmeas.pol,pbmeas.iscoherent,pbmeas.lowdet,pbmeas.highdet,pbmeas.p0,pbmeas.p1,pbmeas.p2,pbmeas.p3,pbmeas.p4,pbmeas.p5 "
+    #             "from (pbmeas inner join feed_parts on pbmeas.pax_box_sn = feed_parts.pax_box_sn) where pbmeas.type='n' "
+    #             "and feed_parts.ant in (%s);")
+    queryPart = ("select pax_box_sn,pol,iscoherent,lowdet,highdet,p0,p1,p2,p3,p4,p5 "
+                 "from pbmeas where type='n' and pax_box_sn in (%s);")
+
     
-    in_p=', '.join(['%s'] * len(alist)) 
+    #in_p=', '.join(['%s'] * len(alist)) 
+    in_p=', '.join(['%s'] * len(dictreverse.keys())) 
     #in_p=', '.join(map(lambda x: '%s', alist))
     query = queryPart % in_p;
-    cursor.execute(query, alist)
+    #cursor.execute(query, alist)
+    cursor.execute(query, list(dictreverse.keys()))
     
     #getting the values from the database. Only measured antennas would be returned here
     antennasgot = {}
     polydict={}
     lowerdict = {}
     upperdict = {}
-    for (ant,sn,pol,isc,low,high,p0,p1,p2,p3,p4,p5) in cursor:
+    #for (ant,sn,pol,isc,low,high,p0,p1,p2,p3,p4,p5) in cursor:
+    for (sn,pol,isc,low,high,p0,p1,p2,p3,p4,p5) in cursor:
+        ant = dictreverse[sn]
         antennasgot[ant] = 1
         antpol = ant + pol;
         polydict[antpol] = numpy.poly1d([p5,p4,p3,p2,p1,p0]);
