@@ -160,13 +160,19 @@ def get_source_ra_dec(source, deg=True):
     by default, unless `deg`=False, in which case return in sexagesimal.
     """
     stdout, stderr = ata_remote.callObsIgnoreError(["atacheck", source])
-    for line in stdout.decode().split("\n"):
-        if "Found %s" % source in line:
+    ra = None
+    for lineu in stdout.decode().split("\n"):
+        line = lineu.lower()
+        if "found {}".format(source).lower() in line:
             cols = line.split()
             ra  = float(cols[-1].split(',')[-2])
             dec = float(cols[-1].split(',')[-1])
-        elif "{}, was not found".format(source) in line:
+        elif "{}, was not found".format(source).lower() in line:
             raise RuntimeError("unknown source {}".format(source))
+        elif "RA, Dec".lower() in line and not ra:
+            nums = line.split("=")[1].strip()
+            ra = float(nums.split(',')[0])
+            dec = float(nums.split(',')[1][:-1])
     if deg:
         return ra, dec
     else:
