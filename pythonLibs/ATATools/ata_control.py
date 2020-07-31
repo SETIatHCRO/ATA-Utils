@@ -165,6 +165,8 @@ def get_source_ra_dec(source, deg=True):
             cols = line.split()
             ra  = float(cols[-1].split(',')[-2])
             dec = float(cols[-1].split(',')[-1])
+        elif "{}, was not found".format(source) in line:
+            raise RuntimeError("unknown source {}".format(source))
     if deg:
         return ra, dec
     else:
