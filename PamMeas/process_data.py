@@ -23,7 +23,7 @@ discardDiff = 0.3 #what [dB] values on front of the table should we discard (if 
 
 #attenuation = [0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,60]
 
-allowed_db = ["none","google"]
+allowed_db = ["none","google","ata"]
 keyXCW = 'x1'
 keyXNoise = 'x2'
 keyYCW = 'y1'
@@ -217,6 +217,9 @@ def genDatabaseQuery(pb,data,polys,rest,isok,database_name, update_flag):
         if database_name == "google":
             db = atasql.connectDefaultRW();
             cx = db.cursor()
+        elif database_name == "ata":
+            db = atasql.connectATARW();
+            cx = db.cursor()
         else:
             raise RuntimeError("unknown db")
     
@@ -302,7 +305,7 @@ if __name__ == '__main__':
             action="store_true", dest="verbose", default=False,
             help="more information and enables plots")
     parser.add_option("--db",
-            action="store", dest="db_string", default="google",
+            action="store", dest="db_string", default="ata",
             help="specify which db to populate [" + "|".join(allowed_db) + "]. Selecting none prints values to stdout")
 
     (options, args) = parser.parse_args()
