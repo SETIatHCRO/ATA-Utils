@@ -17,7 +17,7 @@ RF_SWITCH_USER = 'sonata'
 ATTEN_HOST = "if-switch"
 ATTEN_HOST_IP = "if-switch"
 ATTEN_USER = 'sonata'
-OBS_HOST = 'tumulus'
+OBS_HOST = 'control'
 OBS_USER = 'obs'
 
 def callProg(myargs):

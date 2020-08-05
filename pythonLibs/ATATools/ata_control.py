@@ -582,7 +582,7 @@ def get_freq(ant_list):
     for line in stdout.splitlines():
         if line.startswith(b'ant'):
             sln = line.decode().split()
-            ant = sln[0][3:]
+            ant = sln[0][3:5]
             try:
                 focusfreq = float(sln[1])
             except ValueError as e:
