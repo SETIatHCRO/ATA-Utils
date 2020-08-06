@@ -295,9 +295,23 @@ def genDatabaseQuery(pb,data,polys,rest,isok,database_name, update_flag):
                 print("try running with -u flag")
     else:
         #none db, so only printing
-        outstr="{0[pbstr]}{0[pol]}({0[type]}): {0[p0]} {0[p1]} {0[p2]} {0[p3]} {0[p4]} {0[p5]} max/min: {0[valhigh]}/{0[vallow]}"
+        outstr=("{0[pbstr]}{0[pol]}({0[type]}): " 
+                "{0[p5]:.3e} x^5 {0[p4]:+.3e} x^4 {0[p3]:+.3e} x^3 {0[p2]:+.3e} x^2 {0[p1]:+.3e} x {0[p0]:+.3e}"
+                " det [db] max/min: {0[valhigh]:.2f}/{0[vallow]:.2f} pow [dbm] max/min: {0[boundhigh]:.2f}/{0[boundlow]:.2f}")
         #import pdb
         #pdb.set_trace()
+        tmppol = numpy.poly1d([dict1['p5'],dict1['p4'],dict1['p3'],dict1['p2'],dict1['p1'],dict1['p0']])
+        dict1['boundhigh'] = tmppol(dict1['valhigh'])
+        dict1['boundlow'] = tmppol(dict1['vallow'])
+        tmppol = numpy.poly1d([dict2['p5'],dict2['p4'],dict2['p3'],dict2['p2'],dict2['p1'],dict2['p0']])
+        dict2['boundhigh'] = tmppol(dict2['valhigh'])
+        dict2['boundlow'] = tmppol(dict2['vallow'])
+        tmppol = numpy.poly1d([dict3['p5'],dict3['p4'],dict3['p3'],dict3['p2'],dict3['p1'],dict3['p0']])
+        dict3['boundhigh'] = tmppol(dict3['valhigh'])
+        dict3['boundlow'] = tmppol(dict3['vallow'])
+        tmppol = numpy.poly1d([dict4['p5'],dict4['p4'],dict4['p3'],dict4['p2'],dict4['p1'],dict4['p0']])
+        dict4['boundhigh'] = tmppol(dict4['valhigh'])
+        dict4['boundlow'] = tmppol(dict4['vallow'])
         print(outstr.format(dict1))
         print(outstr.format(dict2))
         print(outstr.format(dict3))
