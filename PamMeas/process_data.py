@@ -227,7 +227,7 @@ def genDatabaseQuery(pb,data,polys,rest,isok,database_name, update_flag):
     #    dict4['p' + str(a)] = polys[keyYNoise][-a-1];
     #dict4['vallow'] = rest[keyYNoise][0]
     #dict4['valhigh'] = rest[keyYNoise][1]
-    dict2 = makeDictionary(pb,data[keyYNoise],polys[keyYNoise],rest[keyYNoise],isok[1],'y','n')
+    dict4 = makeDictionary(pb,data[keyYNoise],polys[keyYNoise],rest[keyYNoise],isok[1],'y','n')
     
     if database_name != "none":
         if database_name == "google":
