@@ -669,7 +669,9 @@ def move_ant_group(antlist, from_group, to_group):
         logger.error("Antennas {} are not in group {}".format(snap_array_helpers.array_to_string(notants),from_group))
         raise RuntimeError("Failed to move antenna {} from {} to {} (not in from_group)".format(snap_array_helpers.array_to_string(notants), from_group, to_group))
 
-    stdout, stderr = ata_remote.callObs(['fxconf.rb','sagive', from_group, to_group] + antlist)
+    #stdout, stderr = ata_remote.callObs(['fxconf.rb','sagive', from_group, to_group] + antlist)
+    stdout, sterr =  ata_remote.callObs(['fxconf.rb','sagive', from_group, 
+        to_group, snap_array_helpers.array_to_string(antlist)])
 
     stdout, stderr = ata_remote.callObs(['fxconf.rb','sals',to_group])
     notants = _test_all_antennas_in_str(stdout.decode(),antlist)
@@ -726,14 +728,18 @@ def release_antennas(antlist, should_park=True):
     move_ant_group(antlist, "bfa", "none")
 
     if(should_park):
-        logger = logger_defaults.getModuleLogger(__name__)
-        logger.info("Parking ants");
-        stdout, stderr = ata_remote.callObs(["park.csh", ','.join(antlist)])
-        logger.info(stdout.rstrip())
-        logger.info(stderr.rstrip())
-        logger.info("Parked");
+        park_antennas(antlist)
 
     return
+
+def park_antennas(antlist):
+    logger = logger_defaults.getModuleLogger(__name__)
+    logger.info("Parking ants");
+    stdout, stderr = ata_remote.callObs(["park.csh", ','.join(antlist)])
+    logger.info(stdout.rstrip())
+    logger.info(stderr.rstrip())
+    logger.info("Parked");
+
 
 #####
 #
