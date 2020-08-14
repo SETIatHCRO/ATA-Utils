@@ -174,44 +174,60 @@ def makePolynomial(ar,doPolyTest=0):
 
     return pp,rest        
 
+def makeDictionary(pb,data,polys,rest,isok,pol,sigtype):
+    retdict = {'pbstr' : pb, 'pol': pol, 'type': sigtype, 'ok': bool(isok)}
+    for a in numpy.arange(21):
+        retdict['m' + str(a)] = float(data[1,a]);
+        retdict['d' + str(a)] = float(data[0,a]);
+    for a in numpy.arange(6):
+        retdict['p' + str(a)] = float(polys[-a-1]);
+    retdict['vallow'] = float(rest[0])
+    retdict['valhigh'] = float(rest[1])
+    return retdict
+
 def genDatabaseQuery(pb,data,polys,rest,isok,database_name, update_flag):
     
     #check if db exist?
-    dict1 = {'pbstr' : pb, 'pol': 'x', 'type': 'cw', 'ok': isok[0]}
-    for a in numpy.arange(21):
-        dict1['m' + str(a)] = data[keyXCW][1,a];
-        dict1['d' + str(a)] = data[keyXCW][0,a];
-    for a in numpy.arange(6):
-        dict1['p' + str(a)] = polys[keyXCW][-a-1];
-    dict1['vallow'] = rest[keyXCW][0]
-    dict1['valhigh'] = rest[keyXCW][1]
-        
-    dict2 = {'pbstr' : pb, 'pol': 'x', 'type': 'n', 'ok': isok[0]}
-    for a in numpy.arange(21):
-        dict2['m' + str(a)] = data[keyXNoise][1,a];
-        dict2['d' + str(a)] = data[keyXNoise][0,a];
-    for a in numpy.arange(6):
-        dict2['p' + str(a)] = polys[keyXNoise][-a-1];
-    dict2['vallow'] = rest[keyXNoise][0]
-    dict2['valhigh'] = rest[keyXNoise][1]
+    #dict1 = {'pbstr' : pb, 'pol': 'x', 'type': 'cw', 'ok': bool(isok[0])}
+    #for a in numpy.arange(21):
+    #    dict1['m' + str(a)] = data[keyXCW][1,a];
+    #    dict1['d' + str(a)] = data[keyXCW][0,a];
+    #for a in numpy.arange(6):
+    #    dict1['p' + str(a)] = polys[keyXCW][-a-1];
+    #dict1['vallow'] = rest[keyXCW][0]
+    #dict1['valhigh'] = rest[keyXCW][1]
+
+    dict1 = makeDictionary(pb,data[keyXCW],polys[keyXCW],rest[keyXCW],isok[0],'x','cw')
+
+    #dict2 = {'pbstr' : pb, 'pol': 'x', 'type': 'n', 'ok': bool(isok[0])}
+    #for a in numpy.arange(21):
+    #    dict2['m' + str(a)] = data[keyXNoise][1,a];
+    #    dict2['d' + str(a)] = data[keyXNoise][0,a];
+    #for a in numpy.arange(6):
+    #    dict2['p' + str(a)] = polys[keyXNoise][-a-1];
+    #dict2['vallow'] = rest[keyXNoise][0]
+    #dict2['valhigh'] = rest[keyXNoise][1]
+    dict2 = makeDictionary(pb,data[keyXNoise],polys[keyXNoise],rest[keyXNoise],isok[0],'x','n')
     
-    dict3 = {'pbstr' : pb, 'pol': 'y', 'type': 'cw', 'ok': isok[1]}
-    for a in numpy.arange(21):
-        dict3['m' + str(a)] = data[keyYCW][1,a];
-        dict3['d' + str(a)] = data[keyYCW][0,a];
-    for a in numpy.arange(6):
-        dict3['p' + str(a)] = polys[keyYCW][-a-1];
-    dict3['vallow'] = rest[keyYCW][0]
-    dict3['valhigh'] = rest[keyYCW][1]
+    #dict3 = {'pbstr' : pb, 'pol': 'y', 'type': 'cw', 'ok': bool(isok[1])}
+    #for a in numpy.arange(21):
+    #    dict3['m' + str(a)] = data[keyYCW][1,a];
+    #    dict3['d' + str(a)] = data[keyYCW][0,a];
+    #for a in numpy.arange(6):
+    #    dict3['p' + str(a)] = polys[keyYCW][-a-1];
+    #dict3['vallow'] = rest[keyYCW][0]
+    #dict3['valhigh'] = rest[keyYCW][1]
+    dict3 = makeDictionary(pb,data[keyYCW],polys[keyYCW],rest[keyYCW],isok[1],'y','cw')
         
-    dict4 = {'pbstr' : pb, 'pol': 'y', 'type': 'n', 'ok': isok[1]}
-    for a in numpy.arange(21):
-        dict4['m' + str(a)] = data[keyYNoise][1,a];
-        dict4['d' + str(a)] = data[keyYNoise][0,a];
-    for a in numpy.arange(6):
-        dict4['p' + str(a)] = polys[keyYNoise][-a-1];
-    dict4['vallow'] = rest[keyYNoise][0]
-    dict4['valhigh'] = rest[keyYNoise][1]
+    #dict4 = {'pbstr' : pb, 'pol': 'y', 'type': 'n', 'ok': bool(isok[1])}
+    #for a in numpy.arange(21):
+    #    dict4['m' + str(a)] = data[keyYNoise][1,a];
+    #    dict4['d' + str(a)] = data[keyYNoise][0,a];
+    #for a in numpy.arange(6):
+    #    dict4['p' + str(a)] = polys[keyYNoise][-a-1];
+    #dict4['vallow'] = rest[keyYNoise][0]
+    #dict4['valhigh'] = rest[keyYNoise][1]
+    dict4 = makeDictionary(pb,data[keyYNoise],polys[keyYNoise],rest[keyYNoise],isok[1],'y','n')
     
     if database_name != "none":
         if database_name == "google":
@@ -279,9 +295,23 @@ def genDatabaseQuery(pb,data,polys,rest,isok,database_name, update_flag):
                 print("try running with -u flag")
     else:
         #none db, so only printing
-        outstr="{0[pbstr]}{0[pol]}({0[type]}): {0[p0]} {0[p1]} {0[p2]} {0[p3]} {0[p4]} {0[p5]} max/min: {0[valhigh]}/{0[vallow]}"
+        outstr=("{0[pbstr]}{0[pol]}({0[type]}): " 
+                "{0[p5]:.3e} x^5 {0[p4]:+.3e} x^4 {0[p3]:+.3e} x^3 {0[p2]:+.3e} x^2 {0[p1]:+.3e} x {0[p0]:+.3e}"
+                " det [db] max/min: {0[valhigh]:.2f}/{0[vallow]:.2f} pow [dbm] max/min: {0[boundhigh]:.2f}/{0[boundlow]:.2f}")
         #import pdb
         #pdb.set_trace()
+        tmppol = numpy.poly1d([dict1['p5'],dict1['p4'],dict1['p3'],dict1['p2'],dict1['p1'],dict1['p0']])
+        dict1['boundhigh'] = tmppol(dict1['valhigh'])
+        dict1['boundlow'] = tmppol(dict1['vallow'])
+        tmppol = numpy.poly1d([dict2['p5'],dict2['p4'],dict2['p3'],dict2['p2'],dict2['p1'],dict2['p0']])
+        dict2['boundhigh'] = tmppol(dict2['valhigh'])
+        dict2['boundlow'] = tmppol(dict2['vallow'])
+        tmppol = numpy.poly1d([dict3['p5'],dict3['p4'],dict3['p3'],dict3['p2'],dict3['p1'],dict3['p0']])
+        dict3['boundhigh'] = tmppol(dict3['valhigh'])
+        dict3['boundlow'] = tmppol(dict3['vallow'])
+        tmppol = numpy.poly1d([dict4['p5'],dict4['p4'],dict4['p3'],dict4['p2'],dict4['p1'],dict4['p0']])
+        dict4['boundhigh'] = tmppol(dict4['valhigh'])
+        dict4['boundlow'] = tmppol(dict4['vallow'])
         print(outstr.format(dict1))
         print(outstr.format(dict2))
         print(outstr.format(dict3))
