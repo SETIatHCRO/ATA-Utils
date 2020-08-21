@@ -27,6 +27,6 @@ for (( i=1;i<=N;i+=NARGS)); do
     else
         flag=""
     fi
-    echo "ata_dbsigproc -k ${key} -s -p ${npol} -D ${basedir} ${flag} &>> ${log}"
+    echo "ata_dbsigproc -v -k ${key} -s -p ${npol} -D ${basedir} ${flag} &>> ${log}"
     ata_dbsigproc -k ${key} -s -p ${npol} -D ${basedir} ${flag} &>> ${log} &
 done

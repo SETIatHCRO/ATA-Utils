@@ -202,7 +202,7 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
     buflogfile = os.path.join(ATA_CFG['LOGDIR'], "dadadb.log")
     
     #reduce size of buffers in case low time resolution
-    fact = get_nearest_pow_2(acclen//snap_dada_defaults.acclen)
+    fact = max(1, get_nearest_pow_2(acclen//snap_dada_defaults.acclen))
 
     if ics:
         keylist = snap_dada_control.gen_key_list(len(snaps)+1)
@@ -273,7 +273,7 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
 
     logger.info("Stopping obs")
     snap_control.stop_snaps(list(snaps.values()))
-    time.sleep(0.5)
+    time.sleep(1)
 
     snap_dada_control.destroy_buffers(keylist, buflogfile)
     # This takes insanely long with katcp, I'm just going to ignore it
