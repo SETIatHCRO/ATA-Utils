@@ -17,7 +17,5 @@ RECEIVER     FRANKLIN
 RESOLUTION   4096                   
 STATE        Intensity
 TELESCOPE    ATA
-TSCRUNCH     1                      
 TRANSFER_SIZE 256000000            
 FILE_NUMBER  0                      
-BYTES_PER_SECOND 31250000

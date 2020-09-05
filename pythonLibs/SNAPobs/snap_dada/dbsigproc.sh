@@ -14,10 +14,12 @@ done
 shift $s
 
 
-NARGS=2
+NARGS=3
 N=$#
 for (( i=1;i<=N;i+=NARGS)); do 
     let ii=$i
+    core=${!ii}
+    let ii=$ii+1
     key=${!ii}
     let ii=$ii+1
     log=${!ii}
@@ -27,6 +29,6 @@ for (( i=1;i<=N;i+=NARGS)); do
     else
         flag=""
     fi
-    echo "ata_dbsigproc -v -k ${key} -s -p ${npol} -D ${basedir} ${flag} &>> ${log}"
-    ata_dbsigproc -k ${key} -s -p ${npol} -D ${basedir} ${flag} &>> ${log} &
+    echo "numactl -C ${core} ata_dbsigproc -v -k ${key} -s -p ${npol} -D ${basedir} ${flag} &>> ${log}"
+    numactl -C ${core} ata_dbsigproc -k ${key} -s -p ${npol} -D ${basedir} ${flag} &>> ${log} &
 done

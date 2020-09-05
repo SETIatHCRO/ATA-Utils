@@ -39,8 +39,11 @@ def get_utc_dada_now(t_sec):
     return (datetime.datetime.now()+t).strftime(UTCFMT)
 
 
+#def rfc_to_cfreq(rfreq, ifc, srate):
+#    return rfreq - (srate*3./4 - ifc)
+
 def rfc_to_cfreq(rfreq, ifc, srate):
-    return rfreq - (srate*3./4 - ifc)
+    return rfreq - (srate/2. - ifc)
 
 def get_nearest_pow_2(n):
     lgn = np.log2(n)
@@ -147,7 +150,7 @@ def check_if_valid_ants(ant_list):
 
 
 def start_recording(ant_list, tobs, npolout = 2, ics=False, 
-        acclen=None):
+        acclen=None, dbnull=None):
     logger =  logger_defaults.getModuleLogger(__name__)
 
     check_if_valid_ants(ant_list)
@@ -172,10 +175,9 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
     obsParams = get_obs_params(ant_list)
 
     for ant in obsParams:
-        tb_syn_period = snaps[ant].read_int('timebase_sync_period')
-        acc_len = float(tb_syn_period / (4096/4))
+        acc_len = snap_control.get_acc_len_single(snaps[ant])
         obsParams[ant]['TSAMP'] =\
-          1./(obsParams[ant]['BW']/obsParams[ant]['NCHAN']/acc_len) #in microsec
+          1./(np.abs(obsParams[ant]['BW'])/obsParams[ant]['NCHAN']/acc_len) #in microsec
         obsParams[ant]['HOST'] = snaps[ant].host
 
 
@@ -202,7 +204,7 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
     buflogfile = os.path.join(ATA_CFG['LOGDIR'], "dadadb.log")
     
     #reduce size of buffers in case low time resolution
-    fact = max(1, get_nearest_pow_2(acclen//snap_dada_defaults.acclen))
+    fact = max(1, get_nearest_pow_2(acclen/snap_dada_defaults.acclen))
 
     if ics:
         keylist = snap_dada_control.gen_key_list(len(snaps)+1)
@@ -246,7 +248,8 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
         write_dada_header(header_paths[-1], headers[ant])
 
     logger.info("Starting udp capture code")
-    cpu_cores = list(range(len(ant_list)))
+    #cpu_cores = list(range(8, len(ant_list)+8))
+    cpu_cores = snap_dada_defaults.NIC_cores[:len(ant_list)]
     udpdb_logs = [os.path.join(ATA_CFG['LOGDIR'], "udpdb_%s.log")
             %hostn for hostn in list(sub_tab.snap_hostname)]
     if ics:
@@ -258,17 +261,22 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
                 list(sub_tab.recv_port), cpu_cores, header_paths, keylist,
                 udpdb_logs)
 
-
-    if ics:
-        snap_dada_control.dbsigproc(keylist[-1])
-        raise RuntimeError("ICS mode not fully implemented")
+    if dbnull:
+        snap_dada_control.dbnull(keylist)
     else:
-        dbsigproc_logs = [os.path.join(ATA_CFG['LOGDIR'], "dbsigproc_%s.log")
-            %hostn for hostn in list(sub_tab.snap_hostname)]
-        snap_dada_control.dbsigproc(keylist, dbsigproc_logs, npolout,
-                base_obs)
+        dbsigproc_cores = snap_dada_defaults.proc_cores[:len(ant_list)]
+        if ics:
+            #snap_dada_control.dbsigproc(keylist[-1])
+            raise RuntimeError("ICS mode not fully implemented")
+        else:
+            dbsigproc_logs = [os.path.join(ATA_CFG['LOGDIR'], "dbsigproc_%s.log")
+                %hostn for hostn in list(sub_tab.snap_hostname)]
+            snap_dada_control.dbsigproc(keylist, dbsigproc_cores, 
+                    dbsigproc_logs, npolout,
+                    base_obs, invert_freqs=True)
 
-    logger.info("Waiting for obs")
+
+    logger.info("Recording... waiting for obs finish time")
     time.sleep(tobs)
 
     logger.info("Stopping obs")
@@ -276,9 +284,6 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
     time.sleep(1)
 
     snap_dada_control.destroy_buffers(keylist, buflogfile)
-    # This takes insanely long with katcp, I'm just going to ignore it
-    for isnap in snaps:
-        snaps[isnap].transport._timeout = 0.5
     snap_control.disconnect_snaps(list(snaps.values()))
     logger.info("Obs ended")
     write_obs_finished(base_obs)

@@ -331,7 +331,7 @@ def make_and_track_ra_dec(ra,dec,antstr):
 #
 #####
 
-def autotune(ants):
+def autotune(ants, power_level=-3):
     """
     calls autotune functionality (Power level for RF-Fiber conversion)
     on selected antennas.
@@ -342,12 +342,14 @@ def autotune(ants):
 
     Raises RuntimeError if autotune execution fails.
     """
+    assert power_level < 0, "ataautotune: power level should be negative"
     logger = logger_defaults.getModuleLogger(__name__)
 
     ants = snap_array_helpers.input_to_string(ants) 
 
     logger.info("autotuning: {}".format(ants))
-    str_out,str_err = ata_remote.callObs(['ataautotune',ants])
+    str_out,str_err = ata_remote.callObs(['ataautotune',
+        ants,'-p','%i' %power_level])
     #searching for warnings or errors
     rwarn = str_out.find(b"warning")
     logger.info(str_err)
