@@ -2,12 +2,14 @@
 
 s=0
 invert=0
-while getopts D:ip: flag
+disable_rfi=0
+while getopts D:ip:m flag
 do
     case "${flag}" in
         D) basedir=${OPTARG}; let s+=2 ;;
         i) invert=1; let s+=1 ;;
         p) npol=${OPTARG}; let s+=2 ;;
+        m) disable_rfi=1; let s+=1
     esac
 done
 
@@ -29,6 +31,11 @@ for (( i=1;i<=N;i+=NARGS)); do
     else
         flag=""
     fi
+
+    if [ ${disable_rfi} == "1" ]; then
+        flag="${flag} -m"
+    fi
+
     echo "numactl -C ${core} ata_dbsigproc -v -k ${key} -s -p ${npol} -D ${basedir} ${flag} &>> ${log}"
     numactl -C ${core} ata_dbsigproc -k ${key} -s -p ${npol} -D ${basedir} ${flag} &>> ${log} &
 done

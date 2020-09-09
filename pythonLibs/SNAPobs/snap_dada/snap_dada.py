@@ -150,7 +150,7 @@ def check_if_valid_ants(ant_list):
 
 
 def start_recording(ant_list, tobs, npolout = 2, ics=False, 
-        acclen=None, dbnull=None):
+        acclen=None, dbnull=None, disable_rfi=False):
     logger =  logger_defaults.getModuleLogger(__name__)
 
     check_if_valid_ants(ant_list)
@@ -273,7 +273,7 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
                 %hostn for hostn in list(sub_tab.snap_hostname)]
             snap_dada_control.dbsigproc(keylist, dbsigproc_cores, 
                     dbsigproc_logs, npolout,
-                    base_obs, invert_freqs=True)
+                    base_obs, invert_freqs=True, disable_rfi=disable_rfi)
 
 
     logger.info("Recording... waiting for obs finish time")

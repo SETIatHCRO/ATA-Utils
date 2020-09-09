@@ -54,13 +54,16 @@ def udpdb(snap_hosts, rx_hosts, rx_ports,
     os.system(cmd)
 
 
-def dbsigproc(keylist, cpu_cores, logfiles, npol, basedir, invert_freqs=True):
+def dbsigproc(keylist, cpu_cores, logfiles, npol, basedir, 
+        disable_rfi, invert_freqs=True):
     logger = logger_defaults.getModuleLogger(__name__)
     script = os.path.join(MYCWD, snap_dada_defaults.dbsigproc_script)
     cpu_cores = [str(i) for i in cpu_cores]
     cmd = script + " "
     if invert_freqs:
         cmd += " -i "
+    if disable_rfi:
+        cmd += " -m "
     cmd += " -p %i " %npol
     cmd += " -D %s " %basedir
     for cpu_key_log in zip(cpu_cores, keylist, logfiles):
