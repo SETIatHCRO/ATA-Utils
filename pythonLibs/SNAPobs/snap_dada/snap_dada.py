@@ -110,7 +110,7 @@ def add_discone(obsParams):
     obsParams[snap_defaults.discone_name]['FOCUSFREQ'] = 0.0
 
 
-def get_obs_params(ant_list):
+def get_obs_params(ant_list, given_source):
     """
     getting every that has to do with source/obsfreq/position
     """
@@ -121,8 +121,11 @@ def get_obs_params(ant_list):
     else:
         discone = False
 
-    #tmp_source = "J0332+5434"
-    source = ata_control.get_eph_source(ant_list)
+    if given_source:
+        source = given_source
+    else:
+        # get source from control
+        source = ata_control.get_eph_source(ant_list)
     radec = ata_control.getRaDec(ant_list)
     azel = ata_control.getAzEl(ant_list)
     skyfreq = ata_control.get_freq(ant_list)
@@ -150,7 +153,7 @@ def check_if_valid_ants(ant_list):
 
 
 def start_recording(ant_list, tobs, npolout = 2, ics=False, 
-        acclen=None, dbnull=None, disable_rfi=False):
+        acclen=None, dbnull=None, disable_rfi=False, source=None):
     logger =  logger_defaults.getModuleLogger(__name__)
 
     check_if_valid_ants(ant_list)
@@ -172,7 +175,7 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
 
     snap_control.stop_snaps(list(snaps.values()))
 
-    obsParams = get_obs_params(ant_list)
+    obsParams = get_obs_params(ant_list, source=source)
 
     for ant in obsParams:
         acc_len = snap_control.get_acc_len_single(snaps[ant])
