@@ -122,7 +122,7 @@ def get_obs_params(ant_list, given_source):
         discone = False
 
     if given_source:
-        source = given_source
+        source = {ant:given_source for ant in ant_list}
     else:
         # get source from control
         source = ata_control.get_eph_source(ant_list)
@@ -175,7 +175,7 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
 
     snap_control.stop_snaps(list(snaps.values()))
 
-    obsParams = get_obs_params(ant_list, source=source)
+    obsParams = get_obs_params(ant_list, source)
 
     for ant in obsParams:
         acc_len = snap_control.get_acc_len_single(snaps[ant])
