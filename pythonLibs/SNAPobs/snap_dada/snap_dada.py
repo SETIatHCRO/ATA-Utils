@@ -51,7 +51,7 @@ def get_nearest_pow_2(n):
     return np.int(pow(2, pos))
 
 
-def gather_ants(radec, azel, skyfreq, source):
+def gather_ants(radec, azel, skyfreq, pamvals, detvals, source):
     """
     Returns a signle dictionary with every antenna name as key,
     and obs parameters dictionaries as value
@@ -67,6 +67,10 @@ def gather_ants(radec, azel, skyfreq, source):
         obsvals['BANDWIDTH']                    = snap_defaults.bw
         obsvals['ANT']                          = ant
         obsvals['NCHAN']                        = snap_defaults.nchan
+        obsvals['PAMx']                         = pamvals['ant%sx' %ant]
+        obsvals['PAMy']                         = pamvals['ant%sy' %ant]
+        obsvals['PAMDETx']                      = detvals['ant%sx' %ant]
+        obsvals['PAMDETy']                      = detvals['ant%sy' %ant]
         obsDict[ant] = obsvals
     return obsDict
 
@@ -129,10 +133,12 @@ def get_obs_params(ant_list, given_source):
     radec = ata_control.getRaDec(ant_list)
     azel = ata_control.getAzEl(ant_list)
     skyfreq = ata_control.get_freq(ant_list)
+    pamvals = ata_control.get_pams(ant_list)
+    detvals = ata_control.get_dets(ant_list)
 
     #assert sorted(list(radec.keys())) == sorted(ant_list)
-    obsParams = gather_ants(radec, azel, skyfreq,
-            source)
+    obsParams = gather_ants(radec, azel, skyfreq, pamvals,
+            detvals, source)
     if discone:
         add_discone(obsParams)
         ant_list.append(snap_defaults.discone_name)
