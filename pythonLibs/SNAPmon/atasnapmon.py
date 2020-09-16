@@ -99,9 +99,13 @@ for snap in fengs:
     ind = np.where(snap_ant[:,0] == snap.host)[0]
     ant_name = snap_ant[ind,1][0]
 
+    fft_detected_str = ""
+    if snap.fft_of_detect():
+        fft_detected_str=' --- <b>WARNING: FFT OVERFLOW DETECTED</b>'
+
     fig.update_layout(
-            title="<b>Snap:</b> %s --- <b>Antenna:</b> %s" 
-              %(snap.host, ant_name),
+            title="<b>Snap:</b> %s --- <b>Antenna:</b> %s%s"
+              %(snap.host, ant_name, fft_detected_str),
             xaxis_title = 'Frequency (MHz)',
             yaxis_title = 'Power (dB)',
             xaxis2_title = 'ADC values',
