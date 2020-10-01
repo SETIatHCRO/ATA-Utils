@@ -539,7 +539,7 @@ def get_freq_focus(ant_list):
             logger.info('not processed line: {}'.format(line))
     return retdict
 
-def set_freq(freq, ants):
+def set_freq(freq, ants, lo='a'):
     """
     Sets both LO A frequency and antenna focus frequency to
     given freq in MHz
@@ -549,7 +549,10 @@ def set_freq(freq, ants):
     logger = logger_defaults.getModuleLogger(__name__)
 
     freqstr = '{0:.2f}'.format(freq)
-    stdout, stderr = ata_remote.callObs(['atasetskyfreq','a',freqstr])
+    lo = lo.lower()
+    if lo not in ['a','b','c','d']:
+        raise RuntimeError("LO provided (%s) is not in [a,b,c,d]" %lo)
+    stdout, stderr = ata_remote.callObs(['atasetskyfreq',lo,freqstr])
     if stderr:
         logger.error(errormsg)
 
@@ -563,7 +566,7 @@ def set_freq(freq, ants):
     #result = cmd()
     #return result
 
-def get_freq(ant_list):
+def get_freq(ant_list, lo='a'):
     """
     gets the LO A and focus frequency in MHz
     for every antenna
@@ -573,7 +576,10 @@ def get_freq(ant_list):
     antstr = snap_array_helpers.input_to_string(ant_list)
 
     # get LO A freq
-    stdout, stderr = ata_remote.callObs(["atagetskyfreq", "a"])
+    lo = lo.lower()
+    if lo not in ['a','b','c','d']:
+        raise RuntimeError("LO provided (%s) is not in [a,b,c,d]" %lo)
+    stdout, stderr = ata_remote.callObs(["atagetskyfreq", lo])
     skyfreq = float(stdout.decode().strip())
     retdict = {}
     for ant in ant_list:
