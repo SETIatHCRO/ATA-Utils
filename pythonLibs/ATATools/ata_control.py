@@ -16,6 +16,7 @@ import re
 import ast
 import concurrent.futures
 from . import ata_remote,ata_constants,snap_array_helpers,logger_defaults
+import os
 
 #use discouraged. Use more specific functions instead
 def get_ascii_status():
@@ -300,6 +301,39 @@ def make_and_track_source(source,antstr):
         logger.error(errormsg)
 
     return result
+
+
+def make_and_track_tle(tle, antstr):
+    """
+    Make an ephemeris file using the provided orbital
+    Two-line-element (tle) file, and track the source
+    using the ant list
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+    result, errormsg = ata_remote.scpFileControl(tle, '${HOME}/tle/')
+    logger.info(result)
+    if errormsg:
+        logger.error(errormsg)
+
+    tle_basename = os.path.basename(tle)
+
+    result,errormsg = ata_remote.callObs(['ataephem',
+        '--tle', '${HOME}/tle/%s' %tle_basename])
+    logger.info(result)
+    if errormsg:
+        logger.error(errormsg)
+
+    antstr = snap_array_helpers.input_to_string(antstr)
+
+    logger.info("Tracking tle_file {} with {}".format(tle,antstr))
+    result,errormsg = ata_remote.callObs(['atatrackephem','-w',antstr,
+        '${HOME}/tle/%s.ephem' %tle_basename])
+    logger.info(result)
+    if errormsg:
+        logger.error(errormsg)
+
+    return result
+
 
 def make_and_track_ra_dec(ra,dec,antstr):
     """

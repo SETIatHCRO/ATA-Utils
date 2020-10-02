@@ -20,6 +20,41 @@ ATTEN_USER = 'sonata'
 OBS_HOST = 'control'
 OBS_USER = 'obs'
 
+def scpFileControl(fromfile, todir):
+    """
+    Scp 'fromfile; from current host to the directory 'todir' on
+    control machine
+
+    Parameters
+    ----------
+    fromfile : str
+        file to scp
+    todir    : str
+        directory on remote host
+
+    Returns
+    -------------
+    string
+        standard output of the process
+    string
+        standard error of the process
+    """
+    cmd = "scp {fromfile:s} {user:s}@{host:s}:{todir}".format(
+            fromfile=fromfile, user=OBS_USER, host=OBS_HOST,
+            todir=todir)
+    cmd_args = cmd.split(" ")
+    p = subprocess.Popen(cmd_args,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    str_out, str_err = p.communicate()
+    p.wait()
+    if(p.returncode):
+        logger = logger_defaults.getModuleLogger(__name__)
+        logger.warning("process '%s' returned error\n %s" % (cmd_args,str_err))
+        raise RuntimeError("process %s failed" % cmd_args)
+
+    return str_out,str_err
+
+
 def callProg(myargs):
     """
     Call process and waits for it to finish. Throws RuntimeError if process did not
