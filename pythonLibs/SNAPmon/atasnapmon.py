@@ -28,6 +28,7 @@ snaps = ['frb-snap1-pi', 'frb-snap2-pi',
         'frb-snap5-pi', 'frb-snap6-pi',
         'frb-snap7-pi', 'frb-snap8-pi',
         'frb-snap9-pi', 'frb-snap10-pi',
+        'frb-snap11-pi', 'frb-snap12-pi',
         ]
 
 snap_table = "/home/obsuser/share/ata_snap.tab"
