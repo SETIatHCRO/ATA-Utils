@@ -6,6 +6,7 @@ from ATATools import logger_defaults
 MYCWD = os.path.dirname(os.path.realpath(__file__))
 
 DADAKEYS = ['d%id%i' %(i,i) for i in range(10)]
+DADAKEYS += ['f%if%i' %(i,i) for i in range(10)]
 
 def create_buffers(keylist, bufsze_list, logfile):
     logger = logger_defaults.getModuleLogger(__name__)
@@ -92,5 +93,5 @@ def dbsumdb(inkeys, outkey, loggerfile):
 
 def gen_key_list(nkeys):
     if nkeys > len(DADAKEYS):
-        raise RuntimeError("Not enough keys to provide")
+        raise RuntimeError("Not enough hex keys to provide")
     return DADAKEYS[:nkeys]
