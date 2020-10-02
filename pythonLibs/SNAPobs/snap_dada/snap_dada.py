@@ -30,6 +30,60 @@ TEMPLATE_HDR_PATH = os.path.join(MYCWD, snap_defaults.template_header)
 UTCFMT = ATA_CFG['UTCFMT']
 
 
+def set_freq_auto(freqs, ant_list):
+    """
+    Automatically sets sky/focus frequencies
+    according to the ant-LO mapping in the config files
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+    if type(freqs) in [float, int]:
+        freqs = [freqs]*len(ant_list)
+
+    assert len(freqs) == len(ant_list),\
+            "Number of requested frequencies should match number of antennas"
+
+    obs_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name.isin(ant_list)]
+    los = pd.unique(obs_ant_tab.LO)
+
+    lo_freq_mapping = {}
+    for ant,freq in zip(ant_list,freqs):
+        obs_ant = obs_ant_tab[obs_ant_tab.ANT_name==ant]
+        obs_ant_lo = str(obs_ant.LO.values.squeeze())
+        if obs_ant_lo in lo_freq_mapping:
+            assert freq == lo_freq_mapping[obs_ant_lo],\
+                    "A wrong LO-ant mapping for ant: %s" %(obs_ant.ANT_name)
+        else:
+            lo_freq_mapping[obs_ant_lo] = freq
+
+    for lo,freq in lo_freq_mapping.items():
+        ants_sub = list(obs_ant_tab[obs_ant_tab.LO == lo].ANT_name)
+        logger.info("Setting {freq:.2f} (LO: {lo:s}) sky freq for"\
+                "ants: ({ants:s})".format(freq=float(freq), lo=lo,
+                    ants=",".join(ants_sub)))
+        ata_control.set_freq(freq, ants_sub, lo)
+
+
+
+def get_freq_auto(ant_list):
+    """
+    Automatically gets sky/focus frequencies
+    according to the ant-LO mapping in the config files
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    obs_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name.isin(ant_list)]
+    los = pd.unique(obs_ant_tab.LO)
+
+    retdict = {}
+
+    for lo in los:
+        ants_sub_list = list(obs_ant_tab[obs_ant_tab.LO == lo].ANT_name)
+        skyfreq = ata_control.get_freq(ants_sub_list, lo=lo)
+        retdict.update(skyfreq)
+
+    return retdict
+
+
 def write_obs_finished(obs_basedir):
     Path(os.path.join(obs_basedir, "obs.finished")).touch()
 
@@ -132,7 +186,7 @@ def get_obs_params(ant_list, given_source):
         source = ata_control.get_eph_source(ant_list)
     radec = ata_control.getRaDec(ant_list)
     azel = ata_control.getAzEl(ant_list)
-    skyfreq = ata_control.get_freq(ant_list)
+    skyfreq = get_freq_auto(ant_list)
     pamvals = ata_control.get_pams(ant_list)
     detvals = ata_control.get_dets(ant_list)
 
