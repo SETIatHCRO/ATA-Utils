@@ -331,7 +331,7 @@ def make_and_track_ra_dec(ra,dec,antstr):
 #
 #####
 
-def autotune(ants, power_level=-3):
+def autotune(ants, power_level=-10):
     """
     calls autotune functionality (Power level for RF-Fiber conversion)
     on selected antennas.
