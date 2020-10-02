@@ -541,7 +541,7 @@ def get_freq_focus(ant_list):
 
 def set_freq(freq, ants, lo='a'):
     """
-    Sets both LO A frequency and antenna focus frequency to
+    Sets both LO frequency and antenna focus frequency to
     given freq in MHz
     """
     ants = snap_array_helpers.input_to_string(ants) 
@@ -568,7 +568,7 @@ def set_freq(freq, ants, lo='a'):
 
 def get_freq(ant_list, lo='a'):
     """
-    gets the LO A and focus frequency in MHz
+    gets the LO and focus frequency in MHz
     for every antenna
     returns a dictionary with a list as values, i.e. {'1a': [1400,1400]}
     """
