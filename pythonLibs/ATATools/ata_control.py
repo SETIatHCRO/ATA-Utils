@@ -510,12 +510,12 @@ def try_on_lnas(ant_list):
         for t in tlist:
             retval = t.result()
 
-def get_sky_freq():
+def get_sky_freq(lo='a'):
     """
     Return the sky frequency (in MHz) currently
     tuned to the center of the ATA band
     """
-    stdout, stderr = ata_remote.callObs(["atagetskyfreq", "a"])
+    stdout, stderr = ata_remote.callObs(["atagetskyfreq", lo])
     return float(stdout.decode().strip())
 
 def set_freq_focus(freq, ants, calibrate=False):

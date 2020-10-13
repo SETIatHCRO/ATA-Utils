@@ -12,16 +12,29 @@ from dash.dependencies import Input,Output
 import numpy as np
 import pandas as pd
 import time
+import os
 
 #from simulator import ata_snap_fengine
 from ata_snap import ata_snap_fengine
+from SNAPobs import snap_defaults
 from ATATools import ata_control
 import casperfpga
 from threading import Thread
 import atexit
 
+from ATATools import ata_helpers
 
-BW = 900 #MHz
+ATA_SHARE_DIR = snap_defaults.share_dir
+ATA_CFG = ata_helpers.parse_cfg(os.path.join(ATA_SHARE_DIR,
+    'ata.cfg'))
+
+_snap_tab = open(os.path.join(ATA_SHARE_DIR, 'ata_snap.tab'))
+_snap_tab_names = [name for name in _snap_tab.readline().strip().lstrip("#").split(" ")
+        if name]
+ATA_SNAP_TAB = pd.read_csv(_snap_tab, delim_whitespace=True, index_col=False,
+        names=_snap_tab_names, dtype=str)
+
+BW = snap_defaults.bw #MHz
 
 snaps = ['frb-snap1-pi', 'frb-snap2-pi', 
         'frb-snap3-pi', 'frb-snap4-pi',
@@ -31,24 +44,29 @@ snaps = ['frb-snap1-pi', 'frb-snap2-pi',
         'frb-snap11-pi', 'frb-snap12-pi',
         ]
 
-snap_table = "/home/obsuser/share/ata_snap.tab"
-snap_ant = np.loadtxt(snap_table, dtype=str, usecols=(0,1))
-#ata_snap_tab = pd.read
+
 
 
 class cfreqThread(Thread):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, LOs, *args, **kwargs):
         super(cfreqThread,self).__init__(*args, **kwargs)
-        self.cfreq = ata_control.get_sky_freq()
+        self.LOs = LOs
+        self.cfreqs = {}
+        for lo in LOs:
+            self.cfreqs[lo] = ata_control.get_sky_freq(lo)
+        #self.cfreq = ata_control.get_sky_freq()
 
     def run(self):
         #self.cfreq = ata_control.get_sky_freq()
         while True:
             time.sleep(20)
-            self.cfreq = ata_control.get_sky_freq()
+            for lo in LOs:
+                self.cfreqs[lo] = ata_control.get_sky_freq(lo)
+            #self.cfreq = ata_control.get_sky_freq()
 
 
-cfreq_thread = cfreqThread()
+LOs = pd.unique(ATA_SNAP_TAB.LO)
+cfreq_thread = cfreqThread(LOs)
 cfreq_thread.daemon = True
 cfreq_thread.start()
 
@@ -57,8 +75,7 @@ fengs = [ata_snap_fengine.AtaSnapFengine(snap,
     transport=casperfpga.KatcpTransport) 
         for snap in snaps]
 for feng in fengs:
-    feng.fpga.get_system_information(
-            "/home/obsuser/snap_adc5g_feng_rpi_2020-07-06_1146.fpg")
+    feng.fpga.get_system_information(ATA_CFG['SNAPFPG'])
 
 
 FIGS = {}
@@ -68,8 +85,15 @@ for snap in fengs:
             #column_titles=['Spectra', 'ADC values'],
             )
 
-    cfreq = cfreq_thread.cfreq
+    #cfreq = cfreq_thread.cfreq
+    cfreqs = cfreq_thread.cfreqs
+    lo = ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname == snap.host].LO.values[0]
+    cfreq = cfreqs[lo]
+
+    acc_len = snap.fpga.read_int('timebase_sync_period')*8/4096/2
     xx,yy = snap.spec_read()
+    xx /= acc_len
+    yy /= acc_len
     adc_x, adc_y = snap.adc_get_samples()
     x = np.linspace(cfreq - BW/2, cfreq + BW/2, len(xx))
 
@@ -97,16 +121,19 @@ for snap in fengs:
                 marker_color='red'), 
             1, 2)
 
-    ind = np.where(snap_ant[:,0] == snap.host)[0]
-    ant_name = snap_ant[ind,1][0]
+    ant_name = ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname == snap.host].ANT_name
+    ant_name = ant_name.values[0]
+    #ind = np.where(snap_ant[:,0] == snap.host)[0]
+    #ant_name = snap_ant[ind,1][0]
 
     fft_detected_str = ""
     if snap.fft_of_detect():
         fft_detected_str=' --- <b>WARNING: FFT OVERFLOW DETECTED</b>'
 
     fig.update_layout(
-            title="<b>Snap:</b> %s --- <b>Antenna:</b> %s%s"
-              %(snap.host, ant_name, fft_detected_str),
+            title="<b>Antenna:</b> %s  ---  <b>Snap:</b> %s  "
+              "---  <b>LO:</b> %s%s"
+              %(ant_name, snap.host, lo, fft_detected_str),
             xaxis_title = 'Frequency (MHz)',
             yaxis_title = 'Power (dB)',
             xaxis2_title = 'ADC values',
@@ -138,10 +165,16 @@ app.layout = html.Div(
         [Output("figs_html", "children")],
         [Input("plot-update", "n_intervals")])
 def gen_bp(interval=None):
-    cfreq = cfreq_thread.cfreq
+    #cfreq = cfreq_thread.cfreq
+    cfreqs = cfreq_thread.cfreqs
     for i,snap in enumerate(fengs):
+        acc_len = snap.fpga.read_int('timebase_sync_period')*8/4096/2
         xx,yy = snap.spec_read()
+        xx /= acc_len
+        yy /= acc_len
         adc_x, adc_y = snap.adc_get_samples()
+        lo = ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname == snap.host].LO.values[0]
+        cfreq = cfreqs[lo]
         x = np.linspace(cfreq - BW/2, cfreq + BW/2, len(xx))
         FIGS_HTML.children[i].figure.data[0].y = 10*np.log10(xx + 0.1)
         FIGS_HTML.children[i].figure.data[0].x = x
