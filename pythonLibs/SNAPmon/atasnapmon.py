@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 import time
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 #from simulator import ata_snap_fengine
 from ata_snap import ata_snap_fengine
@@ -65,6 +66,31 @@ class cfreqThread(Thread):
             #self.cfreq = ata_control.get_sky_freq()
 
 
+class SnapThread(Thread):
+    def __init__(self, fengs, *args, **kwargs):
+        super(SnapThread,self).__init__(*args, **kwargs)
+        self.fengs = fengs
+        self.hosts = [snap.host for snap in fengs]
+        self.nsnap = len(self.hosts)
+        self.snaps_res = dict.fromkeys(self.hosts)
+
+    @staticmethod
+    def get_bp_thread(snap):
+        acc_len = snap.fpga.read_int('timebase_sync_period')*8/4096/2
+        xx,yy = snap.spec_read()
+        xx /= acc_len
+        yy /= acc_len
+        adc_x, adc_y = snap.adc_get_samples()
+        return (xx,yy,adc_x,adc_y)
+
+    def run(self):
+        conn = ThreadPoolExecutor(max_workers=self.nsnap)
+        while True:
+            t = time.time()
+            snaps_res = conn.map(self.get_bp_thread, self.fengs)
+            self.snaps_res = {host:data for host,data in
+                    zip(self.hosts,snaps_res)}
+
 LOs = pd.unique(ATA_SNAP_TAB.LO)
 cfreq_thread = cfreqThread(LOs)
 cfreq_thread.daemon = True
@@ -77,6 +103,13 @@ fengs = [ata_snap_fengine.AtaSnapFengine(snap,
 for feng in fengs:
     feng.fpga.get_system_information(ATA_CFG['SNAPFPG'])
 
+snap_thread = SnapThread(fengs)
+snap_thread.daemon = True
+snap_thread.start()
+
+# give the thread sometime to pull data
+time.sleep(5)
+snaps_res = snap_thread.snaps_res
 
 FIGS = {}
 for snap in fengs:
@@ -90,11 +123,7 @@ for snap in fengs:
     lo = ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname == snap.host].LO.values[0]
     cfreq = cfreqs[lo]
 
-    acc_len = snap.fpga.read_int('timebase_sync_period')*8/4096/2
-    xx,yy = snap.spec_read()
-    xx /= acc_len
-    yy /= acc_len
-    adc_x, adc_y = snap.adc_get_samples()
+    xx,yy,adc_x,adc_y = snaps_res[snap.host]
     x = np.linspace(cfreq - BW/2, cfreq + BW/2, len(xx))
 
     fig.append_trace({
@@ -156,10 +185,9 @@ app.layout = html.Div(
     [FIGS_HTML] + 
     [dcc.Interval(
         id='plot-update',
-        interval = 10*1000,
+        interval = 5*1000,
         n_intervals = 0)]
     )
-
 
 @app.callback(
         [Output("figs_html", "children")],
@@ -167,12 +195,10 @@ app.layout = html.Div(
 def gen_bp(interval=None):
     #cfreq = cfreq_thread.cfreq
     cfreqs = cfreq_thread.cfreqs
+    snaps_res = snap_thread.snaps_res.copy()
+
     for i,snap in enumerate(fengs):
-        acc_len = snap.fpga.read_int('timebase_sync_period')*8/4096/2
-        xx,yy = snap.spec_read()
-        xx /= acc_len
-        yy /= acc_len
-        adc_x, adc_y = snap.adc_get_samples()
+        xx, yy, adc_x, adc_y = snaps_res[snap.host]
         lo = ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname == snap.host].LO.values[0]
         cfreq = cfreqs[lo]
         x = np.linspace(cfreq - BW/2, cfreq + BW/2, len(xx))
