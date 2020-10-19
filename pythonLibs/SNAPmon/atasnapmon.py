@@ -36,6 +36,7 @@ ATA_SNAP_TAB = pd.read_csv(_snap_tab, delim_whitespace=True, index_col=False,
         names=_snap_tab_names, dtype=str)
 
 BW = snap_defaults.bw #MHz
+NCHANS = snap_defaults.nchan
 
 snaps = ['frb-snap1-pi', 'frb-snap2-pi', 
         'frb-snap3-pi', 'frb-snap4-pi',
@@ -55,7 +56,6 @@ class cfreqThread(Thread):
         self.cfreqs = {}
         for lo in LOs:
             self.cfreqs[lo] = ata_control.get_sky_freq(lo)
-        #self.cfreq = ata_control.get_sky_freq()
 
     def run(self):
         #self.cfreq = ata_control.get_sky_freq()
@@ -63,7 +63,6 @@ class cfreqThread(Thread):
             time.sleep(20)
             for lo in LOs:
                 self.cfreqs[lo] = ata_control.get_sky_freq(lo)
-            #self.cfreq = ata_control.get_sky_freq()
 
 
 class SnapThread(Thread):
@@ -73,15 +72,27 @@ class SnapThread(Thread):
         self.hosts = [snap.host for snap in fengs]
         self.nsnap = len(self.hosts)
         self.snaps_res = dict.fromkeys(self.hosts)
+        self.def_xx = np.ones(NCHANS) * 200000
+        self.def_yy = np.ones(NCHANS) * 200000
+        self.def_adc_x = np.random.normal(size=NCHANS)
+        self.def_adc_y = np.random.normal(size=NCHANS)
 
     @staticmethod
     def get_bp_thread(snap):
-        acc_len = snap.fpga.read_int('timebase_sync_period')*8/4096/2
-        xx,yy = snap.spec_read()
-        xx /= acc_len
-        yy /= acc_len
-        adc_x, adc_y = snap.adc_get_samples()
-        return (xx,yy,adc_x,adc_y)
+        ntries = 3
+        itry = 0
+        while (itry < ntries):
+            try:
+                acc_len = snap.fpga.read_int('timebase_sync_period')*8/4096/2
+                xx,yy = snap.spec_read()
+                xx /= acc_len
+                yy /= acc_len
+                adc_x, adc_y = snap.adc_get_samples()
+                return (xx,yy,adc_x,adc_y)
+            except:
+                time.sleep(0.5)
+                itry += 1
+        return (self.def_xx, self.def_yy, self.def_adc_x, self.def_adc_y)
 
     def run(self):
         conn = ThreadPoolExecutor(max_workers=self.nsnap)
@@ -90,6 +101,7 @@ class SnapThread(Thread):
             snaps_res = conn.map(self.get_bp_thread, self.fengs)
             self.snaps_res = {host:data for host,data in
                     zip(self.hosts,snaps_res)}
+            time.sleep(1)
 
 LOs = pd.unique(ATA_SNAP_TAB.LO)
 cfreq_thread = cfreqThread(LOs)
@@ -115,10 +127,8 @@ FIGS = {}
 for snap in fengs:
     fig = make_subplots(rows=1, cols=2, 
             column_widths=[0.8, 0.2], horizontal_spacing=0.05,
-            #column_titles=['Spectra', 'ADC values'],
             )
 
-    #cfreq = cfreq_thread.cfreq
     cfreqs = cfreq_thread.cfreqs
     lo = ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname == snap.host].LO.values[0]
     cfreq = cfreqs[lo]
