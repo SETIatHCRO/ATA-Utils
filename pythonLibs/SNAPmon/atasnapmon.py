@@ -21,6 +21,7 @@ from SNAPobs import snap_defaults
 from ATATools import ata_control
 import casperfpga
 from threading import Thread
+from itertools import repeat
 import atexit
 
 from ATATools import ata_helpers
@@ -40,8 +41,8 @@ NCHANS = snap_defaults.nchan
 
 snaps = ['frb-snap1-pi', 'frb-snap2-pi', 
         'frb-snap3-pi', 'frb-snap4-pi',
-        'frb-snap5-pi', 'frb-snap6-pi',
-        'frb-snap7-pi', 'frb-snap8-pi',
+        'frb-snap6-pi',
+        'frb-snap8-pi',
         'frb-snap9-pi', 'frb-snap10-pi',
         'frb-snap11-pi', 'frb-snap12-pi',
         ]
@@ -72,33 +73,37 @@ class SnapThread(Thread):
         self.hosts = [snap.host for snap in fengs]
         self.nsnap = len(self.hosts)
         self.snaps_res = dict.fromkeys(self.hosts)
-        self.def_xx = np.ones(NCHANS) * 200000
-        self.def_yy = np.ones(NCHANS) * 200000
-        self.def_adc_x = np.random.normal(size=NCHANS)
-        self.def_adc_y = np.random.normal(size=NCHANS)
+
+        self.defs = {}
+        self.defs['def_xx'] = np.ones(NCHANS) * 200000
+        self.defs['def_yy'] = np.ones(NCHANS) * 200000
+        self.defs['def_adc_x'] = np.random.normal(size=NCHANS)
+        self.defs['def_adc_y'] = np.random.normal(size=NCHANS)
 
     @staticmethod
-    def get_bp_thread(snap):
+    def get_bp_thread(snap, defs):
         ntries = 3
         itry = 0
         while (itry < ntries):
             try:
                 acc_len = snap.fpga.read_int('timebase_sync_period')*8/4096/2
                 xx,yy = snap.spec_read()
-                xx /= acc_len
-                yy /= acc_len
+                xx = xx / acc_len
+                yy = yy / acc_len
                 adc_x, adc_y = snap.adc_get_samples()
                 return (xx,yy,adc_x,adc_y)
             except:
                 time.sleep(0.5)
                 itry += 1
-        return (self.def_xx, self.def_yy, self.def_adc_x, self.def_adc_y)
+        return (defs['def_xx'], defs['def_yy'], 
+                defs['def_adc_x'], defs['def_adc_y'])
 
     def run(self):
         conn = ThreadPoolExecutor(max_workers=self.nsnap)
         while True:
             t = time.time()
-            snaps_res = conn.map(self.get_bp_thread, self.fengs)
+            snaps_res = conn.map(self.get_bp_thread, self.fengs, 
+                    repeat(self.defs))
             self.snaps_res = {host:data for host,data in
                     zip(self.hosts,snaps_res)}
             time.sleep(1)
