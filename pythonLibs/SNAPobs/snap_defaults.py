@@ -24,4 +24,10 @@ nchan = 4096
 base_name = "frb-snap"
 template_header = "template_header.txt"
 discone_name = 'rfi'
+
+if 'PSRHOME' not in os.environ:
+    raise RuntimeError("Env variable $PSRHOME is not set, please run: "
+            "'export PSRHOME=\"/home/obsuser\"'")
 share_dir = os.path.join(os.environ['PSRHOME'], 'share')
+
+redishost='redishost'
