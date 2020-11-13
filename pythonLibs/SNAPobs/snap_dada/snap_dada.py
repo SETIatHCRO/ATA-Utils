@@ -1,5 +1,5 @@
 from ATATools import ata_control, ata_coords, ata_helpers, logger_defaults
-from SNAPobs import snap_control, snap_defaults, snap_dirs, snap_config
+from .. import snap_control, snap_defaults, snap_dirs, snap_config
 
 from . import snap_dada_control, snap_dada_defaults
 
@@ -11,9 +11,8 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-
 ATA_CFG      = snap_config.get_ata_cfg()
-ATA_SNAP_TAB = snap_config,get_ata_snap_tab()
+ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
 
 ATA_BASE_OBS_DIR = ATA_CFG['OBSDIR']
 
