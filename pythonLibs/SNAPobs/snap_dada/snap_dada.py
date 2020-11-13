@@ -1,5 +1,5 @@
 from ATATools import ata_control, ata_coords, ata_helpers, logger_defaults
-from SNAPobs import snap_control, snap_defaults, snap_dirs
+from SNAPobs import snap_control, snap_defaults, snap_dirs, snap_config
 
 from . import snap_dada_control, snap_dada_defaults
 
@@ -12,18 +12,11 @@ import pandas as pd
 from pathlib import Path
 
 
-ATA_SHARE_DIR = snap_defaults.share_dir
-ATA_CFG = ata_helpers.parse_cfg(os.path.join(ATA_SHARE_DIR, 
-    'ata.cfg'))
+ATA_CFG      = snap_config.get_ata_cfg()
+ATA_SNAP_TAB = snap_config,get_ata_snap_tab()
+
 ATA_BASE_OBS_DIR = ATA_CFG['OBSDIR']
 
-#ATA_SNAP_TAB = np.loadtxt(os.path.join(ATA_SHARE_DIR, 'ata_snap.tab'),
-#        dtype=str)
-_snap_tab = open(os.path.join(ATA_SHARE_DIR, 'ata_snap.tab'))
-_snap_tab_names = [name for name in _snap_tab.readline().strip().lstrip("#").split(" ") 
-        if name]
-ATA_SNAP_TAB = pd.read_csv(_snap_tab, delim_whitespace=True, index_col=False, 
-        names=_snap_tab_names, dtype=str)
 MYCWD = os.path.dirname(os.path.realpath(__file__))
 TEMPLATE_HDR_PATH = os.path.join(MYCWD, snap_defaults.template_header)
 

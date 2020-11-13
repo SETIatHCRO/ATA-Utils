@@ -19,7 +19,7 @@ from datetime import datetime
 
 #from simulator import ata_snap_fengine
 from ata_snap import ata_snap_fengine
-from SNAPobs import snap_defaults
+from SNAPobs import snap_defaults, snap_config
 from ATATools import ata_control
 import casperfpga
 from threading import Thread
@@ -29,15 +29,8 @@ import atexit
 from ATATools import ata_helpers
 from ATATools.device_lock import set_device_lock, release_device_lock
 
-ATA_SHARE_DIR = snap_defaults.share_dir
-ATA_CFG = ata_helpers.parse_cfg(os.path.join(ATA_SHARE_DIR,
-    'ata.cfg'))
-
-_snap_tab = open(os.path.join(ATA_SHARE_DIR, 'ata_snap.tab'))
-_snap_tab_names = [name for name in _snap_tab.readline().strip().lstrip("#").split(" ")
-        if name]
-ATA_SNAP_TAB = pd.read_csv(_snap_tab, delim_whitespace=True, index_col=False,
-        names=_snap_tab_names, dtype=str)
+ATA_CFG = snap_config.get_ata_cfg()
+ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
 
 BW = snap_defaults.bw #MHz
 NCHANS = snap_defaults.nchan
@@ -46,8 +39,8 @@ TZ = pytz.timezone('America/Los_Angeles')
 
 snaps = ['frb-snap1-pi', 'frb-snap2-pi', 
         'frb-snap3-pi', 'frb-snap4-pi',
-        'frb-snap6-pi',
-        'frb-snap8-pi',
+        'frb-snap5-pi', 'frb-snap6-pi',
+        'frb-snap7-pi', 'frb-snap8-pi',
         'frb-snap9-pi', 'frb-snap10-pi',
         'frb-snap11-pi', 'frb-snap12-pi',
         ]

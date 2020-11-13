@@ -1,5 +1,5 @@
 from ata_snap import ata_snap_fengine
-from SNAPobs import snap_defaults
+from SNAPobs import snap_defaults, snap_config
 from ATATools import ata_helpers, logger_defaults
 from ATATools.device_lock import set_device_lock, release_device_lock
 
@@ -18,27 +18,11 @@ MAX_ATT = 31.5
 MIN_ATT = 0.0
 
 
-ATA_SHARE_DIR = snap_defaults.share_dir
-ATA_CFG = ata_helpers.parse_cfg(os.path.join(ATA_SHARE_DIR,
-    'ata.cfg'))
-_snap_if = open(os.path.join(ATA_SHARE_DIR, 'ata_if.cfg'))
-_snap_if_names = [name for name in _snap_if.readline().strip().lstrip("#").split(" ")
-        if name]
-
-ATA_SNAP_IF = pd.read_csv(_snap_if, delim_whitespace=True, index_col=False,
-        names=_snap_if_names, dtype=str)
-_snap_if.close()
-
-_snap_tab = open(os.path.join(ATA_SHARE_DIR, 'ata_snap.tab'))
-_snap_tab_names = [name for name in _snap_tab.readline().strip().lstrip("#").split(" ")
-        if name]
-
-ATA_SNAP_TAB = pd.read_csv(_snap_tab, delim_whitespace=True, index_col=False,
-        names=_snap_tab_names, dtype=str)
-_snap_tab.close()
+ATA_CFG      = snap_config.get_ata_cfg()
+ATA_SNAP_IF  = snap_config.get_ata_snap_if() 
+ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
 
 FPGFILE = ATA_CFG['SNAPFPG']
-
 
 
 def round50th(list_n):
@@ -77,7 +61,8 @@ def setatten(antlist, attenlist):
 
 
 
-def tune_if(snap_hosts, fpgfile=None):
+def tune_if(snap_hosts, fpgfile=None, 
+        target_rms=TARGET_RMS):
     """
     Function to tune the IF
     """
@@ -123,14 +108,14 @@ def tune_if(snap_hosts, fpgfile=None):
             rms.append(y.std())
 
         rms = np.array(rms)
-        d_attn = 20*np.log10(rms/TARGET_RMS)
+        d_attn = 20*np.log10(rms/target_rms)
         prev_attn = round50th(prev_attn + d_attn)
     logger.info("IF tuner ended")
 
 
-def tune_if_ants(ant_list):
+def tune_if_ants(ant_list, target_rms=TARGET_RMS):
     assert type(ant_list) == list
 
     obs_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name.isin(ant_list)]
     snap_hosts = list(obs_ant_tab.snap_hostname.values)
-    tune_if(snap_hosts)
+    tune_if(snap_hosts, target_rms=target_rms)
