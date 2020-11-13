@@ -14,6 +14,8 @@ import pandas as pd
 import time
 import os
 from concurrent.futures import ThreadPoolExecutor
+import pytz
+from datetime import datetime
 
 #from simulator import ata_snap_fengine
 from ata_snap import ata_snap_fengine
@@ -25,6 +27,7 @@ from itertools import repeat
 import atexit
 
 from ATATools import ata_helpers
+from ATATools.device_lock import set_device_lock, release_device_lock
 
 ATA_SHARE_DIR = snap_defaults.share_dir
 ATA_CFG = ata_helpers.parse_cfg(os.path.join(ATA_SHARE_DIR,
@@ -38,6 +41,8 @@ ATA_SNAP_TAB = pd.read_csv(_snap_tab, delim_whitespace=True, index_col=False,
 
 BW = snap_defaults.bw #MHz
 NCHANS = snap_defaults.nchan
+
+TZ = pytz.timezone('America/Los_Angeles')
 
 snaps = ['frb-snap1-pi', 'frb-snap2-pi', 
         'frb-snap3-pi', 'frb-snap4-pi',
@@ -86,13 +91,16 @@ class SnapThread(Thread):
         itry = 0
         while (itry < ntries):
             try:
+                set_device_lock(snap.host)
                 acc_len = snap.fpga.read_int('timebase_sync_period')*8/4096/2
                 xx,yy = snap.spec_read()
+                adc_x, adc_y = snap.adc_get_samples()
+                release_device_lock(snap.host)
+
                 xx = xx / acc_len
                 yy = yy / acc_len
-                adc_x, adc_y = snap.adc_get_samples()
                 return (xx,yy,adc_x,adc_y)
-            except:
+            except Exception as e:
                 time.sleep(0.5)
                 itry += 1
         return (defs['def_xx'], defs['def_yy'], 
@@ -125,7 +133,7 @@ snap_thread.daemon = True
 snap_thread.start()
 
 # give the thread sometime to pull data
-time.sleep(5)
+time.sleep(10)
 snaps_res = snap_thread.snaps_res
 
 FIGS = {}
@@ -191,12 +199,14 @@ for snap in fengs:
 
 graphs = [dcc.Graph(figure=FIGS[snap_name], id=snap_name) for snap_name in snaps]
 FIGS_HTML = html.Div(graphs, id='figs_html')
+TIME_HTML = html.Div(html.H3(""), id="time_html")
 
 app = dash.Dash()
 #app = Flask(__name__)
 app.layout = html.Div(
     [html.H1('ATA snap monitor')] +
-    [html.Br()]*3 + 
+    [TIME_HTML] + 
+    [html.Br()]*3 +
     [FIGS_HTML] + 
     [dcc.Interval(
         id='plot-update',
@@ -211,6 +221,7 @@ def gen_bp(interval=None):
     #cfreq = cfreq_thread.cfreq
     cfreqs = cfreq_thread.cfreqs
     snaps_res = snap_thread.snaps_res.copy()
+
 
     for i,snap in enumerate(fengs):
         xx, yy, adc_x, adc_y = snaps_res[snap.host]
@@ -229,10 +240,26 @@ def gen_bp(interval=None):
 
     return [FIGS_HTML.children]
 
+@app.callback(
+        [Output("time_html", "children")],
+        [Input("plot-update", "n_intervals")])
+def update_time(interval=None):
+    tstr = datetime.now(tz=TZ).strftime("%Y-%m-%d %H:%M:%S.%f")[:-4]
+    TIME_HTML.children = html.H3("Last updated (local time): %s" %tstr)
+    return [TIME_HTML.children]
 
-HOST = "10.10.1.151"
-PORT = 8787
+HOST = "snapmon"
+PORT = 8880
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description='ATA snap monitor')
+    parser.add_argument('-i', dest='interface', type=str, default=HOST,
+            required=False, help='Host name (default: %s)' %HOST)
+    parser.add_argument('-p', dest='port', type=int, default=PORT,
+            required=False, help='Port number (defaults: %i)' %PORT)
+
+    args = parser.parse_args()
+
     #from waitress import serve
     #serve(app, host=HOST, port = PORT)
-    app.run_server(port=PORT, host=HOST)
+    app.run_server(port=args.port, host=args.interface)
