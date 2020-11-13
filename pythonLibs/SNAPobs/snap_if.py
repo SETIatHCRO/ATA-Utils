@@ -1,12 +1,14 @@
 from ata_snap import ata_snap_fengine
 from SNAPobs import snap_defaults
-from ATATools import ata_helpers
+from ATATools import ata_helpers, logger_defaults
+from ATATools.device_lock import set_device_lock, release_device_lock
+
 import sys,os
 
-from collections import OrderedDict
 import casperfpga
 import subprocess
 import numpy as np
+import pandas as pd
 
 
 START_ATTN = 27
@@ -23,10 +25,17 @@ _snap_if = open(os.path.join(ATA_SHARE_DIR, 'ata_if.cfg'))
 _snap_if_names = [name for name in _snap_if.readline().strip().lstrip("#").split(" ")
         if name]
 
-
 ATA_SNAP_IF = pd.read_csv(_snap_if, delim_whitespace=True, index_col=False,
         names=_snap_if_names, dtype=str)
 _snap_if.close()
+
+_snap_tab = open(os.path.join(ATA_SHARE_DIR, 'ata_snap.tab'))
+_snap_tab_names = [name for name in _snap_tab.readline().strip().lstrip("#").split(" ")
+        if name]
+
+ATA_SNAP_TAB = pd.read_csv(_snap_tab, delim_whitespace=True, index_col=False,
+        names=_snap_tab_names, dtype=str)
+_snap_tab.close()
 
 FPGFILE = ATA_CFG['SNAPFPG']
 
@@ -48,6 +57,7 @@ def round50th(list_n):
 
 
 def setatten(antlist, attenlist):
+    logger = logger_defaults.getModuleLogger(__name__)
     command = "ssh sonata@gain-module1 "
     command += "'python attenuatorMain.py"
     command += " -n "
@@ -56,18 +66,23 @@ def setatten(antlist, attenlist):
     command += " ".join(["%.1f"%i for i in attenlist])
     command += "'"
 
-    print(command)
+    logger.info(command)
 
     process = subprocess.Popen(command, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, shell=True)
 
     stdout, stderr = process.communicate()
-    print(stdout)
-    print(stderr)
+    #print(stdout)
+    #print(stderr)
 
 
 
 def tune_if(snap_hosts, fpgfile=None):
+    """
+    Function to tune the IF
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+    logger.info("IF tuner entered")
 
     assert type(snap_hosts) == list
 
@@ -81,11 +96,14 @@ def tune_if(snap_hosts, fpgfile=None):
         fpgfile = FPGFILE
 
     for feng in snaps_dict.values():
-        feng.fpgs.get_system_information(fpgfile)
+        feng.fpga.get_system_information(fpgfile)
 
+    snap_names = list(snaps_dict.keys())
 
     if_tab = ATA_SNAP_IF[ATA_SNAP_IF.snap_hostname.isin(snap_names)]
     ant_ch = if_tab.values[:,1:].flatten()
+    logger.info("Tuning: %s" %if_tab.snap_hostname)
+    logger.info("Attemp chans: %s" %ant_ch)
 
     prev_attn = np.array([START_ATTN]*len(ant_ch))
 
@@ -96,10 +114,23 @@ def tune_if(snap_hosts, fpgfile=None):
         rms = []
         for snap_name in list(if_tab.snap_hostname.values):
             snap = snaps_dict[snap_name]
+
+            set_device_lock(snap_name)
             x,y = snap.adc_get_samples()
+            release_device_lock(snap_name)
+
             rms.append(x.std())
             rms.append(y.std())
 
         rms = np.array(rms)
         d_attn = 20*np.log10(rms/TARGET_RMS)
         prev_attn = round50th(prev_attn + d_attn)
+    logger.info("IF tuner ended")
+
+
+def tune_if_ants(ant_list):
+    assert type(ant_list) == list
+
+    obs_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name.isin(ant_list)]
+    snap_hosts = list(obs_ant_tab.snap_hostname.values)
+    tune_if(snap_hosts)
