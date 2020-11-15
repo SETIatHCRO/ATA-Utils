@@ -15,8 +15,11 @@ system call fails)
 import re
 import ast
 import concurrent.futures
-from . import ata_remote,ata_constants,snap_array_helpers,logger_defaults
 import os
+
+from . import ata_remote,ata_constants,snap_array_helpers,logger_defaults
+from .ata_rest import ATARest
+
 
 #use discouraged. Use more specific functions instead
 def get_ascii_status():
@@ -217,18 +220,22 @@ def get_az_el(ant_list):
     """
     logger = logger_defaults.getModuleLogger(__name__)
     antstr = snap_array_helpers.input_to_string(ant_list) 
-    stdout, stderr = ata_remote.callObs(["atagetazel", antstr])
+
+    try:
+        endpoint = '/antennas/{:s}/azel'.format(antstr)
+        antpos = ATARest.get(endpoint)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
     retdict = {}
-    for line in stdout.splitlines():
-        if line.startswith(b'ant'):
-            sln = line.decode().split()
-            ant = sln[0][3:]
-            az = float(sln[1])
-            el = float(sln[2])
-            retdict[ant] = [az,el]
+    for ant in ant_list:
+        pos = antpos[ant]
+        if pos:
+            retdict[ant] = [pos['az'], pos['el']]
         else:
-            logger.info('not processed line: {}'.format(line))
+            logger.info('non-operational ant ' + ant)
+            retdict[ant] = None
     return retdict
 
 def set_az_el(ant_list, az, el):
@@ -242,9 +249,13 @@ def set_az_el(ant_list, az, el):
     """
     logger = logger_defaults.getModuleLogger(__name__)
     antstr = snap_array_helpers.input_to_string(ant_list) 
-    stdout, stderr = ata_remote.callObs(["atasetazel", "-w",antstr, "{0:f}".format(az), "{0:f}".format(el)])
-    if stderr:
-        logger.error(stderr)
+
+    try:
+        endpoint = '/antennas/{:s}/azel'.format(antstr)
+        antpos = ATARest.put(endpoint, data={'az': az, 'el': el})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
 def get_eph_source(antlist):
     """
@@ -401,27 +412,31 @@ def get_pams(antlist):
     the return value is a dictionary:
     e.g. {'ant1ax':12.5,'ant1ay':20,'ant2ax':11,'ant2ay':13}
     """
+
+    def sum_front_back(pams):
+        return pams['front'] + pams['back']
+
     logger = logger_defaults.getModuleLogger(__name__)
     antstr = snap_array_helpers.input_to_string(antlist) 
     logger.info("getting pams: {}".format(antstr))
-    str_out,str_err = ata_remote.callObs(['atagetpams','-q',antstr])
 
-    if str_err:
-        logger.error("atagetpams got error: {}".format(str_err))
-
+    try:
+        pams = ATARest.get('/antennas/{:s}/pams'.format(antstr))
+    except Exception as e:
+        logger.error("get_pams got error: {}".format(str(e)))
+        raise
+    
     retdict = {}
-    lines = str_out.splitlines()
-    for line in lines:
-        regroups = re.search('ant(?P<ant>..)\s*on\s*(?P<x>[\d.]+)\s*on\s*(?P<y>[\d.]+)',line.decode());
-        if regroups:
-            ant = regroups.group('ant')
-            xval = float(regroups.group('x'))
-            yval = float(regroups.group('y'))
-            retdict['ant' + ant + 'x'] = xval
-            retdict['ant' + ant + 'y'] = yval
-        else:
-            logger.warning('unable to parse line: {}'.format(line))
-
+    for ant in antlist:
+        pams_for_ant = pams[ant]
+        if pams_for_ant:
+            try:
+                retdict[ant + 'x'] = sum_front_back(pams_for_ant['x'])
+                retdict[ant + 'y'] = sum_front_back(pams_for_ant['y'])
+            except Exception as e:
+                logger.warning('bad PAMS dict: ' + pams_for_ant)
+                raise
+            
     return retdict
 
 def get_dets(antlist):
@@ -435,23 +450,24 @@ def get_dets(antlist):
     logger = logger_defaults.getModuleLogger(__name__)
     antstr = snap_array_helpers.input_to_string(antlist) 
     logger.info("getting dets: {}".format(antstr))
-    str_out,str_err = ata_remote.callObs(['atagetdet','-q',antstr])
 
-    if str_err:
-        logger.error("atagetdet got error: {}".format(str_err))
+    try:
+        endpoint = '/antennas/{:s}/det'.format(antstr)
+        dets = ATARest.get(endpoint)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
     retdict = {}
-    lines = str_out.splitlines()
-    for line in lines:
-        regroups = re.search('ant(?P<ant>..)\s*(?P<x>[\d.]+)\s*(?P<y>[\d.]+)',line.decode());
-        if regroups:
-            ant = regroups.group('ant')
-            xval = float(regroups.group('x'))
-            yval = float(regroups.group('y'))
-            retdict['ant' + ant + 'x'] = xval
-            retdict['ant' + ant + 'y'] = yval
-        else:
-            logger.warning('unable to parse line: {}'.format(line))
+    for ant in antlist:
+        dets_for_ant = dets[ant]
+        if dets_for_ant:
+            try:
+                retdict[ant + 'x'] = dets_for_ant['x']
+                retdict[ant + 'y'] = dets_for_ant['y']
+            except Exception as e:
+                logger.warning('bad dets dict: ' + dets_for_ant)
+                raise
 
     return retdict
 
@@ -515,8 +531,8 @@ def get_sky_freq(lo='a'):
     Return the sky frequency (in MHz) currently
     tuned to the center of the ATA band
     """
-    stdout, stderr = ata_remote.callObs(["atagetskyfreq", lo])
-    return float(stdout.decode().strip())
+    lo = lo.lower()
+    return ATARest.get('/lo1/skyfreq/' + lo)[lo]
 
 def set_freq_focus(freq, ants, calibrate=False):
     """
@@ -573,22 +589,27 @@ def get_freq_focus(ant_list):
             logger.info('not processed line: {}'.format(line))
     return retdict
 
-def set_freq(freq, ants, lo='a'):
+def set_freq(freq, antlist, lo='a'):
     """
     Sets both LO frequency and antenna focus frequency to
     given freq in MHz
     """
-    ants = snap_array_helpers.input_to_string(ants) 
 
+    antstring = snap_array_helpers.input_to_string(antlist)
     logger = logger_defaults.getModuleLogger(__name__)
-
-    freqstr = '{0:.2f}'.format(freq)
     lo = lo.lower()
     if lo not in ['a','b','c','d']:
         raise RuntimeError("LO provided (%s) is not in [a,b,c,d]" %lo)
-    stdout, stderr = ata_remote.callObs(['atasetskyfreq',lo,freqstr])
-    if stderr:
-        logger.error(errormsg)
+
+    # Set LO tuning skyfreq
+
+    try:
+        ATARest.put('/lo1/skyfreq/' + lo, data={'value': freq})
+    except Exception as e:
+        logger.error(str(e))
+        raise
+
+    # Set ant focus
 
     stdout, stderr = ata_remote.callObs(['atasetfocus',ants,freqstr])
     if stderr:
@@ -608,31 +629,34 @@ def get_freq(ant_list, lo='a'):
     """
     logger = logger_defaults.getModuleLogger(__name__)
     antstr = snap_array_helpers.input_to_string(ant_list)
-
-    # get LO A freq
-    lo = lo.lower()
-    if lo not in ['a','b','c','d']:
-        raise RuntimeError("LO provided (%s) is not in [a,b,c,d]" %lo)
-    stdout, stderr = ata_remote.callObs(["atagetskyfreq", lo])
-    skyfreq = float(stdout.decode().strip())
     retdict = {}
+
+    # get LO freq
+
+    try:
+        skyfreq = get_sky_freq(lo)
+    except Exception as e:
+        logger.error('Error getting skyfreq {:s} - {:s}'.format(lo, str(e)))
+        raise
+
     for ant in ant_list:
         retdict[ant] = [skyfreq]
 
     # get focus frequency
-    stdout, stderr = ata_remote.callObs(["atagetfocus", antstr])
-    for line in stdout.splitlines():
-        if line.startswith(b'ant'):
-            sln = line.decode().split()
-            ant = sln[0][3:5]
-            try:
-                focusfreq = float(sln[1])
-            except ValueError as e:
-                focusfreq = "NaN"
-            finally:
-                retdict[ant].append(focusfreq)
+
+    try:
+        focuses = ATARest.get('/antennas/{:s}/focus'.format(antstr))
+    except Exception as e:
+        logger.error('Error getting focus{:s} - {:s}'.format(antstr, str(e)))
+        raise
+        
+    for ant in ant_list:
+        focusfreq = focuses[ant]
+        if not focusfreq:
+            focusfreq = "NaN"
         else:
-            logger.info('not processed line: {}'.format(line))
+            retdict[ant].append(focusfreq)
+
     return retdict
 
 #####
@@ -1068,7 +1092,7 @@ def point_ants2(source, on_or_off, ants):
 
 if __name__== "__main__":
 
-    #print get_pam_status("2a")
+    print(get_pams("ant1a"))
 
     #send_email("Test subject", "Test message")
     #logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
