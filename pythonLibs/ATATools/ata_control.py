@@ -141,22 +141,21 @@ def get_ant_pos(ant_list):
     returns dictionary with 1x3 list e.g. {'1a':[-74.7315    65.9487    0.5466]}
     """
     logger = logger_defaults.getModuleLogger(__name__)
-    stdout, stderr = ata_remote.callObs(["fxconf.rb", "antpos"])
+    antstr = snap_array_helpers.input_to_string(ant_list) 
 
-    ant_list = snap_array_helpers.input_to_list(ant_list) 
+    try:
+        endpoint = '/antennas/{:s}/locations'.format(antstr)
+        ant_locs = ATARest.get(endpoint)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
-    retdict = {}
-    for line in stdout.splitlines():
-        if not line.startswith(b'#'):
-            sln = line.decode().split()
-            ant = sln[3]
-            pos_n = float(sln[0])
-            pos_e = float(sln[1])
-            pos_u = float(sln[2])
-            if ant in ant_list:
-                retdict[ant] = [pos_n,pos_e,pos_u]
+    retval = {}
+    for antname in ant_list:
+        loc = ant_locs[antname]
+        retval[antname] = [loc['N'], loc['E'], loc['U']]
 
-    return retdict
+    return retval
 
 def get_source_ra_dec(source, deg=True):
     """
