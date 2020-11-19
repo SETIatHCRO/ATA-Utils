@@ -18,7 +18,7 @@ import concurrent.futures
 import os
 
 from . import ata_remote,ata_constants,snap_array_helpers,logger_defaults
-from .ata_rest import ATARest
+from .ata_rest import ATARest, ATARestException
 
 
 #use discouraged. Use more specific functions instead
@@ -683,11 +683,9 @@ def list_antenna_group(ant_group):
     logger = logger_defaults.getModuleLogger(__name__)
     logger.info("Querying group {}".format(ant_group))
 
-    stdout, stderr = ata_remote.callObs(['fxconf.rb','sals',ant_group])
-
-    rval = stdout.decode().split()
-    #very rough test 
-    if rval and rval[0] == '500:':
+    try:
+        rval = ATARest.get('/sa/ls/' + ant_group)
+    except Exception as e:
         logger.error("ERROR while listing group {} : {}".format(ant_group,stdout.decode()))
         raise RuntimeError("ERROR while listing group {} : {}".format(ant_group,stdout.decode()))
 
@@ -723,24 +721,28 @@ def move_ant_group(antlist, from_group, to_group):
     """
     logger = logger_defaults.getModuleLogger(__name__)
     antlist = snap_array_helpers.input_to_list(antlist) 
-    logger.info("Reserving \"{}\" from {} to {}".format(snap_array_helpers.array_to_string(antlist), from_group, to_group))
+    antset = frozenset(antlist)
+    antstr = snap_array_helpers.array_to_string(antlist)
+    logger.info("Reserving \"{}\" from {} to {}".format(antstr, from_group, to_group))
 
-    stdout, stderr = ata_remote.callObs(['fxconf.rb','sals',from_group])
-    notants = _test_all_antennas_in_str(stdout.decode(),antlist)
-    if notants:
-        logger.error("Antennas {} are not in group {}".format(snap_array_helpers.array_to_string(notants),from_group))
-        raise RuntimeError("Failed to move antenna {} from {} to {} (not in from_group)".format(snap_array_helpers.array_to_string(notants), from_group, to_group))
+    try:
+        ants_in_group = frozenset(list_antenna_group(from_group))
+        if not antset.issubset(ants_in_group):
+            err = "Antennas {} are not in group {}".format(str(antset - ants_in_group), from_group)
+            logger.error(err)
+            raise RuntimeError(err)
 
-    #stdout, stderr = ata_remote.callObs(['fxconf.rb','sagive', from_group, to_group] + antlist)
-    stdout, sterr =  ata_remote.callObs(['fxconf.rb','sagive', from_group, 
-        to_group, snap_array_helpers.array_to_string(antlist)])
+        ATARest.put('/sa/give/{:s}/{:s}/{:s}'.format(from_group, to_group, antstr))
+        ants_in_group = frozenset(list_antenna_group(to_group))
+        if not antset.issubset(ants_in_group):
+            err = "Failed to move antennas {} to group {}".format(str(antset - ants_in_group), to_group)
+            logger.error(err)
+            raise RuntimeError(err)
 
-    stdout, stderr = ata_remote.callObs(['fxconf.rb','sals',to_group])
-    notants = _test_all_antennas_in_str(stdout.decode(),antlist)
-    if notants:
-        logger.error("Failed to move antennas {} to group {}, reversing sagive".format(snap_array_helpers.array_to_string(notants),to_group))
-        stdout, stderr = ata_remote.callObs(['fxconf.rb','sagive',to_group,from_group] + antlist)
-        raise RuntimeError("Failed to move antenna {} from {} to {}".format(snap_array_helpers.array_to_string(notants), from_group, to_group))
+    except ATARestException as e:
+        err = 'Error while working with subarrays - ' + str(e)
+        logger.error(err)
+        raise RuntimeError(err)
 
 """
 def move_ant_group_old(antlist, from_group, to_group):
