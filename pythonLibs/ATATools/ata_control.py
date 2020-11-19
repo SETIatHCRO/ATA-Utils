@@ -263,27 +263,24 @@ def get_eph_source(antlist):
     """
 
     logger = logger_defaults.getModuleLogger(__name__)
-    ant_list = snap_array_helpers.input_to_list(antlist) 
-
     antstr = snap_array_helpers.input_to_string(antlist) 
     logger.info("getting sources: {}".format(antstr))
 
-    str_out,str_err = ata_remote.callObs(['ataasciistatus','-l','--header','Name,Source'])
-    if str_err:
-        logger.error("ataasciistatus got error: {}".format(str_err))
+    try:
+        endpoint = '/antennas/{:s}/sources'.format(antstr)
+        sources = ATARest.get(endpoint)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
     retdict = {}
-    lines = str_out.splitlines()
-    for line in lines:
-        regroups = re.search('ant(?P<ant>..)\s*(?P<name>.+)',line.decode());
-        if regroups:
-            ant = regroups.group('ant')
-            if ant in ant_list:
-                src = regroups.group('name')
-                #retdict['ant' + ant] = src
-                # keep consistency with getRADec and getAzEl
-                retdict[ant] = src
-
+    for ant in antlist:
+        pos = sources[ant]
+        if pos:
+            retdict[ant] = pos
+        else:
+            logger.info('non-operational ant ' + ant)
+            retdict[ant] = None
     return retdict
 
 #discouraged in the future code
