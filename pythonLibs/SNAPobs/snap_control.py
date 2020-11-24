@@ -70,7 +70,10 @@ def arm_snaps(snaps):
         for snap in snaps:
             sync_time = snap.sync_arm()
             sync_time_arr.append(sync_time)
-        assert len(set(sync_time_arr)) == 1, "Sync times is different across all FPGAs!"
+        if len(set(sync_time_arr)) != 1:
+            for i,snap in enumerate(snaps):
+                print(snap.host, sync_time_arr[i])
+            raise RuntimeError("Sync times is different across all FPGAs!")
 
     else:
         sync_time = int(np.ceil(time.time())) + 2 # Number of seconds for sync is det rmined by design
