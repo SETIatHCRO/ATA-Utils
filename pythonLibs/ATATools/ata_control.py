@@ -49,29 +49,20 @@ def get_alarm():
     """
     function querrys the ata alarm state 
     returns dictionary with fields: 
-    - trigger
     - state
     - user
     - reason
     """
     logger = logger_defaults.getModuleLogger(__name__)
-    str_out,str_err = ata_remote.callObs(['atagetalarm','-l'])
-    if str_err:
-        logger.error("atagetalarm got error: {}".format(str_err))
 
-    retdict = {}
-    lines = str_out.splitlines()
-    for line in lines:
-        regroups = re.search('(?P<trig>\w*)/(?P<com>\w*)\s*:\s*(?P<user>\w*)\s*:\s*(?P<reason>.*)',line.decode());
-        if regroups:
-            retdict['trigger'] = regroups.group('trig')
-            retdict['state'] = regroups.group('com')
-            retdict['user'] = regroups.group('user')
-            retdict['reason'] = regroups.group('reason')
-        else:
-            logger.warning('unable to parse line: {}'.format(line))
-
-    return retdict
+    try:
+        endpoint = '/alarm'
+        alarm_status = ATARest.get(endpoint)
+        return alarm_status
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+    
 
 def set_alarm(reason, user):
     """
@@ -83,7 +74,14 @@ def set_alarm(reason, user):
     The alarm internally sends mails to various users so please avoid 
     mail flood
     """
-    return _setalarm(reason,user,'on')
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    try:
+        endpoint = '/alarm'
+        ATARest.put(endpoint, data={'user': user, 'reason': reason})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
 def unset_alarm(reason, user):
     """
@@ -95,29 +93,16 @@ def unset_alarm(reason, user):
     The alarm internally sends mails to various users so please avoid 
     mail flood
     """
-    return _setalarm(reason,user,'off')
-
-def _setalarm(reason, user=None, alarmstate='off'):
-    """
-    This is an internal function. Should not be called by the user!
-    """
-    
     logger = logger_defaults.getModuleLogger(__name__)
 
-    if alarmstate not in ['on','off']:
-        logger.error("set/unset alarm error: bad state {}".format(alarmstate))
-        raise RuntimeError('bad alarm state')
+    try:
+        endpoint = '/alarm'
+        reason = '{:s}: {:s}'.format(user, reason)
+        ATARest.delete(endpoint, data={'reason': reason})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
-    if not user:
-        user = 'obsuser'
-    reason = "\'{0:s}\'".format(reason)
-
-    str_out,str_err = ata_remote.callObs(['atasetalarm','-c',alarmstate,'-u',user,'-m',reason])
-
-    if str_err:
-        logger.error("atagetalarm got error: {}".format(str_err))
-
-    return str_out
 
 #####
 #
