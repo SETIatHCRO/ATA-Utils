@@ -181,18 +181,23 @@ def get_ra_dec(ant_list):
     """
     logger = logger_defaults.getModuleLogger(__name__)
     antstr = snap_array_helpers.input_to_string(ant_list) 
-    stdout, stderr = ata_remote.callObs(["atagetradec", antstr])
+
+    try:
+        endpoint = '/antennas/{:s}/radec'.format(antstr)
+        antpos = ATARest.get(endpoint)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
     retdict = {}
-    for line in stdout.splitlines():
-        if line.startswith(b'ant'):
-            sln = line.decode().split()
-            ant = sln[0][3:]
-            ra = float(sln[1])
-            dec = float(sln[2])
-            retdict[ant] = [ra,dec]
+    for ant in ant_list:
+        pos = antpos[ant]
+        if pos:
+            retdict[ant] = [pos['ra'], pos['dec']]
         else:
-            logger.info('not processed line: {}'.format(line))
+            logger.info('non-operational ant ' + ant)
+            retdict[ant] = None
+
     return retdict
 
 def get_az_el(ant_list):
