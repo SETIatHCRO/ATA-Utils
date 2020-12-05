@@ -54,14 +54,19 @@ class cfreqThread(Thread):
         self.LOs = LOs
         self.cfreqs = {}
         for lo in LOs:
-            self.cfreqs[lo] = ata_control.get_sky_freq(lo)
+            try:
+                self.cfreqs[lo] = ata_control.get_sky_freq(lo)
+            except:
+                self.cfreqs[lo] = 15000
 
     def run(self):
-        #self.cfreq = ata_control.get_sky_freq()
         while True:
             time.sleep(20)
             for lo in LOs:
-                self.cfreqs[lo] = ata_control.get_sky_freq(lo)
+                try:
+                    self.cfreqs[lo] = ata_control.get_sky_freq(lo)
+                except:
+                    self.cfreqs[lo] = 15000
 
 
 class SnapThread(Thread):
