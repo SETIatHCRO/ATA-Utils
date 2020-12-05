@@ -8,11 +8,23 @@ from ATATools import logger_defaults
 from ata_snap import ata_snap_fengine
 
 
-def init_snaps(snap_list):
+def init_snaps(snap_list, get_system_information=False):
     logger = logger_defaults.getModuleLogger(__name__)
     logger.info("Initialising snaps: %s" %snap_list)
     snaps = [ata_snap_fengine.AtaSnapFengine(snap, 
         transport=casperfpga.KatcpTransport) for snap in snap_list]
+
+    if get_system_information:
+        if type(get_system_information) == bool:
+            from .snap_config import get_ata_cfg
+            ata_cfg = get_ata_cfg()
+            fpg_file = ata_cfg['SNAPFPG']
+        elif type(get_system_information) == str:
+            fpg_file = get_system_information
+
+        for snap in snaps:
+            snap.fpga.get_system_information(fpg_file)
+
     return snaps
 
 
