@@ -21,6 +21,13 @@ from . import ata_remote,ata_constants,snap_array_helpers,logger_defaults
 from .ata_rest import ATARest, ATARestException
 
 
+# Table to keep source offsets to provide backwards compatibility
+# with this interface.
+# This should only be accessed from within this code
+
+_source_offset_table = {}
+
+
 #use discouraged. Use more specific functions instead
 def get_ascii_status():
     """
@@ -978,6 +985,11 @@ def set_atten(antpol_list, db_list):
 #
 #####
 
+# This variable is used to store the ephemeris id generated in
+# create_ephems() to be used later in point_ants().
+
+_create_ephems_source_name = None
+
 def create_ephems(source, az_offset, el_offset):
     """
     a script call to create 2 ephemeris files, one on target, one
@@ -987,14 +999,10 @@ def create_ephems(source, az_offset, el_offset):
     if multiple observers use that at a time, the call in ambigous and you may not point into desired source
     safer option is to use point_ants2
     """
-    #ssh = local["ssh"]
-    #cmd = ssh[("obs@tumulus", "cd /home/obs/NSG;./create_ephems.rb %s %.2f %.2f" % (source, az_offset, el_offset))]
-    #result = cmd()
-    result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./create_ephems.rb {0!s} {1:.2f} {2:.2f}'.format(source,az_offset,el_offset)])
-    if errormsg:
-        logger = logger_defaults.getModuleLogger(__name__)
-        logger.error(errormsg)
-    return ast.literal_eval(result.decode())
+    global _create_ephems_source_name
+    _create_ephems_source_name = source
+    print('create: ', _create_ephems_source_name)
+    return create_ephems2(source, az_offset, el_offset)
 
 
 def point_ants(on_or_off, ants):
@@ -1006,16 +1014,15 @@ def point_ants(on_or_off, ants):
     if multiple observers use that at a time, the call in ambigous and you may not point into desired source
     safer option is to use point_ants2
     """
-    ants = snap_array_helpers.input_to_string(ants) 
+    print('name: ', _create_ephems_source_name)
+    print(on_or_off)
+    return point_ants2(_create_ephems_source_name, on_or_off, ants)
 
-    result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./point_ants_onoff.rb {} {}'.format(on_or_off, ants)]) 
-    if errormsg:
-        logger = logger_defaults.getModuleLogger(__name__)
-        logger.error(errormsg)
-    #ssh = local["ssh"]
-    #cmd = ssh[("obs@tumulus", "cd /home/obs/NSG;./point_ants_onoff.rb %s %s" % (on_or_off, ants))]
-    #result = cmd()
-    return ast.literal_eval(result.decode())
+
+# This variable is used to store the ephemeris id generated in
+# create_ephems2_radec() to be used later in point_ants2_radec().
+
+_create_ephems2_radec_source_id = None
 
 def create_ephems2_radec(ra,dec,az_offset,el_offset):
     """
@@ -1025,11 +1032,34 @@ def create_ephems2_radec(ra,dec,az_offset,el_offset):
     shifted by az_ and el_offset. Mainly used for ON-OFF observations
     together with point_ants2_radec function
     """
-    result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./create_ephems_radec_source.rb {0:.6f} {1:.6f} {2:.2f} {3:.2f}'.format(ra,dec,az_offset,el_offset)])
-    if errormsg:
-        logger = logger_defaults.getModuleLogger(__name__)
-        logger.error(errormsg)
-    return ast.literal_eval(result.decode())
+    logger = logger_defaults.getModuleLogger(__name__)
+    endpoint = '/ephemeris'
+    
+    try:
+        retval = ATARest.post(endpoint, 
+                              json={'radec': [float(ra), float(dec)]})
+        ephem_id = retval['id']
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+    # Internally store the requested offsets for later use
+    # since the interface has changed to no longer require
+    # an actual second offset ephemeris, but can be adjusted at tracking time
+
+    _source_offset_table[ephem_id] = [az_offset, el_offset]
+
+    # Save the generated ephemeris ID for later call
+    # to point_ants2_radec()
+
+    global _create_ephems2_radec_source_id
+    _create_ephems2_radec_source_id = ephem_id
+
+    # Return the ephemeris id stored on the control computer
+    # This value can be ignored for this pair of routines
+    # (create_ephems2, point_ants2)
+
+    return ephem_id
 
 
 def point_ants2_radec(ra,dec, on_or_off, ants):
@@ -1041,13 +1071,8 @@ def point_ants2_radec(ra,dec, on_or_off, ants):
 
     requires earlier call of create_ephems
     """
-    ants = snap_array_helpers.input_to_string(ants) 
 
-    result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./point_ants_onoff_radec_source.rb {0!s} {1!s} {2:.6f} {3:.6f}'.format(on_or_off, ants, ra, dec)]) 
-    if errormsg:
-        logger = logger_defaults.getModuleLogger(__name__)
-        logger.error(errormsg)
-    return ast.literal_eval(result.decode())
+    return point_ants2(_create_ephems2_radec_source_id, on_or_off, ants)
 
 
 def create_ephems2(source, az_offset, el_offset):
@@ -1058,13 +1083,30 @@ def create_ephems2(source, az_offset, el_offset):
     shifted by az_ and el_offset. Mainly used for ON-OFF observations
     together with point_ants function
     """
-    result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./create_ephems_source.rb {0!s} {1:.2f} {2:.2f}'.format(source,az_offset,el_offset)])
-    if errormsg:
-        logger = logger_defaults.getModuleLogger(__name__)
-        logger.error(errormsg)
-    return ast.literal_eval(result.decode())
 
-def point_ants2(source, on_or_off, ants):
+    logger = logger_defaults.getModuleLogger(__name__)
+    endpoint = '/ephemeris'
+    
+    try:
+        retval = ATARest.post(endpoint, json={'source': source})
+        ephem_id = retval['id']
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+    # Internally store the requested offsets for later use
+    # since the interface has changed to no longer require
+    # an actual second offset ephemeris, but can be adjusted at tracking time
+
+    _source_offset_table[ephem_id] = [az_offset, el_offset]
+
+    # Return the ephemeris id stored on the control computer
+    # This value can be ignored for this pair of routines
+    # (create_ephems2, point_ants2)
+
+    return ephem_id
+
+def point_ants2(source, on_or_off, ant_list):
     """
     WF: edited version of 'point_ants' to use '$sourcename_on' and off
     ephem files
@@ -1073,15 +1115,34 @@ def point_ants2(source, on_or_off, ants):
 
     requires earlier call of create_ephems
     """
-    ants = snap_array_helpers.input_to_string(ants) 
+    logger = logger_defaults.getModuleLogger(__name__)
+    antstr = snap_array_helpers.input_to_string(ant_list) 
 
-    result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./point_ants_onoff_source.rb {} {} {}'.format(on_or_off, ants, source)]) 
-    if errormsg:
-        logger = logger_defaults.getModuleLogger(__name__)
-        logger.error(errormsg)
-    return ast.literal_eval(result.decode())
+    # Ephemeris id is mandatory of course
+    # source_name emulates the ATA status display of ephemeris file
+    # with the _on or _off suffix
 
+    source_name = '{:s}_{:s}'.format(source, on_or_off)
+    track_json_payload = {'id': source, 'name': source_name}
 
+    # If off source pointing is requested, alter the track at runtime
+    # by the previously stored az/el offset
+
+    if on_or_off == 'off':
+        offsets = _source_offset_table.get(source)
+        if not offsets:
+            raise Exception('point_ants2(): source {:s} was not previously generated'.format(source))
+        track_json_payload['offset'] = offsets
+
+    try:
+        endpoint = '/antennas/{:s}/track'.format(antstr)
+        ATARest.put(endpoint, json=track_json_payload)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+    # This used to return a process exit code which no longer applies
+    
 
 if __name__== "__main__":
 
