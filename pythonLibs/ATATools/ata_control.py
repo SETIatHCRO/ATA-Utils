@@ -789,9 +789,14 @@ def release_antennas(antlist, should_park=True):
 def park_antennas(antlist):
     logger = logger_defaults.getModuleLogger(__name__)
     logger.info("Parking ants");
-    stdout, stderr = ata_remote.callObs(["park.csh", ','.join(antlist)])
-    logger.info(stdout.rstrip())
-    logger.info(stderr.rstrip())
+    antstr = snap_array_helpers.input_to_string(antlist) 
+
+    try:
+        endpoint = '/antennas/{:s}/park'.format(antstr)
+        ATARest.put(endpoint)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
     logger.info("Parked");
 
 
