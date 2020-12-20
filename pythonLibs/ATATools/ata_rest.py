@@ -22,6 +22,7 @@ class ATARest:
 
     _OP_GET = 'get'
     _OP_PUT = 'put'
+    _OP_POST = 'post'
     _OP_DEL = 'delete'
 
     _debug = False
@@ -59,6 +60,8 @@ class ATARest:
                 response = requests.put(url, **kwargs)
             elif op == cls._OP_DEL:
                 response = requests.delete(url, **kwargs)
+            elif op == cls._OP_POST:
+                response = requests.post(url, **kwargs)
             else:
                 raise ATARestException('Bad op given to ATARest._do_op()')
 
@@ -104,6 +107,21 @@ class ATARest:
         :raises ATARestException on any error response
         """
         return cls._do_op(cls._OP_PUT, endpoint, **kwargs)
+
+    @classmethod
+    def post(cls, endpoint, **kwargs):
+        """
+        HTTP POST operation on ATA REST API endpoint
+
+        :param endpoint: REST endpoint (no stem) to call
+        :param kwargs: any additional arguments to requests.get(), etc.
+
+        :returns dict from JSON section of REST server response
+        :rtype dict
+
+        :raises ATARestException on any error response
+        """
+        return cls._do_op(cls._OP_POST, endpoint, **kwargs)
 
     @classmethod
     def delete(cls, endpoint, **kwargs):
