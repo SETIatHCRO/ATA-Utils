@@ -284,28 +284,27 @@ def get_eph_source(antlist):
 def make_and_track_ephems(source,antstr):
     return make_and_track_source(source,antstr)
 
-def make_and_track_source(source,antstr):
+def make_and_track_source(source, antstr):
     """
     set the antennas to track a source.
     source has to be a valid catalogue name
     the function call returns after the antennas are pointed.
     """
     logger = logger_defaults.getModuleLogger(__name__)
-    result,errormsg = ata_remote.callObs(['ataephem',source])
-    logger.info(result)
-    if errormsg:
-        logger.error(errormsg)
+    try:
+        endpoint = '/ephemeris'
+        retval = ATARest.post(endpoint, json={'source': source})
 
-    antstr = snap_array_helpers.input_to_string(antstr) 
+        logger.info("Tracking source {:s} with {:s}".format(source, antstr))
+        antstr = snap_array_helpers.input_to_string(antstr)
+        ephem_id = retval['id']
+        endpoint = '/antennas/{:s}/track'.format(antstr)
+        ATARest.put(endpoint, json={'id': ephem_id})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
-    logger.info("Tracking source {} with {}".format(source,antstr))
-    result,errormsg = ata_remote.callObs(['atatrackephem','-w',antstr,source+'.ephem'])
-    logger.info(result)
-    if errormsg:
-        logger.error(errormsg)
-
-    return result
-
+    # make_and_track_source() no longer returns status code
 
 def make_and_track_tle(tle, antstr):
     """
@@ -339,7 +338,7 @@ def make_and_track_tle(tle, antstr):
     return result
 
 
-def make_and_track_ra_dec(ra,dec,antstr):
+def make_and_track_ra_dec(ra, dec, antstr):
     """
     create ra-dec based ephemeris and track it with given antennas
     Ra is in decimal hours [0,24)
@@ -347,21 +346,20 @@ def make_and_track_ra_dec(ra,dec,antstr):
     the function call returns after the antennas are pointed.
     """
     logger = logger_defaults.getModuleLogger(__name__)
-    ephem_name = "{0:.6f}-{1:.6f}".format(ra,dec)
-    result,errormsg = ata_remote.callObs(['ataephem','--radec','{0:f},{1:f}'.format(ra,dec)])
-    logger.info(result)
-    if errormsg:
-        logger.error(errormsg)
+    antstr = snap_array_helpers.input_to_string(antstr)
 
-    antstr = snap_array_helpers.input_to_string(antstr) 
+    try:
+        endpoint = '/ephemeris'
+        retval = ATARest.post(endpoint, 
+                              json={'radec': [float(ra), float(dec)]})
 
-    logger.info("Tracking radec: {} {} with {}".format(ra,dec,antstr))
-    result,errormsg = ata_remote.callObs(['atatrackephem','-w',antstr,ephem_name+'.ephem'])
-    logger.info(result)
-    if errormsg:
-        logger.error(errormsg)
+        ephem_id = retval['id']
+        endpoint = '/antennas/{:s}/track'.format(antstr)
+        ATARest.put(endpoint, json={'id': ephem_id})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
-    return result
 
 #####
 #
