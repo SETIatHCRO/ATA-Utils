@@ -295,8 +295,8 @@ def make_and_track_source(source, antstr):
         endpoint = '/ephemeris'
         retval = ATARest.post(endpoint, json={'source': source})
 
-        logger.info("Tracking source {:s} with {:s}".format(source, antstr))
         antstr = snap_array_helpers.input_to_string(antstr)
+        logger.info("Tracking source {:s} with {:s}".format(source, antstr))
         ephem_id = retval['id']
         endpoint = '/antennas/{:s}/track'.format(antstr)
         ATARest.put(endpoint, json={'id': ephem_id})
@@ -537,17 +537,18 @@ def set_freq_focus(freq, ants, calibrate=False):
     function return immediately, but it may take a bit more time 
     to actually set the focus
     """
-    ants = snap_array_helpers.input_to_string(ants) 
-    freqstr = '{0:.2f}'.format(freq)
-
     logger = logger_defaults.getModuleLogger(__name__)
+    ants = snap_array_helpers.input_to_string(ants) 
+    endpoint = '/antennas/{:s}/focus'.format(ants)
 
-    if calibrate:
-        stdout, stderr = ata_remote.callObs(['atasetfocus','--cal',ants,freqstr])
-    else:
-        stdout, stderr = ata_remote.callObs(['atasetfocus',ants,freqstr])
-    if stderr:
-        logger.error(errormsg)
+    # Calibrate is ignored for now, since the REST call
+    # currently attempts to auto cal whenever needed
+    
+    try:
+        ATARest.put(endpoint, data={'value': freq})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
 def get_freq_focus(ant_list):
     """
@@ -564,20 +565,18 @@ def get_freq_focus(ant_list):
     logger = logger_defaults.getModuleLogger(__name__)
     antstr = snap_array_helpers.input_to_string(ant_list)
 
+    endpoint = '/antennas/{:s}/focus'.format(antstr)
+    try:
+        focus_data = ATARest.get(endpoint)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+        
     retdict = {}
-    stdout, stderr = ata_remote.callObs(["atagetfocus", antstr])
-    for line in stdout.splitlines():
-        if line.startswith(b'ant'):
-            sln = line.decode().split()
-            ant = sln[0][3:]
-            try:
-                focusfreq = float(sln[1])
-            except ValueError as e:
-                focusfreq = "NaN"
-            finally:
-                retdict[ant] = focusfreq
-        else:
-            logger.info('not processed line: {}'.format(line))
+    for ant, focus in focus_data:
+        # Return only short names like '1a'
+        ant = ant.replace('ant', '')
+        retdict[ant] = focus
     return retdict
 
 def set_freq(freq, antlist, lo='a'):
@@ -602,15 +601,7 @@ def set_freq(freq, antlist, lo='a'):
 
     # Set ant focus
 
-    stdout, stderr = ata_remote.callObs(['atasetfocus',ants,freqstr])
-    if stderr:
-        logger.error(errormsg)
-    #ssh = local["ssh"]
-    #cmd = ssh[("obs@tumulus", "atasetskyfreq a %.2f" % freq)]
-    #result = cmd()
-    #cmd = ssh[("obs@tumulus", "atasetfocus %s %.2f" % (ants, freq))]
-    #result = cmd()
-    #return result
+    set_freq_focus(freq, antlist)
 
 def get_freq(ant_list, lo='a'):
     """
