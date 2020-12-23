@@ -34,6 +34,7 @@ ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
 
 BW = snap_defaults.bw #MHz
 NCHANS = snap_defaults.nchan
+FOFF = BW/NCHANS
 
 TZ = pytz.timezone('America/Los_Angeles')
 
@@ -145,7 +146,11 @@ for snap in fengs:
     cfreq = cfreqs[lo]
 
     xx,yy,adc_x,adc_y = snaps_res[snap.host]
-    x = np.linspace(cfreq - BW/2, cfreq + BW/2, len(xx))
+    #x = np.linspace(cfreq - BW/2, cfreq + BW/2, len(xx)) - FOFF/2.
+    #x = np.linspace(cfreq - BW/2 + FOFF/2., cfreq + BW/2 + FOFF/2., 
+    #        len(xx)+1) - FOFF/2.
+    #x = x[:-1]
+    x = np.arange(cfreq - BW/2, cfreq + BW/2, FOFF)
 
     fig.append_trace({
 	    'x': x,
@@ -176,14 +181,10 @@ for snap in fengs:
     #ind = np.where(snap_ant[:,0] == snap.host)[0]
     #ant_name = snap_ant[ind,1][0]
 
-    fft_detected_str = ""
-    if snap.fft_of_detect():
-        fft_detected_str=' --- <b>WARNING: FFT OVERFLOW DETECTED</b>'
-
     fig.update_layout(
             title="<b>Antenna:</b> %s  ---  <b>Snap:</b> %s  "
-              "---  <b>LO:</b> %s%s"
-              %(ant_name, snap.host, lo, fft_detected_str),
+            "---  <b>LO:</b> %s, <b>cfreq:</b> %.4f"
+              %(ant_name, snap.host, lo, cfreq),
             xaxis_title = 'Frequency (MHz)',
             yaxis_title = 'Power (dB)',
             xaxis2_title = 'ADC values',
@@ -225,7 +226,14 @@ def gen_bp(interval=None):
         xx, yy, adc_x, adc_y = snaps_res[snap.host]
         lo = ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname == snap.host].LO.values[0]
         cfreq = cfreqs[lo]
-        x = np.linspace(cfreq - BW/2, cfreq + BW/2, len(xx))
+        ant_name = ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname ==\
+                snap.host].ANT_name
+        ant_name = ant_name.values[0]
+        #x = np.linspace(cfreq - BW/2, cfreq + BW/2, len(xx)) - FOFF/2.
+        #x = np.linspace(cfreq - BW/2 + FOFF/2., cfreq + BW/2 + FOFF/2., 
+        #        len(xx)+1) - FOFF/2.
+        #x = x[:-1]
+        x = np.arange(cfreq - BW/2, cfreq + BW/2, FOFF)
         FIGS_HTML.children[i].figure.data[0].y = 10*np.log10(xx + 0.1)
         FIGS_HTML.children[i].figure.data[0].x = x
         FIGS_HTML.children[i].figure.data[1].y = 10*np.log10(yy + 0.1)
@@ -235,6 +243,12 @@ def gen_bp(interval=None):
         FIGS_HTML.children[i].figure.data[2].name = 'RMS_x: %.2f' %np.std(adc_x)
         FIGS_HTML.children[i].figure.data[3].x = adc_y
         FIGS_HTML.children[i].figure.data[3].name = 'RMS_y: %.2f' %np.std(adc_y)
+
+        FIGS_HTML.children[i].figure.layout.title="""<b>Antenna:</b> %s  ---  
+<b>Snap:</b> %s  
+---  <b>LO:</b> %s, <b>cfreq:</b> %.4f"""\
+                %(ant_name, snap.host, lo, cfreq)
+
 
     return [FIGS_HTML.children]
 
