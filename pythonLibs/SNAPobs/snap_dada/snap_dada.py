@@ -21,6 +21,12 @@ TEMPLATE_HDR_PATH = os.path.join(MYCWD, snap_defaults.template_header)
 
 UTCFMT = ATA_CFG['UTCFMT']
 
+def dup_arr(a, i):
+    ii = len(a)
+    dup = a * (i//ii)
+    dup += a[:i%ii]
+    return dup
+
 
 def set_freq_auto(freqs, ant_list):
     """
@@ -304,7 +310,8 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
 
     logger.info("Starting udp capture code")
     #cpu_cores = list(range(8, len(ant_list)+8))
-    cpu_cores = snap_dada_defaults.NIC_cores[:len(ant_list)]
+    #cpu_cores = snap_dada_defaults.NIC_cores[:len(ant_list)]
+    cpu_cores = dup_arr(snap_dada_defaults.NIC_cores, len(ant_list))
     udpdb_logs = [os.path.join(ATA_CFG['LOGDIR'], "udpdb_%s.log")
             %hostn for hostn in list(sub_tab.snap_hostname)]
     if ics:
@@ -319,7 +326,8 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
     if dbnull:
         snap_dada_control.dbnull(keylist)
     else:
-        dbsigproc_cores = snap_dada_defaults.proc_cores[:len(ant_list)]
+        #dbsigproc_cores = snap_dada_defaults.proc_cores[:len(ant_list)]
+        dbsigproc_cores = dup_arr(snap_dada_defaults.proc_cores, len(ant_list))
         if ics:
             #snap_dada_control.dbsigproc(keylist[-1])
             raise RuntimeError("ICS mode not fully implemented")
