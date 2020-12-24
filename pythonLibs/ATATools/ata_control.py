@@ -154,20 +154,19 @@ def get_source_ra_dec(source, deg=True):
     Get the J2000 RA / DEC of `source`. Return in decimal degrees (DEC) and hours (RA)
     by default, unless `deg`=False, in which case return in sexagesimal.
     """
-    stdout, stderr = ata_remote.callObsIgnoreError(["atacheck", source])
-    ra = None
-    for lineu in stdout.decode().split("\n"):
-        line = lineu.lower()
-        if "found {}".format(source).lower() in line:
-            cols = line.split()
-            ra  = float(cols[-1].split(',')[-2])
-            dec = float(cols[-1].split(',')[-1])
-        elif "{}, was not found".format(source).lower() in line:
-            raise RuntimeError("unknown source {}".format(source))
-        elif "RA, Dec".lower() in line and not ra:
-            nums = line.split("=")[1].strip()
-            ra = float(nums.split(',')[0])
-            dec = float(nums.split(',')[1][:-1])
+
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    try:
+        endpoint = '/source'
+        source_data = ATARest.get(endpoint, json={'source': source})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+    ra = source_data['ra']
+    dec = source_data['dec']
+
     if deg:
         return ra, dec
     else:
