@@ -40,8 +40,16 @@ def get_ascii_status():
     there __MAY__ be white space separation within a column)
     """
     
-    stdout, stderr = ata_remote.callObs(["ataasciistatus","-l"])
-    return stdout
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    try:
+        endpoint = '/status'
+        response = ATARest.get(endpoint)
+        return response['status']
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
 
 #####
 #
