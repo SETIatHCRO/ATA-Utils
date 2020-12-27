@@ -381,12 +381,19 @@ def autotune(ants, power_level=-10):
     """
     assert power_level < 0, "ataautotune: power level should be negative"
     logger = logger_defaults.getModuleLogger(__name__)
+    antstr = snap_array_helpers.input_to_string(antstr)
 
-    ants = snap_array_helpers.input_to_string(ants) 
+    try:
+        logger.info("autotuning: {}".format(ants))
+        endpoint = '/antennas/{:s}/autotune'.format(antstr)
+        retval = ATARest.put(endpoint, data={'power': power_level})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
-    logger.info("autotuning: {}".format(ants))
-    str_out,str_err = ata_remote.callObs(['ataautotune',
-        ants,'-p','%i' %power_level])
+    str_out = retval['stdout']
+    str_err = retval['stderr']
+
     #searching for warnings or errors
     rwarn = str_out.find(b"warning")
     logger.info(str_err)
