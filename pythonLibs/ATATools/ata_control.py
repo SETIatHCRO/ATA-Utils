@@ -313,36 +313,30 @@ def make_and_track_source(source, antstr):
 
     # make_and_track_source() no longer returns status code
 
-def make_and_track_tle(tle, antstr):
+def make_and_track_tle(tle_filename, antstr):
     """
     Make an ephemeris file using the provided orbital
     Two-line-element (tle) file, and track the source
     using the ant list
     """
     logger = logger_defaults.getModuleLogger(__name__)
-    result, errormsg = ata_remote.scpFileControl(tle, '${HOME}/tle/')
-    logger.info(result)
-    if errormsg:
-        logger.error(errormsg)
+    try:
+        # Read the contents of the TLE file
+        with open(tle_filename, 'r') as f:
+            data = f.read()
 
-    tle_basename = os.path.basename(tle)
+        endpoint = '/ephemeris'
+        retval = ATARest.post(endpoint, json={'tle': data})
 
-    result,errormsg = ata_remote.callObs(['ataephem',
-        '--tle', '${HOME}/tle/%s' %tle_basename])
-    logger.info(result)
-    if errormsg:
-        logger.error(errormsg)
-
-    antstr = snap_array_helpers.input_to_string(antstr)
-
-    logger.info("Tracking tle_file {} with {}".format(tle,antstr))
-    result,errormsg = ata_remote.callObs(['atatrackephem','-w',antstr,
-        '${HOME}/tle/%s.ephem' %tle_basename])
-    logger.info(result)
-    if errormsg:
-        logger.error(errormsg)
-
-    return result
+        antstr = snap_array_helpers.input_to_string(antstr)
+        ephem_id = retval['id']
+        print(ephem_id)
+        logger.info("Tracking source {:s} with {:s}".format(ephem_id, antstr))
+        endpoint = '/antennas/{:s}/track'.format(antstr)
+        ATARest.put(endpoint, json={'id': ephem_id})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
 
 def make_and_track_ra_dec(ra, dec, antstr):
