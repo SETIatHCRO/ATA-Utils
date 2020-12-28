@@ -330,7 +330,6 @@ def make_and_track_tle(tle_filename, antstr):
 
         antstr = snap_array_helpers.input_to_string(antstr)
         ephem_id = retval['id']
-        print(ephem_id)
         logger.info("Tracking source {:s} with {:s}".format(ephem_id, antstr))
         endpoint = '/antennas/{:s}/track'.format(antstr)
         ATARest.put(endpoint, json={'id': ephem_id})
@@ -480,27 +479,40 @@ def try_on_lna(singleantstr):
     for mutliple antennas, call try_on_lnas
     """
 
-    paxstartdefault = '30'
+    paxstartdefault = 30.0
     wasError = False
     logger = logger_defaults.getModuleLogger(__name__)
     
-    result,errormsg = ata_remote.callObsIgnoreError(['atagetlnas',singleantstr])
-    logger.info(result)
-    if errormsg:
-        logger.error(errormsg)
-        
-    if result.startswith(b'LNA bias is off'):
+    antstr = snap_array_helpers.input_to_string(singleantstr) 
+
+    try:
+        endpoint = '/antenna/{:s}/lnas'.format(antstr)
+        lna = ATARest.get(endpoint)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+    if not lna['on']:
         logger.warning('LNA {} is OFF'.format(singleantstr))
         logger.info('Setting pax to {}'.format(paxstartdefault))
-        result,errormsg = ata_remote.callObs(['atasetpams',singleantstr,paxstartdefault,paxstartdefault])
-        logger.info(result)
-        if errormsg:
-            logger.error(errormsg)
+
+        try:
+            endpoint = '/antenna/{:s}/pams'.format(antstr)
+            args = {'x': {'on': True, 'value': paxstartdefault},
+                    'y': {'on': True, 'value': paxstartdefault}}
+            ATARest.put(endpoint, json=args)
+        except Exception as e:
+            logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+            raise
+
         logger.info('switching on the LNA')
-        result,errormsg = ata_remote.callObs(['atalnaon',singleantstr])
-        logger.info(result)
-        if errormsg:
-            logger.error(errormsg)
+        try:
+            endpoint = '/antenna/{:s}/lnas'.format(antstr)
+            ATARest.put(endpoint, json={'on': True})
+        except Exception as e:
+            logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+            raise
+
     else:
         logger.info('LNA was already on')
 
@@ -998,7 +1010,6 @@ def create_ephems(source, az_offset, el_offset):
     """
     global _create_ephems_source_name
     _create_ephems_source_name = source
-    print('create: ', _create_ephems_source_name)
     return create_ephems2(source, az_offset, el_offset)
 
 
@@ -1011,8 +1022,6 @@ def point_ants(on_or_off, ants):
     if multiple observers use that at a time, the call in ambigous and you may not point into desired source
     safer option is to use point_ants2
     """
-    print('name: ', _create_ephems_source_name)
-    print(on_or_off)
     return point_ants2(_create_ephems_source_name, on_or_off, ants)
 
 
