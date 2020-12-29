@@ -380,7 +380,7 @@ def autotune(ants, power_level=-10):
     """
     assert power_level < 0, "ataautotune: power level should be negative"
     logger = logger_defaults.getModuleLogger(__name__)
-    antstr = snap_array_helpers.input_to_string(antstr)
+    antstr = snap_array_helpers.input_to_string(ants)
 
     try:
         logger.info("autotuning: {}".format(ants))
