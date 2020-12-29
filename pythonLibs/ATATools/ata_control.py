@@ -394,11 +394,11 @@ def autotune(ants, power_level=-10):
     str_err = retval['stderr']
 
     #searching for warnings or errors
-    rwarn = str_out.find(b"warning")
+    rwarn = str_out.find("warning")
     logger.info(str_err)
     if rwarn != -1:
         logger.warning(str_out)
-    rerr = str_err.find(b"error")
+    rerr = str_err.find("error")
     if rerr != -1:
         logger.error(str_out)
         raise RuntimeError("Autotune execution error")
