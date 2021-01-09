@@ -306,7 +306,7 @@ def make_and_track_source(source, antstr):
         logger.info("Tracking source {:s} with {:s}".format(source, antstr))
         ephem_id = retval['id']
         endpoint = '/antennas/{:s}/track'.format(antstr)
-        ATARest.put(endpoint, json={'id': ephem_id})
+        ATARest.put(endpoint, json={'id': ephem_id, 'wait': True})
     except Exception as e:
         logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
         raise
@@ -332,7 +332,7 @@ def make_and_track_tle(tle_filename, antstr):
         ephem_id = retval['id']
         logger.info("Tracking source {:s} with {:s}".format(ephem_id, antstr))
         endpoint = '/antennas/{:s}/track'.format(antstr)
-        ATARest.put(endpoint, json={'id': ephem_id})
+        ATARest.put(endpoint, json={'id': ephem_id, 'wait': True})
     except Exception as e:
         logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
         raise
@@ -355,7 +355,7 @@ def make_and_track_ra_dec(ra, dec, antstr):
 
         ephem_id = retval['id']
         endpoint = '/antennas/{:s}/track'.format(antstr)
-        ATARest.put(endpoint, json={'id': ephem_id})
+        ATARest.put(endpoint, json={'id': ephem_id, 'wait': True})
     except Exception as e:
         logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
         raise
@@ -394,11 +394,11 @@ def autotune(ants, power_level=-10):
     str_err = retval['stderr']
 
     #searching for warnings or errors
-    rwarn = str_out.find("warning")
+    rwarn = str_out.find("WARNING")
     logger.info(str_err)
     if rwarn != -1:
         logger.warning(str_out)
-    rerr = str_err.find("error")
+    rerr = str_err.find("ERROR")
     if rerr != -1:
         logger.error(str_out)
         raise RuntimeError("Autotune execution error")
@@ -1129,7 +1129,7 @@ def point_ants2(source, on_or_off, ant_list):
     # with the _on or _off suffix
 
     source_name = '{:s}_{:s}'.format(source, on_or_off)
-    track_json_payload = {'id': source, 'name': source_name}
+    track_json_payload = {'id': source, 'name': source_name, 'wait': True}
 
     # If off source pointing is requested, alter the track at runtime
     # by the previously stored az/el offset
