@@ -255,7 +255,7 @@ def set_az_el(ant_list, az, el):
 
     try:
         endpoint = '/antennas/{:s}/azel'.format(antstr)
-        antpos = ATARest.put(endpoint, data={'az': az, 'el': el})
+        antpos = ATARest.put(endpoint, data={'az': az, 'el': el, 'wait': True})
     except Exception as e:
         logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
         raise
@@ -809,7 +809,7 @@ def park_antennas(antlist):
 
     try:
         endpoint = '/antennas/{:s}/park'.format(antstr)
-        ATARest.put(endpoint)
+        ATARest.put(endpoint, data={'wait': True})
     except Exception as e:
         logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
         raise
