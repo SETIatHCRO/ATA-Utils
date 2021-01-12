@@ -15,8 +15,18 @@ system call fails)
 import re
 import ast
 import concurrent.futures
-from . import ata_remote,ata_constants,snap_array_helpers,logger_defaults
 import os
+
+from . import ata_remote,ata_constants,snap_array_helpers,logger_defaults
+from .ata_rest import ATARest, ATARestException
+
+
+# Table to keep source offsets to provide backwards compatibility
+# with this interface.
+# This should only be accessed from within this code
+
+_source_offset_table = {}
+
 
 #use discouraged. Use more specific functions instead
 def get_ascii_status():
@@ -30,8 +40,16 @@ def get_ascii_status():
     there __MAY__ be white space separation within a column)
     """
     
-    stdout, stderr = ata_remote.callObs(["ataasciistatus","-l"])
-    return stdout
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    try:
+        endpoint = '/status'
+        response = ATARest.get(endpoint)
+        return response['status']
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
 
 #####
 #
@@ -46,29 +64,20 @@ def get_alarm():
     """
     function querrys the ata alarm state 
     returns dictionary with fields: 
-    - trigger
     - state
     - user
     - reason
     """
     logger = logger_defaults.getModuleLogger(__name__)
-    str_out,str_err = ata_remote.callObs(['atagetalarm','-l'])
-    if str_err:
-        logger.error("atagetalarm got error: {}".format(str_err))
 
-    retdict = {}
-    lines = str_out.splitlines()
-    for line in lines:
-        regroups = re.search('(?P<trig>\w*)/(?P<com>\w*)\s*:\s*(?P<user>\w*)\s*:\s*(?P<reason>.*)',line.decode());
-        if regroups:
-            retdict['trigger'] = regroups.group('trig')
-            retdict['state'] = regroups.group('com')
-            retdict['user'] = regroups.group('user')
-            retdict['reason'] = regroups.group('reason')
-        else:
-            logger.warning('unable to parse line: {}'.format(line))
-
-    return retdict
+    try:
+        endpoint = '/alarm'
+        alarm_status = ATARest.get(endpoint)
+        return alarm_status
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+    
 
 def set_alarm(reason, user):
     """
@@ -80,7 +89,14 @@ def set_alarm(reason, user):
     The alarm internally sends mails to various users so please avoid 
     mail flood
     """
-    return _setalarm(reason,user,'on')
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    try:
+        endpoint = '/alarm'
+        ATARest.put(endpoint, data={'user': user, 'reason': reason})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
 def unset_alarm(reason, user):
     """
@@ -92,29 +108,16 @@ def unset_alarm(reason, user):
     The alarm internally sends mails to various users so please avoid 
     mail flood
     """
-    return _setalarm(reason,user,'off')
-
-def _setalarm(reason, user=None, alarmstate='off'):
-    """
-    This is an internal function. Should not be called by the user!
-    """
-    
     logger = logger_defaults.getModuleLogger(__name__)
 
-    if alarmstate not in ['on','off']:
-        logger.error("set/unset alarm error: bad state {}".format(alarmstate))
-        raise RuntimeError('bad alarm state')
+    try:
+        endpoint = '/alarm'
+        reason = '{:s}: {:s}'.format(user, reason)
+        ATARest.delete(endpoint, data={'reason': reason})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
-    if not user:
-        user = 'obsuser'
-    reason = "\'{0:s}\'".format(reason)
-
-    str_out,str_err = ata_remote.callObs(['atasetalarm','-c',alarmstate,'-u',user,'-m',reason])
-
-    if str_err:
-        logger.error("atagetalarm got error: {}".format(str_err))
-
-    return str_out
 
 #####
 #
@@ -138,42 +141,40 @@ def get_ant_pos(ant_list):
     returns dictionary with 1x3 list e.g. {'1a':[-74.7315    65.9487    0.5466]}
     """
     logger = logger_defaults.getModuleLogger(__name__)
-    stdout, stderr = ata_remote.callObs(["fxconf.rb", "antpos"])
+    antstr = snap_array_helpers.input_to_string(ant_list) 
 
-    ant_list = snap_array_helpers.input_to_list(ant_list) 
+    try:
+        endpoint = '/antennas/{:s}/locations'.format(antstr)
+        ant_locs = ATARest.get(endpoint)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
-    retdict = {}
-    for line in stdout.splitlines():
-        if not line.startswith(b'#'):
-            sln = line.decode().split()
-            ant = sln[3]
-            pos_n = float(sln[0])
-            pos_e = float(sln[1])
-            pos_u = float(sln[2])
-            if ant in ant_list:
-                retdict[ant] = [pos_n,pos_e,pos_u]
+    retval = {}
+    for antname in ant_list:
+        loc = ant_locs[antname]
+        retval[antname] = [loc['N'], loc['E'], loc['U']]
 
-    return retdict
+    return retval
 
 def get_source_ra_dec(source, deg=True):
     """
     Get the J2000 RA / DEC of `source`. Return in decimal degrees (DEC) and hours (RA)
     by default, unless `deg`=False, in which case return in sexagesimal.
     """
-    stdout, stderr = ata_remote.callObsIgnoreError(["atacheck", source])
-    ra = None
-    for lineu in stdout.decode().split("\n"):
-        line = lineu.lower()
-        if "found {}".format(source).lower() in line:
-            cols = line.split()
-            ra  = float(cols[-1].split(',')[-2])
-            dec = float(cols[-1].split(',')[-1])
-        elif "{}, was not found".format(source).lower() in line:
-            raise RuntimeError("unknown source {}".format(source))
-        elif "RA, Dec".lower() in line and not ra:
-            nums = line.split("=")[1].strip()
-            ra = float(nums.split(',')[0])
-            dec = float(nums.split(',')[1][:-1])
+
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    try:
+        endpoint = '/source'
+        source_data = ATARest.get(endpoint, json={'source': source})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+    ra = source_data['ra']
+    dec = source_data['dec']
+
     if deg:
         return ra, dec
     else:
@@ -194,18 +195,23 @@ def get_ra_dec(ant_list):
     """
     logger = logger_defaults.getModuleLogger(__name__)
     antstr = snap_array_helpers.input_to_string(ant_list) 
-    stdout, stderr = ata_remote.callObs(["atagetradec", antstr])
+
+    try:
+        endpoint = '/antennas/{:s}/radec'.format(antstr)
+        antpos = ATARest.get(endpoint)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
     retdict = {}
-    for line in stdout.splitlines():
-        if line.startswith(b'ant'):
-            sln = line.decode().split()
-            ant = sln[0][3:]
-            ra = float(sln[1])
-            dec = float(sln[2])
-            retdict[ant] = [ra,dec]
+    for ant in ant_list:
+        pos = antpos[ant]
+        if pos:
+            retdict[ant] = [pos['ra'], pos['dec']]
         else:
-            logger.info('not processed line: {}'.format(line))
+            logger.info('non-operational ant ' + ant)
+            retdict[ant] = None
+
     return retdict
 
 def get_az_el(ant_list):
@@ -217,18 +223,22 @@ def get_az_el(ant_list):
     """
     logger = logger_defaults.getModuleLogger(__name__)
     antstr = snap_array_helpers.input_to_string(ant_list) 
-    stdout, stderr = ata_remote.callObs(["atagetazel", antstr])
+
+    try:
+        endpoint = '/antennas/{:s}/azel'.format(antstr)
+        antpos = ATARest.get(endpoint)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
     retdict = {}
-    for line in stdout.splitlines():
-        if line.startswith(b'ant'):
-            sln = line.decode().split()
-            ant = sln[0][3:]
-            az = float(sln[1])
-            el = float(sln[2])
-            retdict[ant] = [az,el]
+    for ant in ant_list:
+        pos = antpos[ant]
+        if pos:
+            retdict[ant] = [pos['az'], pos['el']]
         else:
-            logger.info('not processed line: {}'.format(line))
+            logger.info('non-operational ant ' + ant)
+            retdict[ant] = None
     return retdict
 
 def set_az_el(ant_list, az, el):
@@ -242,9 +252,13 @@ def set_az_el(ant_list, az, el):
     """
     logger = logger_defaults.getModuleLogger(__name__)
     antstr = snap_array_helpers.input_to_string(ant_list) 
-    stdout, stderr = ata_remote.callObs(["atasetazel", "-w",antstr, "{0:f}".format(az), "{0:f}".format(el)])
-    if stderr:
-        logger.error(stderr)
+
+    try:
+        endpoint = '/antennas/{:s}/azel'.format(antstr)
+        antpos = ATARest.put(endpoint, data={'az': az, 'el': el, 'wait': True})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
 def get_eph_source(antlist):
     """
@@ -253,89 +267,78 @@ def get_eph_source(antlist):
     """
 
     logger = logger_defaults.getModuleLogger(__name__)
-    ant_list = snap_array_helpers.input_to_list(antlist) 
-
     antstr = snap_array_helpers.input_to_string(antlist) 
     logger.info("getting sources: {}".format(antstr))
 
-    str_out,str_err = ata_remote.callObs(['ataasciistatus','-l','--header','Name,Source'])
-    if str_err:
-        logger.error("ataasciistatus got error: {}".format(str_err))
+    try:
+        endpoint = '/antennas/{:s}/sources'.format(antstr)
+        sources = ATARest.get(endpoint)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
     retdict = {}
-    lines = str_out.splitlines()
-    for line in lines:
-        regroups = re.search('ant(?P<ant>..)\s*(?P<name>.+)',line.decode());
-        if regroups:
-            ant = regroups.group('ant')
-            if ant in ant_list:
-                src = regroups.group('name')
-                #retdict['ant' + ant] = src
-                # keep consistency with getRADec and getAzEl
-                retdict[ant] = src
-
+    for ant in antlist:
+        pos = sources[ant]
+        if pos:
+            retdict[ant] = pos
+        else:
+            logger.info('non-operational ant ' + ant)
+            retdict[ant] = None
     return retdict
 
 #discouraged in the future code
 def make_and_track_ephems(source,antstr):
     return make_and_track_source(source,antstr)
 
-def make_and_track_source(source,antstr):
+def make_and_track_source(source, antstr):
     """
     set the antennas to track a source.
     source has to be a valid catalogue name
     the function call returns after the antennas are pointed.
     """
     logger = logger_defaults.getModuleLogger(__name__)
-    result,errormsg = ata_remote.callObs(['ataephem',source])
-    logger.info(result)
-    if errormsg:
-        logger.error(errormsg)
+    try:
+        endpoint = '/ephemeris'
+        retval = ATARest.post(endpoint, json={'source': source})
 
-    antstr = snap_array_helpers.input_to_string(antstr) 
+        antstr = snap_array_helpers.input_to_string(antstr)
+        logger.info("Tracking source {:s} with {:s}".format(source, antstr))
+        ephem_id = retval['id']
+        endpoint = '/antennas/{:s}/track'.format(antstr)
+        ATARest.put(endpoint, json={'id': ephem_id, 'wait': True})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
-    logger.info("Tracking source {} with {}".format(source,antstr))
-    result,errormsg = ata_remote.callObs(['atatrackephem','-w',antstr,source+'.ephem'])
-    logger.info(result)
-    if errormsg:
-        logger.error(errormsg)
+    # make_and_track_source() no longer returns status code
 
-    return result
-
-
-def make_and_track_tle(tle, antstr):
+def make_and_track_tle(tle_filename, antstr):
     """
     Make an ephemeris file using the provided orbital
     Two-line-element (tle) file, and track the source
     using the ant list
     """
     logger = logger_defaults.getModuleLogger(__name__)
-    result, errormsg = ata_remote.scpFileControl(tle, '${HOME}/tle/')
-    logger.info(result)
-    if errormsg:
-        logger.error(errormsg)
+    try:
+        # Read the contents of the TLE file
+        with open(tle_filename, 'r') as f:
+            data = f.read()
 
-    tle_basename = os.path.basename(tle)
+        endpoint = '/ephemeris'
+        retval = ATARest.post(endpoint, json={'tle': data})
 
-    result,errormsg = ata_remote.callObs(['ataephem',
-        '--tle', '${HOME}/tle/%s' %tle_basename])
-    logger.info(result)
-    if errormsg:
-        logger.error(errormsg)
-
-    antstr = snap_array_helpers.input_to_string(antstr)
-
-    logger.info("Tracking tle_file {} with {}".format(tle,antstr))
-    result,errormsg = ata_remote.callObs(['atatrackephem','-w',antstr,
-        '${HOME}/tle/%s.ephem' %tle_basename])
-    logger.info(result)
-    if errormsg:
-        logger.error(errormsg)
-
-    return result
+        antstr = snap_array_helpers.input_to_string(antstr)
+        ephem_id = retval['id']
+        logger.info("Tracking source {:s} with {:s}".format(ephem_id, antstr))
+        endpoint = '/antennas/{:s}/track'.format(antstr)
+        ATARest.put(endpoint, json={'id': ephem_id, 'wait': True})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
 
-def make_and_track_ra_dec(ra,dec,antstr):
+def make_and_track_ra_dec(ra, dec, antstr):
     """
     create ra-dec based ephemeris and track it with given antennas
     Ra is in decimal hours [0,24)
@@ -343,21 +346,20 @@ def make_and_track_ra_dec(ra,dec,antstr):
     the function call returns after the antennas are pointed.
     """
     logger = logger_defaults.getModuleLogger(__name__)
-    ephem_name = "{0:.6f}-{1:.6f}".format(ra,dec)
-    result,errormsg = ata_remote.callObs(['ataephem','--radec','{0:f},{1:f}'.format(ra,dec)])
-    logger.info(result)
-    if errormsg:
-        logger.error(errormsg)
+    antstr = snap_array_helpers.input_to_string(antstr)
 
-    antstr = snap_array_helpers.input_to_string(antstr) 
+    try:
+        endpoint = '/ephemeris'
+        retval = ATARest.post(endpoint, 
+                              json={'radec': [float(ra), float(dec)]})
 
-    logger.info("Tracking radec: {} {} with {}".format(ra,dec,antstr))
-    result,errormsg = ata_remote.callObs(['atatrackephem','-w',antstr,ephem_name+'.ephem'])
-    logger.info(result)
-    if errormsg:
-        logger.error(errormsg)
+        ephem_id = retval['id']
+        endpoint = '/antennas/{:s}/track'.format(antstr)
+        ATARest.put(endpoint, json={'id': ephem_id, 'wait': True})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
-    return result
 
 #####
 #
@@ -378,18 +380,25 @@ def autotune(ants, power_level=-10):
     """
     assert power_level < 0, "ataautotune: power level should be negative"
     logger = logger_defaults.getModuleLogger(__name__)
+    antstr = snap_array_helpers.input_to_string(ants)
 
-    ants = snap_array_helpers.input_to_string(ants) 
+    try:
+        logger.info("autotuning: {}".format(ants))
+        endpoint = '/antennas/{:s}/autotune'.format(antstr)
+        retval = ATARest.put(endpoint, data={'power': power_level})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
-    logger.info("autotuning: {}".format(ants))
-    str_out,str_err = ata_remote.callObs(['ataautotune',
-        ants,'-p','%i' %power_level])
+    str_out = retval['stdout']
+    str_err = retval['stderr']
+
     #searching for warnings or errors
-    rwarn = str_out.find(b"warning")
+    rwarn = str_out.find("WARNING")
     logger.info(str_err)
     if rwarn != -1:
         logger.warning(str_out)
-    rerr = str_err.find(b"error")
+    rerr = str_err.find("ERROR")
     if rerr != -1:
         logger.error(str_out)
         raise RuntimeError("Autotune execution error")
@@ -401,27 +410,31 @@ def get_pams(antlist):
     the return value is a dictionary:
     e.g. {'ant1ax':12.5,'ant1ay':20,'ant2ax':11,'ant2ay':13}
     """
+
+    def sum_front_back(pams):
+        return pams['front'] + pams['back']
+
     logger = logger_defaults.getModuleLogger(__name__)
     antstr = snap_array_helpers.input_to_string(antlist) 
     logger.info("getting pams: {}".format(antstr))
-    str_out,str_err = ata_remote.callObs(['atagetpams','-q',antstr])
 
-    if str_err:
-        logger.error("atagetpams got error: {}".format(str_err))
-
+    try:
+        pams = ATARest.get('/antennas/{:s}/pams'.format(antstr))
+    except Exception as e:
+        logger.error("get_pams got error: {}".format(str(e)))
+        raise
+    
     retdict = {}
-    lines = str_out.splitlines()
-    for line in lines:
-        regroups = re.search('ant(?P<ant>..)\s*on\s*(?P<x>[\d.]+)\s*on\s*(?P<y>[\d.]+)',line.decode());
-        if regroups:
-            ant = regroups.group('ant')
-            xval = float(regroups.group('x'))
-            yval = float(regroups.group('y'))
-            retdict['ant' + ant + 'x'] = xval
-            retdict['ant' + ant + 'y'] = yval
-        else:
-            logger.warning('unable to parse line: {}'.format(line))
-
+    for ant in antlist:
+        pams_for_ant = pams[ant]
+        if pams_for_ant:
+            try:
+                retdict[ant + 'x'] = sum_front_back(pams_for_ant['x'])
+                retdict[ant + 'y'] = sum_front_back(pams_for_ant['y'])
+            except Exception as e:
+                logger.warning('bad PAMS dict: ' + pams_for_ant)
+                raise
+            
     return retdict
 
 def get_dets(antlist):
@@ -435,23 +448,24 @@ def get_dets(antlist):
     logger = logger_defaults.getModuleLogger(__name__)
     antstr = snap_array_helpers.input_to_string(antlist) 
     logger.info("getting dets: {}".format(antstr))
-    str_out,str_err = ata_remote.callObs(['atagetdet','-q',antstr])
 
-    if str_err:
-        logger.error("atagetdet got error: {}".format(str_err))
+    try:
+        endpoint = '/antennas/{:s}/det'.format(antstr)
+        dets = ATARest.get(endpoint)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
     retdict = {}
-    lines = str_out.splitlines()
-    for line in lines:
-        regroups = re.search('ant(?P<ant>..)\s*(?P<x>[\d.]+)\s*(?P<y>[\d.]+)',line.decode());
-        if regroups:
-            ant = regroups.group('ant')
-            xval = float(regroups.group('x'))
-            yval = float(regroups.group('y'))
-            retdict['ant' + ant + 'x'] = xval
-            retdict['ant' + ant + 'y'] = yval
-        else:
-            logger.warning('unable to parse line: {}'.format(line))
+    for ant in antlist:
+        dets_for_ant = dets[ant]
+        if dets_for_ant:
+            try:
+                retdict[ant + 'x'] = dets_for_ant['x']
+                retdict[ant + 'y'] = dets_for_ant['y']
+            except Exception as e:
+                logger.warning('bad dets dict: ' + dets_for_ant)
+                raise
 
     return retdict
 
@@ -465,27 +479,40 @@ def try_on_lna(singleantstr):
     for mutliple antennas, call try_on_lnas
     """
 
-    paxstartdefault = '30'
+    paxstartdefault = 30.0
     wasError = False
     logger = logger_defaults.getModuleLogger(__name__)
     
-    result,errormsg = ata_remote.callObsIgnoreError(['atagetlnas',singleantstr])
-    logger.info(result)
-    if errormsg:
-        logger.error(errormsg)
-        
-    if result.startswith(b'LNA bias is off'):
+    antstr = snap_array_helpers.input_to_string(singleantstr) 
+
+    try:
+        endpoint = '/antenna/{:s}/lnas'.format(antstr)
+        lna = ATARest.get(endpoint)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+    if not lna['on']:
         logger.warning('LNA {} is OFF'.format(singleantstr))
         logger.info('Setting pax to {}'.format(paxstartdefault))
-        result,errormsg = ata_remote.callObs(['atasetpams',singleantstr,paxstartdefault,paxstartdefault])
-        logger.info(result)
-        if errormsg:
-            logger.error(errormsg)
+
+        try:
+            endpoint = '/antenna/{:s}/pams'.format(antstr)
+            args = {'x': {'on': True, 'value': paxstartdefault},
+                    'y': {'on': True, 'value': paxstartdefault}}
+            ATARest.put(endpoint, json=args)
+        except Exception as e:
+            logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+            raise
+
         logger.info('switching on the LNA')
-        result,errormsg = ata_remote.callObs(['atalnaon',singleantstr])
-        logger.info(result)
-        if errormsg:
-            logger.error(errormsg)
+        try:
+            endpoint = '/antenna/{:s}/lnas'.format(antstr)
+            ATARest.put(endpoint, json={'on': True})
+        except Exception as e:
+            logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+            raise
+
     else:
         logger.info('LNA was already on')
 
@@ -515,8 +542,8 @@ def get_sky_freq(lo='a'):
     Return the sky frequency (in MHz) currently
     tuned to the center of the ATA band
     """
-    stdout, stderr = ata_remote.callObs(["atagetskyfreq", lo])
-    return float(stdout.decode().strip())
+    lo = lo.lower()
+    return ATARest.get('/lo1/skyfreq/' + lo)[lo]
 
 def set_freq_focus(freq, ants, calibrate=False):
     """
@@ -530,17 +557,18 @@ def set_freq_focus(freq, ants, calibrate=False):
     function return immediately, but it may take a bit more time 
     to actually set the focus
     """
-    ants = snap_array_helpers.input_to_string(ants) 
-    freqstr = '{0:.2f}'.format(freq)
-
     logger = logger_defaults.getModuleLogger(__name__)
+    ants = snap_array_helpers.input_to_string(ants) 
+    endpoint = '/antennas/{:s}/focus'.format(ants)
 
-    if calibrate:
-        stdout, stderr = ata_remote.callObs(['atasetfocus','--cal',ants,freqstr])
-    else:
-        stdout, stderr = ata_remote.callObs(['atasetfocus',ants,freqstr])
-    if stderr:
-        logger.error(errormsg)
+    # Calibrate is ignored for now, since the REST call
+    # currently attempts to auto cal whenever needed
+    
+    try:
+        ATARest.put(endpoint, data={'value': freq})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
 
 def get_freq_focus(ant_list):
     """
@@ -557,48 +585,43 @@ def get_freq_focus(ant_list):
     logger = logger_defaults.getModuleLogger(__name__)
     antstr = snap_array_helpers.input_to_string(ant_list)
 
+    endpoint = '/antennas/{:s}/focus'.format(antstr)
+    try:
+        focus_data = ATARest.get(endpoint)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+        
     retdict = {}
-    stdout, stderr = ata_remote.callObs(["atagetfocus", antstr])
-    for line in stdout.splitlines():
-        if line.startswith(b'ant'):
-            sln = line.decode().split()
-            ant = sln[0][3:]
-            try:
-                focusfreq = float(sln[1])
-            except ValueError as e:
-                focusfreq = "NaN"
-            finally:
-                retdict[ant] = focusfreq
-        else:
-            logger.info('not processed line: {}'.format(line))
+    for ant, focus in focus_data:
+        # Return only short names like '1a'
+        ant = ant.replace('ant', '')
+        retdict[ant] = focus
     return retdict
 
-def set_freq(freq, ants, lo='a'):
+def set_freq(freq, antlist, lo='a'):
     """
     Sets both LO frequency and antenna focus frequency to
     given freq in MHz
     """
-    ants = snap_array_helpers.input_to_string(ants) 
 
+    antstring = snap_array_helpers.input_to_string(antlist)
     logger = logger_defaults.getModuleLogger(__name__)
-
-    freqstr = '{0:.2f}'.format(freq)
     lo = lo.lower()
     if lo not in ['a','b','c','d']:
         raise RuntimeError("LO provided (%s) is not in [a,b,c,d]" %lo)
-    stdout, stderr = ata_remote.callObs(['atasetskyfreq',lo,freqstr])
-    if stderr:
-        logger.error(errormsg)
 
-    stdout, stderr = ata_remote.callObs(['atasetfocus',ants,freqstr])
-    if stderr:
-        logger.error(errormsg)
-    #ssh = local["ssh"]
-    #cmd = ssh[("obs@tumulus", "atasetskyfreq a %.2f" % freq)]
-    #result = cmd()
-    #cmd = ssh[("obs@tumulus", "atasetfocus %s %.2f" % (ants, freq))]
-    #result = cmd()
-    #return result
+    # Set LO tuning skyfreq
+
+    try:
+        ATARest.put('/lo1/skyfreq/' + lo, data={'value': freq})
+    except Exception as e:
+        logger.error(str(e))
+        raise
+
+    # Set ant focus
+
+    set_freq_focus(freq, antlist)
 
 def get_freq(ant_list, lo='a'):
     """
@@ -608,31 +631,34 @@ def get_freq(ant_list, lo='a'):
     """
     logger = logger_defaults.getModuleLogger(__name__)
     antstr = snap_array_helpers.input_to_string(ant_list)
-
-    # get LO A freq
-    lo = lo.lower()
-    if lo not in ['a','b','c','d']:
-        raise RuntimeError("LO provided (%s) is not in [a,b,c,d]" %lo)
-    stdout, stderr = ata_remote.callObs(["atagetskyfreq", lo])
-    skyfreq = float(stdout.decode().strip())
     retdict = {}
+
+    # get LO freq
+
+    try:
+        skyfreq = get_sky_freq(lo)
+    except Exception as e:
+        logger.error('Error getting skyfreq {:s} - {:s}'.format(lo, str(e)))
+        raise
+
     for ant in ant_list:
         retdict[ant] = [skyfreq]
 
     # get focus frequency
-    stdout, stderr = ata_remote.callObs(["atagetfocus", antstr])
-    for line in stdout.splitlines():
-        if line.startswith(b'ant'):
-            sln = line.decode().split()
-            ant = sln[0][3:5]
-            try:
-                focusfreq = float(sln[1])
-            except ValueError as e:
-                focusfreq = "NaN"
-            finally:
-                retdict[ant].append(focusfreq)
+
+    try:
+        focuses = ATARest.get('/antennas/{:s}/focus'.format(antstr))
+    except Exception as e:
+        logger.error('Error getting focus{:s} - {:s}'.format(antstr, str(e)))
+        raise
+        
+    for ant in ant_list:
+        focusfreq = focuses[ant]
+        if not focusfreq:
+            focusfreq = "NaN"
         else:
-            logger.info('not processed line: {}'.format(line))
+            retdict[ant].append(focusfreq)
+
     return retdict
 
 #####
@@ -663,11 +689,9 @@ def list_antenna_group(ant_group):
     logger = logger_defaults.getModuleLogger(__name__)
     logger.info("Querying group {}".format(ant_group))
 
-    stdout, stderr = ata_remote.callObs(['fxconf.rb','sals',ant_group])
-
-    rval = stdout.decode().split()
-    #very rough test 
-    if rval and rval[0] == '500:':
+    try:
+        rval = ATARest.get('/sa/ls/' + ant_group)
+    except Exception as e:
         logger.error("ERROR while listing group {} : {}".format(ant_group,stdout.decode()))
         raise RuntimeError("ERROR while listing group {} : {}".format(ant_group,stdout.decode()))
 
@@ -703,24 +727,28 @@ def move_ant_group(antlist, from_group, to_group):
     """
     logger = logger_defaults.getModuleLogger(__name__)
     antlist = snap_array_helpers.input_to_list(antlist) 
-    logger.info("Reserving \"{}\" from {} to {}".format(snap_array_helpers.array_to_string(antlist), from_group, to_group))
+    antset = frozenset(antlist)
+    antstr = snap_array_helpers.array_to_string(antlist)
+    logger.info("Reserving \"{}\" from {} to {}".format(antstr, from_group, to_group))
 
-    stdout, stderr = ata_remote.callObs(['fxconf.rb','sals',from_group])
-    notants = _test_all_antennas_in_str(stdout.decode(),antlist)
-    if notants:
-        logger.error("Antennas {} are not in group {}".format(snap_array_helpers.array_to_string(notants),from_group))
-        raise RuntimeError("Failed to move antenna {} from {} to {} (not in from_group)".format(snap_array_helpers.array_to_string(notants), from_group, to_group))
+    try:
+        ants_in_group = frozenset(list_antenna_group(from_group))
+        if not antset.issubset(ants_in_group):
+            err = "Antennas {} are not in group {}".format(str(antset - ants_in_group), from_group)
+            logger.error(err)
+            raise RuntimeError(err)
 
-    #stdout, stderr = ata_remote.callObs(['fxconf.rb','sagive', from_group, to_group] + antlist)
-    stdout, sterr =  ata_remote.callObs(['fxconf.rb','sagive', from_group, 
-        to_group, snap_array_helpers.array_to_string(antlist)])
+        ATARest.put('/sa/give/{:s}/{:s}/{:s}'.format(from_group, to_group, antstr))
+        ants_in_group = frozenset(list_antenna_group(to_group))
+        if not antset.issubset(ants_in_group):
+            err = "Failed to move antennas {} to group {}".format(str(antset - ants_in_group), to_group)
+            logger.error(err)
+            raise RuntimeError(err)
 
-    stdout, stderr = ata_remote.callObs(['fxconf.rb','sals',to_group])
-    notants = _test_all_antennas_in_str(stdout.decode(),antlist)
-    if notants:
-        logger.error("Failed to move antennas {} to group {}, reversing sagive".format(snap_array_helpers.array_to_string(notants),to_group))
-        stdout, stderr = ata_remote.callObs(['fxconf.rb','sagive',to_group,from_group] + antlist)
-        raise RuntimeError("Failed to move antenna {} from {} to {}".format(snap_array_helpers.array_to_string(notants), from_group, to_group))
+    except ATARestException as e:
+        err = 'Error while working with subarrays - ' + str(e)
+        logger.error(err)
+        raise RuntimeError(err)
 
 """
 def move_ant_group_old(antlist, from_group, to_group):
@@ -777,9 +805,14 @@ def release_antennas(antlist, should_park=True):
 def park_antennas(antlist):
     logger = logger_defaults.getModuleLogger(__name__)
     logger.info("Parking ants");
-    stdout, stderr = ata_remote.callObs(["park.csh", ','.join(antlist)])
-    logger.info(stdout.rstrip())
-    logger.info(stderr.rstrip())
+    antstr = snap_array_helpers.input_to_string(antlist) 
+
+    try:
+        endpoint = '/antennas/{:s}/park'.format(antstr)
+        ATARest.put(endpoint, data={'wait': True})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
     logger.info("Parked");
 
 
@@ -961,6 +994,11 @@ def set_atten(antpol_list, db_list):
 #
 #####
 
+# This variable is used to store the ephemeris id generated in
+# create_ephems() to be used later in point_ants().
+
+_create_ephems_source_name = None
+
 def create_ephems(source, az_offset, el_offset):
     """
     a script call to create 2 ephemeris files, one on target, one
@@ -970,14 +1008,9 @@ def create_ephems(source, az_offset, el_offset):
     if multiple observers use that at a time, the call in ambigous and you may not point into desired source
     safer option is to use point_ants2
     """
-    #ssh = local["ssh"]
-    #cmd = ssh[("obs@tumulus", "cd /home/obs/NSG;./create_ephems.rb %s %.2f %.2f" % (source, az_offset, el_offset))]
-    #result = cmd()
-    result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./create_ephems.rb {0!s} {1:.2f} {2:.2f}'.format(source,az_offset,el_offset)])
-    if errormsg:
-        logger = logger_defaults.getModuleLogger(__name__)
-        logger.error(errormsg)
-    return ast.literal_eval(result.decode())
+    global _create_ephems_source_name
+    _create_ephems_source_name = source
+    return create_ephems2(source, az_offset, el_offset)
 
 
 def point_ants(on_or_off, ants):
@@ -989,16 +1022,13 @@ def point_ants(on_or_off, ants):
     if multiple observers use that at a time, the call in ambigous and you may not point into desired source
     safer option is to use point_ants2
     """
-    ants = snap_array_helpers.input_to_string(ants) 
+    return point_ants2(_create_ephems_source_name, on_or_off, ants)
 
-    result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./point_ants_onoff.rb {} {}'.format(on_or_off, ants)]) 
-    if errormsg:
-        logger = logger_defaults.getModuleLogger(__name__)
-        logger.error(errormsg)
-    #ssh = local["ssh"]
-    #cmd = ssh[("obs@tumulus", "cd /home/obs/NSG;./point_ants_onoff.rb %s %s" % (on_or_off, ants))]
-    #result = cmd()
-    return ast.literal_eval(result.decode())
+
+# This variable is used to store the ephemeris id generated in
+# create_ephems2_radec() to be used later in point_ants2_radec().
+
+_create_ephems2_radec_source_id = None
 
 def create_ephems2_radec(ra,dec,az_offset,el_offset):
     """
@@ -1008,11 +1038,34 @@ def create_ephems2_radec(ra,dec,az_offset,el_offset):
     shifted by az_ and el_offset. Mainly used for ON-OFF observations
     together with point_ants2_radec function
     """
-    result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./create_ephems_radec_source.rb {0:.6f} {1:.6f} {2:.2f} {3:.2f}'.format(ra,dec,az_offset,el_offset)])
-    if errormsg:
-        logger = logger_defaults.getModuleLogger(__name__)
-        logger.error(errormsg)
-    return ast.literal_eval(result.decode())
+    logger = logger_defaults.getModuleLogger(__name__)
+    endpoint = '/ephemeris'
+    
+    try:
+        retval = ATARest.post(endpoint, 
+                              json={'radec': [float(ra), float(dec)]})
+        ephem_id = retval['id']
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+    # Internally store the requested offsets for later use
+    # since the interface has changed to no longer require
+    # an actual second offset ephemeris, but can be adjusted at tracking time
+
+    _source_offset_table[ephem_id] = [az_offset, el_offset]
+
+    # Save the generated ephemeris ID for later call
+    # to point_ants2_radec()
+
+    global _create_ephems2_radec_source_id
+    _create_ephems2_radec_source_id = ephem_id
+
+    # Return the ephemeris id stored on the control computer
+    # This value can be ignored for this pair of routines
+    # (create_ephems2, point_ants2)
+
+    return ephem_id
 
 
 def point_ants2_radec(ra,dec, on_or_off, ants):
@@ -1024,13 +1077,8 @@ def point_ants2_radec(ra,dec, on_or_off, ants):
 
     requires earlier call of create_ephems
     """
-    ants = snap_array_helpers.input_to_string(ants) 
 
-    result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./point_ants_onoff_radec_source.rb {0!s} {1!s} {2:.6f} {3:.6f}'.format(on_or_off, ants, ra, dec)]) 
-    if errormsg:
-        logger = logger_defaults.getModuleLogger(__name__)
-        logger.error(errormsg)
-    return ast.literal_eval(result.decode())
+    return point_ants2(_create_ephems2_radec_source_id, on_or_off, ants)
 
 
 def create_ephems2(source, az_offset, el_offset):
@@ -1041,13 +1089,30 @@ def create_ephems2(source, az_offset, el_offset):
     shifted by az_ and el_offset. Mainly used for ON-OFF observations
     together with point_ants function
     """
-    result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./create_ephems_source.rb {0!s} {1:.2f} {2:.2f}'.format(source,az_offset,el_offset)])
-    if errormsg:
-        logger = logger_defaults.getModuleLogger(__name__)
-        logger.error(errormsg)
-    return ast.literal_eval(result.decode())
 
-def point_ants2(source, on_or_off, ants):
+    logger = logger_defaults.getModuleLogger(__name__)
+    endpoint = '/ephemeris'
+    
+    try:
+        retval = ATARest.post(endpoint, json={'source': source})
+        ephem_id = retval['id']
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+    # Internally store the requested offsets for later use
+    # since the interface has changed to no longer require
+    # an actual second offset ephemeris, but can be adjusted at tracking time
+
+    _source_offset_table[ephem_id] = [az_offset, el_offset]
+
+    # Return the ephemeris id stored on the control computer
+    # This value can be ignored for this pair of routines
+    # (create_ephems2, point_ants2)
+
+    return ephem_id
+
+def point_ants2(source, on_or_off, ant_list):
     """
     WF: edited version of 'point_ants' to use '$sourcename_on' and off
     ephem files
@@ -1056,19 +1121,38 @@ def point_ants2(source, on_or_off, ants):
 
     requires earlier call of create_ephems
     """
-    ants = snap_array_helpers.input_to_string(ants) 
+    logger = logger_defaults.getModuleLogger(__name__)
+    antstr = snap_array_helpers.input_to_string(ant_list) 
 
-    result,errormsg = ata_remote.callObs(['cd /home/obs/NSG;./point_ants_onoff_source.rb {} {} {}'.format(on_or_off, ants, source)]) 
-    if errormsg:
-        logger = logger_defaults.getModuleLogger(__name__)
-        logger.error(errormsg)
-    return ast.literal_eval(result.decode())
+    # Ephemeris id is mandatory of course
+    # source_name emulates the ATA status display of ephemeris file
+    # with the _on or _off suffix
 
+    source_name = '{:s}_{:s}'.format(source, on_or_off)
+    track_json_payload = {'id': source, 'name': source_name, 'wait': True}
 
+    # If off source pointing is requested, alter the track at runtime
+    # by the previously stored az/el offset
+
+    if on_or_off == 'off':
+        offsets = _source_offset_table.get(source)
+        if not offsets:
+            raise Exception('point_ants2(): source {:s} was not previously generated'.format(source))
+        track_json_payload['offset'] = offsets
+
+    try:
+        endpoint = '/antennas/{:s}/track'.format(antstr)
+        ATARest.put(endpoint, json=track_json_payload)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+    # This used to return a process exit code which no longer applies
+    
 
 if __name__== "__main__":
 
-    #print get_pam_status("2a")
+    print(get_pams("ant1a"))
 
     #send_email("Test subject", "Test message")
     #logger = logging.getLogger(snap_onoffs_contants.LOGGING_NAME)
