@@ -119,10 +119,10 @@ def gather_ants(radec, azel, skyfreq, pamvals, detvals, source):
         obsvals['BANDWIDTH']                    = snap_defaults.bw
         obsvals['ANT']                          = ant
         obsvals['NCHAN']                        = snap_defaults.nchan
-        obsvals['PAMx']                         = pamvals['ant%sx' %ant]
-        obsvals['PAMy']                         = pamvals['ant%sy' %ant]
-        obsvals['PAMDETx']                      = detvals['ant%sx' %ant]
-        obsvals['PAMDETy']                      = detvals['ant%sy' %ant]
+        obsvals['PAMx']                         = pamvals['%sx' %ant]
+        obsvals['PAMy']                         = pamvals['%sy' %ant]
+        obsvals['PAMDETx']                      = detvals['%sx' %ant]
+        obsvals['PAMDETy']                      = detvals['%sy' %ant]
         obsDict[ant] = obsvals
     return obsDict
 
