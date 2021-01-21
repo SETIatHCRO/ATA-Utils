@@ -18,9 +18,9 @@ Converts raw beamformer time domain data from the Allen Telescope Array into the
 
 Scripts to continually sample feed and dish sensors, storing them in a database.
 
-##ATAHelpers
+## ATAHelpers
 
-A set of scripts to facilitate a noob using the ATA.
+A set of scripts to facilitate ATA observing.
 
 ## BeamformerDataRecord
 
