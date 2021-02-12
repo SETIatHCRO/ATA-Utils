@@ -3,6 +3,7 @@ import sys
 import time
 import numpy as np
 import argparse
+import warnings
 from ATATools import logger_defaults
 
 from ata_snap import ata_snap_fengine
@@ -32,7 +33,10 @@ def disconnect_snaps(snaps):
     logger = logger_defaults.getModuleLogger(__name__)
     logger.info("disconnecting snaps")
     for snap in snaps:
-        snap.fpga.disconnect()
+        try:
+            snap.fpga.disconnect()
+        except Exception as e:
+            warnings.warn(str(e))
 
 
 def set_acc_len(snaps, acclen):
