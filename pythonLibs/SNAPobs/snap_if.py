@@ -119,3 +119,52 @@ def tune_if_ants(ant_list, target_rms=TARGET_RMS):
     obs_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name.isin(ant_list)]
     snap_hosts = list(obs_ant_tab.snap_hostname.values)
     tune_if(snap_hosts, target_rms=target_rms)
+
+
+def getatten(ant_list):
+    logger = logger_defaults.getModuleLogger(__name__)
+    assert type(ant_list) == list
+    obs_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name.isin(ant_list)]
+
+    antchnumber = []
+    for _, row in obs_ant_tab.iterrows():
+        this_snap_if = ATA_SNAP_IF[ATA_SNAP_IF.snap_hostname == row.snap_hostname]
+        antchnumber.append(this_snap_if['chx'].values[0]) #yuck
+        antchnumber.append(this_snap_if['chy'].values[0])
+
+    command = "ssh sonata@gain-module1 "
+    command += "'python attenuatorMain.py"
+    command += " -n "
+    command += " ".join(antchnumber)
+    command += " -g "
+    command += "'"
+    logger.info(command)
+
+    process = subprocess.Popen(command, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, shell=True)
+
+    stdout, stderr = process.communicate()
+    ch_if_attn = _translate_if_output(stdout)
+
+    i = 0
+    retdict = {}
+    for _, row in obs_ant_tab.iterrows():
+        this_snap_if = ATA_SNAP_IF[ATA_SNAP_IF.snap_hostname == row.snap_hostname]
+        retdict[row.ANT_name+"x"] = float(ch_if_attn[this_snap_if['chx'].values[0]])
+        retdict[row.ANT_name+"y"] = float(ch_if_attn[this_snap_if['chy'].values[0]])
+
+    return retdict
+
+
+def _translate_if_output(stdout):
+    # stdout of shape: '(1, 13.5)\n(2, 14.0)\n(9, 7.5)\n(10, 0.5)\n(13, 5.5)\n(14, 3.5)
+    ret = stdout.decode().strip()
+
+    pairs = ret.split("\n")
+    retdict = {}
+    for i in pairs:
+        tmp = i.strip("(").strip(")")
+        tmp = tmp.replace(" ","").split(",")
+        retdict[tmp[0]] = tmp[1]
+    print(retdict)
+    return retdict

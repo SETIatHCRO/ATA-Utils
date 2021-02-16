@@ -1,5 +1,5 @@
 from ATATools import ata_control, ata_coords, ata_helpers, logger_defaults
-from .. import snap_control, snap_defaults, snap_dirs, snap_config
+from .. import snap_control, snap_defaults, snap_dirs, snap_config, snap_if
 
 from . import snap_dada_control, snap_dada_defaults
 
@@ -103,7 +103,7 @@ def get_nearest_pow_2(n):
     return np.int(pow(2, pos))
 
 
-def gather_ants(radec, azel, skyfreq, pamvals, detvals, source):
+def gather_ants(radec, azel, skyfreq, pamvals, detvals, ifattnvals, source):
     """
     Returns a signle dictionary with every antenna name as key,
     and obs parameters dictionaries as value
@@ -123,6 +123,8 @@ def gather_ants(radec, azel, skyfreq, pamvals, detvals, source):
         obsvals['PAMy']                         = pamvals['%sy' %ant]
         obsvals['PAMDETx']                      = detvals['%sx' %ant]
         obsvals['PAMDETy']                      = detvals['%sy' %ant]
+        obsvals['IFATTNx']                      = ifattnvals['%sx' %ant]
+        obsvals['IFATTNy']                      = ifattnvals['%sy' %ant]
         obsDict[ant] = obsvals
     return obsDict
 
@@ -187,10 +189,11 @@ def get_obs_params(ant_list, given_source):
     skyfreq = get_freq_auto(ant_list)
     pamvals = ata_control.get_pams(ant_list)
     detvals = ata_control.get_dets(ant_list)
+    ifattnvals = snap_if.getatten(ant_list)
 
     #assert sorted(list(radec.keys())) == sorted(ant_list)
     obsParams = gather_ants(radec, azel, skyfreq, pamvals,
-            detvals, source)
+            detvals, ifattnvals, source)
     if discone:
         add_discone(obsParams)
         ant_list.append(snap_defaults.discone_name)
@@ -223,8 +226,11 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
     # better put them in a dictionary
     snaps = {}
     s = snap_control.init_snaps(snap_names)
-    for iant,ant in enumerate(ant_list):
-        snaps[ant] = s[iant]
+    #for iant,ant in enumerate(ant_list):
+    #    snaps[ant] = s[iant]
+    for isnap_name, snap_name in enumerate(snap_names):
+        ant = (sub_tab.ANT_name[sub_tab.snap_hostname == snap_name]).values[0]
+        snaps[ant] = s[isnap_name]
 
     # set accumulation length if provided
     if not acclen:
