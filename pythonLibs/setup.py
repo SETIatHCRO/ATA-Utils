@@ -12,7 +12,7 @@ setuptools.setup(
     install_requires=['ephem','astropy','numpy','tftpy', 'pandas', 'bottleneck','plotly','dash'],
     description='python utility scripts for ATA (private repo)',
     license='MIT',
-    packages=['ATATools','ATAobs','SNAPobs','SNAPobs.snap_dada','OnOffCalc','OnOffCalc.flux','OnOffCalc.yFactor','OnOffCalc.misc','OnOffCalc.filterArray'],
+    packages=['ATATools','ATAobs','HpguppiMon','SNAPobs','SNAPobs.snap_dada','OnOffCalc','OnOffCalc.flux','OnOffCalc.yFactor','OnOffCalc.misc','OnOffCalc.filterArray'],
     include_package_data=True,
     author='Dr. Janusz S. Kulpa',
     author_email='kulpaj.dev@gmail.com',
