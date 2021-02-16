@@ -200,7 +200,8 @@ graphs = [dcc.Graph(figure=FIGS[snap_name], id=snap_name) for snap_name in snaps
 FIGS_HTML = html.Div(graphs, id='figs_html')
 TIME_HTML = html.Div(html.H3(""), id="time_html")
 
-app = dash.Dash()
+app = dash.Dash(__name__)
+server = app.server
 #app = Flask(__name__)
 app.layout = html.Div(
     [html.H1('ATA snap monitor')] +
