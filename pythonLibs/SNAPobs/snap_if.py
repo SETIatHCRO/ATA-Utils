@@ -39,8 +39,37 @@ def round50th(list_n):
     return np.array(ans)
 
 
+def setatten(antpol_dict):
+    """
+    antpol_dict: dict with example values
+        {'1ax': 12.0, '1ay': 13.5}
+    """
 
-def setatten(antlist, attenlist):
+    logger = logger_defaults.getModuleLogger(__name__)
+    if_channels = []
+    atten_values = []
+    for antpol, attenval in antpol_dict.items():
+        if not (antpol.endswith("x") or antpol.endswith("y")):
+            raise RuntimeError("Antpol (%s) doesn't end with 'x' or 'y'"
+                    %(antpol))
+
+        ant = antpol[:-1]
+        pol = antpol[-1]
+        if ant not in list(ATA_SNAP_TAB.ANT_name):
+            raise RuntimeError("Antenna (%s) not in antenna list: %s"
+                    %(ant, list(ATA_SNAP_TAB.ANT_name)))
+        snap_hostname = ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name == ant].snap_hostname.values[0]
+        snap_if_entry = ATA_SNAP_IF[ATA_SNAP_IF.snap_hostname == snap_hostname]
+
+        if_ch = snap_if_entry['ch'+pol].values[0]
+
+        if_channels.append(if_ch)
+        atten_values.append(attenval)
+
+    _setatten(if_channels, atten_values)
+
+
+def _setatten(antlist, attenlist):
     logger = logger_defaults.getModuleLogger(__name__)
     command = "ssh sonata@gain-module1 "
     command += "'python attenuatorMain.py"
@@ -95,7 +124,7 @@ def tune_if(snap_hosts, fpgfile=None,
     for i in range(3):
         prev_attn[prev_attn > MAX_ATT] = MAX_ATT
         prev_attn[prev_attn < MIN_ATT] = MIN_ATT
-        setatten(ant_ch, prev_attn)
+        _setatten(ant_ch, prev_attn)
         rms = []
         for snap_name in list(if_tab.snap_hostname.values):
             snap = snaps_dict[snap_name]
