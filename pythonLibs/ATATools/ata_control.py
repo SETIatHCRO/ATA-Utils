@@ -593,7 +593,7 @@ def get_freq_focus(ant_list):
         raise
         
     retdict = {}
-    for ant, focus in focus_data:
+    for ant, focus in focus_data.items():
         # Return only short names like '1a'
         ant = ant.replace('ant', '')
         retdict[ant] = focus
