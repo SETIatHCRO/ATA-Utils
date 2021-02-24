@@ -16,7 +16,7 @@ import sys
 import numpy
 import logging
 import re
-import ATASQL
+from ATAdb.connect import *
 from mysql.connector import Error 
 from ah import cmaps
 
@@ -85,7 +85,7 @@ def getPolynomials(alist):
     logger = logging.getLogger(__name__)
     logger.info("connecting to database")
     
-    mydb = ATASQL.connectATAROnly()
+    mydb = ATAdb.connect_to_db('ata-ro')
     cursor = mydb.cursor()
     
     dictforward,dictreverse = getPBNames(alist)

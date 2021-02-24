@@ -11,7 +11,7 @@ Created Jan 2020
 
 from ATATools import logger_defaults,ata_control
 from . import obs_common
-import ATASQL
+from ATAdb.connect import *
 
 def getNewObsSetID(description="n/a"):
     """
@@ -31,7 +31,7 @@ def getNewObsSetID(description="n/a"):
 
     logger= logger_defaults.getModuleLogger(__name__)
 
-    mydb = ATASQL.connectObsDb()
+    mydb = ATAdb.connect_to_db('obs')
     mycursor = mydb.cursor()
 
     insertcmd = ("insert into obs_sets set description=%(des)s")
@@ -67,7 +67,7 @@ def getLatestSetID(obstype=None):
         insertcmd = ("select setid from recordings where status='OK' order by setid desc limit 1")
         linfo = ("fetching latest setid") 
 
-    mydb = ATASQL.connectObsDb()
+    mydb = ATAdb.connect_to_db('obs')
     mycursor = mydb.cursor()
 
     logger.info(linfo)
@@ -123,7 +123,7 @@ def initAntennasTable(recid,antlist,sources,azs=0.0,els=0.0, getpams=True):
     
     logger= logger_defaults.getModuleLogger(__name__)
 
-    mydb = ATASQL.connectObsDb()
+    mydb = ATAdb.connect_to_db('obs')
     mycursor = mydb.cursor()
 
     insertcmdpams = ("insert into rec_ants set id=%(id)s, ant=%(ant)s, az=%(az)s, el=%(el)s, "
@@ -195,7 +195,7 @@ def initRecording(frequency,obstype,obsbackend,description,observer="unknown",se
 
     logger= logger_defaults.getModuleLogger(__name__)
 
-    mydb = ATASQL.connectObsDb()
+    mydb = ATAdb.connect_to_db('obs')
     mycursor = mydb.cursor()
 
     if setid:
@@ -227,7 +227,7 @@ def startRecording(obsid, mydate=None):
     """
     logger= logger_defaults.getModuleLogger(__name__)
 
-    mydb = ATASQL.connectObsDb()
+    mydb = ATAdb.connect_to_db('obs')
     mycursor = mydb.cursor()
     
     if mydate:
@@ -251,7 +251,7 @@ def stopRecording(obsid):
     """
     logger= logger_defaults.getModuleLogger(__name__)
 
-    mydb = ATASQL.connectObsDb()
+    mydb = ATAdb.connect_to_db('obs')
     mycursor = mydb.cursor()
     
     insertcmd = ("update recordings set tstop=now(), status='STOPPED' where id=%(id)s")
@@ -277,7 +277,7 @@ def markRecordingsBAD(obsid_list):
     if not isinstance(obsid_list,list) and len(obsid_list) == 1:
         obsid_list = [obsid_list]
 
-    mydb = ATASQL.connectObsDb()
+    mydb = ATAdb.connect_to_db('obs')
     mycursor = mydb.cursor()
 
     insertcmd_part = ("update recordings set status='BAD' where id in (%s)")
@@ -306,7 +306,7 @@ def markRecordingsOK(obsid_list):
         obsid_list = [obsid_list]
 
 
-    mydb = ATASQL.connectObsDb()
+    mydb = ATAdb.connect_to_db('obs')
     mycursor = mydb.cursor()
 
     insertcmd_part = ("update recordings set status='OK' where id in (%s)")
@@ -346,7 +346,7 @@ def getSetData(setid):
 
     logger= logger_defaults.getModuleLogger(__name__)
 
-    mydb = ATASQL.connectObsDb()
+    mydb = ATAdb.connect_to_db('obs')
     mycursor = mydb.cursor()
 
     insertcmd = ("select ts,description from obs_sets where id=%(myid)s")
@@ -380,7 +380,7 @@ def updateAttenRMSVals(cobsid,attendict):
 
     logger= logger_defaults.getModuleLogger(__name__)
 
-    mydb = ATASQL.connectObsDb()
+    mydb = ATAdb.connect_to_db('obs')
     mycursor = mydb.cursor()
 
     insertcmd = ("update rec_ants set dsp_atten_x=%(attenx)s, dsp_atten_y=%(atteny)s, "
@@ -408,7 +408,7 @@ def updateAttenVals(cobsid,attendict):
 
     logger= logger_defaults.getModuleLogger(__name__)
 
-    mydb = ATASQL.connectObsDb()
+    mydb = ATAdb.connect_to_db('obs')
     mycursor = mydb.cursor()
 
     insertcmd = ("update rec_ants set dsp_atten_x=%(attenx)s, dsp_atten_y=%(atteny)s where ant=%(ant)s and id=%(id)s")
@@ -433,7 +433,7 @@ def updateRMSVals(cobsid,attendict):
 
     logger= logger_defaults.getModuleLogger(__name__)
 
-    mydb = ATASQL.connectObsDb()
+    mydb = ATAdb.connect_to_db('obs')
     mycursor = mydb.cursor()
 
     insertcmd = ("update rec_ants set dsp_rms_x=%(rmsx)s, dsp_rms_y=%(rmsy)s where ant=%(ant)s and id=%(id)s")
@@ -458,7 +458,7 @@ def getAntRecordings(obs_set_id):
         logger.error("no obsid provided")
         raise RuntimeError("no obsid provided")
 
-    mydb = ATASQL.connectObsDb()
+    mydb = ATAdb.connect_to_db('obs')
     mycursor = mydb.cursor()
 
     insertcmd = ("select recordings.id, recordings.setid, recordings.tstart, recordings.tstop, "
