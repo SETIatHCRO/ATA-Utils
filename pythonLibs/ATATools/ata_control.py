@@ -1134,8 +1134,13 @@ def point_ants2(source, on_or_off, ant_list):
     # If off source pointing is requested, alter the track at runtime
     # by the previously stored az/el offset
 
+    print(_source_offset_table)
+    print(source)
+    print(on_or_off)
+    
     if on_or_off == 'off':
         offsets = _source_offset_table.get(source)
+        print(offsets)
         if not offsets:
             raise Exception('point_ants2(): source {:s} was not previously generated'.format(source))
         track_json_payload['offset'] = offsets

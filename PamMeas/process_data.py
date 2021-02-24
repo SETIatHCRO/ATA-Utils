@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from optparse import OptionParser
 import sys
 from mysql.connector import Error  
-import ATASQL as atasql
+from ATAdb.connect import *
 
 duplicate_entry_errno = 1062
 satval = 1.0
@@ -231,10 +231,10 @@ def genDatabaseQuery(pb,data,polys,rest,isok,database_name, update_flag):
     
     if database_name != "none":
         if database_name == "google":
-            db = atasql.connectDefaultRW();
+            db = ATAdb.connect_to_db('ants-rw')
             cx = db.cursor()
         elif database_name == "ata":
-            db = atasql.connectATARW();
+            db = ATAdb.connect_to_db('ata-rw')
             cx = db.cursor()
         else:
             raise RuntimeError("unknown db")

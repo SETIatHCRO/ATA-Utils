@@ -10,14 +10,14 @@ Created Feb 2020
 """
 
 from ATATools import logger_defaults
-import ATASQL
+from ATAdb.connect import *
 import mysql.connector
 
 def insertSEFDs(ant,freq,setid,method,ts_list,sefdx_list,sefdx_var_list,sefdy_list,sefdy_var_list):
 
 
     logger= logger_defaults.getModuleLogger(__name__)
-    mydb = ATASQL.connectGoogleRW()
+    mydb = ATAdb.connect_to_db('ants-rw')
     mycursor = mydb.cursor()
 
     insertcmd = ("insert into sefd_meas set ant=%(ant)s, freq=%(freq)s, setid=%(setid)s, "
@@ -55,7 +55,7 @@ def insertSEFD(ant,freq,setid,method,ts,sefdx,sefdx_var,sefdy,sefdy_var):
 
 
     logger= logger_defaults.getModuleLogger(__name__)
-    mydb = ATASQL.connectGoogleRW()
+    mydb = ATAdb.connect_to_db('ants-rw')
     mycursor = mydb.cursor()
 
     dict1 = {'ant':ant,'freq':freq,'setid':setid,'method':method,'ts':ts,
