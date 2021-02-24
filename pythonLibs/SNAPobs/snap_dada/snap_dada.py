@@ -86,6 +86,11 @@ def write_obs_finished(obs_basedir):
     Path(os.path.join(obs_basedir, "obs.finished")).touch()
 
 
+def mark_obs_for_heimdall(utc):
+    base_obs = os.path.join(ATA_BASE_OBS_DIR, utc)
+    Path(os.path.join(base_obs, "obs.heimdall")).touch()
+
+
 def get_utc_dada_now(t_sec):
     t = datetime.timedelta(seconds=t_sec)
     return (datetime.datetime.now()+t).strftime(UTCFMT)
