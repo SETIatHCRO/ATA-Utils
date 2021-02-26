@@ -126,6 +126,7 @@ def main():
             for i in range(16):
                 select_att(i+1)
                 latchEnable()
+                latchEnable()
                 hist_dict = pickle.load(open(HISTORY_FILE, "rb"))
                 hist_dict[i] = args.attenuation[0]
                 pickle.dump(hist_dict, open(HISTORY_FILE, "wb"))
@@ -143,6 +144,7 @@ def main():
             #attenuate
             select_att(nlist[i])
             attenuate(alist[i])
+            latchEnable()
             latchEnable()
             #saving h h to pickle file
             hist_dict = pickle.load(open(HISTORY_FILE, "rb"))
