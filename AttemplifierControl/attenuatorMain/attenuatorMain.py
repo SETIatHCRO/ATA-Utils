@@ -36,7 +36,7 @@ def attenuate(attenuation):
         attenuation = attenuation-steps[i]*quotient
     logger.debug("#Send data at every rising clock")
     for x in range(6):          #assign every bit to output
-        IO.output(4,digits[x])            # pull up/down the data pin for every bit.
+        IO.output(4,not(digits[x]))            # pull up/down the data pin for every bit.
         time.sleep(0.02)            # wait for 10ms
         IO.output(5,1)            # pull CLOCK pin high
         time.sleep(0.02)
@@ -53,8 +53,8 @@ def latchEnable():
     IO.output(6,0)       # pull down the SHIFT pin
     time.sleep(0.01)
     IO.output(6,1)       # pull down the SHIFT pin
-    time.sleep(0.01)
-    IO.output(4,1)       # clear the DATA pin
+
+
 
 def select_att(attenuator):
     logger.debug("#Selecting attenuator")
