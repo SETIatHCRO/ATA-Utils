@@ -53,6 +53,7 @@ def latchEnable():
     IO.output(6,1)       # pull down the SHIFT pin
     time.sleep(0.01)
     IO.output(6,0)       # pull down the SHIFT pin
+    time.sleep(0.01)
     IO.output(4,0)       # clear the DATA pin
 
 def select_att(attenuator):
