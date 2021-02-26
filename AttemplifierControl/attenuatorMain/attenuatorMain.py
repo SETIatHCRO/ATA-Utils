@@ -48,11 +48,11 @@ def latchEnable():
     logger.debug("#Outputing all the values")
     IO.output(4,1)       # clear the DATA pin
     time.sleep(0.02)
-    IO.output(6,0)       # pull the SHIFT pin high to put the 8 bit data out parallel
-    time.sleep(0.01)
-    IO.output(6,1)       # pull down the SHIFT pin
+    IO.output(6,1)       # pull the SHIFT pin high to put the 8 bit data out parallel
     time.sleep(0.01)
     IO.output(6,0)       # pull down the SHIFT pin
+    time.sleep(0.01)
+    IO.output(6,1)       # pull down the SHIFT pin
     time.sleep(0.01)
     IO.output(4,0)       # clear the DATA pin
 
