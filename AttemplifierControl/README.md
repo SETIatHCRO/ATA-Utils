@@ -1,6 +1,6 @@
 # AttemplifierControl
 
-Contains software to control the attenuators in the 8 channel gain control module for use at the Allen Telescope Array.
+Contains software to control the original Attemplifiers in the 8x dual channel IF gain control module for use at the Allen Telescope Array.
 
 ## attenuatorMain.py
 

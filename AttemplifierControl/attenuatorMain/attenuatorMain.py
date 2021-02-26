@@ -123,7 +123,7 @@ def main():
         #case for programming all attenuators
         if len(nlist) == 1 and nlist[0]== 0 and alist[0]<31.5 and alist[0]>0 and (alist[0]/0.5)%1 == 0:
             attenuate(args.attenuation[0])
-            for i in range(16):
+            for i in range(24):
                 select_att(i+1)
                 latchEnable()
                 hist_dict = pickle.load(open(HISTORY_FILE, "rb"))
@@ -136,8 +136,8 @@ def main():
                 logger.error("attenuation must be numbers between [0,31.5] that are divisible by 0.5")
                 print("Illegal input for attenuation, -h for help")
                 exit()
-            if not (nlist[i]>=0 and nlist[i]<=16):
-                logger.error("Attenuator# must be from 1 to 16")
+            if not (nlist[i]>=0 and nlist[i]<=24):
+                logger.error("Attenuator# must be from 1 to 24")
                 print("Invalid attenuator selection, -h for help")
                 exit()
             #attenuate
