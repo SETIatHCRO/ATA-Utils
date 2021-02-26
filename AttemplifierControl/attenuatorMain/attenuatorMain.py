@@ -42,16 +42,16 @@ def attenuate(attenuation):
         time.sleep(0.02)
         IO.output(5,0)            # pull CLOCK pin low
         time.sleep(0.02)
-    latchEnable()
+    #latchEnable()
 
 def latchEnable():
     logger.debug("#Outputing all the values")
     IO.output(4,0)       # clear the DATA pin
     time.sleep(0.02)
     IO.output(6,0)       # pull the SHIFT pin high to put the 8 bit data out parallel
-    time.sleep(0.02)
+    time.sleep(0.005)
     IO.output(6,1)       # pull down the SHIFT pin
-    time.sleep(0.02)
+    time.sleep(0.005)
     IO.output(6,0)       # pull down the SHIFT pin
 
 def select_att(attenuator):
