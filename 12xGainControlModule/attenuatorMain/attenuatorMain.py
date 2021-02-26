@@ -44,7 +44,7 @@ def attenuate(attenuation):
         time.sleep(0.01)
         IO.output(5,0)            # pull down the SHIFT pin
         time.sleep(0.01)
-    latchEnable()
+    #latchEnable() bug found by Alex, latchEnable() executed twice.
 
 def latchEnable():
     logger.debug("#Outputing all the values")
