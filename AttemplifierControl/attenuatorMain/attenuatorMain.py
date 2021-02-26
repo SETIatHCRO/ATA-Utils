@@ -37,20 +37,20 @@ def attenuate(attenuation):
     logger.debug("#Send data at every rising clock")
     for x in range(5, -1, -1):          #Modified to reverse bit order when sending range(6)
         IO.output(4,digits[x])            # pull up/down the data pin for every bit.
-        time.sleep(0.02)            # wait for 10ms
+        time.sleep(0.1)            # wait for 10ms
         IO.output(5,1)            # pull CLOCK pin high
-        time.sleep(0.02)
+        time.sleep(0.1)
         IO.output(5,0)            # pull CLOCK pin low
-        time.sleep(0.02)
+        time.sleep(0.1)
 
 def latchEnable():
     logger.debug("#Outputing all the values")
     IO.output(4,0)       # clear the DATA pin
-    time.sleep(0.02)
+    time.sleep(0.1)
     IO.output(6,0)       # pull the SHIFT pin high to put the 8 bit data out parallel
-    time.sleep(0.01)
+    time.sleep(0.1)
     IO.output(6,1)       # pull down the SHIFT pin
-    time.sleep(0.01)
+    time.sleep(0.1)
     IO.output(6,0)       # pull down the SHIFT pin
 
 
@@ -126,7 +126,6 @@ def main():
             for i in range(16):
                 select_att(i+1)
                 latchEnable()
-                latchEnable()
                 hist_dict = pickle.load(open(HISTORY_FILE, "rb"))
                 hist_dict[i] = args.attenuation[0]
                 pickle.dump(hist_dict, open(HISTORY_FILE, "wb"))
@@ -144,7 +143,6 @@ def main():
             #attenuate
             select_att(nlist[i])
             attenuate(alist[i])
-            latchEnable()
             latchEnable()
             #saving h h to pickle file
             hist_dict = pickle.load(open(HISTORY_FILE, "rb"))
