@@ -35,14 +35,13 @@ def attenuate(attenuation):
         digits[i] = 0 if quotient == 0 else 1
         attenuation = attenuation-steps[i]*quotient
     logger.debug("#Send data at every rising clock")
-    for x in range(6):          #assign every bit to output
+    for x in range(6, 0, -1):          #Modified to reverse bit order when sending
         IO.output(4,digits[x])            # pull up/down the data pin for every bit.
         time.sleep(0.02)            # wait for 10ms
         IO.output(5,1)            # pull CLOCK pin high
         time.sleep(0.02)
         IO.output(5,0)            # pull CLOCK pin low
         time.sleep(0.02)
-    #latchEnable()
 
 def latchEnable():
     logger.debug("#Outputing all the values")
