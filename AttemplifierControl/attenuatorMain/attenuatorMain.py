@@ -35,7 +35,7 @@ def attenuate(attenuation):
         digits[i] = 0 if quotient == 0 else 1
         attenuation = attenuation-steps[i]*quotient
     logger.debug("#Send data at every rising clock")
-    for x in range(6, 1, -1):          #Modified to reverse bit order when sending range(6)
+    for x in range(5, -1, -1):          #Modified to reverse bit order when sending range(6)
         IO.output(4,digits[x])            # pull up/down the data pin for every bit.
         time.sleep(0.02)            # wait for 10ms
         IO.output(5,1)            # pull CLOCK pin high
