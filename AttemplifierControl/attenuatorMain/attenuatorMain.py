@@ -18,17 +18,16 @@ if not os.path.exists(HISTORY_FILE):
 logger = logging.getLogger()
 IO.setwarnings(False)           # do not show any warnings
 IO.setmode (IO.BCM)            # programming the GPIO by BCM pin numbers. (like PIN29 as‘GPIO5’)
-IO.setup(4, IO.OUT)            #initialize selected GPIO as output
-IO.setup(5,IO.OUT)
-IO.setup(6,IO.OUT)
-IO.setup(20,IO.OUT)
-IO.setup(21,IO.OUT)
-IO.setup(22,IO.OUT)
-IO.setup(23,IO.OUT)
+IO.setup(4,IO.OUT)          #Data Pin
+IO.setup(5,IO.OUT)          #CLK
+IO.setup(6,IO.OUT)          #LE
+IO.setup(20,IO.OUT)         #1-Bit register to select Attemplifier LE
+IO.setup(21,IO.OUT)         #2-Bit register to select Attemplifier LE
+IO.setup(22,IO.OUT)         #1-Bit register to select Attemplifier LE
+IO.setup(23,IO.OUT)         #1-Bit register to select Attemplifier LE
 
 def attenuate(attenuation):
     logger.debug("#Calulate bit pattern from attenuation")
-    input = attenuation
     digits = [0,0,0,0,0,0]
     steps = [16,8,4,2,1,0.5]
     for i in range(6):           #calculate the bit value of each step and store in digits
@@ -41,7 +40,7 @@ def attenuate(attenuation):
         time.sleep(0.02)            # wait for 10ms
         IO.output(5,1)            # pull CLOCK pin high
         time.sleep(0.02)
-        IO.output(5,0)            # pull down the SHIFT pin
+        IO.output(5,0)            # pull CLOCK pin low
         time.sleep(0.02)
     latchEnable()
 
@@ -49,9 +48,9 @@ def latchEnable():
     logger.debug("#Outputing all the values")
     IO.output(4,0)       # clear the DATA pin
     time.sleep(0.02)
-    IO.output(6,1)       # pull the SHIFT pin high to put the 8 bit data out parallel
+    IO.output(6,0)       # pull the SHIFT pin high to put the 8 bit data out parallel
     time.sleep(0.02)
-    IO.output(6,0)       # pull down the SHIFT pin
+    IO.output(6,1)       # pull down the SHIFT pin
 
 def select_att(attenuator):
     logger.debug("#Selecting attenuator")
