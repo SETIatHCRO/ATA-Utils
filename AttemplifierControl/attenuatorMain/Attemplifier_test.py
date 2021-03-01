@@ -21,7 +21,7 @@ def main():
         attenuate(steps[x])
         latchEnable()
         print('Set Attenuation to: '+str(steps[x])+'dB')
-        time.sleep(5)
+        time.sleep(3)
 
 
 
