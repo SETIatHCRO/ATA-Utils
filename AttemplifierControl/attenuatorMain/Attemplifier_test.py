@@ -12,8 +12,6 @@ def main():
     attenuate(0)
     latchEnable()
     print('Setup Attemplifier with 0dB attenuation')
-
-    time.sleep(5)
     input("Press Enter to continue...")
     for x in range(6):
         steps = [0.5, 1, 2, 4, 8, 16]
