@@ -1,8 +1,8 @@
 """this skript runs the Attemplifier through its values"""
 
-from attenuatorMain import select_att
-from attenuatorMain import attenuate
-from attenuatorMain import latchEnable
+from attenuatorMain.attenuatorMain import select_att
+from attenuatorMain.attenuatorMain import attenuate
+from attenuatorMain.attenuatorMain import latchEnable
 import time
 
 def main():
