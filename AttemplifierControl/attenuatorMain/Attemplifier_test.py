@@ -20,7 +20,7 @@ def main():
         select_att(1)
         attenuate(steps[x])
         latchEnable()
-        print('Set Attenuation to: '+steps[x]+'dB')
+        print('Set Attenuation to: '+str(steps[x])+'dB')
         time.sleep(5)
 
 
