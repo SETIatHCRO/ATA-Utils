@@ -1,6 +1,6 @@
 """this skript runs the Attemplifier through its values"""
 
-from attenuatorMain.attenuatorMain import *
+from .attenuatorMain import *
 
 
 def main():
