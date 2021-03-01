@@ -1,9 +1,9 @@
-import setuptools
+from setuptools import setup, find_packages
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-setuptools.setup(
+setup(
     name="attenuatorMain",
     version="1.0.1",
     author="Alexander Pollak",
@@ -12,7 +12,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/SETIatHCRO/ATA-Utils/tree/master/AttemplifierControl",
-    py_modules=['attenuatorMain'],
+    packages=find_packages(),
     entry_points={'console_scripts': ['Attemplifier = attenuatorMain.attenuatorMain:main', 'TestRun =attenuatorMain.Attemplifier_test:main']},
     classifiers=[
         "Programming Language :: Python :: 3",
