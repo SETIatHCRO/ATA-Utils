@@ -300,7 +300,7 @@ def make_and_track_source(source, antstr):
     logger = logger_defaults.getModuleLogger(__name__)
     try:
         endpoint = '/ephemeris'
-        retval = ATARest.post(endpoint, json={'source': source})
+        retval = ATARest.post(endpoint, json={'source': source, 'interval': 1})
 
         antstr = snap_array_helpers.input_to_string(antstr)
         logger.info("Tracking source {:s} with {:s}".format(source, antstr))
@@ -326,7 +326,7 @@ def make_and_track_tle(tle_filename, antstr):
             data = f.read()
 
         endpoint = '/ephemeris'
-        retval = ATARest.post(endpoint, json={'tle': data})
+        retval = ATARest.post(endpoint, json={'tle': data, 'interval': 1})
 
         antstr = snap_array_helpers.input_to_string(antstr)
         ephem_id = retval['id']
@@ -351,7 +351,7 @@ def make_and_track_ra_dec(ra, dec, antstr):
     try:
         endpoint = '/ephemeris'
         retval = ATARest.post(endpoint, 
-                              json={'radec': [float(ra), float(dec)]})
+                              json={'radec': [float(ra), float(dec)], 'interval': 1})
 
         ephem_id = retval['id']
         endpoint = '/antennas/{:s}/track'.format(antstr)
@@ -1043,7 +1043,7 @@ def create_ephems2_radec(ra,dec,az_offset,el_offset):
     
     try:
         retval = ATARest.post(endpoint, 
-                              json={'radec': [float(ra), float(dec)]})
+                              json={'radec': [float(ra), float(dec)], 'interval': 1})
         ephem_id = retval['id']
     except Exception as e:
         logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
@@ -1094,7 +1094,7 @@ def create_ephems2(source, az_offset, el_offset):
     endpoint = '/ephemeris'
     
     try:
-        retval = ATARest.post(endpoint, json={'source': source})
+        retval = ATARest.post(endpoint, json={'source': source, 'interval': 1})
         ephem_id = retval['id']
     except Exception as e:
         logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
