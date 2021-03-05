@@ -287,11 +287,22 @@ def get_eph_source(antlist):
             retdict[ant] = None
     return retdict
 
+def set_ephemeris_defaults(ephemeris_args_dict):
+    # Default ephemeris track point interval is 1 second
+
+    if 'interval' not in ephemeris_args_dict:
+        ephemeris_args_dict['interval'] = 1
+
+    # Default ephemeris duration is 12 hours
+
+    if 'duration' not in ephemeris_args_dict:
+        ephemeris_args_dict['duration'] = 12
+
 #discouraged in the future code
 def make_and_track_ephems(source,antstr):
     return make_and_track_source(source,antstr)
 
-def make_and_track_source(source, antstr):
+def make_and_track_source(source, antstr, **ephem_kwargs):
     """
     set the antennas to track a source.
     source has to be a valid catalogue name
@@ -300,7 +311,9 @@ def make_and_track_source(source, antstr):
     logger = logger_defaults.getModuleLogger(__name__)
     try:
         endpoint = '/ephemeris'
-        retval = ATARest.post(endpoint, json={'source': source, 'interval': 1})
+        ephem_kwargs['source'] = source
+        set_ephemeris_defaults(ephem_kwargs)
+        retval = ATARest.post(endpoint, json=ephem_kwargs)
 
         antstr = snap_array_helpers.input_to_string(antstr)
         logger.info("Tracking source {:s} with {:s}".format(source, antstr))
@@ -313,7 +326,7 @@ def make_and_track_source(source, antstr):
 
     # make_and_track_source() no longer returns status code
 
-def make_and_track_tle(tle_filename, antstr):
+def make_and_track_tle(tle_filename, antstr, **ephem_kwargs):
     """
     Make an ephemeris file using the provided orbital
     Two-line-element (tle) file, and track the source
@@ -326,7 +339,9 @@ def make_and_track_tle(tle_filename, antstr):
             data = f.read()
 
         endpoint = '/ephemeris'
-        retval = ATARest.post(endpoint, json={'tle': data, 'interval': 1})
+        ephem_kwargs['tle'] = data
+        set_ephemeris_defaults(ephem_kwargs)
+        retval = ATARest.post(endpoint, json=ephem_kwargs)
 
         antstr = snap_array_helpers.input_to_string(antstr)
         ephem_id = retval['id']
@@ -338,7 +353,7 @@ def make_and_track_tle(tle_filename, antstr):
         raise
 
 
-def make_and_track_ra_dec(ra, dec, antstr):
+def make_and_track_ra_dec(ra, dec, antstr, **ephem_kwargs):
     """
     create ra-dec based ephemeris and track it with given antennas
     Ra is in decimal hours [0,24)
@@ -350,8 +365,9 @@ def make_and_track_ra_dec(ra, dec, antstr):
 
     try:
         endpoint = '/ephemeris'
-        retval = ATARest.post(endpoint, 
-                              json={'radec': [float(ra), float(dec)], 'interval': 1})
+        ephem_kwargs['radec'] = [float(ra), float(dec)]
+        set_ephemeris_defaults(ephem_kwargs)
+        retval = ATARest.post(endpoint, json=ephem_kwargs)
 
         ephem_id = retval['id']
         endpoint = '/antennas/{:s}/track'.format(antstr)
@@ -1030,7 +1046,7 @@ def point_ants(on_or_off, ants):
 
 _create_ephems2_radec_source_id = None
 
-def create_ephems2_radec(ra,dec,az_offset,el_offset):
+def create_ephems2_radec(ra,dec,az_offset,el_offset, **ephem_kwargs):
     """
     JSK: edited version of 'create_ephems2' to use 'radec_on' and off
     ephem files
@@ -1042,8 +1058,9 @@ def create_ephems2_radec(ra,dec,az_offset,el_offset):
     endpoint = '/ephemeris'
     
     try:
-        retval = ATARest.post(endpoint, 
-                              json={'radec': [float(ra), float(dec)], 'interval': 1})
+        ephem_kwargs['radec'] = [float(ra), float(dec)]
+        set_ephemeris_defaults(ephem_kwargs)
+        retval = ATARest.post(endpoint, json=ephem_kwargs)
         ephem_id = retval['id']
     except Exception as e:
         logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
@@ -1081,7 +1098,7 @@ def point_ants2_radec(ra,dec, on_or_off, ants):
     return point_ants2(_create_ephems2_radec_source_id, on_or_off, ants)
 
 
-def create_ephems2(source, az_offset, el_offset):
+def create_ephems2(source, az_offset, el_offset, **ephem_kwargs):
     """
     WF: edited version of 'create_ephems' to use '$sourcename_on' and off
     ephem files
@@ -1094,7 +1111,9 @@ def create_ephems2(source, az_offset, el_offset):
     endpoint = '/ephemeris'
     
     try:
-        retval = ATARest.post(endpoint, json={'source': source, 'interval': 1})
+        ephem_kwargs['source'] = source
+        set_ephemeris_defaults(ephem_kwargs)
+        retval = ATARest.post(endpoint, json=ephem_kwargs)
         ephem_id = retval['id']
     except Exception as e:
         logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
@@ -1112,7 +1131,7 @@ def create_ephems2(source, az_offset, el_offset):
 
     return ephem_id
 
-def point_ants2(source, on_or_off, ant_list):
+def point_ants2(source, on_or_off, ant_list, **ephem_kwargs):
     """
     WF: edited version of 'point_ants' to use '$sourcename_on' and off
     ephem files
@@ -1129,7 +1148,9 @@ def point_ants2(source, on_or_off, ant_list):
     # with the _on or _off suffix
 
     source_name = '{:s}_{:s}'.format(source, on_or_off)
-    track_json_payload = {'id': source, 'name': source_name, 'wait': True}
+    ephem_kwargs['id'] = source
+    ephem_kwargs['name'] = source_name
+    ephem_kwargs['wait'] = True
 
     # If off source pointing is requested, alter the track at runtime
     # by the previously stored az/el offset
@@ -1143,11 +1164,11 @@ def point_ants2(source, on_or_off, ant_list):
         print(offsets)
         if not offsets:
             raise Exception('point_ants2(): source {:s} was not previously generated'.format(source))
-        track_json_payload['offset'] = offsets
+        ephem_kwargs['offset'] = offsets
 
     try:
         endpoint = '/antennas/{:s}/track'.format(antstr)
-        ATARest.put(endpoint, json=track_json_payload)
+        ATARest.put(endpoint, json=ephem_kwargs)
     except Exception as e:
         logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
         raise
