@@ -7,7 +7,7 @@ import re
 
 from SNAPobs import snap_defaults
 
-ATA_EXEC_DIR = os.path.join(snap_defaults.share_dir, 'bin')
+ATA_EXEC_DIR = os.path.join(snap_defaults.baseshare, 'bin')
 
 init_atasnap_hashpipe_sh = os.path.join(ATA_EXEC_DIR, 'init_atasnap_hashpipe.sh')
 kill_hashpipes_sh = os.path.join(ATA_EXEC_DIR, 'kill_hashpipes.sh')
