@@ -37,7 +37,11 @@ class CoordDumpThread(threading.Thread):
 
     def __init__(self, antList, outFileName, coordType="azel", cadence=None):
         logger = logger_defaults.getModuleLogger(__name__)
-        threading.Thread.__init__(self)
+
+        # make thread a daemon in case main wants to exit
+        # not the cleanest solution, as file would still be open
+        threading.Thread.__init__(self, daemon=True)
+
         # Make sure we know what coordinates we're dumping to disk
         if coordType not in ["azel", "radec"]:
             raise RuntimeError("coordType provided (%s) is not included in %s"
