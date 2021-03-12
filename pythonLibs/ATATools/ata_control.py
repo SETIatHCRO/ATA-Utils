@@ -1010,6 +1010,50 @@ def set_atten(antpol_list, db_list):
 #
 #####
 
+_create_ephem_offset_source = None
+def create_ephem(source, **ephem_kwargs):
+    logger = logger_defaults.getModuleLogger(__name__)
+    endpoint = '/ephemeris'
+
+    global _create_ephem_offset_source
+    _create_ephem_offset_source = source
+
+    try:
+        ephem_kwargs['source'] = source
+        set_ephemeris_defaults(ephem_kwargs)
+        print(ephem_kwargs)
+        retval = ATARest.post(endpoint, json=ephem_kwargs)
+        ephem_id = retval['id']
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+    endpoint = '/ephemeris'
+    try:
+        ephem_file = ATARest.get(endpoint, json={'id': ephem_id})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+    return ephem_file
+
+
+def track_and_offset(source, antstr, **ephem_kwargs):
+    logger = logger_defaults.getModuleLogger(__name__)
+    assert source == _create_ephem_offset_source
+    try:
+        antstr = snap_array_helpers.input_to_string(antstr)
+        logger.info("Tracking source {:s} with {:s}".format(source, antstr))
+        ephem_id = source
+        json = {'id': ephem_id, 'wait': True}
+        json.update(ephem_kwargs)
+        endpoint = '/antennas/{:s}/track'.format(antstr)
+        ATARest.put(endpoint, json=json)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+
 # This variable is used to store the ephemeris id generated in
 # create_ephems() to be used later in point_ants().
 
