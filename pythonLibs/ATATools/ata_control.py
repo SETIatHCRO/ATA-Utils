@@ -419,6 +419,42 @@ def autotune(ants, power_level=-10):
         logger.error(str_out)
         raise RuntimeError("Autotune execution error")
 
+def set_pams(antdict):
+    """
+    set PAM attenuator values for given antennas
+
+    the input value is a dictionary of the form:
+    {'1ax': 28.0, '1ay': 28.0, '1fx': 17.0, '1fy': 15.5}
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+    antpols = list(antdict.keys())
+    for antpol in antpols:
+        if not (antpol.endswith("x") or antpol.endswith("y")):
+            raise RuntimeError("%s part of set_pams input dictionary"\
+                    " has wrong value; antpols must end with 'x' or 'y'"\
+                    %(antpol))
+
+    ants_tmp = [antpol.strip("x").strip("y")
+            for antpol in antpols]
+    # very pythonic way to get unique antennas
+    ants = list(set(ants_tmp))
+
+    # this is being done sequentially, not the best
+    # but the /antennas/1a,1f,3c/pams endpoint does not
+    # seem to work
+    for ant in ants:
+        json = {}
+        if ant+"x" in antdict.keys():
+            json["x"] = {'x': True, 'value': antdict[ant+"x"]}
+        if ant+"y" in antdict.keys():
+            json["y"] = {'y': True, 'value': antdict[ant+"y"]}
+
+        try:
+            ret = ATARest.put("/antenna/%s/pams", json=json)
+        except Exception as e:
+            logger.error("set_pams got error: {}".format(str(e)))
+            raise
+
 def get_pams(antlist):
     """
     get PAM attenuator values for given antennas
