@@ -450,7 +450,7 @@ def set_pams(antdict):
             json["y"] = {'y': True, 'value': antdict[ant+"y"]}
 
         try:
-            ret = ATARest.put("/antenna/%s/pams", json=json)
+            ret = ATARest.put("/antenna/%s/pams" %ant, json=json)
         except Exception as e:
             logger.error("set_pams got error: {}".format(str(e)))
             raise
