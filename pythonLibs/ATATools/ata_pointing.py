@@ -1,4 +1,5 @@
 import numpy as np
+from .ata_rest import ATARest, ATARestException
 
 
 ARC_SEC = 1.0 / 3600.0
@@ -21,7 +22,24 @@ class PointingModel():
     """
     def __init__(self, ant):
         self.antName = ant
-        self.mCoef = self.get_model_coefficients(ant)
+        self.mCoef = self._load_pm_coeffs_from_db(ant)
+
+    def _load_pm_coeffs_from_db(self, ant):
+        mCoef = modelCoeff()
+        pm = ATARest.get('/antenna/{:s}/pm'.format(ant))
+        mCoef.IA = pm['IA']
+        mCoef.AN = pm['AN']
+        mCoef.AW = pm['AW']
+        mCoef.CA = pm['CA']
+        mCoef.NPAE = pm['NPAE']
+        mCoef.ACES = pm['ACES']
+        mCoef.ACEC = pm['ACEC']
+        mCoef.HASA2 = pm['HASA2']
+        mCoef.HACA2 =pm['HACA2']
+        mCoef.IE = pm['IE']
+        mCoef.ECES = pm['ECES']
+        mCoef.ECEC = pm['ECEC']
+        return mCoef
 
     def _get_model_coefficients_test(self, ant):
         # These are 3c's parameters
@@ -177,3 +195,4 @@ class PointingModel():
         if ( el_rad > (PIBY2 - roundoff_zone)):
           return (PIBY2 - roundoff_zone)
         return el_rad
+
