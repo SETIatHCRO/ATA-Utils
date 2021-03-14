@@ -11,7 +11,7 @@ PIBY2 = np.pi / 2.0
 MAX_EL_FOR_CORRECTION = 1.5533430342749532 #radians, 89.0 degrees
 
 
-class modelCoeff(object):
+class modelCoeff:
     pass
 
 
@@ -20,26 +20,21 @@ class PointingModel():
     An exact translation from the java code that exists in:
     obs@control:/hcro/atasys/ata/src/ata/trajectory/PointingModel.java
     """
+    _TPOINT_COEFFS = [
+        'IA', 'AN', 'AW', 'CA', 'NPAE', 'ACES', 'ACEC', 'HASA2', 'HACA2',
+        'IE', 'ECES', 'ECEC'
+    ]
+
     def __init__(self, ant):
         self.antName = ant
-        self.mCoef = self._load_pm_coeffs_from_db(ant)
+        self.mCoef = modelCoeff()
 
-    def _load_pm_coeffs_from_db(self, ant):
-        mCoef = modelCoeff()
-        pm = ATARest.get('/antenna/{:s}/pm'.format(ant))
-        mCoef.IA = pm['IA']
-        mCoef.AN = pm['AN']
-        mCoef.AW = pm['AW']
-        mCoef.CA = pm['CA']
-        mCoef.NPAE = pm['NPAE']
-        mCoef.ACES = pm['ACES']
-        mCoef.ACEC = pm['ACEC']
-        mCoef.HASA2 = pm['HASA2']
-        mCoef.HACA2 =pm['HACA2']
-        mCoef.IE = pm['IE']
-        mCoef.ECES = pm['ECES']
-        mCoef.ECEC = pm['ECEC']
-        return mCoef
+        pointing_model = ATARest.get('/antenna/{:s}/pm'.format(ant))
+        for key, value in pointing_model.items():
+            if key in self._TPOINT_COEFFS:
+                setattr(self.mCoef, key, value)
+            else:
+                setattr(self, key, value)
 
     def _get_model_coefficients_test(self, ant):
         # These are 3c's parameters
