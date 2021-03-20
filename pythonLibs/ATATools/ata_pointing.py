@@ -36,28 +36,6 @@ class PointingModel():
             else:
                 setattr(self, key, value)
 
-    def _get_model_coefficients_test(self, ant):
-        # These are 3c's parameters
-        # for testing purposes only
-        mCoef = modelCoeff()
-        mCoef.IA = -396
-        mCoef.AN = -112
-        mCoef.AW = 66
-        mCoef.CA = 298
-        mCoef.NPAE = 0
-        mCoef.ACES = 0
-        mCoef.ACEC = 0
-        mCoef.HASA2 = 0
-        mCoef.HACA2 = 0
-        mCoef.IE = -1831
-        mCoef.ECES = 0
-        mCoef.ECEC = 0
-        return mCoef
-
-    def get_model_coefficients(self, ant):
-        # should be replaced with REST call
-        return self._get_model_coefficients_test(ant)
-
     def avoidImpossibleEl(self, el_rad):
         """
         Keeps you away from the region around zenith that can't be reached
@@ -190,4 +168,25 @@ class PointingModel():
         if ( el_rad > (PIBY2 - roundoff_zone)):
           return (PIBY2 - roundoff_zone)
         return el_rad
+
+
+    def to_tpoint_str(self):
+        # return a pretty print string of pointing model
+        retStr =  "!  AzOffset = %.3f\n" %self.AzOffset
+        retStr += "!  ElOffset = %.3f\n" %self.ElOffset
+        retStr += "!  IA = %.3f\n" %self.mCoef.IA
+        retStr += "!  AN = %.3f\n" %self.mCoef.AN
+        retStr += "!  AW = %.3f\n" %self.mCoef.AW
+        retStr += "!  CA = %.3f\n" %self.mCoef.CA
+        retStr += "!  NPAE = %.3f\n" %self.mCoef.NPAE
+        retStr += "!  ACES = %.3f\n" %self.mCoef.ACES
+        retStr += "!  ACEC = %.3f\n" %self.mCoef.ACEC
+        retStr += "!  HASA2 = %.3f\n" %self.mCoef.HASA2
+        retStr += "!  HACA2 = %.3f\n" %self.mCoef.HACA2
+        retStr += "!  IE = %.3f\n" %self.mCoef.IE
+        retStr += "!  ECES = %.3f\n" %self.mCoef.ECES
+        retStr += "!  ECEC = %.3f\n" %self.mCoef.ECEC
+        retStr += "!\n"
+        return retStr
+
 
