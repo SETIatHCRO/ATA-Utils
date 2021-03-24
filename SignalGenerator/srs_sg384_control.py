@@ -19,14 +19,14 @@ defaultA = 16
 
 def main():
     parser = OptionParser(usage= 'Usage %prog options',
-        description='display or change the values of SNAP clock generator')
+        description='Display or change the values of SRS SG384 Signal Generator')
 
     parser.add_option('-p', '--print', dest='do_print', action="store_true", default=False,
             help ="Query and print current values")
     parser.add_option('-f','--freq', dest='freq', type=float, default=None,
-            help ='set clock value in MHz')
+            help ='Set clock value in MHz')
     parser.add_option('-a','--amp', dest='amp', type=float, default=None,
-            help ='set amplitude')
+            help ='Set amplitude')
 
     (options,args) = parser.parse_args()
 
