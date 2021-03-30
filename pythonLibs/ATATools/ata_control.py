@@ -359,7 +359,7 @@ def retrieve_ephemeris(ephemeris_id):
 
     try:
         endpoint = '/ephemeris'
-        ephem_file = ATARest.get(endpoint, json={'id': ephem_id})
+        ephem_file = ATARest.get(endpoint, json={'id': ephemeris_id})
         return ephem_file
     except Exception as e:
         logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
