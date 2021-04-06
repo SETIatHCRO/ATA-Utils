@@ -1,1 +1,1 @@
-from . import snap_hpguppi_defaults, populate_meta, record_in
+from . import snap_hpguppi_defaults, auxillary, populate_meta, record_in
