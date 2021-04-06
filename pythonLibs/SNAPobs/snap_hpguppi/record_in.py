@@ -39,6 +39,18 @@ def _stitch_pattern_for_sequence(pattern, sequence):
 
 def _get_snaps_of_instance(redis_obj, redis_chan):
     return _stitch_pattern_for_sequence(redis_obj.hget(redis_chan, "SNAPPAT").decode(), redis_obj.hget(redis_chan, "SNAPSEQ").decode())
+        
+def block_until_post_processing_waiting(hashes, verbose=True):
+    while True:
+        rr = [r.hget(hsh, "PPSTATUS") for hsh in hashes]
+        rets = [r.decode() if(r) else "NONE" for r in rr]
+        if verbose:
+            print('{:<50}'.format(str(rets)), end='\r')
+        if all([t[0:7]=="WAITING" for t in rets]):
+            if verbose:
+                print()
+            break
+        time.sleep(1)
 
 def record_in(
 				obs_delay_s=DEFAULT_START_IN,
