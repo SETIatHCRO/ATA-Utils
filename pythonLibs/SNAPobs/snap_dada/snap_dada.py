@@ -99,8 +99,8 @@ def get_utc_dada_now(t_sec):
 #def rfc_to_cfreq(rfreq, ifc, srate):
 #    return rfreq - (srate*3./4 - ifc)
 
-def rfc_to_cfreq(rfreq, ifc, srate):
-    return rfreq - (srate/2. - ifc)
+def rfc_to_cfreq(rfreq, ifc, bw):
+    return rfreq - (bw/2. - ifc)
 
 def get_nearest_pow_2(n):
     lgn = np.log2(n)
@@ -295,7 +295,7 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
         obsParams[ant]['SYNC_TIME'] = expected_synctime
         obsParams[ant]['IFC'] = snap_defaults.ifc
         cfreq = rfc_to_cfreq(obsParams[ant]['RFFREQ'], 
-                snap_defaults.ifc, snap_defaults.srate)
+                snap_defaults.ifc, snap_defaults.bw)
         obsParams[ant]['CFREQ'] = cfreq
         obsParams[ant]['FREQ'] = cfreq
         obsParams[ant]['ORDER'] = "TF"

@@ -287,7 +287,16 @@ def get_eph_source(antlist):
             retdict[ant] = None
     return retdict
 
-def set_ephemeris_defaults(ephemeris_args_dict):
+##################
+#
+# Low-level antena tracking related functions
+#
+# Most users should skip these and use the higher
+# level functionality available in the section
+# further on in this file
+##################
+
+def _set_ephemeris_defaults(ephemeris_args_dict):
     # Default ephemeris track point interval is 1 second
 
     if 'interval' not in ephemeris_args_dict:
@@ -297,6 +306,154 @@ def set_ephemeris_defaults(ephemeris_args_dict):
 
     if 'duration' not in ephemeris_args_dict:
         ephemeris_args_dict['duration'] = 12
+
+def generate_ephemeris(**kwargs):
+    """
+    Generate ephemeris for given source types
+
+    :param kwargs: keyword args (see description below)
+    :return: ephemeris ID (required for further operation)
+
+    To generate ATA ephemeris from one of the following source types,
+    supply the appropriate keyword with the value as listed:
+
+    source=source_name : source_name is string name
+       which can be catalog object, solar system body, NORAD number,
+       satellite name.  Ex. source='casa'
+
+    azel=[az,el] : value is a list of two floats, az and el (both in degrees).
+
+    radec=[ra,dec] : value is a list of two floats, ra (hours) and dec (degs).
+
+    tle=filename : filename is name of file containing TLE to be used.
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+    ephem_sources = {'azel', 'radec', 'source', 'tle'}
+    endpoint = '/ephemeris'
+
+    try:
+        source_count = 0
+        for s in ephem_sources:
+            if s in kwargs:
+                source_count = source_count + 1
+        if source_count != 1:
+            raise Exception('generate_ephemeris() takes exactly one source type: ' + ephem_sources)
+
+        _set_ephemeris_defaults(kwargs)
+        result = ATARest.post(endpoint, json=kwargs)
+        return result['id']
+
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+def retrieve_ephemeris(ephemeris_id):
+    """
+    Retrieve specified ephemeris from the server
+
+    :param ephemeris_id: ephemeris ID as returned by generate_ephemeris()
+    :return: list of points, where each point is a list:
+        [TAI_ns, az, el, inverse_range]
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    try:
+        endpoint = '/ephemeris'
+        ephem_file = ATARest.get(endpoint, json={'id': ephemeris_id})
+        return ephem_file
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+def track_ephemeris(ephemeris_id, antlist, wait=True):
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    try:
+        antstr = snap_array_helpers.input_to_string(antlist)
+        logger.info('Zeroing az/el offsets for ' + antstr)
+        endpoint = '/antennas/{:s}/offset'.format(antstr)
+        ATARest.put(endpoint, json={'azel': [0.0, 0.0]})
+
+        logger.info('Tracking ephemeris {:s} with {:s}'.format(ephemeris_id, antstr))
+        endpoint = '/antennas/{:s}/track'.format(antstr)
+        ATARest.put(endpoint, json={'id': ephemeris_id, 'wait': wait})
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+def set_antennas_azel_offset(antlist, az_offset, el_offset, whence='absolute'):
+    """
+    Immediate set az/el offset in antennas
+
+    :param antlist: list of antennas
+    :param az_offset: az_offset to apply
+    :param el_offset: el_offset to apply
+    :param whence: 'absolute' or 'relative'
+
+    This imediately changes the az/el offset currently applied to the antennas.
+    An absolute offset is az/el offsets from 0 offset, which ultimately means
+    relative to the individual antenna's PointingModel file.
+    A relative offset, is a delta offset from whatever offset is currently
+    applied in each antenna.
+    """
+    
+    logger = logger_defaults.getModuleLogger(__name__)
+    
+    try:
+        if whence not in ['absolute', 'relative']:
+            raise Exception('set_antennas_azel_offset(): invalid whence ' + whence)
+        antstr = snap_array_helpers.input_to_string(antlist)
+        logger.info('Setting {:s} az/el offsets for '.format(whence, antstr))
+        endpoint = '/antennas/{:s}/offset'.format(antstr)
+        ATARest.put(endpoint, json={'azel': [float(az_offset), float(el_offset)]})
+
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+##################
+#
+# mid-level antena tracking related functions
+#
+# Most users will find these satifactory for common needs
+##################
+
+def track_source(antlist, **kwargs):
+    """
+    Begin tracking a source (creates ephemeris and begins tracking it)
+
+    :param kwargs: keyword args (see description below)
+    :return: ephemeris ID (required for further operations)
+
+    To track one of the following source types,
+    supply the appropriate keyword with the value as listed:
+
+    source=source_name : source_name is string name
+       which can be catalog object, solar system body, NORAD number,
+       satellite name.  Ex. source='casa'
+
+    azel=[az,el] : value is a list of two floats, az and el (both in degrees).
+
+    radec=[ra,dec] : value is a list of two floats, ra (hours) and dec (degs).
+
+    tle=filename : filename is name of file containing TLE to be used.
+    
+    Additional keyword args:
+
+    wait=bool : True value blocks until antennas are on source.
+                This is the default, recommended for most uses.
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+    wait_until_tracking = kwargs.pop('wait', True)
+
+    try:
+        ephem_id = generate_ephemeris(**kwargs)
+        track_ephemeris(ephem_id, antlist, wait_until_tracking)
+        return ephem_id
+    except Exception as e:
+        logger.error('track_source(): ' + str(e))
+        raise
+    
 
 #discouraged in the future code
 def make_and_track_ephems(source,antstr):
@@ -312,7 +469,7 @@ def make_and_track_source(source, antstr, **ephem_kwargs):
     try:
         endpoint = '/ephemeris'
         ephem_kwargs['source'] = source
-        set_ephemeris_defaults(ephem_kwargs)
+        _set_ephemeris_defaults(ephem_kwargs)
         retval = ATARest.post(endpoint, json=ephem_kwargs)
 
         antstr = snap_array_helpers.input_to_string(antstr)
@@ -340,7 +497,7 @@ def make_and_track_tle(tle_filename, antstr, **ephem_kwargs):
 
         endpoint = '/ephemeris'
         ephem_kwargs['tle'] = data
-        set_ephemeris_defaults(ephem_kwargs)
+        _set_ephemeris_defaults(ephem_kwargs)
         retval = ATARest.post(endpoint, json=ephem_kwargs)
 
         antstr = snap_array_helpers.input_to_string(antstr)
@@ -366,7 +523,7 @@ def make_and_track_ra_dec(ra, dec, antstr, **ephem_kwargs):
     try:
         endpoint = '/ephemeris'
         ephem_kwargs['radec'] = [float(ra), float(dec)]
-        set_ephemeris_defaults(ephem_kwargs)
+        _set_ephemeris_defaults(ephem_kwargs)
         retval = ATARest.post(endpoint, json=ephem_kwargs)
 
         ephem_id = retval['id']
