@@ -10,7 +10,7 @@ from typing import List
 from SNAPobs import snap_defaults, snap_config
 from ATATools import ata_control
 
-from . import snap_hpguppi_defaults
+from . import snap_hpguppi_defaults as hpguppi_defaults
 from . import auxillary as hpguppi_auxillary
 
 ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
@@ -67,7 +67,7 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
 									silent=False,
 									dry_run=False):
 
-    r = redis.Redis(host=REDISHOST)
+    r = redis.Redis(host=hpguppi_defaults.REDISHOST)
 
     if configfile != '':
         with open(configfile, 'r') as fh:
@@ -124,7 +124,7 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
 
     assert len(set(list(skyfreq_mapping.values()))) != 0, "subbarray antennas must have the same frequencies"
     lo_obsfreq = skyfreq_mapping[snap_hostnames[0]]
-    centre_channel = FENCHAN/2
+    centre_channel = hpguppi_defaults.FENCHAN/2
     source     = source_dict[ant_names[0]]
     ra,dec     = radec_dict[ant_names[0]]
     az,el      = azel_dict[ant_names[0]]
@@ -136,13 +136,13 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
     prev_inst = 0
 
     for ip,chan_lst in mapping.items():
-        n_packets_per_dest = int(np.ceil(n_chans_per_dest / MAX_CHANS_PER_PKT))
+        n_packets_per_dest = int(np.ceil(n_chans_per_dest / hpguppi_defaults.MAX_CHANS_PER_PKT))
         n_chans_per_pkt  = n_chans_per_dest // n_packets_per_dest
         schan = chan_lst[0]
         nstrm = n_chans_per_dest // n_chans_per_pkt
 
 
-        chan_bw = FOFF
+        chan_bw = hpguppi_defaults.FOFF
         obsbw   = len(chan_lst)*chan_bw
         band_centre_chan = np.mean(np.array(chan_lst) + 0.5)
         obsfreq = lo_obsfreq + (band_centre_chan - centre_channel - 0.5)*chan_bw 
@@ -166,9 +166,9 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
         inst = prev_inst
         prev_host = host
         if hpguppi_daq_instance > -1:
-            channel_name = REDISSETGW.substitute(host=host, inst=hpguppi_daq_instance)
+            channel_name = hpguppi_defaults.REDISSETGW.substitute(host=host, inst=hpguppi_daq_instance)
         else:
-            channel_name = REDISSETGW.substitute(host=host, inst=inst)
+            channel_name = hpguppi_defaults.REDISSETGW.substitute(host=host, inst=inst)
 
         # these are instance specific
         key_val = {
@@ -179,28 +179,28 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
                 # 'BINDHOST' : BINDHOST, # static once the instance starts
                 # 'BINDPORT' : dest_port, # static once the instance starts
                 'CHAN_BW'  : chan_bw,
-                'FENCHAN'  : FENCHAN,
+                'FENCHAN'  : hpguppi_defaults.FENCHAN,
                 'NANTS'    : nants,
-                'NPOL'     : NPOL,
+                'NPOL'     : hpguppi_defaults.NPOL,
                 'PKTNCHAN' : n_chans_per_pkt,
-                'TBIN'     : TBIN,
-                'NBITS'    : NBITS,
-                'PKTNTIME' : N_TIMES_PER_PKT,
+                'TBIN'     : hpguppi_defaults.TBIN,
+                'NBITS'    : hpguppi_defaults.NBITS,
+                'PKTNTIME' : hpguppi_defaults.N_TIMES_PER_PKT,
                 'SYNCTIME' : sync_time,
-                'PROJID'   : PROJID,
-                'BANK'     : BANK,
-                'BACKEND'  : BACKEND,
+                'PROJID'   : hpguppi_defaults.PROJID,
+                'BANK'     : hpguppi_defaults.BANK,
+                'BACKEND'  : hpguppi_defaults.BACKEND,
                 # 'DATADIR'  : DATADIR, # best left to the configuration (numactl grouping of NVMe mounts)
-                'PKTFMT'   : PKTFMT,
-                'SNAPPAT'  : SNAPPAT,
+                'PKTFMT'   : hpguppi_defaults.PKTFMT,
+                'SNAPPAT'  : hpguppi_defaults.SNAPPAT,
                 'SNAPSEQ'  : snapseq,
                 'SOURCE'   : source,
                 'RA'       : ra,
                 'DEC'      : dec,
                 'AZ'       : az,
                 'EL'       : el,
-                'OBSSTART' : OBSSTART,
-                'OBSSTOP'  : OBSSTOP,
+                'OBSSTART' : hpguppi_defaults.OBSSTART,
+                'OBSSTOP'  : hpguppi_defaults.OBSSTOP,
                 'ANTNAMES' : ",".join(ant_names)
         }
 
