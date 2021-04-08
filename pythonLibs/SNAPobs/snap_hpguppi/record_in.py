@@ -39,18 +39,25 @@ def _stitch_pattern_for_sequence(pattern, sequence):
 
 def _get_snaps_of_instance(redis_obj, redis_chan):
     return _stitch_pattern_for_sequence(redis_obj.hget(redis_chan, "SNAPPAT").decode(), redis_obj.hget(redis_chan, "SNAPSEQ").decode())
-        
-def block_until_post_processing_waiting(hashes, verbose=True):
+
+def _block_until_key_has_value(hashes, key, value, verbose=True):
+    value_slice = slice(-50//len(hashes):0)
     while True:
-        rr = [r.hget(hsh, "PPSTATUS") for hsh in hashes]
-        rets = [r.decode() if(r) else "NONE" for r in rr]
+        rr = [r.hget(hsh, key) for hsh in hashes]
+        rets = [r.decode()[value_slice] if(r) else "NONE" for r in rr]
         if verbose:
             print('{:<50}'.format(str(rets)), end='\r')
-        if all([t[0:7]=="WAITING" for t in rets]):
+        if all([t[0:7]==value for t in rets]):
             if verbose:
                 print()
             break
         time.sleep(1)
+
+def block_until_hpguppi_idling(hashes, verbose=True):
+    _block_until_key_has_value(hashes, "DAQSTATE", "idling", verbose=verbose)
+        
+def block_until_post_processing_waiting(hashes, verbose=True):
+    _block_until_key_has_value(hashes, "PPSTATUS", "WAITING", verbose=verbose)
 
 def record_in(
 				obs_delay_s=DEFAULT_START_IN,
