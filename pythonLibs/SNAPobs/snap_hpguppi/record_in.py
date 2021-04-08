@@ -41,7 +41,7 @@ def _get_snaps_of_instance(redis_obj, redis_chan):
     return _stitch_pattern_for_sequence(redis_obj.hget(redis_chan, "SNAPPAT").decode(), redis_obj.hget(redis_chan, "SNAPSEQ").decode())
 
 def _block_until_key_has_value(hashes, key, value, verbose=True):
-    value_slice = slice(-50//len(hashes):0)
+    value_slice = slice(-50//len(hashes), None)
     while True:
         rr = [r.hget(hsh, key) for hsh in hashes]
         rets = [r.decode()[value_slice] if(r) else "NONE" for r in rr]
