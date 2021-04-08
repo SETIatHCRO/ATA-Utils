@@ -11,7 +11,7 @@ import csv
 from ata_snap import ata_snap_fengine
 from SNAPobs import snap_control
 import casperfpga
-import sys
+import os
 
 from . import snap_hpguppi_defaults as hpguppi_defaults
 
