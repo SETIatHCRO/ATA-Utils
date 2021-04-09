@@ -1213,7 +1213,7 @@ def create_ephem(source, **ephem_kwargs):
 
     try:
         ephem_kwargs['source'] = source
-        set_ephemeris_defaults(ephem_kwargs)
+        _set_ephemeris_defaults(ephem_kwargs)
         print(ephem_kwargs)
         retval = ATARest.post(endpoint, json=ephem_kwargs)
         ephem_id = retval['id']
@@ -1296,7 +1296,7 @@ def create_ephems2_radec(ra,dec,az_offset,el_offset, **ephem_kwargs):
     
     try:
         ephem_kwargs['radec'] = [float(ra), float(dec)]
-        set_ephemeris_defaults(ephem_kwargs)
+        _set_ephemeris_defaults(ephem_kwargs)
         retval = ATARest.post(endpoint, json=ephem_kwargs)
         ephem_id = retval['id']
     except Exception as e:
@@ -1349,7 +1349,7 @@ def create_ephems2(source, az_offset, el_offset, **ephem_kwargs):
     
     try:
         ephem_kwargs['source'] = source
-        set_ephemeris_defaults(ephem_kwargs)
+        _set_ephemeris_defaults(ephem_kwargs)
         retval = ATARest.post(endpoint, json=ephem_kwargs)
         ephem_id = retval['id']
     except Exception as e:
