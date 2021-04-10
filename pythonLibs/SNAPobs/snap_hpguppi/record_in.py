@@ -48,9 +48,9 @@ def _block_until_key_has_value(hashes, key, value, verbose=True):
         rets = [r.decode() if(r) else "NONE" for r in rr]
         if verbose:
             print_strings = [
-                ('{:<%d}'%len_per_value).format(r) for r in rets
+                ('{: ^%d}'%len_per_value).format(r[value_slice]) for r in rets
             ]
-            print('{:<50}'.format(str(print_strings), end='\r'))
+            print('[{: ^66}]'.format(', '.join(print_strings)), end='\r')
         if all([t[0:len(value)]==value for t in rets]):
             if verbose:
                 print()
