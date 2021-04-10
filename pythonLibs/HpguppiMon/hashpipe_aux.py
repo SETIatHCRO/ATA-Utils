@@ -283,14 +283,15 @@ def get_latest_raw_stem_in_dir(rawfiledir):
     
     Returns
     -------
-    str: The stem-filepath of the latest RAW dump
+    str: The stem-filepath of the latest RAW dump, or None
     '''
     files = glob.glob(rawfiledir+'/*.raw')
-    files.sort(key=os.path.getmtime, reverse=True)
 
     if len(files) == 0:
         print('Could not find any *.raw files in "', rawfiledir, '".', sep="")
-        exit(1)
+        return None
+    
+    files.sort(key=os.path.getmtime, reverse=True)
 
     latest = files[0]
     stemmatch = re.match(r'(.*)\.\d{4}\.raw', latest, re.M|re.I)
