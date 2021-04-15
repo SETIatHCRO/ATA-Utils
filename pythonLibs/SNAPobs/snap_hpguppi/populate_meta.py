@@ -69,17 +69,20 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
 
     r = redis.Redis(host=hpguppi_defaults.REDISHOST)
 
-    if configfile != '':
-        with open(configfile, 'r') as fh:
-            config = yaml.load(fh, Loader=yaml.SafeLoader)
+    if configfile is not None and configfile != '':
+        if not os.path.exists(configfile):
+            print(configfile, ' does not exist... ')
+        else:
+            with open(configfile, 'r') as fh:
+                config = yaml.load(fh, Loader=yaml.SafeLoader)
 
-        dest_port = config.get('dest_port')
+            dest_port = config.get('dest_port')
 
-        voltage_config = config.get('voltage_output')
+            voltage_config = config.get('voltage_output')
 
-        dests      = voltage_config['dests']
-        n_chans    = voltage_config['n_chans']
-        start_chan = voltage_config['start_chan']
+            dests      = voltage_config['dests']
+            n_chans    = voltage_config['n_chans']
+            start_chan = voltage_config['start_chan']
 
     if any([dests is None,
 						n_chans is None,
@@ -89,7 +92,7 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
         print('n_chans:', n_chans)
         print('start_chan:', start_chan)
         print()
-        exit(1)
+        return
 
     if ant_names is None and snap_hostnames is not None:
         ant_name_dict = hpguppi_auxillary.get_antenna_name_dict_for_snap_hostnames(snap_hostnames)
