@@ -14,13 +14,14 @@ import casperfpga
 import os
 
 from . import snap_hpguppi_defaults as hpguppi_defaults
+from . import auxillary as hpguppi_auxillary
 
 DEFAULT_START_IN = 2
 DEFAULT_OBS_TIME = 300.
 
 r = redis.Redis(host=hpguppi_defaults.REDISHOST)
 
-def _log_recording(start_time, npackets, end_time, redisset):
+def _log_recording(start_time, duration, obsstart, npackets, redisset):
     logdir = '~'
     if os.path.exists('/home/sonata/logs'):
         logdir = '/home/sonata/logs'
@@ -28,16 +29,23 @@ def _log_recording(start_time, npackets, end_time, redisset):
     with open(os.path.join(logdir, 'record_in_log.csv'), 'a', newline='') as csvfile:
         csvwr = csv.writer(csvfile, delimiter=',',
                             quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        csvwr.writerow([str(datetime.fromtimestamp(start_time)), str(npackets), str(datetime.fromtimestamp(end_time)), str(redisset)])
+        row_strings = [
+            str(datetime.fromtimestamp(start_time)),
+            str(duration),
+            str(obsstart),
+            str(npackets),
+            str(redisset)
+        ]
+        csvwr.writerow(row_strings)
 
 def _get_sync_time_for_snaps(snaps):
     fengs = snap_control.init_snaps(snaps)
-    return [fengs[i].fpga.read_int('sync_sync_time') for i in range(len(snaps))]
+    return [feng.fpga.read_int('sync_sync_time') for feng in fengs]
 
 def _stitch_pattern_for_sequence(pattern, sequence):
     return [seq.join(pattern.split(',')) for seq in sequence.split(',')]
 
-def _get_snaps_of_instance(redis_obj, redis_chan):
+def _get_snaps_of_redis_chan(redis_obj, redis_chan):
     return _stitch_pattern_for_sequence(redis_obj.hget(redis_chan, "SNAPPAT").decode(), redis_obj.hget(redis_chan, "SNAPSEQ").decode())
 
 def _block_until_key_has_value(hashes, key, value, verbose=True):
@@ -63,72 +71,75 @@ def block_until_hpguppi_idling(hashes, verbose=True):
 def block_until_post_processing_waiting(hashes, verbose=True):
     _block_until_key_has_value(hashes, "PPSTATUS", "WAITING", verbose=verbose)
 
+def _publish_obs_start_stop(redis_obj, channel, obsstart, obsstop, dry_run=False):
+    cmd = "OBSSTART=%i\nOBSSTOP=%i"  %(obsstart, obsstop)
+    print(channel, "\tOBSSTART: %i,\tOBSSTOP : %i" %(obsstart, obsstop))
+    if not dry_run:
+        redis_obj.publish(channel, cmd)
+    else:
+        print('***DRY RUN***')
+
+def _calculate_obs_start_stop(t_start, duration_s, sync_time, tbin):
+    tdiff = t_start - sync_time
+
+    obsstart = int(tdiff/tbin)
+
+    npckts_to_record = int(duration_s/tbin)
+    obsstop = obsstart + npckts_to_record
+    return obsstart, obsstop, npckts_to_record
+
 def record_in(
 				obs_delay_s=DEFAULT_START_IN,
 				obs_duration_s=DEFAULT_OBS_TIME,
-				hpguppi_instance_ids=[-1],
-				force_synctime=False,
+				hpguppi_redis_channels=None,
+				force_synctime=True,
 				reset=False,
 				dry_run=False,
 				log=True
 				):
-    for instance in hpguppi_instance_ids:
-        if instance > -1:
-            print("Start recording on instance", instance)
+    
+    obsstart = 0
+    obsstop = 0
+    t_now  = time.time()
+    t_in_x = int(ceil(t_now + obs_delay_s))
 
-            REDISSET = hpguppi_defaults.REDISSETGW.substitute(host=socket.gethostname(), inst=instance)
-            if force_synctime:
-                sync_time = int(r.get("SYNCTIME"))
-                print("OBSSTART and OBSSTOP values based on redishost's SYNCTIME of", sync_time)
+    if hpguppi_redis_channels is None:
+        hpguppi_redis_channels = [hpguppi_defaults.REDISSET]
+
+    universal_sync_time = None
+    if force_synctime:
+        universal_sync_time = int(r.get('SYNCTIME'))
+        print("Will broadcast the OBSSTART and OBSSTOP values, based on redishost's SYNCTIME of", universal_sync_time)
+        print()
+    
+    for channel in hpguppi_redis_channels:
+        assert re.match(hpguppi_defaults.REDISSETGW_re, channel) or channel == hpguppi_defaults.REDISSET
+
+        sync_time = universal_sync_time
+        if not force_synctime:
+            snaps = _get_snaps_of_redis_chan(r, hpguppi_auxillary.redis_get_channel_from_set_channel(channel))
+            # print(snaps)
+            sync_times = _get_sync_time_for_snaps(snaps)
+            if len(set(sync_times)) == 1:
+                sync_time = sync_times[0]
             else:
-                REDISGET = hpguppi_defaults.REDISGETGW.substitute(host=socket.gethostname(), inst=instance)
-                # print(REDISGET)
-                # print(r.hget(REDISGET, "SNAPPAT"))
-                # print(r.hget(REDISGET, "SNAPSEQ"))
-                snaps = _get_snaps_of_instance(r, REDISGET)
-                # print(snaps)
-                sync_times = _get_sync_time_for_snaps(snaps)
-                if len(set(sync_times)) == 1:
-                    sync_time = sync_times[0]
-                else:
-                    print("Hashpipe instance", instance, "has the following snaps, with non-uniform sync-times:")
-                    for i in range(len(snaps)):
-                        print(snaps[i], sync_times[i])
-                    print("Cannot reliably start a recording.")
-                    exit(1)
-        else:
-            REDISSET  = 'hashpipe:///set'
-            sync_time = int(r.get("SYNCTIME"))
-            print("Will broadcast the OBSSTART and OBSSTOP values, based on redishost's SYNCTIME of", sync_time)
+                print("Hpguppi channel", channel, "has the following snaps, with non-uniform sync-times:")
+                for i in range(len(snaps)):
+                    print(snaps[i], sync_times[i])
+                print("Cannot reliably start a recording.")
+                return False
+        
+        if not reset:
+            obsstart, obsstop, npackets = _calculate_obs_start_stop(t_in_x, obs_duration_s, sync_time, hpguppi_defaults.TBIN)
+        
+        _publish_obs_start_stop(r, channel, obsstart, obsstop, dry_run)
+        if log and not reset:# and not dry_run:
+            _log_recording(
+                t_in_x,
+                obs_duration_s,
+                obsstart,
+                npackets,
+                channel
+                )
 
-        if reset:
-            obsstart = 0
-            obsstop = 0
-            # cmd = "OBSSTART=0\nOBSSTOP=0"
-            t_in_2 = False
-        else:
-            t_now  = time.time()
-            t_in_2 = int(ceil(t_now + obs_delay_s))
-
-            tdiff = t_in_2 - sync_time
-
-            obsstart = int(tdiff/hpguppi_defaults.TBIN)
-
-            npckts_to_record = int(obs_duration_s/hpguppi_defaults.TBIN)
-            obsstop = obsstart + npckts_to_record
-
-        cmd = "OBSSTART=%i\nOBSSTOP=%i"  %(obsstart, obsstop)
-        print(REDISSET, "\tOBSSTART: %i,\tOBSSTOP : %i\n" %(obsstart, obsstop))
-
-
-        if not dry_run:
-            r.publish(REDISSET, cmd)
-            if log and not reset:
-                _log_recording(
-                    t_in_2,
-                    npckts_to_record,
-                    t_in_2+obs_duration_s,
-                    REDISSET
-                    )
-        else:
-            print('***DRY RUN***')
+    return True
