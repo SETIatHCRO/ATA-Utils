@@ -22,5 +22,7 @@ OBSSTART           = 0
 OBSSTOP            = 0
 
 REDISGETGW = Template('hashpipe://${host}/${inst}/status')
+REDISGETGW_re = r'hashpipe://(?P<host>[^/]+)/(?P<inst>[^/]+)/status'
 REDISSETGW = Template('hashpipe://${host}/${inst}/set')
+REDISSETGW_re = r'hashpipe://(?P<host>[^/]+)/(?P<inst>[^/]+)/set'
 REDISSET = 'hashpipe:///set'
