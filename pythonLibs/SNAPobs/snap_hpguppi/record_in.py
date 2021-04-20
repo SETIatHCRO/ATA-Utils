@@ -21,7 +21,7 @@ DEFAULT_OBS_TIME = 300.
 
 r = redis.Redis(host=hpguppi_defaults.REDISHOST)
 
-def _log_recording(start_time, duration, obsstart, npackets, redisset):
+def _log_recording(start_time, duration, obsstart, npackets, redisset, extra_string):
     logdir = '~'
     if os.path.exists('/home/sonata/logs'):
         logdir = '/home/sonata/logs'
@@ -34,7 +34,8 @@ def _log_recording(start_time, duration, obsstart, npackets, redisset):
             str(duration),
             str(obsstart),
             str(npackets),
-            str(redisset)
+            str(redisset),
+            str(extra_string)
         ]
         csvwr.writerow(row_strings)
 
@@ -95,7 +96,8 @@ def record_in(
 				force_synctime=True,
 				reset=False,
 				dry_run=False,
-				log=True
+				log=True,
+                log_string_per_channel=None
 				):
     
     obsstart = 0
@@ -112,8 +114,9 @@ def record_in(
         print("Will broadcast the OBSSTART and OBSSTOP values, based on redishost's SYNCTIME of", universal_sync_time)
         print()
     
-    for channel in hpguppi_redis_channels:
+    for channel_i, channel in enumerate(hpguppi_redis_channels):
         assert re.match(hpguppi_defaults.REDISSETGW_re, channel) or channel == hpguppi_defaults.REDISSET
+        additional_log_string = log_string_per_channel[channel_i] if log_string_per_channel is not None else None
 
         sync_time = universal_sync_time
         if not force_synctime:
@@ -139,7 +142,8 @@ def record_in(
                 obs_duration_s,
                 obsstart,
                 npackets,
-                channel
+                channel,
+                additional_log_string
                 )
 
     return True
