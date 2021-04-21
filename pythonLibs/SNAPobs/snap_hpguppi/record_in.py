@@ -92,7 +92,7 @@ def _calculate_obs_start_stop(t_start, duration_s, sync_time, tbin):
 def record_in(
 				obs_delay_s=DEFAULT_START_IN,
 				obs_duration_s=DEFAULT_OBS_TIME,
-				hpguppi_redis_channels=None,
+				hpguppi_redis_set_channels=None,
 				force_synctime=True,
 				reset=False,
 				dry_run=False,
@@ -105,8 +105,8 @@ def record_in(
     t_now  = time.time()
     t_in_x = int(ceil(t_now + obs_delay_s))
 
-    if hpguppi_redis_channels is None:
-        hpguppi_redis_channels = [hpguppi_defaults.REDISSET]
+    if hpguppi_redis_set_channels is None:
+        hpguppi_redis_set_channels = [hpguppi_defaults.REDISSET]
 
     universal_sync_time = None
     if force_synctime:
@@ -114,7 +114,7 @@ def record_in(
         print("Will broadcast the OBSSTART and OBSSTOP values, based on redishost's SYNCTIME of", universal_sync_time)
         print()
     
-    for channel_i, channel in enumerate(hpguppi_redis_channels):
+    for channel_i, channel in enumerate(hpguppi_redis_set_channels):
         assert re.match(hpguppi_defaults.REDISSETGW_re, channel) or channel == hpguppi_defaults.REDISSET
         additional_log_string = log_string_per_channel[channel_i] if log_string_per_channel is not None else None
 
