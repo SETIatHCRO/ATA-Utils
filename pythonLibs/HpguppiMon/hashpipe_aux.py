@@ -75,7 +75,7 @@ def get_hashpipe_key_value_str(key, instance=0):
     -------
     str/bytearray/None: The value of the key
     '''
-    ret = get_hashpipe_key_value(key, instance=0)
+    ret = get_hashpipe_key_value(key, instance=instance)
     try:
         return ret.decode().strip()
     except:
