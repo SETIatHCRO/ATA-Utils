@@ -15,11 +15,12 @@ def set_keys(redis_set_channels, dry_run=False,
                 PPRMINP='hpguppi &*.raw,^turboseti &*.fil,turboseti &*.h5',
                 PPLOGINP='*candidate_filter',
                 PPLOGARG='-H $hnme$ -i $inst$ -s $stem$ -b $beg$ -e $end$',
+                cmd_prefix=''
                 ):
 
     r = redis.Redis(host=hpguppi_defaults.REDISHOST)
     for channel in redis_set_channels:
-        cmd = ''
+        cmd = cmd_prefix
         # Specify the 'postproc_*' names of the modules to be run in the post-processing, in order
         cmd += 'POSTPROC=' + POSTPROC + '\n'
 
