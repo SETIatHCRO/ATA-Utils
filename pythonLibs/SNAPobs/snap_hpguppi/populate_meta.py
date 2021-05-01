@@ -65,6 +65,7 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
 									start_chan=None,
 									dests=None,
 									silent=False,
+									zero_obs_startstop=True,
 									dry_run=False):
 
     r = redis.Redis(host=hpguppi_defaults.REDISHOST)
@@ -202,10 +203,11 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
                 'DEC'      : dec,
                 'AZ'       : az,
                 'EL'       : el,
-                'OBSSTART' : hpguppi_defaults.OBSSTART,
-                'OBSSTOP'  : hpguppi_defaults.OBSSTOP,
                 'ANTNAMES' : ",".join(ant_names)
         }
+        if zero_obs_startstop:
+            key_val['OBSSTART'] = 0
+            key_val['OBSSTOP']  = 0
 
         key_val_str = "\n".join(['%s=%s' %(key,val)
             for key,val in key_val.items()])
