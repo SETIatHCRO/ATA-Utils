@@ -139,7 +139,15 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
     prev_host = "" 
     prev_inst = 0
 
-    for ip,chan_lst in mapping.items():
+    # sort the ips by hostname, so that the inst++ works properly, assuming
+    # that sequential instances have lexically sequential hostnames
+    ifnames_ip_dict = {socket.gethostbyaddr(ip)[0]:ip for ip in mapping.keys()}
+    ifnames_sorted = sorted(ifnames_ip_dict.keys())
+
+    for ip_ifname in ifnames_sorted:
+        ip = ifnames_ip_dict[ip_ifname]
+        chan_lst = mapping[ip]
+
         n_packets_per_dest = int(np.ceil(n_chans_per_dest / hpguppi_defaults.MAX_CHANS_PER_PKT))
         n_chans_per_pkt  = n_chans_per_dest // n_packets_per_dest
         schan = chan_lst[0]
@@ -153,7 +161,6 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
         if not silent:
             print(ip, schan, band_centre_chan)
         
-        ip_ifname = socket.gethostbyaddr(ip)[0]
         # remove -40, -100g-1, -100g-2
         m = re.match(r'(.*)-\d+g.*', ip_ifname)
         if m:
@@ -166,8 +173,11 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
             print(host)
 
         if host == prev_host:
-            prev_inst += 1
-        inst = prev_inst
+            inst = prev_inst + 1
+        else:
+            inst = 0
+        
+        prev_inst = inst
         prev_host = host
         if hpguppi_daq_instance > -1:
             channel_name = hpguppi_defaults.REDISSETGW.substitute(host=host, inst=hpguppi_daq_instance)
