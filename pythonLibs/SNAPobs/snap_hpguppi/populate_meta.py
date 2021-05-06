@@ -143,10 +143,11 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
     # that sequential instances have lexically sequential hostnames
     ifnames_ip_dict = {socket.gethostbyaddr(ip)[0]:ip for ip in mapping.keys()}
     ifnames_sorted = sorted(ifnames_ip_dict.keys())
+    mapping_chan_lists = [chan_lst for chan_lst in mapping.values()]
 
-    for ip_ifname in ifnames_sorted:
+    for ip_enumer, ip_ifname in enumerate(ifnames_sorted):
         ip = ifnames_ip_dict[ip_ifname]
-        chan_lst = mapping[ip]
+        chan_lst = mapping_chan_lists[ip_enumer] # keep channel listing as per specification of dests
 
         n_packets_per_dest = int(np.ceil(n_chans_per_dest / hpguppi_defaults.MAX_CHANS_PER_PKT))
         n_chans_per_pkt  = n_chans_per_dest // n_packets_per_dest
