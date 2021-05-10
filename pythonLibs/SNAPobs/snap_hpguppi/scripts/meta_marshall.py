@@ -274,16 +274,18 @@ while(True):
             ' '.join(destIps)
           )
           print('meta_args:', meta_args)
+        
         hpguppi_populate_meta.populate_meta(
-									snap_names,
-									[snap_ant_name_dict[snap] for snap in snap_names], 
-									-1,
-									n_chans=n_chan,
-									start_chan=start_chan,
-									dests=destIps,
+                  snap_names,
+                  [snap_ant_name_dict[snap] for snap in snap_names], 
+                  None,
+                  n_chans=n_chan,
+                  start_chan=start_chan,
+                  dests=destIps,
                   silent=not new_publication,
                   zero_obs_startstop=False,
                   dry_run=False)
+        
         if new_publication:
           print()
         exceptions_caught = 0

@@ -69,7 +69,7 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
 
     if configfile is not None and configfile != '':
         if not os.path.exists(configfile):
-            print(configfile, ' does not exist... ')
+            print('Specified configfilepath', configfile, ' does not exist... ')
         else:
             with open(configfile, 'r') as fh:
                 config = yaml.load(fh, Loader=yaml.SafeLoader)
@@ -112,9 +112,9 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
 
     skyfreq_mapping, antname_mapping = _get_snap_mapping(snap_hostnames,
             ignore_control)
-    source_dict = ata_control.get_eph_source(ant_names)
-    radec_dict = ata_control.get_ra_dec(ant_names)
-    azel_dict  = ata_control.get_az_el(ant_names)
+    source_dict = ata_control.get_eph_source(ant_names[0:1])
+    radec_dict = ata_control.get_ra_dec(ant_names[0:1])
+    azel_dict  = ata_control.get_az_el(ant_names[0:1])
 
     if len(set(skyfreq_mapping.values())) != 1:
         sys.stderr.write("WARNING: antennas are tuned to different freqs, "
