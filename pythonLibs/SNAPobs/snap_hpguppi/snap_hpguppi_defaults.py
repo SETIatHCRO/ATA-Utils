@@ -1,3 +1,4 @@
+import redis
 from string import Template
 from SNAPobs import snap_defaults
 
@@ -26,3 +27,5 @@ REDISGETGW_re = r'hashpipe://(?P<host>[^/]+)/(?P<inst>[^/]+)/status'
 REDISSETGW = Template('hashpipe://${host}/${inst}/set')
 REDISSETGW_re = r'hashpipe://(?P<host>[^/]+)/(?P<inst>[^/]+)/set'
 REDISSET = 'hashpipe:///set'
+
+redis_obj = redis.Redis(host=REDISHOST)

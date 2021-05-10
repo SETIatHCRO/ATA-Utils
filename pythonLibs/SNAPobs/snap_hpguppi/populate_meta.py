@@ -1,4 +1,3 @@
-import redis
 import re
 import yaml
 import socket
@@ -68,8 +67,6 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
 									zero_obs_startstop=True,
 									dry_run=False):
 
-    r = redis.Redis(host=hpguppi_defaults.REDISHOST)
-
     if configfile is not None and configfile != '':
         if not os.path.exists(configfile):
             print(configfile, ' does not exist... ')
@@ -104,7 +101,7 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
 
     nants      = len(snap_hostnames)
     n_dests    = len(dests)
-    sync_time  = int(r.get('SYNCTIME'))
+    sync_time  = int(hpguppi_defaults.redis_obj.get('SYNCTIME'))
     snapseq    = ",".join([isnap.replace('frb-snap','').replace('-pi','')
         for isnap in snap_hostnames]) #this contains the "physical" snapID
 
@@ -227,6 +224,6 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
             print()
 
         if not dry_run:
-            r.publish(channel_name, redis_publish_command)
+            hpguppi_defaults.redis_obj.publish(channel_name, redis_publish_command)
         else:
             print('^^^Dry Run^^^\n')

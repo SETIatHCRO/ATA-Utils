@@ -1,7 +1,6 @@
 #!/home/sonata/miniconda3/bin/python
 import argparse
 import socket
-import redis
 from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
 from SNAPobs.snap_hpguppi import snap_hpguppi_defaults as hpguppi_defaults
 
@@ -94,8 +93,7 @@ if __name__ == "__main__":
         if args.d:
                 print('*** Dry Run ***')
         else:
-                r = redis.Redis(host=hpguppi_defaults.REDISHOST)
                 print('Publishing to:')
                 for channel in channels:
                         print('\t', channel)
-                        r.publish(channel, redis_publish_command)
+                        hpguppi_defaults.redis_obj.publish(channel, redis_publish_command)

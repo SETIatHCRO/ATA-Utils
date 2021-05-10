@@ -1,5 +1,4 @@
 from numpy import ceil
-import redis
 import re
 import time
 from datetime import datetime
@@ -18,8 +17,6 @@ from . import auxillary as hpguppi_auxillary
 
 DEFAULT_START_IN = 2
 DEFAULT_OBS_TIME = 300.
-
-r = redis.Redis(host=hpguppi_defaults.REDISHOST)
 
 def _log_recording(start_time, duration, obsstart, npackets, redisset, extra_string):
     logdir = '~'
@@ -53,14 +50,14 @@ def _block_until_key_has_value(hashes, key, value, verbose=True):
     len_per_value = 50//len(hashes)
     value_slice = slice(-len_per_value, None)
     while True:
-        rr = [r.hget(hsh, key) for hsh in hashes]
-        rets = [r.decode() if(r) else "NONE" for r in rr]
+        rr = [hpguppi_defaults.redis_obj.hget(hsh, key) for hsh in hashes]
+        rets = [hpguppi_defaults.redis_obj.decode() if(r) else "NONE" for r in rr]
         if verbose:
             print_strings = [
-                ('{: ^%d}'%len_per_value).format(r[value_slice]) for r in rets
+                ('{: ^%d}'%len_per_value).format(ret[value_slice]) for ret in rets
             ]
             print('[{: ^66}]'.format(', '.join(print_strings)), end='\r')
-        if all([t[0:len(value)]==value for t in rets]):
+        if all([ret[0:len(value)]==value for ret in rets]):
             if verbose:
                 print()
             break
@@ -110,7 +107,7 @@ def record_in(
 
     universal_sync_time = None
     if force_synctime:
-        universal_sync_time = int(r.get('SYNCTIME'))
+        universal_sync_time = int(hpguppi_defaults.redis_obj.get('SYNCTIME'))
         print("Will broadcast the OBSSTART and OBSSTOP values, based on redishost's SYNCTIME of", universal_sync_time)
         print()
     
