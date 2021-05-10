@@ -113,8 +113,8 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
     skyfreq_mapping, antname_mapping = _get_snap_mapping(snap_hostnames,
             ignore_control)
     source_dict = ata_control.get_eph_source(ant_names)
-    radec_dict = ata_control.getRaDec(ant_names)
-    azel_dict  = ata_control.getAzEl(ant_names)
+    radec_dict = ata_control.get_ra_dec(ant_names)
+    azel_dict  = ata_control.get_az_el(ant_names)
 
     if len(set(skyfreq_mapping.values())) != 1:
         sys.stderr.write("WARNING: antennas are tuned to different freqs, "
