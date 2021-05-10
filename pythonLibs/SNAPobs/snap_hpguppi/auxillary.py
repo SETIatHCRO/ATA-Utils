@@ -46,3 +46,7 @@ def generate_freq_auto_string_per_channel(redis_obj, hpguppi_redis_get_channels)
     antdict = get_antenna_name_dict_for_snap_hostnames(snaps)
     log_string_per_channel.append(str(snap_dada.get_freq_auto([antdict[snap] for snap in snaps])))
   return log_string_per_channel
+
+def redis_publish_command_from_dict(key_val_dict):
+  return "\n".join(['%s=%s' %(key,val)
+            for key,val in key_val_dict.items()])

@@ -220,15 +220,13 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
             key_val['OBSSTART'] = 0
             key_val['OBSSTOP']  = 0
 
-        key_val_str = "\n".join(['%s=%s' %(key,val)
-            for key,val in key_val.items()])
+        redis_publish_command = hpguppi_auxillary.redis_publish_command_from_dict(key_val)
         if not silent:
             print("channel_name:", channel_name)
-            print(key_val_str)
+            print(redis_publish_command)
             print()
 
         if not dry_run:
-            # publish them values
-            r.publish(channel_name, key_val_str)
+            r.publish(channel_name, redis_publish_command)
         else:
             print('^^^Dry Run^^^\n')

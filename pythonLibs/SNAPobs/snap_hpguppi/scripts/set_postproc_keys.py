@@ -1,7 +1,8 @@
 #!/home/sonata/miniconda3/bin/python
 import argparse
 import socket
-from SNAPobs.snap_hpguppi import postproc_keys
+import redis
+from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
 from SNAPobs.snap_hpguppi import snap_hpguppi_defaults as hpguppi_defaults
 
 if __name__ == "__main__":
@@ -88,8 +89,13 @@ if __name__ == "__main__":
                 key_value = key_value_str.split('=')
                 keyval_dict[key_value[0]] = key_value[1]
 
-        postproc_keys.set_keys(channels,
-                keyval_dict,
-                dry_run=args.d,
-                silent=False
-                )
+        redis_publish_command = hpguppi_auxillary.redis_publish_command_from_dict(keyval_dict)
+        print(redis_publish_command)
+        if args.d:
+                print('*** Dry Run ***')
+        else:
+                r = redis.Redis(host=hpguppi_defaults.REDISHOST)
+                print('Publishing to:')
+                for channel in channels:
+                        print('\t', channel)
+                        r.publish(channel, redis_publish_command)
