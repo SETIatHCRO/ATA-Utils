@@ -19,6 +19,6 @@ setuptools.setup(
     keywords=['ATA'],
     long_description=long_description,
     url="https://github.com/SETIatHCRO/ATA-Utils/",
-    scripts=['SNAPmon/atasnapmon.py']
+    scripts=['SNAPmon/atasnapmon.py', 'SNAPobs/snap_hpguppi/scripts/meta_marshall.py']
     #entry_points={'console_scripts': ['GPIBLOControl = GPIBLOControl.GPIBLOControl:main']},
 )
