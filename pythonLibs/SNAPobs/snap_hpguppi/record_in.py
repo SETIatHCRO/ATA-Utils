@@ -132,7 +132,7 @@ def record_in(
         if not reset:
             obsstart, obsstop, npackets = _calculate_obs_start_stop(t_in_x, obs_duration_s, sync_time, hpguppi_defaults.TBIN)
         
-        _publish_obs_start_stop(r, channel, obsstart, obsstop, dry_run)
+        _publish_obs_start_stop(hpguppi_defaults.redis_obj, channel, obsstart, obsstop, dry_run)
         if log and not reset:# and not dry_run:
             _log_recording(
                 t_in_x,
