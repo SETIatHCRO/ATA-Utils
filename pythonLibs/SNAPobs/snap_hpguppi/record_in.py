@@ -51,7 +51,7 @@ def _block_until_key_has_value(hashes, key, value, verbose=True):
     value_slice = slice(-len_per_value, None)
     while True:
         rr = [hpguppi_defaults.redis_obj.hget(hsh, key) for hsh in hashes]
-        rets = [hpguppi_defaults.redis_obj.decode() if(r) else "NONE" for r in rr]
+        rets = [r.decode() if(r) else "NONE" for r in rr]
         if verbose:
             print_strings = [
                 ('{: ^%d}'%len_per_value).format(ret[value_slice]) for ret in rets
@@ -117,7 +117,7 @@ def record_in(
 
         sync_time = universal_sync_time
         if not force_synctime:
-            snaps = _get_snaps_of_redis_chan(r, hpguppi_auxillary.redis_get_channel_from_set_channel(channel))
+            snaps = _get_snaps_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_auxillary.redis_get_channel_from_set_channel(channel))
             # print(snaps)
             sync_times = _get_sync_time_for_snaps(snaps)
             if len(set(sync_times)) == 1:
