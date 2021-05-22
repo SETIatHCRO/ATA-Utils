@@ -12,6 +12,7 @@ ATA_EXEC_DIR = os.path.join(snap_defaults.baseshare, 'bin')
 init_atasnap_hashpipe_sh = os.path.join(ATA_EXEC_DIR, 'init_atasnap_hashpipe.sh')
 kill_hashpipes_sh = os.path.join(ATA_EXEC_DIR, 'kill_hashpipes.sh')
 init_redis_gateway_sh = os.path.join(ATA_EXEC_DIR, 'init_redis_gateway.sh')
+kill_redis_gateway_sh = os.path.join(ATA_EXEC_DIR, 'kill_redis_gateway.sh')
 kill_hashpipe_related_sh = os.path.join(ATA_EXEC_DIR, 'kill_hashpipe_related.sh')
 
 def set_hashpipe_key_value(key, value, instance=0):
@@ -200,7 +201,9 @@ def start_redis_gateway(instance=0):
     -------
     None
     '''
-    subprocess.run(['sudo', init_redis_gateway_sh, str(instance)]) # assume it will kill existing gateways
+    
+    subprocess.run(['sudo', kill_redis_gateway_sh, str(instance)])
+    subprocess.run([init_redis_gateway_sh, str(instance)])
 
 def kill_hashpipe_related():
     '''
