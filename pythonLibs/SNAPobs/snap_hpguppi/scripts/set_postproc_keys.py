@@ -13,6 +13,9 @@ if __name__ == "__main__":
         parser.add_argument('-I', type=str, default=None,
                 help='hashpipe instance hostname to target [$hostname]')
 
+        parser.add_argument('-r', '--rm-only', action='store_true',
+                help='sets up the keys to only remove the RAW files captured by hpguppi_daq')
+
         parser.add_argument('--POSTPROC', type=str, default='rawspec turboseti candidate_filter log cp rm',
                 help='Set the value for the POSTPROC key [\'rawspec turboseti candidate_filter log cp rm\']')
         parser.add_argument('--PPRWSINP', type=str, default='hpguppi',
@@ -84,6 +87,12 @@ if __name__ == "__main__":
                 'PPCPARG':args.PPCPARG,
                 'PPRMINP':args.PPRMINP,
         }
+        if(args.rm_only):
+                keyval_dict = {
+                        'POSTPROC':'rm',
+                        'PPRMINP':'hpguppi &*.raw',
+                }
+
         for key_value_str in args.prefix:
                 key_value = key_value_str.split('=')
                 keyval_dict[key_value[0]] = key_value[1]
