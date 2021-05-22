@@ -200,7 +200,7 @@ def start_redis_gateway(instance=0):
     -------
     None
     '''
-    subprocess.run([init_redis_gateway_sh, str(instance)]) # assume it will kill existing gateways
+    subprocess.run(['sudo', init_redis_gateway_sh, str(instance)]) # assume it will kill existing gateways
 
 def kill_hashpipe_related():
     '''
