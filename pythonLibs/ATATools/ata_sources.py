@@ -55,3 +55,44 @@ def get_sats(allSats=False):
     except Exception as e:
         logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
         raise
+
+
+def check_source(sourcename):
+    """
+    Get visibility status of source
+    Emulates the behaviour of atacheck utility
+
+    Parameters
+    ----------
+    sourcename: str
+        Name of source (satellite, solar system body, astronomical catalog name)
+
+    Returns
+    -------
+    dictionary of source attributes
+    
+
+    Examples
+    --------
+    >>> info = check_source('casa')
+    >>> print(info)
+    {
+        'az': 350.72113037109375,
+        'dec': 58.80799865722656,
+        'el': 10.83260726928711,
+        'is_up': False,
+        'object': 'casa',
+        'ra': 23.391000747680664,
+        'rise_time': 1621837379433419184,
+        'set_time': 1621901955350964440
+    }
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    try:
+        endpoint = '/source'
+        response = ATARest.get(endpoint, json={'source': sourcename})
+        return response
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
