@@ -71,7 +71,7 @@ def setatten(antpol_dict):
 
 def _setatten(antlist, attenlist):
     logger = logger_defaults.getModuleLogger(__name__)
-    command = "ssh sonata@gain-module1 "
+    command = "ssh sonata@gain-module0 "
     command += "'python attenuatorMain.py"
     command += " -n "
     command += " ".join([str(i) for i in antlist])
@@ -161,7 +161,7 @@ def getatten(ant_list):
         antchnumber.append(this_snap_if['chx'].values[0]) #yuck
         antchnumber.append(this_snap_if['chy'].values[0])
 
-    command = "ssh sonata@gain-module1 "
+    command = "ssh sonata@gain-module0 "
     command += "'python attenuatorMain.py"
     command += " -n "
     command += " ".join(antchnumber)
