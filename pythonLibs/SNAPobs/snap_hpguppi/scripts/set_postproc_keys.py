@@ -44,7 +44,7 @@ if __name__ == "__main__":
                 help='Set the value for the PPCPINP key [\'rawspec\']')
         parser.add_argument('--PPCPARG', type=str, default='/mnt/datax-netStorage-40G/dmpauto-$hnme$.$inst$/$stem$/',
                 help='Set the value for the PPCPARG key [\'/mnt/datax-netStorage-40G/dmpauto-$hnme$.$inst$/$stem$/\']')
-        parser.add_argument('--prefix', type=str, nargs='?', default=[],
+        parser.add_argument('--prefix', type=str, nargs='*', default=[],
                 help='Specify additional key=value strings')
         args = parser.parse_args()
 
