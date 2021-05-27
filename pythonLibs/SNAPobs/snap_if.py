@@ -2,6 +2,7 @@ from ata_snap import ata_snap_fengine
 from SNAPobs import snap_defaults, snap_config
 from ATATools import ata_helpers, logger_defaults
 from ATATools.device_lock import set_device_lock, release_device_lock
+import warnings
 
 import sys,os
 
@@ -122,8 +123,19 @@ def tune_if(snap_hosts, fpgfile=None,
     prev_attn = np.array([START_ATTN]*len(ant_ch))
 
     for i in range(3):
-        prev_attn[prev_attn > MAX_ATT] = MAX_ATT
-        prev_attn[prev_attn < MIN_ATT] = MIN_ATT
+        if np.any(prev_attn > MAX_ATT):
+            warn_ant_ch = ant_ch[prev_attn > MAX_ATT]
+            warn_prev_attn = prev_attn[prev_attn > MAX_ATT]
+            warnings.warn("Trying to set attenuator on channels %s to values %s, which is more than max [%i]"
+                    %(list(warn_ant_ch), list(warn_prev_attn), MAX_ATT))
+            prev_attn[prev_attn > MAX_ATT] = MAX_ATT
+        if np.any(prev_attn < MIN_ATT):
+            warn_ant_ch = ant_ch[prev_attn < MIN_ATT]
+            warn_prev_attn = prev_attn[prev_attn < MIN_ATT]
+            warnings.warn("Trying to set attenuator on channels %s to values %s, which is less than min [%i]"
+                    %(list(warn_ant_ch), list(warn_prev_attn), MIN_ATT))
+            prev_attn[prev_attn < MIN_ATT] = MIN_ATT
+
         _setatten(ant_ch, prev_attn)
         rms = []
         for snap_name in list(if_tab.snap_hostname.values):
