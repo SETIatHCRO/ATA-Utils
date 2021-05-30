@@ -8,9 +8,9 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser(description='Set the post-processing key-values for a Hashpipe instance.')
         parser.add_argument('-d', action='store_true',
                 help='dry run (don\'t publish)')
-        parser.add_argument('-i', type=str, default='-1',
+        parser.add_argument('-I', type=str, default='-1',
                 help='hashpipe instance id to target [-1: for broadcast]')
-        parser.add_argument('-I', type=str, default=None,
+        parser.add_argument('-H', type=str, default=None,
                 help='hashpipe instance hostname to target [$hostname]')
 
         parser.add_argument('-r', '--rm-only', action='store_true',
@@ -49,27 +49,26 @@ if __name__ == "__main__":
         args = parser.parse_args()
 
 
-        instances = args.i.split(',')
-        hostnames = args.I.split(',') if args.I is not None else [socket.gethostname()]
+        instances = args.I.split(',')
+        hostnames = args.H.split(',') if args.H is not None else [socket.gethostname()]
 
         channels =[]
-        for hostname in hostnames:
-                for instance in instances:
+        
+        if '-1' in instances:
+                print('Broadcasting the key-values')
+                channels.append(hpguppi_defaults.REDISSET)
+        else:
+                for hostname in hostnames:
+                        for instance in instances:
 
-                        try:
-                                instance = int(instance)
-                        except:
-                                print('Instance {} is not an integer.'.format(instance))
-                                exit(1)
+                                try:
+                                        instance = int(instance)
+                                except:
+                                        print('Instance {} is not an integer.'.format(instance))
+                                        exit(1)
 
-
-                        if instance > -1:
                                 print('Setting key-values on instance', instance)
-
                                 channels.append(hpguppi_defaults.REDISSETGW.substitute(host=hostname, inst=instance))
-                        else:
-                                print('Broadcasting the key-values')
-                                channels.append(hpguppi_defaults.REDISSET)
 
         keyval_dict = {
                 'POSTPROC':args.POSTPROC,
