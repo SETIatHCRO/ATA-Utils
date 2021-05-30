@@ -82,6 +82,40 @@ def get_hashpipe_key_value_str(key, instance=0):
     except:
         return ret
 
+def get_hashpipe_key_value_str_ensured(key, instance=0):
+    '''
+    Returns the value of a key in the hashpipe's status, parsed as a string.
+    Calls get_hashpipe_key_value 5 times.
+
+    Parameters
+    ----------
+    key: str
+        The key to get the value of
+    instance: int
+        The enumeration of the hashpipe instance whose status is consulted
+
+    Returns
+    -------
+    str/bytearray/None: The value of the key
+    '''
+    
+    try:
+        consistent = True
+
+        ret = get_hashpipe_key_value(key, instance=instance)
+        val = ret.decode().strip()
+        
+        for i in range(4):
+            ret = get_hashpipe_key_value(key, instance=instance)
+            consistent = consistent and (val == ret.decode().strip())
+
+        if not consistent:
+            return False
+        else:
+            return val
+    except:
+        return False
+
 def get_hashpipe_pulse(instance=0):
     '''
     Conveniently calls get_hashpipe_key_value('DAQPULSE', instance)
