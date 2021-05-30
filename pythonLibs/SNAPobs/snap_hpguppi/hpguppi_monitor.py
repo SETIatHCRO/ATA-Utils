@@ -298,14 +298,25 @@ def get_hashpipe_capture_dir(instance=0):
     -------
     str: The directory path of the latest RAW dump
     '''
+    defaults = {
+        'DATADIR':'.',
+        'PROJID':'Unknown',
+        'BACKEND':'GUPPI',
+        'BANK':'.'
+    }
+
     rawfiledir = ''
-    for key in ['DATADIR', 'PROJID', 'BACKEND', 'BANK']:
-        part = get_hashpipe_key_value(key, instance)
-        try:
-            rawfiledir = os.path.join(rawfiledir, part.decode().strip())
-        except:
-            print('Status Key', key, 'is not a valid string. Exiting.')
-            return False
+    for key, default in defaults.items():
+        key_value = get_hashpipe_key_value_str_ensured(key, instance)
+        part_str = default
+        if key_value is not False:
+            part_str = key_value
+        else:
+            if default is None:
+                print('Status Key', key, 'is not a valid string. Exiting.')
+                return False
+        
+        rawfiledir = os.path.join(rawfiledir, part_str)
     return rawfiledir
 
 def get_latest_raw_stem_in_dir(rawfiledir):
