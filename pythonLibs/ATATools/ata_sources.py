@@ -5,6 +5,8 @@ Python library to obtain state and positions of various
 astronomical/satellite objects
 """
 
+from datetime import datetime, timezone
+
 from . import logger_defaults
 from .ata_rest import ATARest
 
@@ -77,14 +79,17 @@ def check_source(sourcename):
     >>> info = check_source('casa')
     >>> print(info)
     {
-        'az': 350.72113037109375,
+        'az': 329.0008850097656,
         'dec': 58.80799865722656,
-        'el': 10.83260726928711,
-        'is_up': False,
+        'el': 23.649778366088867,
+        'is_up': True,
         'object': 'casa',
         'ra': 23.391000747680664,
-        'rise_time': 1621837379433419184,
-        'set_time': 1621901955350964440
+    # Rise and set times in UTC
+        'rise_time_posix': 1622354327,
+        'rise_time': datetime.datetime(2021, 5, 30, 5, 58, 47, tzinfo=datetime.timezone.utc),
+        'set_time_posix': 1622332739
+        'set_time': datetime.datetime(2021, 5, 29, 23, 58, 59, tzinfo=datetime.timezone.utc),
     }
     """
     logger = logger_defaults.getModuleLogger(__name__)
@@ -92,6 +97,12 @@ def check_source(sourcename):
     try:
         endpoint = '/source'
         response = ATARest.get(endpoint, json={'source': sourcename})
+
+        if response['rise_time_posix']:
+            response['rise_time'] = datetime.fromtimestamp(response['rise_time_posix'], timezone.utc)
+        if response['set_time_posix']:
+            response['set_time'] = datetime.fromtimestamp(response['set_time_posix'], timezone.utc)
+            
         return response
     except Exception as e:
         logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
