@@ -192,6 +192,7 @@ exceptions_caught = 0
 exception_limit = 5
 
 have_published = False
+different_conf = True
 last_published = 0
 while(True):
   # Collect the destination
@@ -284,7 +285,8 @@ while(True):
                   dests=destIps,
                   silent=not new_publication,
                   zero_obs_startstop=False,
-                  dry_run=False)
+                  dry_run=False,
+                  default_dir=different_conf)
         
         if new_publication:
           print()
@@ -308,8 +310,9 @@ while(True):
     last_published = time.time()
   elif not all (same):
     have_published = False
+    different_conf = not (same[0] or same[1])
   else: # groups and destinations are stable and have published
-    pass
+    different_conf = False
 
   time.sleep(0.5)
 
