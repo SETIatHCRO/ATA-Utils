@@ -65,7 +65,8 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
 									dests=None,
 									silent=False,
 									zero_obs_startstop=True,
-									dry_run=False):
+									dry_run=False,
+                                    default_dir=False):
 
     if configfile is not None and configfile != '':
         if not os.path.exists(configfile):
@@ -199,9 +200,6 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
                 'NBITS'    : hpguppi_defaults.NBITS,
                 'PKTNTIME' : hpguppi_defaults.N_TIMES_PER_PKT,
                 'SYNCTIME' : sync_time,
-                'PROJID'   : hpguppi_defaults.PROJID,
-                'BANK'     : hpguppi_defaults.BANK,
-                'BACKEND'  : hpguppi_defaults.BACKEND,
                 # 'DATADIR'  : DATADIR, # best left to the configuration (numactl grouping of NVMe mounts)
                 'PKTFMT'   : hpguppi_defaults.PKTFMT,
                 'SNAPPAT'  : hpguppi_defaults.SNAPPAT,
@@ -216,6 +214,11 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
         if zero_obs_startstop:
             key_val['OBSSTART'] = 0
             key_val['OBSSTOP']  = 0
+            
+        if default_dir:
+            key_val['PROJID']   = hpguppi_defaults.PROJID
+            key_val['BANK']     = hpguppi_defaults.BANK
+            key_val['BACKEND']  = hpguppi_defaults.BACKEND
 
         redis_publish_command = hpguppi_auxillary.redis_publish_command_from_dict(key_val)
         if not silent:
