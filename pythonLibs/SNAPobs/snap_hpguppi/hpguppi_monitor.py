@@ -82,7 +82,7 @@ def get_hashpipe_key_value_str(key, instance=0):
     except:
         return ret
 
-def get_hashpipe_key_value_str_ensured(key, instance=0):
+def get_hashpipe_key_value_str_ensured(key, instance=0, interval_sec=0.01, re_get=5):
     '''
     Returns the value of a key in the hashpipe's status, parsed as a string.
     Calls get_hashpipe_key_value 5 times.
@@ -105,9 +105,10 @@ def get_hashpipe_key_value_str_ensured(key, instance=0):
         ret = get_hashpipe_key_value(key, instance=instance)
         val = ret.decode().strip()
         
-        for i in range(4):
+        for i in range(re_get-1):
             ret = get_hashpipe_key_value(key, instance=instance)
             consistent = consistent and (val == ret.decode().strip())
+            time.sleep(interval_sec)
 
         if not consistent:
             return False
