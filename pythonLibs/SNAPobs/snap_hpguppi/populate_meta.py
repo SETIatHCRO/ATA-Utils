@@ -207,6 +207,9 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
                 'SOURCE'   : source,
                 'RA'       : ra,
                 'DEC'      : dec,
+                'SRC_NAME' : source,    # Rawspec expects these keys (rawspec_rawutils.c#L155-L186)
+                'RA_STR'   : ra,        # Rawspec expects these keys (rawspec_rawutils.c#L155-L186)
+                'DEC_STR'  : dec,       # Rawspec expects these keys (rawspec_rawutils.c#L155-L186)
                 'AZ'       : az,
                 'EL'       : el,
                 'ANTNAMES' : ",".join(ant_names)
