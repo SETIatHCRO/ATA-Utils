@@ -198,9 +198,23 @@ def tune_if_ants(ant_list, target_rms=TARGET_RMS):
 
     obs_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name.isin(ant_list)]
     snap_hosts = list(obs_ant_tab.snap_hostname.values)
+    print("snap_hosts:")
+    print(snap_hosts)
     tune_if(snap_hosts, target_rms=target_rms)
 
 
+def tune_if_antslo(antlo_list):
+    assert type(antlo_list) == list
+
+    obs_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.antlo.isin(antlo_list)]
+    snap_hosts = list(obs_ant_tab.snap_hostname.values)
+    print("snap_hosts:")
+    print(snap_hosts)
+    tune_if(snap_hosts)
+
+
+
+"""
 def getatten(ant_list):
     logger = logger_defaults.getModuleLogger(__name__)
     assert type(ant_list) == list
@@ -248,6 +262,64 @@ def getatten(ant_list):
             retdict[row.ANT_name+"y"] = float(ch_if_attn[this_snap_if['chy'].values[0]])
 
     return retdict
+"""
+
+def getatten(antlo_list):
+    """
+    antlo_list: list if ant_los similar to:
+       "1aA", "1kA", "1kB", "1hB", "2aA", "2aB", "3dc"
+    where the last letter in the name is the LO letter
+
+    returns:
+        dict with keys same as antlo_list, but appended with
+        "x" and "y" for each polarisation, and the attenuation value
+        as dictionary values
+    """
+
+    logger = logger_defaults.getModuleLogger(__name__)
+    assert type(antlo_list) == list
+
+    obs_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.antlo.isin(antlo_list)]
+
+    assert len(obs_ant_tab) == len(antlo_list)
+
+    ata_snap_if = ATA_SNAP_IF[
+            ATA_SNAP_IF.snap_hostname.isin(obs_ant_tab.snap_hostname)]
+
+    att_modules = ata_snap_if.module.unique()
+
+    retdict = {}
+
+    for att_mod in att_modules:
+        this_snap_if = ata_snap_if[ata_snap_if.module == att_mod]
+
+        antchnumber = []
+        for _,row in this_snap_if.iterrows():
+            antchnumber.append(row.chx)
+            antchnumber.append(row.chy)
+
+        command = "ssh sonata@gain-module%i " %(int(att_mod))
+        command += "'python attenuatorMain.py"
+        command += " -n "
+        command += " ".join(antchnumber)
+        command += " -g "
+        command += "'"
+
+        logger.info(command)
+
+        process = subprocess.Popen(command, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE, shell=True)
+
+        stdout, stderr = process.communicate()
+        ch_if_attn = _translate_if_output(stdout)
+
+        for _, row in this_snap_if.iterrows():
+            antlo = obs_ant_tab[obs_ant_tab.snap_hostname == row.snap_hostname].antlo.values[0]
+            retdict[antlo+"x"] = float(ch_if_attn[row['chx']])
+            retdict[antlo+"y"] = float(ch_if_attn[row['chy']])
+
+    return retdict
+
 
 
 def _translate_if_output(stdout):
