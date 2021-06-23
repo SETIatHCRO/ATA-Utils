@@ -18,14 +18,11 @@ from SNAPobs import snap_defaults, snap_config
 from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
 
 # Collate the snap hostnames
-snap_name_template = Template('frb-snap${id}-pi')
-snaps_to_marshall = [
-  snap_name_template.substitute(id=id+1) for id in range(0, 12)
-]
+streams_to_marshall = [i.snap_hostname for i in snap_config.get_ata_snap_tab().itertuples()]
 
 # Gather antenna-configuration for the listed snaps
-snap_ant_name_dict = hpguppi_auxillary.get_antenna_name_dict_for_snap_hostnames(snaps_to_marshall)
-antenna_names = [ant_name for snap_name, ant_name in snap_ant_name_dict.items()]
+stream_ant_name_dict = hpguppi_auxillary.get_antenna_name_dict_for_stream_hostnames(streams_to_marshall)
+antenna_names = [ant_name for stream_name, ant_name in stream_ant_name_dict.items()]
 
 def eth_get_dest_port(feng, interfaces='all'):
   '''
@@ -185,7 +182,7 @@ def collect_values_from_dict(dictionary, keys):
   return [dictionary[key] for key in keys]
 
 # Create the AtaSnapFengine list from the names
-fengs = snap_control.init_snaps(snaps_to_marshall, get_system_information=False)
+fengs = snap_control.init_snaps(streams_to_marshall, get_system_information=False)
 hostname_feng_dict = {feng.host:feng for feng in fengs}
 
 # print([eth_get_dest_port(feng) for feng in fengs])
@@ -193,8 +190,8 @@ hostname_feng_dict = {feng.host:feng for feng in fengs}
 
 last_groups = []
 last_destinations = []
-last_skyfreq_mapping, _ = hpguppi_populate_meta._get_snap_mapping(snaps_to_marshall)
-last_skyfreq_mapping = collect_values_from_dict(last_skyfreq_mapping, snaps_to_marshall)
+last_skyfreq_mapping, _ = hpguppi_populate_meta._get_stream_mapping(streams_to_marshall)
+last_skyfreq_mapping = collect_values_from_dict(last_skyfreq_mapping, streams_to_marshall)
 last_az_el = ata_control.get_az_el(antenna_names)
 last_eph_source = ata_control.get_eph_source(antenna_names)
 
@@ -214,17 +211,17 @@ while(True):
 
   groups = []
   destinations = []
-  skyfreq_mapping, _ = hpguppi_populate_meta._get_snap_mapping(snaps_to_marshall)
-  skyfreq_mapping = collect_values_from_dict(skyfreq_mapping, snaps_to_marshall)
+  skyfreq_mapping, _ = hpguppi_populate_meta._get_stream_mapping(streams_to_marshall)
+  skyfreq_mapping = collect_values_from_dict(skyfreq_mapping, streams_to_marshall)
   az_el = ata_control.get_az_el(antenna_names)
   eph_source = ata_control.get_eph_source(antenna_names)
 
-  for snapname, dest_details in feng_interface_dest_details.items():
+  for streamname, dest_details in feng_interface_dest_details.items():
     if dest_details not in destinations:
       destinations.append(dest_details)
-      groups.append([snapname])
+      groups.append([streamname])
     else:
-      groups[destinations.index(dest_details)].append(snapname)
+      groups[destinations.index(dest_details)].append(streamname)
 
   same = [
     groups == last_groups,
@@ -269,18 +266,18 @@ while(True):
         destIps = unique(destIps)
         n_chan = n_chan*len(destIps) # assume each destination receives the same number of channels
 
-        feng_id_snap_name_dict = {get_feng_id(hostname_feng_dict[hostname]):hostname for hostname in groups[i]}
-        feng_ids = sorted(feng_id_snap_name_dict)
-        snap_names = [feng_id_snap_name_dict[feng_id] for feng_id in feng_ids]
+        feng_id_hostname_dict = {get_feng_id(hostname_feng_dict[hostname]):hostname for hostname in groups[i]}
+        feng_ids = sorted(feng_id_hostname_dict)
+        stream_hostnames = [feng_id_hostname_dict[feng_id] for feng_id in feng_ids]
 
         if new_publication:
           print('start_chan', start_chan)
           print('n_chan', n_chan)
           print('destIps', destIps)
 
-          meta_args = '-s {} -a {} -C {} -c {} -d {} -P {} --silent'.format(
-            ' '.join(snap_names), 
-            ' '.join([snap_ant_name_dict[snap] for snap in snap_names]),
+          meta_args = '-s {} -a {} -C {} -c {} -d {} --silent'.format(
+            ' '.join(stream_hostnames), 
+            ' '.join([stream_ant_name_dict[stream] for stream in stream_hostnames]),
             start_chan,
             n_chan,
             ' '.join(destIps),
@@ -289,8 +286,8 @@ while(True):
           print('meta_args:', meta_args)
         
         hpguppi_populate_meta.populate_meta(
-                  snap_names,
-                  [snap_ant_name_dict[snap] for snap in snap_names], 
+                  stream_hostnames,
+                  [stream_ant_name_dict[stream] for stream in stream_hostnames], 
                   None,
                   n_chans=n_chan,
                   start_chan=start_chan,
