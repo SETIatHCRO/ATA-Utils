@@ -38,10 +38,13 @@ hpguppi_populate_meta.populate_meta(
 									args.snaphosts,
 									args.antnames, 
 									args.configfile,
-									args.ignore_control,
-									args.hpguppi_daq_instance,
-									args.n_chans,
-									args.start_chan,
-									args.dests,
-									args.silent,
-									args.dry_run)
+									ignore_control=args.ignore_control,
+									hpguppi_daq_instance=args.hpguppi_daq_instance,
+									n_chans=args.n_chans,
+									start_chan=args.start_chan,
+									dests=args.dests,
+									silent=args.silent,
+									# zero_obs_startstop=
+									dry_run=args.dry_run
+									# default_dir=
+)
