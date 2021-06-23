@@ -17,6 +17,10 @@ ATA_SNAP_TAB = pd.read_csv(_snap_tab, delim_whitespace=True, index_col=False,
         names=_snap_tab_names, dtype=str)
 _snap_tab.close()
 
+#extend ATA_SNAP_TAB with antlo
+ANTLO = [ant+lo.upper() for ant,lo in zip(ATA_SNAP_TAB.ANT_name, ATA_SNAP_TAB.LO)]
+ATA_SNAP_TAB.insert(ATA_SNAP_TAB.shape[1], "antlo", ANTLO, True)
+
 
 _snap_if = open(os.path.join(ATA_SHARE_DIR, 'ata_if.cfg'))
 _snap_if_names = [name for name in _snap_if.readline().strip().lstrip("#").split(" ")
