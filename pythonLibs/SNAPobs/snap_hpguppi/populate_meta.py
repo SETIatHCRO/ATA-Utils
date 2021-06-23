@@ -57,7 +57,7 @@ def _get_channel_selection(dests, start_chan, n_chans_per_dest):
 
 
 StringList = List[str]# Deprecated in 3.9, can rather use list[str]
-def populate_meta(snap_hostnames: StringList, ant_names: StringList, 
+def populate_meta(stream_hostnames: StringList, ant_names: StringList, 
 									configfile: str=None,
 									ignore_control=False,
 									hpguppi_daq_instance=-1,
@@ -95,27 +95,27 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
         print()
         return
 
-    if ant_names is None and snap_hostnames is not None:
-        ant_name_dict = hpguppi_auxillary.get_antenna_name_dict_for_snap_hostnames(snap_hostnames)
+    if ant_names is None and stream_hostnames is not None:
+        ant_name_dict = hpguppi_auxillary.get_antenna_name_dict_for_stream_hostnames(stream_hostnames)
         print('ant_name_dict', ant_name_dict)
-        ant_names = [ant_name_dict[snap] for snap in snap_hostnames]
-    elif ant_names is not None and snap_hostnames is None:
-        snap_hostname_dict = hpguppi_auxillary.get_snap_hostname_dict_for_antenna_names(ant_names)
-        print('snap_hostname_dict', snap_hostname_dict)
-        snap_hostnames = [snap_hostname_dict[ant] for ant in ant_names]
+        ant_names = [ant_name_dict[snap] for snap in stream_hostnames]
+    elif ant_names is not None and stream_hostnames is None:
+        stream_hostname_dict = hpguppi_auxillary.get_stream_hostname_dict_for_antenna_names(ant_names)
+        print('stream_hostname_dict', stream_hostname_dict)
+        stream_hostnames = [stream_hostname_dict[ant] for ant in ant_names]
 
-    nants      = len(snap_hostnames)
+    nants      = len(stream_hostnames)
     n_dests    = len(dests)
     sync_time  = int(hpguppi_defaults.redis_obj.get('SYNCTIME'))
     # snapseq    = ",".join([isnap.replace('frb-snap','').replace('-pi','')
-    #     for isnap in snap_hostnames]) #this contains the "physical" snapID
+    #     for isnap in stream_hostnames]) #this contains the "physical" snapID
 
     n_chans_per_dest = n_chans // n_dests
 
     mapping = _get_channel_selection(dests, start_chan,
             n_chans_per_dest)
 
-    skyfreq_mapping, antname_mapping = _get_snap_mapping(snap_hostnames,
+    skyfreq_mapping, antname_mapping = _get_snap_mapping(stream_hostnames,
             ignore_control)
     ants_obs_params = snap_dada.get_obs_params(ant_names)
     source_list = [aop['SOURCE'] for antname, aop in ants_obs_params.items()]
@@ -129,7 +129,7 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
         sys.stderr.write("WARNING: antennas do not have the same source")
 
     assert len(set(list(skyfreq_mapping.values()))) != 0, "subbarray antennas must have the same frequencies"
-    lo_obsfreq = skyfreq_mapping[snap_hostnames[0]]
+    lo_obsfreq = skyfreq_mapping[stream_hostnames[0]]
     centre_channel = hpguppi_defaults.FENCHAN/2
     source     = ant0_obs_params['SOURCE']
     ra      = ant0_obs_params['RA']
