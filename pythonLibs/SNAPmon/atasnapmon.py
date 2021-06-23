@@ -154,14 +154,14 @@ for snap in fengs:
 
     fig.append_trace({
 	    'x': x,
-	    'y': 10*np.log(xx+0.1),
+	    'y': 10*np.log10(xx+0.1),
 	    'name': 'X-pol',
 	    'mode': 'lines',
 	    'type': 'scatter'
 	}, 1, 1)
     fig.append_trace({
 	    'x': x,
-	    'y': 10*np.log(yy+0.1),
+	    'y': 10*np.log10(yy+0.1),
 	    'name': 'Y-pol',
 	    'mode': 'lines',
 	    'type': 'scatter'
