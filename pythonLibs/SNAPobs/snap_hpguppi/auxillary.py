@@ -4,16 +4,16 @@ from . import record_in as hpguppi_record_in
 import re
 
 # Gather antenna-configuration for the listed snaps
-def get_antenna_name_dict_for_snap_hostnames(snap_hostnames):
+def get_antenna_name_dict_for_stream_hostnames(stream_hostnames):
   ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
-  if not all(snap in list(ATA_SNAP_TAB.snap_hostname) for snap in snap_hostnames):
+  if not all(snap in list(ATA_SNAP_TAB.stream_hostname) for snap in stream_hostnames):
       raise RuntimeError("Not all snaps (%s) are provided in the config table (%s)",
-              snap_hostnames, ATA_SNAP_TAB.snap_hostname)
-  snap_hostnames_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname.isin(snap_hostnames)]
-  return {i.snap_hostname:i.antlo for i in snap_hostnames_ant_tab.itertuples()}
+              stream_hostnames, ATA_SNAP_TAB.stream_hostname)
+  stream_hostnames_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.stream_hostname.isin(stream_hostnames)]
+  return {i.stream_hostname:i.antlo for i in stream_hostnames_ant_tab.itertuples()}
 
 # Gather antenna-configuration for the listed snaps
-def get_snap_hostname_dict_for_antenna_names(antenna_names):
+def get_stream_hostname_dict_for_antenna_names(antenna_names):
   ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
   if not all(ant in list(ATA_SNAP_TAB.antlo) for ant in antenna_names):
       raise RuntimeError("Not all antennae (%s) are provided in the config table (%s)",
@@ -42,8 +42,8 @@ def generate_hpguppi_redis_get_channels(hpguppi_hostnames, hpguppi_instance_ids)
 def generate_freq_auto_string_per_channel(redis_obj, hpguppi_redis_get_channels):
   log_string_per_channel = []
   for channel in hpguppi_redis_get_channels:
-    snaps = get_snaps_of_redis_chan(redis_obj, channel)
-    antdict = get_antenna_name_dict_for_snap_hostnames(snaps)
+    snaps = hpguppi_record_in._get_snaps_of_redis_chan(redis_obj, channel)
+    antdict = get_antenna_name_dict_for_stream_hostnames(snaps)
     log_string_per_channel.append(str(snap_dada.get_freq_auto([antdict[snap] for snap in snaps])))
   return log_string_per_channel
 
