@@ -6,11 +6,11 @@ import re
 # Gather antenna-configuration for the listed snaps
 def get_antenna_name_dict_for_stream_hostnames(stream_hostnames):
   ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
-  if not all(snap in list(ATA_SNAP_TAB.stream_hostname) for snap in stream_hostnames):
+  if not all(snap in list(ATA_SNAP_TAB.snap_hostname) for snap in stream_hostnames):
       raise RuntimeError("Not all snaps (%s) are provided in the config table (%s)",
-              stream_hostnames, ATA_SNAP_TAB.stream_hostname)
-  stream_hostnames_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.stream_hostname.isin(stream_hostnames)]
-  return {i.stream_hostname:i.antlo for i in stream_hostnames_ant_tab.itertuples()}
+              stream_hostnames, ATA_SNAP_TAB.snap_hostname)
+  stream_hostnames_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname.isin(stream_hostnames)]
+  return {i.snap_hostname:i.antlo for i in stream_hostnames_ant_tab.itertuples()}
 
 # Gather antenna-configuration for the listed snaps
 def get_stream_hostname_dict_for_antenna_names(antenna_names):
