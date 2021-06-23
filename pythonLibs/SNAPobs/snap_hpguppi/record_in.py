@@ -70,8 +70,9 @@ def block_until_post_processing_waiting(hashes, verbose=True):
     _block_until_key_has_value(hashes, "PPSTATUS", "WAITING", verbose=verbose)
 
 def _publish_obs_start_stop(redis_obj, channel, obsstart, obsstop, dry_run=False):
-    cmd = "OBSSTART=%i\nOBSSTOP=%i"  %(obsstart, obsstop)
-    print(channel, "\tOBSSTART: %i,\tOBSSTOP : %i" %(obsstart, obsstop))
+    cmd = "OBSSTART=%i\nOBSSTOP=%i\n"  %(obsstart, obsstop)
+    cmd += "PKTSTART=%i\nPKTSTOP=%i"  %(obsstart, obsstop)
+    print(channel, cmd.replace('\n', '\t'))
     if not dry_run:
         redis_obj.publish(channel, cmd)
     else:
