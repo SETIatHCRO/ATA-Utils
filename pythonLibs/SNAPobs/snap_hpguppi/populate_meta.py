@@ -15,22 +15,22 @@ from . import auxillary as hpguppi_auxillary
 
 ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
 
-def _get_snap_mapping(snap_hosts, ignore_control=False):
+def _get_stream_mapping(stream_hosts, ignore_control=False):
     """
-    1) Get the centre frequency for each of the snap_hosts
+    1) Get the centre frequency for each of the stream_hosts
     from the REST/control machine, given what tunings are fed to 
     what snaps
     2) Get the antenna name associated with the snap
 
     An overly complicated function for what it does really
     """
-    if type(snap_hosts) != list:
+    if type(stream_hosts) != list:
         raise RuntimeError("Please input a list")
-    if not all(snap in list(ATA_SNAP_TAB.snap_hostname) for snap in snap_hosts):
+    if not all(stream in list(ATA_SNAP_TAB.snap_hostname) for stream in stream_hosts):
         raise RuntimeError("Not all snaps (%s) are provided in the config table (%s)",
-                snap_hosts, ATA_SNAP_TAB.snap_hostname)
+                stream_hosts, ATA_SNAP_TAB.snap_hostname)
 
-    obs_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname.isin(snap_hosts)]
+    obs_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname.isin(stream_hosts)]
     los = np.unique(obs_ant_tab.LO)
 
     retdict_skyfreq = {}
@@ -115,7 +115,7 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
     mapping = _get_channel_selection(dests, start_chan,
             n_chans_per_dest)
 
-    skyfreq_mapping, antname_mapping = _get_snap_mapping(stream_hostnames,
+    skyfreq_mapping, antname_mapping = _get_stream_mapping(stream_hostnames,
             ignore_control)
     ants_obs_params = snap_dada.get_obs_params(ant_names)
     source_list = [aop['SOURCE'] for antname, aop in ants_obs_params.items()]
