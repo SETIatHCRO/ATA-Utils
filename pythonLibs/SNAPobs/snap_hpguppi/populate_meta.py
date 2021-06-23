@@ -7,6 +7,7 @@ from string import Template
 from typing import List
 
 from SNAPobs import snap_defaults, snap_config
+from SNAPobs.snap_dada import snap_dada
 from ATATools import ata_control
 
 from . import snap_hpguppi_defaults as hpguppi_defaults
@@ -96,17 +97,18 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
 
     if ant_names is None and snap_hostnames is not None:
         ant_name_dict = hpguppi_auxillary.get_antenna_name_dict_for_snap_hostnames(snap_hostnames)
+        print('ant_name_dict', ant_name_dict)
         ant_names = [ant_name_dict[snap] for snap in snap_hostnames]
-
-    snap_hostname_dict = hpguppi_auxillary.get_snap_hostname_dict_for_antenna_names(ant_names)
-    if ant_names is not None and snap_hostnames is None:
+    elif ant_names is not None and snap_hostnames is None:
+        snap_hostname_dict = hpguppi_auxillary.get_snap_hostname_dict_for_antenna_names(ant_names)
+        print('snap_hostname_dict', snap_hostname_dict)
         snap_hostnames = [snap_hostname_dict[ant] for ant in ant_names]
 
     nants      = len(snap_hostnames)
     n_dests    = len(dests)
     sync_time  = int(hpguppi_defaults.redis_obj.get('SYNCTIME'))
-    snapseq    = ",".join([isnap.replace('frb-snap','').replace('-pi','')
-        for isnap in snap_hostnames]) #this contains the "physical" snapID
+    # snapseq    = ",".join([isnap.replace('frb-snap','').replace('-pi','')
+    #     for isnap in snap_hostnames]) #this contains the "physical" snapID
 
     n_chans_per_dest = n_chans // n_dests
 
@@ -115,23 +117,25 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
 
     skyfreq_mapping, antname_mapping = _get_snap_mapping(snap_hostnames,
             ignore_control)
-    source_dict = ata_control.get_eph_source(ant_names[0:1])
-    radec_dict = ata_control.get_ra_dec(ant_names[0:1])
-    azel_dict  = ata_control.get_az_el(ant_names[0:1])
+    ants_obs_params = snap_dada.get_obs_params(ant_names)
+    source_list = [aop['SOURCE'] for antname, aop in ants_obs_params.items()]
+    ant0_obs_params = ants_obs_params[ant_names[0]]
 
     if len(set(skyfreq_mapping.values())) != 1:
         sys.stderr.write("WARNING: antennas are tuned to different freqs, "
                 "OBSFREQ will be given the first value of OBSNFREQ\n")
 
-    if len(set(source_dict.values())) != 1:
+    if len(set(source_list)) != 1:
         sys.stderr.write("WARNING: antennas do not have the same source")
 
     assert len(set(list(skyfreq_mapping.values()))) != 0, "subbarray antennas must have the same frequencies"
     lo_obsfreq = skyfreq_mapping[snap_hostnames[0]]
     centre_channel = hpguppi_defaults.FENCHAN/2
-    source     = source_dict[ant_names[0]]
-    ra,dec     = radec_dict[ant_names[0]]
-    az,el      = azel_dict[ant_names[0]]
+    source     = ant0_obs_params['SOURCE']
+    ra      = ant0_obs_params['RA']
+    dec     = ant0_obs_params['DEC']
+    az      = ant0_obs_params['AZ']
+    el      = ant0_obs_params['EL']
 
     # logic to deal with multi-instance hashpipes
     # if the gethostbyaddr(ip0) == gethostbyaddr(ip1), assume that
@@ -218,8 +222,6 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
                 'SYNCTIME' : sync_time,
                 # 'DATADIR'  : DATADIR, # best left to the configuration (numactl grouping of NVMe mounts)
                 'PKTFMT'   : hpguppi_defaults.PKTFMT,
-                'SNAPPAT'  : hpguppi_defaults.SNAPPAT,
-                'SNAPSEQ'  : snapseq,
                 'SOURCE'   : source,
                 'RA'       : ra,
                 'DEC'      : dec,
