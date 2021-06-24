@@ -36,15 +36,12 @@ def _log_recording(start_time, duration, obsstart, npackets, redisset, extra_str
         ]
         csvwr.writerow(row_strings)
 
-def _get_sync_time_for_snaps(snaps):
-    fengs = snap_control.init_snaps(snaps)
+def _get_sync_time_for_streams(stream_hostnames):
+    fengs = snap_control.init_snaps(stream_hostnames)
     return [feng.fpga.read_int('sync_sync_time') for feng in fengs]
 
-def _stitch_pattern_for_sequence(pattern, sequence):
-    return [seq.join(pattern.split(',')) for seq in sequence.split(',')]
-
-def _get_snaps_of_redis_chan(redis_obj, redis_chan):
-    return _stitch_pattern_for_sequence(redis_obj.hget(redis_chan, "SNAPPAT").decode(), redis_obj.hget(redis_chan, "SNAPSEQ").decode())
+def _get_stream_hostnames_of_redis_chan(redis_obj, redis_chan):
+    return hpguppi_auxillary.get_stream_hostname_per_antenna_names(redis_obj.hget(redis_chan, "ANTNAMES").decode().split(','))
 
 def _block_until_key_has_value(hashes, key, value, verbose=True):
     len_per_value = 50//len(hashes)
@@ -117,15 +114,15 @@ def record_in(
 
         sync_time = universal_sync_time
         if not force_synctime:
-            snaps = _get_snaps_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_auxillary.redis_get_channel_from_set_channel(channel))
-            # print(snaps)
-            sync_times = _get_sync_time_for_snaps(snaps)
+            stream_hostnames = _get_stream_hostnames_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_auxillary.redis_get_channel_from_set_channel(channel))
+            # print(stream_hostnames)
+            sync_times = _get_sync_time_for_streams(stream_hostnames)
             if len(set(sync_times)) == 1:
                 sync_time = sync_times[0]
             else:
-                print("Hpguppi channel", channel, "has the following snaps, with non-uniform sync-times:")
-                for i in range(len(snaps)):
-                    print(snaps[i], sync_times[i])
+                print("Hpguppi channel", channel, "has the following streams, with non-uniform sync-times:")
+                for i in range(len(stream_hostnames)):
+                    print(stream_hostnames[i], sync_times[i])
                 print("Cannot reliably start a recording.")
                 return False
         
