@@ -3,16 +3,25 @@ from . import snap_hpguppi_defaults as hpguppi_defaults
 from . import record_in as hpguppi_record_in
 import re
 
-# Gather antenna-configuration for the listed snaps
+# Gather antenna-names for the listed stream hostnames
 def get_antenna_name_dict_for_stream_hostnames(stream_hostnames):
+  ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
+  if not all(snap in list(ATA_SNAP_TAB.snap_hostname) for snap in stream_hostnames):
+      raise RuntimeError("Not all stream hostnames (%s) are provided in the config table (%s)",
+              stream_hostnames, ATA_SNAP_TAB.snap_hostname)
+  stream_hostnames_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname.isin(stream_hostnames)]
+  return {i.snap_hostname:i.antlo for i in stream_hostnames_ant_tab.itertuples()}
+
+# List antenna-names instead of the given stream names
+def get_antenna_name_per_stream_hostnames(stream_hostnames):
   ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
   if not all(snap in list(ATA_SNAP_TAB.snap_hostname) for snap in stream_hostnames):
       raise RuntimeError("Not all snaps (%s) are provided in the config table (%s)",
               stream_hostnames, ATA_SNAP_TAB.snap_hostname)
   stream_hostnames_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname.isin(stream_hostnames)]
-  return {i.snap_hostname:i.antlo for i in stream_hostnames_ant_tab.itertuples()}
+  return [i.antlo for i in stream_hostnames_ant_tab.itertuples()]
 
-# Gather antenna-configuration for the listed snaps
+# Gather stream hostnames for the listed antenna names
 def get_stream_hostname_dict_for_antenna_names(antenna_names):
   ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
   if not all(ant in list(ATA_SNAP_TAB.antlo) for ant in antenna_names):
@@ -20,6 +29,15 @@ def get_stream_hostname_dict_for_antenna_names(antenna_names):
               antenna_names, ATA_SNAP_TAB.antlo)
   antenna_names_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.antlo.isin(antenna_names)]
   return {i.antlo:i.snap_hostname for i in antenna_names_ant_tab.itertuples()}
+
+# List stream hostnames instead of the listed antenna names
+def get_stream_hostname_per_antenna_names(antenna_names):
+  ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
+  if not all(ant in list(ATA_SNAP_TAB.antlo) for ant in antenna_names):
+      raise RuntimeError("Not all antennae (%s) are provided in the config table (%s)",
+              antenna_names, ATA_SNAP_TAB.antlo)
+  antenna_names_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.antlo.isin(antenna_names)]
+  return [i.snap_hostname for i in antenna_names_ant_tab.itertuples()]
 
 def redis_get_channel_from_set_channel(set_channel):
   match = re.match(hpguppi_defaults.REDISSETGW_re, set_channel)
