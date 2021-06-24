@@ -10,7 +10,7 @@ from .snap_config import get_ata_cfg
 from ata_snap import ata_snap_fengine, ata_rfsoc_fengine
 
 
-def init_snaps(snap_list, get_system_information=False):
+def init_snaps(snap_list, load_system_information=False):
     logger = logger_defaults.getModuleLogger(__name__)
     logger.info("Initialising snaps: %s" %snap_list)
     snaps = []
@@ -24,7 +24,7 @@ def init_snaps(snap_list, get_system_information=False):
             snaps.append(ata_rfsoc_fengine.AtaRfsocFengine(snap_name, 
                     pipeline_id=pipeline_id-1))
 
-    if get_system_information:
+    if load_system_information:
         get_system_information(snaps)
 
     return snaps
