@@ -1,6 +1,7 @@
 #!/home/sonata/miniconda3/bin/python
 import argparse
 from SNAPobs.snap_hpguppi import populate_meta as hpguppi_populate_meta
+from SNAPobs.snap_hpguppi import snap_hpguppi_defaults as hpguppi_defaults
 
 parser = argparse.ArgumentParser(description='Program to populate'
 				'meta data in redis database on compute nodes')
@@ -23,6 +24,9 @@ parser.add_argument('-c', dest='n_chans',
 parser.add_argument('-C', dest='start_chan',
 				help='the lowest channel being transmitted by the snaps',
 				type=int)
+parser.add_argument('-P', dest='pkt_nchan_max',
+				help='the maximum number of channels per packet sent by the snaps [{}]'.format(hpguppi_defaults.MAX_CHANS_PER_PKT),
+				type=int, default=hpguppi_defaults.MAX_CHANS_PER_PKT)
 parser.add_argument('-d', dest='dests', nargs='+', type=str,
 				help='the destinations of the snaps')
 parser.add_argument('configfile', type=str, nargs='?', default='',
@@ -44,6 +48,7 @@ hpguppi_populate_meta.populate_meta(
 									start_chan=args.start_chan,
 									dests=args.dests,
 									silent=args.silent,
+									max_packet_nchan=pkt_nchan_max,
 									# zero_obs_startstop=
 									dry_run=args.dry_run
 									# default_dir=
