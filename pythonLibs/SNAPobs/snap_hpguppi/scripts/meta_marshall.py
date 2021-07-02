@@ -192,8 +192,9 @@ last_groups = []
 last_destinations = []
 last_skyfreq_mapping, _ = hpguppi_populate_meta._get_stream_mapping(streams_to_marshall)
 last_skyfreq_mapping = collect_values_from_dict(last_skyfreq_mapping, streams_to_marshall)
-last_az_el = ata_control.get_az_el(antenna_names)
-last_eph_source = ata_control.get_eph_source(antenna_names)
+antname_nolo_list = list(set([ant[:2] for ant in antenna_names]))
+last_az_el = ata_control.get_az_el(antname_nolo_list)
+last_eph_source = ata_control.get_eph_source(antname_nolo_list)
 
 exceptions_caught = 0
 exception_limit = 5
@@ -213,8 +214,8 @@ while(True):
   destinations = []
   skyfreq_mapping, _ = hpguppi_populate_meta._get_stream_mapping(streams_to_marshall)
   skyfreq_mapping = collect_values_from_dict(skyfreq_mapping, streams_to_marshall)
-  az_el = ata_control.get_az_el(antenna_names)
-  eph_source = ata_control.get_eph_source(antenna_names)
+  az_el = ata_control.get_az_el(antname_nolo_list)
+  eph_source = ata_control.get_eph_source(antname_nolo_list)
 
   for streamname, dest_details in feng_interface_dest_details.items():
     if dest_details not in destinations:
@@ -227,8 +228,8 @@ while(True):
     groups == last_groups,
     destinations == last_destinations,
     list_el_approx_equal(skyfreq_mapping, last_skyfreq_mapping),
-    # all([list_el_approx_equal(az_el[ant_name], last_az_el[ant_name]) for ant_name in antenna_names]),
-    all([eph_source[ant_name] == last_eph_source[ant_name] for ant_name in antenna_names])
+    # all([list_el_approx_equal(az_el[ant_name], last_az_el[ant_name]) for ant_name in antname_nolo_list]),
+    all([eph_source[ant_name] == last_eph_source[ant_name] for ant_name in antname_nolo_list])
   ]
   if all(same) and (not have_published or (time.time() - last_published > 10)) : # Seems stable, but haven't published
     new_publication = not have_published
