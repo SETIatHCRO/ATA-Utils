@@ -18,8 +18,8 @@ import pytz
 from datetime import datetime
 
 #from simulator import ata_snap_fengine
-from ata_snap import ata_snap_fengine
-from SNAPobs import snap_defaults, snap_config
+#from ata_snap import ata_snap_fengine
+from SNAPobs import snap_defaults, snap_config, snap_control
 from ATATools import ata_control
 import casperfpga
 from threading import Thread
@@ -45,6 +45,9 @@ snaps = ['frb-snap1-pi', 'frb-snap2-pi',
         'frb-snap9-pi', 'frb-snap10-pi',
         'frb-snap11-pi', 'frb-snap12-pi',
         ]
+snaps += ["rfsoc1-ctrl-%i" %i for i in [1,2,3,4]]
+snaps += ["rfsoc2-ctrl-%i" %i for i in [1,2,3,4]]
+snaps += ["rfsoc3-ctrl-%i" %i for i in [1,2,3,4]]
 
 
 
@@ -100,6 +103,7 @@ class SnapThread(Thread):
                 yy = yy / acc_len
                 return (xx,yy,adc_x,adc_y)
             except Exception as e:
+                print(e)
                 time.sleep(0.5)
                 itry += 1
         return (defs['def_xx'], defs['def_yy'], 
@@ -121,11 +125,7 @@ cfreq_thread.daemon = True
 cfreq_thread.start()
 
 
-fengs = [ata_snap_fengine.AtaSnapFengine(snap, 
-    transport=casperfpga.KatcpTransport) 
-        for snap in snaps]
-for feng in fengs:
-    feng.fpga.get_system_information(ATA_CFG['SNAPFPG'])
+fengs = snap_control.init_snaps(snaps, True)
 
 snap_thread = SnapThread(fengs)
 snap_thread.daemon = True
@@ -261,7 +261,8 @@ def update_time(interval=None):
     TIME_HTML.children = html.H3("Last updated (local time): %s" %tstr)
     return [TIME_HTML.children]
 
-HOST = "snapmon"
+#HOST = "snapmon"
+HOST = "10.10.1.156"
 PORT = 8880
 if __name__ == "__main__":
     import argparse
