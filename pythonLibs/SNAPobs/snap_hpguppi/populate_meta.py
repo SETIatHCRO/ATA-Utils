@@ -63,6 +63,7 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
 									n_chans=None,
 									start_chan=None,
 									dests=None,
+                                    max_packet_nchan=hpguppi_defaults.MAX_CHANS_PER_PKT,
 									silent=False,
 									zero_obs_startstop=True,
 									dry_run=False,
@@ -161,7 +162,7 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
         ip = ifnames_ip_dict[ip_ifname]
         chan_lst = mapping_chan_lists[ip_enumer] # keep channel listing as per specification of dests
 
-        n_packets_per_dest = int(np.ceil(n_chans_per_dest / hpguppi_defaults.MAX_CHANS_PER_PKT))
+        n_packets_per_dest = int(np.ceil(n_chans_per_dest / max_packet_nchan))
         n_chans_per_pkt  = n_chans_per_dest // n_packets_per_dest
         schan = chan_lst[0]
         nstrm = n_chans_per_dest // n_chans_per_pkt
