@@ -4,7 +4,6 @@ import redis
 from SNAPobs.snap_hpguppi import record_in as hpguppi_record_in
 from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
 from SNAPobs.snap_hpguppi import snap_hpguppi_defaults as hpguppi_defaults
-from SNAPobs import snap_dada
 
 parser = argparse.ArgumentParser(description='start observation '
         'in x seconds')
