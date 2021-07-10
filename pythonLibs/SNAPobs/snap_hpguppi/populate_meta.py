@@ -97,8 +97,9 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
     if ant_names is None and snap_hostnames is not None:
         ant_name_dict = hpguppi_auxillary.get_antenna_name_dict_for_snap_hostnames(snap_hostnames)
         ant_names = [ant_name_dict[snap] for snap in snap_hostnames]
-    elif ant_names is not None and snap_hostnames is None:
-        snap_hostname_dict = hpguppi_auxillary.get_snap_hostname_dict_for_antenna_names(ant_names)
+
+    snap_hostname_dict = hpguppi_auxillary.get_snap_hostname_dict_for_antenna_names(ant_names)
+    if ant_names is not None and snap_hostnames is None:
         snap_hostnames = [snap_hostname_dict[ant] for ant in ant_names]
 
     nants      = len(snap_hostnames)
@@ -156,7 +157,7 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
         'dests'     : [],
     }
     for antname in ant_names:
-        report_dict['antennae'].append({antname:stream_hostname_dict[antname]})
+        report_dict['antennae'].append({antname:snap_hostname_dict[antname]})
 
     for ip_enumer, ip_ifname in enumerate(ifnames_sorted):
         ip = ifnames_ip_dict[ip_ifname]
