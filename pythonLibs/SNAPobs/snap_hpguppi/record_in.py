@@ -107,7 +107,9 @@ def record_in(
         hpguppi_redis_set_channels = [hpguppi_defaults.REDISSET]
 
     universal_sync_time = None
-    if force_synctime:
+    if reset:
+        print('Resetting observations:')
+    elif force_synctime:
         universal_sync_time = int(hpguppi_defaults.redis_obj.get('SYNCTIME'))
         print("Will broadcast the OBSSTART and OBSSTOP values, based on redishost's SYNCTIME of", universal_sync_time)
         print()
@@ -117,7 +119,7 @@ def record_in(
         additional_log_string = log_string_per_channel[channel_i] if log_string_per_channel is not None else None
 
         sync_time = universal_sync_time
-        if not force_synctime:
+        if not reset and not force_synctime:
             snaps = _get_snaps_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_auxillary.redis_get_channel_from_set_channel(channel))
             # print(snaps)
             sync_times = _get_sync_time_for_snaps(snaps)
