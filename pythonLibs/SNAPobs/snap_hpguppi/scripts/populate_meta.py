@@ -12,9 +12,6 @@ parser.add_argument('-a', dest='antnames', nargs='+', type=str,
 parser.add_argument('-i', dest='ignore_control',
 				help='ignore the sky frequency from the antennas',
 				action='store_true')
-parser.add_argument('-I', dest='ip',
-				help='specify IP address',
-				type=str)
 parser.add_argument('-H', dest='hpguppi_daq_instance',
 				help='specify the instance enumeration of the hpguppi_daq whose meta is being populated',
 				default=-1, type=int)
@@ -48,7 +45,7 @@ hpguppi_populate_meta.populate_meta(
 									start_chan=args.start_chan,
 									dests=args.dests,
 									silent=args.silent,
-									max_packet_nchan=pkt_nchan_max,
+									max_packet_nchan=args.pkt_nchan_max,
 									# zero_obs_startstop=
 									dry_run=args.dry_run
 									# default_dir=
