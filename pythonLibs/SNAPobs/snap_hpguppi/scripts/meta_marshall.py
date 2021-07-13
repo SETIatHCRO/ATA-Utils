@@ -230,7 +230,7 @@ while(True):
     groups == last_groups,
     destinations == last_destinations,
     list_el_approx_equal(skyfreq_mapping, last_skyfreq_mapping),
-    all([list_el_approx_equal(az_el[ant_name], last_az_el[ant_name]) for ant_name in antenna_names]),
+    # all([list_el_approx_equal(az_el[ant_name], last_az_el[ant_name]) for ant_name in antenna_names]),
     all([eph_source[ant_name] == last_eph_source[ant_name] for ant_name in antenna_names])
   ]
   if all(same) and (not have_published or (time.time() - last_published > 10)) : # Seems stable, but haven't published
@@ -255,7 +255,7 @@ while(True):
           continue
         
         start_chan = None
-        n_chan = 0
+        n_chan = 0 # not ideal, collects the largest number of channels sent per destination
         destIps = []
         max_nchan_per_packet = 0
         
@@ -267,6 +267,7 @@ while(True):
             max_nchan_per_packet = max(dest_details['packet_nchan'], max_nchan_per_packet)
         
         destIps = unique(destIps)
+        n_chan = n_chan*len(destIps) # assume each destination receives the same number of channels
 
         feng_id_snap_name_dict = {get_feng_id(hostname_feng_dict[hostname]):hostname for hostname in groups[i]}
         feng_ids = sorted(feng_id_snap_name_dict)
