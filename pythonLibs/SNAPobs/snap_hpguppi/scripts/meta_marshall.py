@@ -18,7 +18,7 @@ from SNAPobs import snap_defaults, snap_config
 from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
 
 # Collate the snap hostnames
-streams_to_marshall = [i.snap_hostname for i in snap_config.get_ata_snap_tab().itertuples()]
+streams_to_marshall = [i.snap_hostname for i in snap_config.get_ata_snap_tab().itertuples() if i.snap_hostname[0:6] not in ['rfsoc4', 'rfsoc5']]
 
 # Gather antenna-configuration for the listed snaps
 stream_ant_name_dict = hpguppi_auxillary.get_antenna_name_dict_for_stream_hostnames(streams_to_marshall)
@@ -84,7 +84,7 @@ def read_feng_chan_dest_ips(feng, ignore_null_packets=True):
   return ret
 
 def calc_n_words(feng):
-  return feng.n_chans_f * feng.n_times_per_packet * feng.n_pols // ata_snap_fengine.TGE_N_SAMPLES_PER_WORD // feng.packetizer_granularity
+  return feng.n_chans_f * feng.n_times_per_packet * feng.n_pols // feng.tge_n_samples_per_word // feng.packetizer_granularity
 
 def get_packet_ips(feng, interface, n_words):
   ips_raw = feng.fpga.read('packetizer%d_ips' % interface, 4*n_words)
@@ -182,7 +182,7 @@ def collect_values_from_dict(dictionary, keys):
   return [dictionary[key] for key in keys]
 
 # Create the AtaSnapFengine list from the names
-fengs = snap_control.init_snaps(streams_to_marshall, get_system_information=False)
+fengs = snap_control.init_snaps(streams_to_marshall)#, load_system_information=False)
 hostname_feng_dict = {feng.host:feng for feng in fengs}
 
 # print([eth_get_dest_port(feng) for feng in fengs])
@@ -278,7 +278,7 @@ while(True):
 
           meta_args = '-s {} -a {} -C {} -c {} -d {} --silent'.format(
             ' '.join(stream_hostnames), 
-            ' '.join([stream_ant_name_dict[stream] for stream in stream_hostnames]),
+            ' '.join(hpguppi_auxillary.get_antenna_name_per_stream_hostnames(stream_hostnames)),
             start_chan,
             n_chan,
             ' '.join(destIps),
@@ -288,7 +288,7 @@ while(True):
         
         hpguppi_populate_meta.populate_meta(
                   stream_hostnames,
-                  [stream_ant_name_dict[stream] for stream in stream_hostnames], 
+                  hpguppi_auxillary.get_antenna_name_per_stream_hostnames(stream_hostnames),
                   None,
                   n_chans=n_chan,
                   start_chan=start_chan,
