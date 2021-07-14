@@ -161,7 +161,7 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
         'dests'     : [],
     }
     for antname in ant_names:
-        report_dict['antennae'].append({antname:snap_hostname_dict[antname]})
+        report_dict['antennae'].append({antname:stream_hostname_dict[antname]})
 
     for ip_enumer, ip_ifname in enumerate(ifnames_sorted):
         ip = ifnames_ip_dict[ip_ifname]
