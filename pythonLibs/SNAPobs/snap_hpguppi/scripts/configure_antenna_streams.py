@@ -137,10 +137,10 @@ else:
 	print('hpguppi_daq redis channels to reset:', hpguppi_redis_reset_chans)
 
 if not args.skip_conf:
-	rfsoc_hostname_configurations_dict = {}
 	rfsoc_hostname_regex = r'(?P<boardname>.*)-(?P<pipeline>\d+)$'
 
 	for (sub_id, stream_sub) in enumerate(stream_subs):
+		rfsoc_hostname_configurations_dict = {}
 		print('Configuring Subarray', sub_id)
 		print('\t', stream_sub)
 
