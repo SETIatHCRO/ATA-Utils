@@ -5,7 +5,8 @@ import time
 from datetime import datetime, timezone
 from string import Template
 
-from ata_snap import ata_snap_fengine
+import ata_snap
+from ata_snap import ata_snap_fengine, ata_rfsoc_fengine
 import struct
 import casperfpga
 from SNAPobs import snap_control
@@ -86,16 +87,9 @@ def read_feng_chan_dest_ips(feng, ignore_null_packets=True):
 def calc_n_words(feng):
   return feng.n_chans_f * feng.n_times_per_packet * feng.n_pols // feng.tge_n_samples_per_word // feng.packetizer_granularity
 
-def get_packet_ips(feng, interface, n_words):
-  ips_raw = feng.fpga.read('packetizer%d_ips' % interface, 4*n_words)
-  return struct.unpack('>%dI' % n_words, ips_raw)
-
-def get_packet_headers(feng, interface, n_words):
-  hs_raw = feng.fpga.read('packetizer%d_header' % interface, 8*n_words)
-  return struct.unpack('>%dQ' % n_words, hs_raw)
-
-def get_feng_id(feng):
-  hs = get_packet_headers(feng, 0, 1)
+def get_feng_id(feng, packetizer_chan_granularity):
+  feng.fpga.read('packetizer%d_header' % interface, 8, offset=8*offset)
+  hs = get_packet_headers(feng, 0, 1, packetizer_chan_granularity)
   return packet_header_dict_from_Q(hs[0])['feng_id']
 
 def read_chan_dest_ips(feng, interface, ignore_null_packets=True):
@@ -120,54 +114,51 @@ def read_chan_dest_ips(feng, interface, ignore_null_packets=True):
   try:
     interfacesEnabled = eth_get_output_enabled(feng, interface)
   except casperfpga.transport_katcp.KatcpRequestFail:
+    print('Failed to query ethernet status of {}[{}]'.format(feng.host, interface))
     return []
   
   if not interfacesEnabled[0]:
+    # print('The ethernet output of {}[{}] is disabled'.format(feng.host, interface))
     return []
+  
+  times_per_word = None
+  packetizer_chan_granularity = None
 
-  n_words = calc_n_words(feng)
-
-  ips = get_packet_ips(feng, interface, n_words)
-  hs = get_packet_headers(feng, interface, n_words)
-
-  times_per_word = None # 64 // (2*2*n_bits)
-  packetizer_chan_granularity = None # feng.packetizer_granularity // times_per_word    
-
+  try:
+    feng_headers = feng._read_headers(interface)
+  except:
+    print('Failed to query headers of {}[{}]'.format(feng.host, interface))
+    return []
+  
+  if isinstance(feng, ata_rfsoc_fengine.AtaRfsocFengine):
+    pipeline_n_words = 512//8 # TODO get this from somewhere ??? calc_n_words(feng)*8
+    pipeline_offset = (feng.pipeline_id)*pipeline_n_words
+    feng_headers = feng._read_headers(interface, None, pipeline_offset)
+  
   packet_dest_ips = []
-  if (not ignore_null_packets) or (ips[0] != 0):
-    header = packet_header_dict_from_Q(hs[0])
-
-    times_per_word = 64 // (2*2* (8 if header['is_8_bit'] else 4 ))
-    packetizer_chan_granularity = feng.packetizer_granularity // times_per_word    
-
-    packet_dest_ips = [{'dest':ips[0], 'start_chan':header['chans'], 'end_chan':header['chans']+packetizer_chan_granularity, 'packet_nchan':header['n_chans']}] 
-
-  for idx,ip in enumerate(ips[1:]):
-    if (not ignore_null_packets) or (ip != 0):
-      header = packet_header_dict_from_Q(hs[idx])
+  for header in feng_headers:
+    if header['first'] and header['valid']:
+      ip = header['dest']
       if times_per_word is None:
         times_per_word = 64 // (2*2* (8 if header['is_8_bit'] else 4 ))
-        packetizer_chan_granularity = feng.packetizer_granularity // times_per_word    
-      if header['valid']:
-        if len(packet_dest_ips) > 0 and packet_dest_ips[-1]['dest'] == ip:
-          if header['chans'] >= packet_dest_ips[-1]['start_chan']:
-            end_chan = header['chans'] + packetizer_chan_granularity 
-            if packet_dest_ips[-1]['end_chan'] < end_chan:
-              packet_dest_ips[-1]['end_chan'] = end_chan
-        else:
-          packet_dest_ips.append({'dest':ip, 'start_chan':header['chans'], 'end_chan':header['chans']+packetizer_chan_granularity, 'packet_nchan':header['n_chans']})
+        packetizer_chan_granularity = feng.packetizer_granularity // times_per_word
+      
+      if len(packet_dest_ips) > 0 and packet_dest_ips[-1]['dest'] == ip:
+        if header['chans'] >= packet_dest_ips[-1]['start_chan']:
+          end_chan = header['chans']# + packetizer_chan_granularity 
+          if packet_dest_ips[-1]['end_chan'] < end_chan:
+            packet_dest_ips[-1]['end_chan'] = end_chan
+      else:
+        packet_dest_ips.append({'dest':ip, 'start_chan':header['chans'], 'end_chan':header['chans']+packetizer_chan_granularity, 'packet_nchan':header['n_chans']})
 
   for packet_dest_ip in packet_dest_ips:
     packet_dest_ip['end_chan'] += packet_dest_ip['packet_nchan']
-
-    packet_dest_ip['dest'] = ata_snap_fengine._int_to_ip(packet_dest_ip['dest'])
+    
     packet_dest_ip['n_chans'] = packet_dest_ip['end_chan'] - packet_dest_ip['start_chan']
     packet_dest_ip['n_strm'] = packet_dest_ip['n_chans'] // packet_dest_ip['packet_nchan']
 
+  # print('{}[{}]: {}\n'.format(feng.host, interface, packet_dest_ips))
   return packet_dest_ips
-
-def prune_null_dest_ips_and_headers(packet_details):
-  return [detail for detail in packet_details if detail['dest'] != '0.0.0.0']
 
 def list_el_approx_equal(list_a, list_b, eps=0.01):
   if len(list_a) == len(list_b):
