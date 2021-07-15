@@ -42,11 +42,12 @@ parser.add_argument('-p', '--prog-snaps', action='store_true',
 										help='Program the snaps being configured')
 parser.add_argument('-C', '--skip-conf', action='store_true',
 										help='Skip configuring the snaps (will still sync them)')
-parser.add_argument('-x', '--correlate', action='store_true',
-										help='Configure for correlation...')
 parser.add_argument('-g', '--groupings', nargs='+', type=str,
 										help='The sub-grouping of DSP source streams as comma (,) separated lists ["{}"]'.format('", "'.join(default_stream_subs)),
 										default=default_stream_subs)
+parser.add_argument('-G', '--hostname-groupings', nargs='*', type=str,
+										help='The sub-grouping of DSP source stream hostnames as comma (,) separated lists [] (hostnames can be regex, overrules groupings)',
+										default=[])
 parser.add_argument('-d', '--config-directory', type=str,
 										help='The root directory of the sub-grouping configuration yaml files ["{}"]'.format(default_cfg_dir),
 										default=default_cfg_dir)
@@ -60,6 +61,17 @@ parser.add_argument('--redishost', type=str, default='redishost',
 args = parser.parse_args()
 
 redis_obj = redis.Redis(args.redishost)
+
+if len(args.hostname_groupings) > 0:
+	ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
+	args.groupings = []
+	for hostname_grouping in args.hostname_groupings:
+		antenna_group = []
+		for hostname_criterion in hostname_grouping.split(','):
+			hostname_pattern = re.compile(hostname_criterion)
+			antenna_group += [row['antlo'] for idx,row in ATA_SNAP_TAB.iterrows() if hostname_pattern.match(row['snap_hostname'])]
+		args.groupings.append(','.join(antenna_group))
+
 
 stream_cfgs = []
 stream_subs = []
