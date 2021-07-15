@@ -63,6 +63,7 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
 									n_chans=None,
 									start_chan=None,
 									dests=None,
+                                    max_packet_nchan=hpguppi_defaults.MAX_CHANS_PER_PKT,
 									silent=False,
 									zero_obs_startstop=True,
 									dry_run=False,
@@ -96,8 +97,9 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
     if ant_names is None and snap_hostnames is not None:
         ant_name_dict = hpguppi_auxillary.get_antenna_name_dict_for_snap_hostnames(snap_hostnames)
         ant_names = [ant_name_dict[snap] for snap in snap_hostnames]
-    elif ant_names is not None and snap_hostnames is None:
-        snap_hostname_dict = hpguppi_auxillary.get_snap_hostname_dict_for_antenna_names(ant_names)
+
+    snap_hostname_dict = hpguppi_auxillary.get_snap_hostname_dict_for_antenna_names(ant_names)
+    if ant_names is not None and snap_hostnames is None:
         snap_hostnames = [snap_hostname_dict[ant] for ant in ant_names]
 
     nants      = len(snap_hostnames)
@@ -143,11 +145,25 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
     ifnames_sorted = sorted(ifnames_ip_dict.keys())
     mapping_chan_lists = [chan_lst for chan_lst in mapping.values()]
 
+    report_dict = {
+        'nchan'     : n_chans,
+        'schan'     : start_chan,
+        'SOURCE'    : source,
+        'RA'        : ra,
+        'DEC'       : dec,
+        'AZ'        : az,
+        'EL'        : el,
+        'antennae'  : [],
+        'dests'     : [],
+    }
+    for antname in ant_names:
+        report_dict['antennae'].append({antname:snap_hostname_dict[antname]})
+
     for ip_enumer, ip_ifname in enumerate(ifnames_sorted):
         ip = ifnames_ip_dict[ip_ifname]
         chan_lst = mapping_chan_lists[ip_enumer] # keep channel listing as per specification of dests
 
-        n_packets_per_dest = int(np.ceil(n_chans_per_dest / hpguppi_defaults.MAX_CHANS_PER_PKT))
+        n_packets_per_dest = int(np.ceil(n_chans_per_dest / max_packet_nchan))
         n_chans_per_pkt  = n_chans_per_dest // n_packets_per_dest
         schan = chan_lst[0]
         nstrm = n_chans_per_dest // n_chans_per_pkt
@@ -207,6 +223,9 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
                 'SOURCE'   : source,
                 'RA'       : ra,
                 'DEC'      : dec,
+                'SRC_NAME' : source,    # Rawspec expects these keys (rawspec_rawutils.c#L155-L186)
+                'RA_STR'   : ra,        # Rawspec expects these keys (rawspec_rawutils.c#L155-L186)
+                'DEC_STR'  : dec,       # Rawspec expects these keys (rawspec_rawutils.c#L155-L186)
                 'AZ'       : az,
                 'EL'       : el,
                 'ANTNAMES' : ",".join(ant_names)
@@ -230,3 +249,12 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
             hpguppi_defaults.redis_obj.publish(channel_name, redis_publish_command)
         else:
             print('^^^Dry Run^^^\n')
+
+        report_dict['dests'].append({
+            'ip':ip,
+            'hostname':ip_ifname,
+            'obsfreq':obsfreq,
+            'schan':schan,
+            'redis_channel':channel_name,
+        })
+    return report_dict

@@ -133,30 +133,40 @@ def read_chan_dest_ips(feng, interface, ignore_null_packets=True):
   ips = get_packet_ips(feng, interface, n_words)
   hs = get_packet_headers(feng, interface, n_words)
 
+  times_per_word = None # 64 // (2*2*n_bits)
+  packetizer_chan_granularity = None # feng.packetizer_granularity // times_per_word    
+
   packet_dest_ips = []
   if (not ignore_null_packets) or (ips[0] != 0):
     header = packet_header_dict_from_Q(hs[0])
-    packet_dest_ips = [{'dest':ips[0], 'start_chan':header['chans'], 'end_chan':header['chans']+header['n_chans']}] 
+
+    times_per_word = 64 // (2*2* (8 if header['is_8_bit'] else 4 ))
+    packetizer_chan_granularity = feng.packetizer_granularity // times_per_word    
+
+    packet_dest_ips = [{'dest':ips[0], 'start_chan':header['chans'], 'end_chan':header['chans']+packetizer_chan_granularity, 'packet_nchan':header['n_chans']}] 
 
   for idx,ip in enumerate(ips[1:]):
     if (not ignore_null_packets) or (ip != 0):
       header = packet_header_dict_from_Q(hs[idx])
+      if times_per_word is None:
+        times_per_word = 64 // (2*2* (8 if header['is_8_bit'] else 4 ))
+        packetizer_chan_granularity = feng.packetizer_granularity // times_per_word    
       if header['valid']:
         if len(packet_dest_ips) > 0 and packet_dest_ips[-1]['dest'] == ip:
           if header['chans'] >= packet_dest_ips[-1]['start_chan']:
-            end_chan = header['chans'] + header['n_chans'] 
+            end_chan = header['chans'] + packetizer_chan_granularity 
             if packet_dest_ips[-1]['end_chan'] < end_chan:
               packet_dest_ips[-1]['end_chan'] = end_chan
         else:
-          packet_dest_ips.append({'dest':ip, 'start_chan':header['chans'], 'end_chan':header['chans']+header['n_chans']})
-  
+          packet_dest_ips.append({'dest':ip, 'start_chan':header['chans'], 'end_chan':header['chans']+packetizer_chan_granularity, 'packet_nchan':header['n_chans']})
+
   for packet_dest_ip in packet_dest_ips:
-    packet_dest_ip['end_chan'] += 16 # TODO understand this offset (feng.packetizer_granularity??)
-    # radonn: I think that the headers' are applicable to 16 channels at a time, so yes.. related to feng.packetizer_granularity
+    packet_dest_ip['end_chan'] += packet_dest_ip['packet_nchan']
 
     packet_dest_ip['dest'] = ata_snap_fengine._int_to_ip(packet_dest_ip['dest'])
     packet_dest_ip['n_chans'] = packet_dest_ip['end_chan'] - packet_dest_ip['start_chan']
-  
+    packet_dest_ip['n_strm'] = packet_dest_ip['n_chans'] // packet_dest_ip['packet_nchan']
+
   return packet_dest_ips
 
 def prune_null_dest_ips_and_headers(packet_details):
@@ -247,16 +257,16 @@ while(True):
         start_chan = None
         n_chan = 0
         destIps = []
+        max_nchan_per_packet = 0
         
         for interface in destinations[i]:
           for dest_details in interface:
-            if start_chan is None: # or start_chan > dest_details['start_chan']:
-              start_chan = dest_details['start_chan']
-            n_chan += dest_details['n_chans']
+            start_chan = min(dest_details['start_chan'], start_chan) if start_chan is not None else dest_details['start_chan']
+            n_chan = max(dest_details['n_chans'], n_chan)
             destIps.append(dest_details['dest'])
-          
+            max_nchan_per_packet = max(dest_details['packet_nchan'], max_nchan_per_packet)
+        
         destIps = unique(destIps)
-        n_chan = n_chan//n_interfaces
 
         feng_id_snap_name_dict = {get_feng_id(hostname_feng_dict[hostname]):hostname for hostname in groups[i]}
         feng_ids = sorted(feng_id_snap_name_dict)
@@ -267,12 +277,13 @@ while(True):
           print('n_chan', n_chan)
           print('destIps', destIps)
 
-          meta_args = '-s {} -a {} -C {} -c {} -d {} --silent'.format(
+          meta_args = '-s {} -a {} -C {} -c {} -d {} -P {} --silent'.format(
             ' '.join(snap_names), 
             ' '.join([snap_ant_name_dict[snap] for snap in snap_names]),
             start_chan,
             n_chan,
-            ' '.join(destIps)
+            ' '.join(destIps),
+            max_nchan_per_packet
           )
           print('meta_args:', meta_args)
         
@@ -286,6 +297,7 @@ while(True):
                   silent=not new_publication,
                   zero_obs_startstop=False,
                   dry_run=False,
+                  max_packet_nchan=max_nchan_per_packet,
                   default_dir=different_conf)
         
         if new_publication:
