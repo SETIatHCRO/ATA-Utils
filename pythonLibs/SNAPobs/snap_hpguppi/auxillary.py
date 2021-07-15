@@ -47,6 +47,23 @@ def generate_freq_auto_string_per_channel(redis_obj, hpguppi_redis_get_channels)
     log_string_per_channel.append(str(snap_dada.get_freq_auto([antdict[snap] for snap in snaps])))
   return log_string_per_channel
 
+def redis_hget_retry(redis_obj, redis_chan, key, retry_count=5):
+  value = None
+  while value is None and retry_count > 0:
+    try:
+      value = redis_obj.hget(redis_chan, key).decode()
+    except:
+      pass
+    retry_count -= 1
+  return value
+
+def get_antennae_of_redis_chan(redis_obj, redis_chan):
+  return redis_hget_retry(redis_obj, redis_chan, 'ANTNAMES').split(',')
+
+def get_snaps_of_redis_chan(redis_obj, redis_chan):
+  antennae = get_antennae_of_redis_chan(redis_obj, redis_chan)
+  return [i.snap_hostname for i in ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name.isin(antenna_names)].itertuples()]
+
 def redis_publish_command_from_dict(key_val_dict):
   return "\n".join(['%s=%s' %(key,val)
             for key,val in key_val_dict.items()])
