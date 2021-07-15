@@ -14,7 +14,7 @@ import redis
 import socket
 import re
 
-import sync_snaps
+import sync_streams
 
 import os, sys
 
@@ -214,9 +214,9 @@ if not args.skip_conf:
 			print('{} Batched reprogramming/configuring RFSoC {} {}\n'.format('^'*20, rfsoc_boardname, '^'*20))
 
 if args.dry_run:
-	print('sync_snaps.sync({})'.format(stream_hostnames))
+	print('sync_streams.sync({})'.format(stream_hostnames))
 else:
-	sync_snaps.sync(stream_hostnames)
+	sync_streams.sync(stream_hostnames)
 
 # print('\nPopulating REDIS meta data')
 # for (sub_id, stream_sub) in enumerate(stream_subs):
