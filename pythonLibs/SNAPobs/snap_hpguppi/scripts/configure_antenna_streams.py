@@ -161,32 +161,31 @@ if not args.skip_conf:
 
 			if stream_hostname.startswith('frb-snap'):
 				fpgfile = snap_config.get_ata_cfg()['SNAPFPG']
-				feng_init_args = [
+								
+				print('{} Reprogramming/configuring snap as FEngine #{:02d} {}'.format('v'*5, feng_id, 'v'*5))
+				print('snap_feng_init.py {} {} {} -i {} {}{}{}{}'.format(
 					stream_hostname, fpgfile, stream_cfgs[sub_id],
-					'-i', str(feng_id),
-					'-s', '--eth_volt'
-				]
-				if not args.prog_snaps:
-					feng_init_args.append('--skipprog')
-				
-				print('{} Reprogramming/configuring snap as FEngine #{:02d} {}'.format('v'*20, feng_id, 'v'*20))
+					feng_id,
+					'-s ',
+					'--eth_volt ',
+					'-t ' if False else '',
+					'--skipprog' if not args.prog_snaps else ''
+					)
+				)
 				if args.dry_run:
-					print('\tDry Run:', ' '.join(feng_init_args))
+					print('*'*5, 'Dry Run', '*'*5)
 				else:
-					snap_feng_init.run(feng_init_args)
-				print('{} Reprogramming/configuring snap as FEngine #{:02d} {}\n'.format('^'*20, feng_id, '^'*20))
+					snap_feng_init.run(stream_hostname, fpgfile, stream_cfgs[sub_id],
+						feng_id=feng_id,
+						sync=True,
+						eth_volt=True,
+						tvg=False,
+						skip_prog=not args.prog_snaps
+					)
+				print('{} Reprogramming/configuring snap as FEngine #{:02d} {}\n'.format('^'*5, feng_id, '^'*5))
 			
 			elif stream_hostname.startswith('rfsoc'):
 				fpgfile = snap_config.get_ata_cfg()['RFSOCFPG']
-
-				feng_init_args = [
-					stream_hostname, fpgfile, stream_cfgs[sub_id],
-					'-i', str(feng_id),
-					'-s', '--eth_volt', '-t'
-				]
-				if not args.prog_snaps:
-					feng_init_args.append('--skipprog')
-				print('{} Batched reprogramming/configuring RFSoC as FEngine #{:02d} {}\n'.format('='*20, feng_id, '='*20))		
 				# take stream_hostname up until last 
 				rfsoc_hostname_re_match = re.match(rfsoc_hostname_regex, stream_hostname)
 				rfsoc_boardname = rfsoc_hostname_re_match.group('boardname')
@@ -202,28 +201,40 @@ if not args.skip_conf:
 						'noblank'		: False,
 						'skip_prog'	: not args.prog_snaps
 					}
+					print()
 				else:
 					rfsoc_hostname_configurations_dict[rfsoc_boardname]['feng_ids'].append(feng_id)
+				print('{} Batched reprogramming/configuring RFSoC {} as FEngine #{:02d} {}'.format('='*5, stream_hostname, feng_id, '='*5))		
 			else:
 				print('Cannot make out the kind of FEngine board with hostname \'{}\''.format(stream_hostname))
 		print()
 		
 		for rfsoc_boardname, rfsoc_config in rfsoc_hostname_configurations_dict.items():
-			print('{} Batched reprogramming/configuring RFSoC {} {}'.format('v'*20, rfsoc_boardname, 'v'*20))	
+			print('{} Batched reprogramming/configuring RFSoC {} {}'.format('v'*5, rfsoc_boardname, 'v'*5))	
 			rfsoc_hostname = rfsoc_boardname + '-1'
+			print('rfsoc_feng_init.py {} {} {} -i {} {}{}{}{}'.format(
+					rfsoc_hostname, rfsoc_config['fpga_file'], rfsoc_config['config_yml'],
+					','.join(map(str, rfsoc_config['feng_ids'])),
+					'-s ' if rfsoc_config['sync'] else '',
+					'--eth_volt ' if rfsoc_config['eth_volt'] else '',
+					'-t ' if rfsoc_config['tvg'] else '',
+					'--noblank ' if rfsoc_config['noblank'] else '',
+					'--skipprog' if rfsoc_config['skip_prog'] else ''
+					)
+				)
 			if args.dry_run:
-				print('\tDry Run:', rfsoc_config)
+				print('*'*5, 'Dry Run', '*'*5)
 			else:
 				rfsoc_feng_init.run(
 					rfsoc_hostname, rfsoc_config['fpga_file'], rfsoc_config['config_yml'],
-					feng_ids = rfsoc_config['feng_ids'],
+					feng_ids = ','.join(map(str, rfsoc_config['feng_ids'])),
 					sync = rfsoc_config['sync'],
 					eth_volt = rfsoc_config['eth_volt'],
 					tvg = rfsoc_config['tvg'],
 					noblank = rfsoc_config['noblank'],
 					skipprog = rfsoc_config['skip_prog']
 				)
-			print('{} Batched reprogramming/configuring RFSoC {} {}\n'.format('^'*20, rfsoc_boardname, '^'*20))
+			print('{} Batched reprogramming/configuring RFSoC {} {}\n'.format('^'*5, rfsoc_boardname, '^'*5))
 
 if args.dry_run:
 	print('sync_streams.sync({})'.format(stream_hostnames))
