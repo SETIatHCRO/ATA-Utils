@@ -88,9 +88,7 @@ def calc_n_words(feng):
   return feng.n_chans_f * feng.n_times_per_packet * feng.n_pols // feng.tge_n_samples_per_word // feng.packetizer_granularity
 
 def get_feng_id(feng, packetizer_chan_granularity):
-  feng.fpga.read('packetizer%d_header' % interface, 8, offset=8*offset)
-  hs = get_packet_headers(feng, 0, 1, packetizer_chan_granularity)
-  return packet_header_dict_from_Q(hs[0])['feng_id']
+  return feng._read_headers(interface, 1)['feng_id']
 
 def read_chan_dest_ips(feng, interface, ignore_null_packets=True):
   '''
