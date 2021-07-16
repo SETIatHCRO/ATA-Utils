@@ -120,9 +120,6 @@ def read_chan_dest_ips(feng, interface, ignore_null_packets=True):
   if not interfacesEnabled[0]:
     # print('The ethernet output of {}[{}] is disabled'.format(feng.host, interface))
     return []
-  
-  times_per_word = None
-  packetizer_chan_granularity = None
 
   try:
     feng_headers = feng._read_headers(interface)
@@ -132,30 +129,27 @@ def read_chan_dest_ips(feng, interface, ignore_null_packets=True):
   
   if isinstance(feng, ata_rfsoc_fengine.AtaRfsocFengine):
     pipeline_n_words = 512//8 # TODO get this from somewhere ??? calc_n_words(feng)*8
-    pipeline_offset = (feng.pipeline_id)*pipeline_n_words
-    feng_headers = feng._read_headers(interface, None, pipeline_offset)
+    feng_headers = feng._read_headers(interface, pipeline_n_words, (feng.pipeline_id)*pipeline_n_words)
   
   packet_dest_ips = []
   for header in feng_headers:
-    if header['first'] and header['valid']:
+    if header['valid'] and header['first']:
       ip = header['dest']
-      if times_per_word is None:
-        times_per_word = 64 // (2*2* (8 if header['is_8_bit'] else 4 ))
-        packetizer_chan_granularity = feng.packetizer_granularity // times_per_word
       
       if len(packet_dest_ips) > 0 and packet_dest_ips[-1]['dest'] == ip:
-        if header['chans'] >= packet_dest_ips[-1]['start_chan']:
-          end_chan = header['chans']# + packetizer_chan_granularity 
-          if packet_dest_ips[-1]['end_chan'] < end_chan:
-            packet_dest_ips[-1]['end_chan'] = end_chan
+        packet_dest_ips[-1]['end_chan'] = header['chans']
       else:
-        packet_dest_ips.append({'dest':ip, 'start_chan':header['chans'], 'end_chan':header['chans']+packetizer_chan_granularity, 'packet_nchan':header['n_chans']})
+        packet_dest_ips.append({'dest':ip, 'start_chan':header['chans'], 'end_chan':header['chans'], 'packet_nchan':header['n_chans']})
 
   for packet_dest_ip in packet_dest_ips:
     packet_dest_ip['end_chan'] += packet_dest_ip['packet_nchan']
     
     packet_dest_ip['n_chans'] = packet_dest_ip['end_chan'] - packet_dest_ip['start_chan']
-    packet_dest_ip['n_strm'] = packet_dest_ip['n_chans'] // packet_dest_ip['packet_nchan']
+
+    packet_dest_ip['n_strm'] = packet_dest_ip['n_chans'] / packet_dest_ip['packet_nchan']
+    if packet_dest_ip['n_chans'] % packet_dest_ip['packet_nchan'] != 0:
+      print('Read headers from {} that indicate non-integer number of streams, there is probably an issue in the collation procedure: {} / {} = {}'.format(feng.host, packet_dest_ip['n_chans'], packet_dest_ip['packet_nchan'], packet_dest_ip['n_strm']))
+    packet_dest_ip['n_strm'] = int(0.5 + packet_dest_ip['n_strm'])
 
   # print('{}[{}]: {}\n'.format(feng.host, interface, packet_dest_ips))
   return packet_dest_ips
