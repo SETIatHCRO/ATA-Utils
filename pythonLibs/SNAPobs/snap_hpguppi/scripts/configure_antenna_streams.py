@@ -140,7 +140,7 @@ if args.stop_all_eth_first:
 	antstream_hostname_list_to_silence = hpguppi_auxillary.get_stream_hostname_per_antenna_names(antlo_names)
 	print('antstream_hostname to silence', antstream_hostname_list_to_silence)
 	if not args.dry_run:
-		fengs = snap_control.init_snaps(antstream_hostname_list)
+		fengs = snap_control.init_snaps(antstream_hostname_list_to_silence)
 		snap_control.stop_snaps(fengs)
 
 if not args.dry_run:
@@ -180,7 +180,7 @@ if not args.skip_conf:
 						sync=True,
 						eth_volt=True,
 						tvg=False,
-						skip_prog=not args.prog_snaps
+						skipprog=not args.prog_snaps
 					)
 				print('{} Reprogramming/configuring snap as FEngine #{:02d} {}\n'.format('^'*5, feng_id, '^'*5))
 			
