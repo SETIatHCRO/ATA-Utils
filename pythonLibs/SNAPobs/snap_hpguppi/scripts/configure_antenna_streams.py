@@ -189,21 +189,24 @@ if not args.skip_conf:
 				# take stream_hostname up until last 
 				rfsoc_hostname_re_match = re.match(rfsoc_hostname_regex, stream_hostname)
 				rfsoc_boardname = rfsoc_hostname_re_match.group('boardname')
+				rfsoc_pipeline = rfsoc_hostname_re_match.group('pipeline')
 
 				if rfsoc_boardname not in rfsoc_hostname_configurations_dict:
 					rfsoc_hostname_configurations_dict[rfsoc_boardname] = {
-						'fpga_file'	: fpgfile,
-						'config_yml': stream_cfgs[sub_id],
-						'feng_ids'	: [feng_id],
-						'sync'			: True,
-						'eth_volt'	: True,
-						'tvg'				: True,
-						'noblank'		: False,
-						'skip_prog'	: not args.prog_snaps
+						'fpga_file'		: fpgfile,
+						'config_yml'	: stream_cfgs[sub_id],
+						'feng_ids'		: [feng_id],
+						'pipeline_ids': [rfsoc_pipeline],
+						'sync'				: True,
+						'eth_volt'		: True,
+						'tvg'					: True,
+						'noblank'			: False,
+						'skip_prog'		: not args.prog_snaps
 					}
 					print()
 				else:
 					rfsoc_hostname_configurations_dict[rfsoc_boardname]['feng_ids'].append(feng_id)
+					rfsoc_hostname_configurations_dict[rfsoc_boardname]['pipeline_ids'].append(rfsoc_pipeline)
 				print('{} Batched reprogramming/configuring RFSoC {} as FEngine #{:02d} {}'.format('='*5, stream_hostname, feng_id, '='*5))		
 			else:
 				print('Cannot make out the kind of FEngine board with hostname \'{}\''.format(stream_hostname))
@@ -212,9 +215,10 @@ if not args.skip_conf:
 		for rfsoc_boardname, rfsoc_config in rfsoc_hostname_configurations_dict.items():
 			print('{} Batched reprogramming/configuring RFSoC {} {}'.format('v'*5, rfsoc_boardname, 'v'*5))	
 			rfsoc_hostname = rfsoc_boardname + '-1'
-			print('rfsoc_feng_init.py {} {} {} -i {} {}{}{}{}'.format(
+			print('rfsoc_feng_init.py {} {} {} -i {} -j {} {}{}{}{}'.format(
 					rfsoc_hostname, rfsoc_config['fpga_file'], rfsoc_config['config_yml'],
 					','.join(map(str, rfsoc_config['feng_ids'])),
+					','.join(map(str, rfsoc_config['pipeline_ids'])),
 					'-s ' if rfsoc_config['sync'] else '',
 					'--eth_volt ' if rfsoc_config['eth_volt'] else '',
 					'-t ' if rfsoc_config['tvg'] else '',
@@ -228,6 +232,7 @@ if not args.skip_conf:
 				rfsoc_feng_init.run(
 					rfsoc_hostname, rfsoc_config['fpga_file'], rfsoc_config['config_yml'],
 					feng_ids = ','.join(map(str, rfsoc_config['feng_ids'])),
+					# pipeline_ids = ','.join(map(str, rfsoc_config['pipeline_ids'])),
 					sync = rfsoc_config['sync'],
 					eth_volt = rfsoc_config['eth_volt'],
 					tvg = rfsoc_config['tvg'],
