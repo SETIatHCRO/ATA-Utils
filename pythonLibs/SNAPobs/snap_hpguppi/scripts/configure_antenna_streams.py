@@ -189,7 +189,7 @@ if not args.skip_conf:
 				# take stream_hostname up until last 
 				rfsoc_hostname_re_match = re.match(rfsoc_hostname_regex, stream_hostname)
 				rfsoc_boardname = rfsoc_hostname_re_match.group('boardname')
-				rfsoc_pipeline = rfsoc_hostname_re_match.group('pipeline')
+				rfsoc_pipeline = int(rfsoc_hostname_re_match.group('pipeline'))-1
 
 				if rfsoc_boardname not in rfsoc_hostname_configurations_dict:
 					rfsoc_hostname_configurations_dict[rfsoc_boardname] = {
