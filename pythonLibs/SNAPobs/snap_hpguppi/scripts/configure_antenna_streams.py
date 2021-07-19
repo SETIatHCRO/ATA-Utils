@@ -54,6 +54,9 @@ parser.add_argument('-d', '--config-directory', type=str,
 parser.add_argument('-c', '--config-stem', type=str,
 										help='The stem of the sub-grouping configuration yaml files (1 indexed) ["{}"]'.format(default_cfg_stem),
 										default=default_cfg_stem)
+parser.add_argument('-t', '--test-vector-enable', action='store_true',
+										help='Configure the antenna streams to send test vectors [False]',
+										default=False)
 parser.add_argument('--dry-run', action='store_true',
 										help='Don\'t actually configure anything.')
 parser.add_argument('--redishost', type=str, default='redishost',
@@ -168,7 +171,7 @@ if not args.skip_conf:
 					feng_id,
 					'-s ',
 					'--eth_volt ',
-					'-t ' if False else '',
+					'-t ' if args.test_vector_enable else '',
 					'--skipprog' if not args.prog_snaps else ''
 					)
 				)
@@ -179,7 +182,7 @@ if not args.skip_conf:
 						feng_id=feng_id,
 						sync=True,
 						eth_volt=True,
-						tvg=False,
+						tvg=args.test_vector_enable,
 						skipprog=not args.prog_snaps
 					)
 				print('{} Reprogramming/configuring snap as FEngine #{:02d} {}\n'.format('^'*5, feng_id, '^'*5))
@@ -199,7 +202,7 @@ if not args.skip_conf:
 						'pipeline_ids': [rfsoc_pipeline],
 						'sync'				: True,
 						'eth_volt'		: True,
-						'tvg'					: True,
+						'tvg'					: args.test_vector_enable,
 						'noblank'			: False,
 						'skip_prog'		: not args.prog_snaps
 					}
