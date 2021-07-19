@@ -7,7 +7,6 @@ from string import Template
 from typing import List
 
 from SNAPobs import snap_defaults, snap_config
-from SNAPobs.snap_dada import snap_dada
 from ATATools import ata_control
 
 from . import snap_hpguppi_defaults as hpguppi_defaults
@@ -54,6 +53,42 @@ def _get_channel_selection(dests, start_chan, n_chans_per_dest):
         mapping[d] = list(range(start_chan + dn*n_chans_per_dest,
             start_chan + (dn+1)*n_chans_per_dest))
     return mapping
+
+def _gather_ants(radec, azel, source):
+    """
+    Returns a single dictionary with every antenna name as key,
+    and obs parameters dictionaries as value
+    """
+    obsDict = {}
+    for ant in radec.keys():
+        obsvals = {}
+        obsvals['SOURCE']                       = source[ant]
+        obsvals['RA'], obsvals['DEC']           = radec[ant]
+        obsvals['AZ'], obsvals['EL']            = azel[ant]
+        obsDict[ant] = obsvals
+    return obsDict
+
+def _get_obs_params(antlo_list):
+    ant_list = [ant[:2] for ant in antlo_list]
+    ant_list = list(set(ant_list))
+
+    source_s = ata_control.get_eph_source(ant_list)
+    radec_s = ata_control.getRaDec(ant_list)
+    azel_s  = ata_control.getAzEl(ant_list)
+
+    radec   = {}
+    azel    = {}
+    source  = {}
+
+    # adding LOs to the dictionary
+    for antlo in antlo_list:
+        ant = antlo[:2]
+        lo  = antlo[2]
+        radec[ant+lo]   = radec_s[ant]
+        azel[ant+lo]    = azel_s[ant]
+        source[ant+lo]  = source_s[ant]
+
+    return _gather_ants(radec, azel, source)
 
 
 StringList = List[str]# Deprecated in 3.9, can rather use list[str]
@@ -117,7 +152,7 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
 
     skyfreq_mapping, antname_mapping = _get_stream_mapping(stream_hostnames,
             ignore_control)
-    ants_obs_params = snap_dada.get_obs_params(ant_names)
+    ants_obs_params = _get_obs_params(ant_names)
     source_list = [aop['SOURCE'] for antname, aop in ants_obs_params.items()]
     ant0_obs_params = ants_obs_params[ant_names[0]]
 
