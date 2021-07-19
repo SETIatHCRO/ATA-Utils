@@ -185,6 +185,14 @@ exception_limit = 5
 have_published = False
 different_conf = True
 last_published = 0
+sections_updated = [False for i in range(5)]
+section_strings = [
+  'Grouping',  
+  'Destinations', 
+  'Frequency',
+  'AzEl',
+  'Source' 
+]
 while(True):
   # Collect the destination
   feng_interface_dest_details = {feng.host:
@@ -215,8 +223,14 @@ while(True):
     all([eph_source[ant_name] == last_eph_source[ant_name] for ant_name in antname_nolo_list])
   ]
   if all(same) and (not have_published or (time.time() - last_published > 10)) : # Seems stable, but haven't published
-    new_publication = not have_published
+    new_publication = not have_published and all(sections_updated[0:1])
     have_published = True
+    updated_section_strings = []
+    for section_idx, updated in enumerate(sections_updated):
+      if updated:
+        updated_section_strings.append(section_strings[section_idx])
+      sections_updated[section_idx] = False
+    print('Updated sections:', ', '.join(updated_section_strings))
 
     if new_publication:
       print('### Start of updates ###')
@@ -303,6 +317,8 @@ while(True):
 
     last_published = time.time()
   elif not all (same):
+    for section_idx, not_updated in enumerate(same):
+      sections_updated[section_idx] = sections_updated[section_idx] or not not_updated
     have_published = False
     different_conf = not (same[0] or same[1])
   else: # groups and destinations are stable and have published
