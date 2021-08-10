@@ -200,6 +200,7 @@ if not args.skip_conf:
 						'config_yml'	: stream_cfgs[sub_id],
 						'feng_ids'		: [feng_id],
 						'pipeline_ids': [rfsoc_pipeline],
+						# 'dest_port'		: [10000 for i in range(8)],
 						'sync'				: True,
 						'eth_volt'		: True,
 						'tvg'					: args.test_vector_enable,
@@ -220,8 +221,8 @@ if not args.skip_conf:
 			rfsoc_hostname = rfsoc_boardname + '-1'
 			print('rfsoc_feng_init.py {} {} {} -i {} -j {} {}{}{}{}'.format(
 					rfsoc_hostname, rfsoc_config['fpga_file'], rfsoc_config['config_yml'],
-					','.join(map(str, rfsoc_config['feng_ids'])),
-					','.join(map(str, rfsoc_config['pipeline_ids'])),
+					' '.join(map(str, rfsoc_config['feng_ids'])),
+					' '.join(map(str, rfsoc_config['pipeline_ids'])),
 					'-s ' if rfsoc_config['sync'] else '',
 					'--eth_volt ' if rfsoc_config['eth_volt'] else '',
 					'-t ' if rfsoc_config['tvg'] else '',
@@ -234,8 +235,9 @@ if not args.skip_conf:
 			else:
 				rfsoc_feng_init.run(
 					rfsoc_hostname, rfsoc_config['fpga_file'], rfsoc_config['config_yml'],
-					feng_ids = ','.join(map(str, rfsoc_config['feng_ids'])),
-					# pipeline_ids = ','.join(map(str, rfsoc_config['pipeline_ids'])),
+					feng_ids = rfsoc_config['feng_ids'],
+					# dest_port = rfsoc_config['dest_port'],
+					pipeline_ids = rfsoc_config['pipeline_ids'],
 					sync = rfsoc_config['sync'],
 					eth_volt = rfsoc_config['eth_volt'],
 					tvg = rfsoc_config['tvg'],
