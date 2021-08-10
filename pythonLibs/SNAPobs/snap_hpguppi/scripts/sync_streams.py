@@ -8,6 +8,7 @@ import redis
 import argparse
 import sys
 from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
+import re
 
 def sync(stream_list=None, all_snaps=False, check_sync_all=True):
     if all_snaps:
@@ -26,6 +27,18 @@ def sync(stream_list=None, all_snaps=False, check_sync_all=True):
         print(stream_list)
 
         fengs = snap_control.init_snaps(stream_list)
+        host_unique_fengs = {}
+        for feng in fengs:
+            host_name = feng.host
+            if host_name.startswith('rfsoc'):
+                host_name = re.match(r'(rfsoc\d+.*)-\d+$', host_name).group(1)
+            if host_name not in host_unique_fengs:
+                host_unique_fengs[host_name] = feng
+            
+        if len(host_unique_fengs) < len(fengs):
+            fengs = [feng for feng in host_unique_fengs.values()]
+            print('Simplified F-Engines to unique hosts:', [feng.host for feng in fengs])
+        
         sync_time = snap_control.arm_snaps(fengs)
         print("Synctime is: %i" %sync_time)
 
