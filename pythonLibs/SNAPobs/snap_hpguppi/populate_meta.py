@@ -238,6 +238,7 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
         else:
             channel_name = hpguppi_defaults.REDISSETGW.substitute(host=host, inst=inst)
 
+        ant_names_string = ','.join(ant_names)
         # these are instance specific
         key_val = {
                 'OBSBW'    : obsbw,
@@ -266,8 +267,24 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
                 'DEC_STR'  : dec,       # Rawspec expects these keys (rawspec_rawutils.c#L155-L186)
                 'AZ'       : az,
                 'EL'       : el,
-                'ANTNAMES' : ",".join(ant_names)
+                'ANTNAMES' : ant_names_string[0:72]
         }
+        # manage limited entry length
+        if(len(ant_names_string) >= 72): #80 - len('ANTNMS##')
+            key_enum = 0
+            ant_names_left = ant_names.copy()
+            while(len(ant_names_left) > 0):
+                num_antnames = len(ant_names_left)
+                while(len(ant_names_string) >= 72): #80 - len('ANTNMS##')
+                    num_antnames -= 1
+                    ant_names_string = ','.join(ant_names_left[0:num_antnames])
+                ant_names_string = ','.join(ant_names_left[0:num_antnames])
+                if key_enum == 0:
+                    key_val['ANTNAMES'] = ant_names_string
+                key_val['ANTNMS%02d' % key_enum] = ant_names_string
+                ant_names_left = ant_names_left[num_antnames:]
+                key_enum += 1
+
         if zero_obs_startstop:
             key_val['OBSSTART'] = 0
             key_val['OBSSTOP']  = 0
