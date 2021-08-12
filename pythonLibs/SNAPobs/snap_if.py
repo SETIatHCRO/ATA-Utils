@@ -23,8 +23,6 @@ ATA_CFG      = snap_config.get_ata_cfg()
 ATA_SNAP_IF  = snap_config.get_ata_snap_if() 
 ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
 
-FPGFILE = ATA_CFG['SNAPFPG']
-
 
 def round50th(list_n):
     ans = []
@@ -109,8 +107,7 @@ def _setatten(chanlist, attenlist, module=0):
 
 
 
-def tune_if(snap_hosts, fpgfile=None, 
-        target_rms=TARGET_RMS):
+def tune_if(snap_hosts):
     """
     Function to tune the IF
     """
@@ -181,7 +178,7 @@ def tune_if(snap_hosts, fpgfile=None,
                 x,y = snap.adc_get_samples()
                 x = np.array(x)
                 y = np.array(y)
-                print(x,y)
+                print(np.std(x),np.std(y))
                 release_device_lock(snap_name)
 
                 rms.append(x.std())
@@ -190,6 +187,7 @@ def tune_if(snap_hosts, fpgfile=None,
             rms = np.array(rms)
             d_attn = 20*np.log10(rms/target_rms)
             prev_attn = round50th(prev_attn + d_attn)
+        snap_control.disconnect_snaps(snap_hosts)
         logger.info("IF tuner ended")
 
 
@@ -200,7 +198,7 @@ def tune_if_ants(ant_list, target_rms=TARGET_RMS):
     snap_hosts = list(obs_ant_tab.snap_hostname.values)
     print("snap_hosts:")
     print(snap_hosts)
-    tune_if(snap_hosts, target_rms=target_rms)
+    tune_if(snap_hosts)
 
 
 def tune_if_antslo(antlo_list):
