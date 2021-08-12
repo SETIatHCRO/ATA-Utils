@@ -187,8 +187,8 @@ def tune_if(snap_hosts):
             rms = np.array(rms)
             d_attn = 20*np.log10(rms/target_rms)
             prev_attn = round50th(prev_attn + d_attn)
-        snap_control.disconnect_snaps(snap_hosts)
-        logger.info("IF tuner ended")
+    snap_control.disconnect_snaps(snaps)
+    logger.info("IF tuner ended")
 
 
 def tune_if_ants(ant_list, target_rms=TARGET_RMS):
