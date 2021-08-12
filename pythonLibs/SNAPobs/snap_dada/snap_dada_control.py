@@ -6,6 +6,8 @@ from ATATools import logger_defaults
 MYCWD = os.path.dirname(os.path.realpath(__file__))
 
 DADAKEYS = ['d%id%i' %(i,i) for i in range(10)]
+DADAKEYS += ['c%ic%i' %(i,i) for i in range(10)]
+DADAKEYS += ['e%ie%i' %(i,i) for i in range(10)]
 DADAKEYS += ['f%if%i' %(i,i) for i in range(10)]
 
 def create_buffers(keylist, bufsze_list, logfile):
