@@ -48,6 +48,8 @@ snaps = ['frb-snap1-pi', 'frb-snap2-pi',
 snaps += ["rfsoc1-ctrl-%i" %i for i in [1,2,3,4]]
 snaps += ["rfsoc2-ctrl-%i" %i for i in [1,2,3,4]]
 snaps += ["rfsoc3-ctrl-%i" %i for i in [1,2,3,4]]
+snaps += ["rfsoc4-ctrl-%i" %i for i in [1,2,3,4]]
+snaps += ["rfsoc5-ctrl-%i" %i for i in [1,2,3,4]]
 
 
 
