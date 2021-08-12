@@ -111,5 +111,17 @@ def stop_snaps(snaps):
 
 
 def get_acc_len_single(snap):
-    tb_syn_period = snap.fpga.read_int('timebase_sync_period')
+    ntries = 0
+    tb_syn_period = 0
+    while True:
+        try:
+            tb_syn_period = snap.fpga.read_int('timebase_sync_period')
+            break
+        except Exception as e:
+            if ntries >= 3:
+                raise e
+            logger.error("get_acc_len_single() throw the following error:\n", e)
+            ntries += 1
+            time.sleep(0.5)
+
     return float(tb_syn_period/snap.n_chans_f/2*8) # *2 for real-FFT; /8 for ADC demux
