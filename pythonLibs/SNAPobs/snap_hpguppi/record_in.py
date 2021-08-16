@@ -49,12 +49,6 @@ def _get_uniform_source_name_for_snaps(snaps):
     source_dict = ata_control.get_eph_source(ant_names[0:1])
     return source_dict[ant_names[0]]
 
-def _stitch_pattern_for_sequence(pattern, sequence):
-    return [seq.join(pattern.split(',')) for seq in sequence.split(',')]
-
-def _get_stream_hostnames_of_redis_chan(redis_obj, redis_chan):
-    return hpguppi_auxillary.get_stream_hostname_per_antenna_names(redis_obj.hget(redis_chan, "ANTNAMES").decode().split(','))
-
 def _block_until_key_has_value(hashes, key, value, verbose=True):
     len_per_value = 50//len(hashes)
     value_slice = slice(-len_per_value, None)
@@ -139,7 +133,7 @@ def record_in(
             assert re.match(hpguppi_defaults.REDISSETGW_re, channel) or channel == hpguppi_defaults.REDISSET
 
             if not reset and not force_synctime:
-                stream_hostnames = _get_stream_hostnames_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_auxillary.redis_get_channel_from_set_channel(channel))
+                stream_hostnames = hpguppi_auxillary.get_snaps_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_auxillary.redis_get_channel_from_set_channel(channel))
                 recording_stream_hostname_list.extend(stream_hostnames)
 
                 channel_sync_times = _get_sync_time_for_streams(stream_hostnames)
