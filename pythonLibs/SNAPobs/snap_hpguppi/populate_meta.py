@@ -267,21 +267,23 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
                 'DEC_STR'  : dec,       # Rawspec expects these keys (rawspec_rawutils.c#L155-L186)
                 'AZ'       : az,
                 'EL'       : el,
-                'ANTNAMES' : ant_names_string[0:72]
+                'ANTNAMES' : ant_names_string[0:71]
         }
         # manage limited entry length
-        if(len(ant_names_string) >= 72): #80 - len('ANTNMS##')
+        if(len(ant_names_string) >= 71): #79 - len('ANTNMS##')
             key_enum = 0
             ant_names_left = ant_names.copy()
             while(len(ant_names_left) > 0):
                 num_antnames = len(ant_names_left)
-                while(len(ant_names_string) >= 72): #80 - len('ANTNMS##')
+                ant_names_left_string = ','.join(ant_names_left[0:num_antnames])
+                while(len(ant_names_left_string) >= 71): #79 - len('ANTNMS##')
                     num_antnames -= 1
-                    ant_names_string = ','.join(ant_names_left[0:num_antnames])
-                ant_names_string = ','.join(ant_names_left[0:num_antnames])
+                    ant_names_left_string = ','.join(ant_names_left[0:num_antnames])
+
                 if key_enum == 0:
-                    key_val['ANTNAMES'] = ant_names_string
-                key_val['ANTNMS%02d' % key_enum] = ant_names_string
+                    key_val['ANTNAMES'] = ant_names_left_string
+
+                key_val['ANTNMS%02d' % key_enum] = ant_names_left_string
                 ant_names_left = ant_names_left[num_antnames:]
                 key_enum += 1
 
