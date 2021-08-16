@@ -60,7 +60,7 @@ def generate_hpguppi_redis_get_channels(hpguppi_hostnames, hpguppi_instance_ids)
 def generate_freq_auto_string_per_channel(redis_obj, hpguppi_redis_get_channels):
   log_string_per_channel = []
   for channel in hpguppi_redis_get_channels:
-    snaps = hpguppi_record_in._get_stream_hostnames_of_redis_chan(redis_obj, channel)
+    snaps = get_snaps_of_redis_chan(redis_obj, channel)
     antdict = get_antenna_name_dict_for_stream_hostnames(snaps)
     log_string_per_channel.append(str(snap_dada.get_freq_auto([antdict[snap] for snap in snaps])))
   return log_string_per_channel
@@ -76,12 +76,23 @@ def redis_hget_retry(redis_obj, redis_chan, key, retry_count=5):
   return value
 
 def get_antennae_of_redis_chan(redis_obj, redis_chan):
-  return redis_hget_retry(redis_obj, redis_chan, 'ANTNAMES').split(',')
+  antennae_names = redis_hget_retry(redis_obj, redis_chan, 'ANTNAMES').split(',')
+  antennae_count = int(redis_hget_retry(redis_obj, redis_chan, 'NANTS'))
+  key_enum = 0
+  while(antennae_count > len(antennae_names)):
+    key_enum += 1
+    ant_names = redis_hget_retry(redis_obj, redis_chan, 'ANTNMS%02d'%key_enum)
+    if ant_names is None:
+      print('Could only collect {}/{} antennae, {} does not exist in channel {}'.format(
+        len(antennae_names), antennae_count, 'ANTNMS%02d'%key_enum, redis_chan
+      ))
+      break
+    antennae_names += ant_names.split(',')
+  return antennae_names
 
 def get_snaps_of_redis_chan(redis_obj, redis_chan):
   antennae = get_antennae_of_redis_chan(redis_obj, redis_chan)
-  ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
-  return [i.snap_hostname for i in ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name.isin(antennae)].itertuples()]
+  return get_stream_hostname_per_antenna_names(antennae)
 
 def redis_publish_command_from_dict(key_val_dict):
   return "\n".join(['%s=%s' %(key,val)
