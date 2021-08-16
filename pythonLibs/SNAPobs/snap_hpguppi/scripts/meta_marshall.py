@@ -164,6 +164,21 @@ def list_el_approx_equal(list_a, list_b, eps=0.01):
 def collect_values_from_dict(dictionary, keys):
   return [dictionary[key] for key in keys]
 
+'''
+  Iterate through the antname_nolo_list and catch the antnames that failed.
+  Return the collection of successful results (a dict whose keys list the
+  successful antnames), and the list of antnames that the function failed for.
+'''
+def ata_control_get_safe(antname_nolo_list, get_func):
+  ret = {}
+  failed_antname_nolo_list = []
+  for antname_nolo in antname_nolo_list:
+    try:
+      ret.update(get_func([antname_nolo]))
+    except:
+      failed_antname_nolo_list.append(antname_nolo)
+  return ret, failed_antname_nolo_list
+
 # Create the AtaSnapFengine list from the names
 fengs = snap_control.init_snaps(streams_to_marshall)#, load_system_information=False)
 hostname_feng_dict = {feng.host:feng for feng in fengs}
@@ -176,8 +191,9 @@ last_destinations = []
 last_skyfreq_mapping, _ = hpguppi_populate_meta._get_stream_mapping(streams_to_marshall)
 last_skyfreq_mapping = collect_values_from_dict(last_skyfreq_mapping, streams_to_marshall)
 antname_nolo_list = list(set([ant[:2] for ant in antenna_names]))
-last_az_el = ata_control.get_az_el(antname_nolo_list)
-last_eph_source = ata_control.get_eph_source(antname_nolo_list)
+last_az_el, failed_antname_nolo_list = ata_control_get_safe(antname_nolo_list, ata_control.get_az_el)
+safe_antname_nolo_list = list(last_az_el.keys())
+last_eph_source = ata_control.get_eph_source(safe_antname_nolo_list)
 
 exceptions_caught = 0
 exception_limit = 5
@@ -205,8 +221,9 @@ while(True):
   destinations = []
   skyfreq_mapping, _ = hpguppi_populate_meta._get_stream_mapping(streams_to_marshall)
   skyfreq_mapping = collect_values_from_dict(skyfreq_mapping, streams_to_marshall)
-  az_el = ata_control.get_az_el(antname_nolo_list)
-  eph_source = ata_control.get_eph_source(antname_nolo_list)
+  az_el, failed_antname_nolo_list = ata_control_get_safe(antname_nolo_list, ata_control.get_az_el)
+  safe_antname_nolo_list = list(az_el.keys())
+  eph_source = ata_control.get_eph_source(safe_antname_nolo_list)
 
   for streamname, dest_details in feng_interface_dest_details.items():
     if dest_details not in destinations:
@@ -219,8 +236,8 @@ while(True):
     groups == last_groups,
     destinations == last_destinations,
     list_el_approx_equal(skyfreq_mapping, last_skyfreq_mapping),
-    # all([list_el_approx_equal(az_el[ant_name], last_az_el[ant_name]) for ant_name in antname_nolo_list]),
-    all([eph_source[ant_name] == last_eph_source[ant_name] for ant_name in antname_nolo_list])
+    # all([list_el_approx_equal(az_el[ant_name], last_az_el[ant_name]) for ant_name in safe_antname_nolo_list]),
+    all([eph_source[ant_name] == last_eph_source[ant_name] for ant_name in safe_antname_nolo_list])
   ]
   if all(same) and (not have_published or (time.time() - last_published > 10)) : # Seems stable, but haven't published
     new_publication = not have_published and all(sections_updated[0:1])
