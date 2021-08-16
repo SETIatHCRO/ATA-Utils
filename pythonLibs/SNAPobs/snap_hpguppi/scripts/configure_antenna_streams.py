@@ -129,9 +129,13 @@ for ip_ifname, ip in ifnames_ip_dict.items():
 					print('%s: %s does not have -\d+g-\d+ suffix... taking it verbatim'%(ip, ip_ifname))
 
 	hpguppi_instance_redis_setchan = hpguppi_defaults.REDISGETGW.substitute(host=host, inst=instance)
-	antnames = redis_obj.hget(hpguppi_instance_redis_setchan, 'ANTNAMES')
+	antnames = None
+	try:
+		antnames = hpguppi_auxillary.get_snaps_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_instance_redis_setchan)
+	except:# RuntimeError:
+		print('hpguppi_auxillary.get_snaps_of_redis_chan failed on {}'.format(hpguppi_instance_redis_setchan))
+	
 	if antnames is not None:
-		antnames = antnames.decode().split(',')
 		for ant_name in stream_antlo_names:
 			if ant_name in antnames:
 				hpguppi_redis_reset_chans.append(hpguppi_auxillary.redis_set_channel_from_get_channel(hpguppi_instance_redis_setchan))
