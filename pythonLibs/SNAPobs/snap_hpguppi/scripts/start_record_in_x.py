@@ -51,7 +51,10 @@ if not args.broadcast:
 
         r = redis.Redis(host=hpguppi_defaults.REDISHOST)
         print(hpguppi_redis_get_channels)
-        log_string_per_channel = hpguppi_auxillary.generate_freq_auto_string_per_channel(r, hpguppi_redis_get_channels)
+        try:
+                log_string_per_channel = hpguppi_auxillary.generate_freq_auto_string_per_channel(r, hpguppi_redis_get_channels)
+        except:
+                pass
 
 hpguppi_record_in.record_in(
     obs_delay_s=args.i,
