@@ -131,9 +131,9 @@ for ip_ifname, ip in ifnames_ip_dict.items():
 	hpguppi_instance_redis_setchan = hpguppi_defaults.REDISGETGW.substitute(host=host, inst=instance)
 	antnames = None
 	try:
-		antnames = hpguppi_auxillary.get_snaps_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_instance_redis_setchan)
+		antnames = hpguppi_auxillary.get_stream_hostnames_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_instance_redis_setchan)
 	except:# RuntimeError:
-		print('hpguppi_auxillary.get_snaps_of_redis_chan failed on {}'.format(hpguppi_instance_redis_setchan))
+		print('hpguppi_auxillary.get_stream_hostnames_of_redis_chan failed on {}'.format(hpguppi_instance_redis_setchan))
 	
 	if antnames is not None:
 		for ant_name in stream_antlo_names:

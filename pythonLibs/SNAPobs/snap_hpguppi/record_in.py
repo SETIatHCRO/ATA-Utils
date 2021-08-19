@@ -133,7 +133,7 @@ def record_in(
             assert re.match(hpguppi_defaults.REDISSETGW_re, channel) or channel == hpguppi_defaults.REDISSET
 
             if not reset and not force_synctime:
-                stream_hostnames = hpguppi_auxillary.get_snaps_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_auxillary.redis_get_channel_from_set_channel(channel))
+                stream_hostnames = hpguppi_auxillary.get_stream_hostnames_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_auxillary.redis_get_channel_from_set_channel(channel))
                 recording_stream_hostname_list.extend(stream_hostnames)
 
                 channel_sync_times = _get_sync_time_for_streams(stream_hostnames)
@@ -150,9 +150,10 @@ def record_in(
 
         if recording_source_name is None:
             if len(recording_stream_hostname_list) == 0:
-                recording_stream_hostname_list = hpguppi_auxillary.get_snaps_of_redis_chan(
+                recording_stream_hostname_list = hpguppi_auxillary.get_stream_hostnames_of_redis_chan(
                     hpguppi_defaults.redis_obj,
-                    hpguppi_auxillary.redis_get_channel_from_set_channel(hpguppi_redis_set_channels[0]))
+                    hpguppi_auxillary.redis_get_channel_from_set_channel(hpguppi_redis_set_channels[0])
+                )
             
             recording_source_name = _get_uniform_source_name_for_snaps(recording_stream_hostname_list)
     
