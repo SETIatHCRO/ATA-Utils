@@ -120,7 +120,7 @@ def record_in(
 
         sync_time = universal_sync_time
         if not reset and not force_synctime:
-            snaps = _get_snaps_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_auxillary.redis_get_channel_from_set_channel(channel))
+            snaps = hpguppi_auxillary.get_snaps_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_auxillary.redis_get_channel_from_set_channel(channel))
             # print(snaps)
             sync_times = _get_sync_time_for_snaps(snaps)
             if len(set(sync_times)) == 1:
