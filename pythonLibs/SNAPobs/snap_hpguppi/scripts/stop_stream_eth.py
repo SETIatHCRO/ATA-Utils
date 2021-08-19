@@ -9,10 +9,10 @@ import time
 import argparse
 import sys
 
-def collect_feng_obj(antlo_stream_list=None, all_snaps=False, check_stop_all=True):
-    if all_snaps:
+def collect_feng_obj(antlo_stream_list=None, all_streams=False, check_stop_all=True):
+    if all_streams:
         ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
-        antstream_hostname_list_to_silence = [snap for snap in ATA_SNAP_TAB.snap_hostname]
+        antstream_hostname_list_to_silence = [stream for stream in ATA_SNAP_TAB.snap_hostname]
         if check_stop_all:
             print(*antstream_hostname_list_to_silence, sep='\n')
             response = input('Are you sure you want to control the ethernet of all the streams (above) (Y/n): ')
