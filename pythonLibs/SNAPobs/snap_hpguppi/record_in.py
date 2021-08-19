@@ -43,11 +43,10 @@ def _get_sync_time_for_streams(stream_hostnames):
     fengs = snap_control.init_snaps(stream_hostnames)
     return [feng.fpga.read_int('sync_sync_time') for feng in fengs]
 
-def _get_uniform_source_name_for_snaps(snaps):
-    ant_name_dict = hpguppi_auxillary.get_antenna_name_dict_for_snap_hostnames(snaps)
-    ant_names = [ant_name_dict[snap] for snap in snaps]
-    source_dict = ata_control.get_eph_source(ant_names[0:1])
-    return source_dict[ant_names[0]]
+def _get_uniform_source_name_for_streams(streams):
+    ant_names_no_LO = [ant_name[0:-1] for ant_name in hpguppi_auxillary.get_antenna_name_per_stream_hostnames(streams)]
+    source_dict = ata_control.get_eph_source(ant_names_no_LO[0:1])
+    return source_dict[ant_names_no_LO[0]]
 
 def _block_until_key_has_value(hashes, key, value, verbose=True):
     len_per_value = 50//len(hashes)
@@ -155,7 +154,7 @@ def record_in(
                     hpguppi_auxillary.redis_get_channel_from_set_channel(hpguppi_redis_set_channels[0])
                 )
             
-            recording_source_name = _get_uniform_source_name_for_snaps(recording_stream_hostname_list)
+            recording_source_name = _get_uniform_source_name_for_streams(recording_stream_hostname_list)
     
     _publish_obs_start_stop(hpguppi_defaults.redis_obj, hpguppi_redis_set_channels, obsstart, obsstop, recording_source_name, dry_run)
     if log and not reset:# and not dry_run:
