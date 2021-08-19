@@ -60,7 +60,7 @@ def generate_hpguppi_redis_get_channels(hpguppi_hostnames, hpguppi_instance_ids)
 def generate_freq_auto_string_per_channel(redis_obj, hpguppi_redis_get_channels):
   log_string_per_channel = []
   for channel in hpguppi_redis_get_channels:
-    snaps = get_snaps_of_redis_chan(redis_obj, channel)
+    snaps = get_stream_hostnames_of_redis_chan(redis_obj, channel)
     antdict = get_antenna_name_dict_for_stream_hostnames(snaps)
     log_string_per_channel.append(str(snap_dada.get_freq_auto([antdict[snap] for snap in snaps])))
   return log_string_per_channel
@@ -90,7 +90,7 @@ def get_antennae_of_redis_chan(redis_obj, redis_chan):
     antennae_names += ant_names.split(',')
   return antennae_names
 
-def get_snaps_of_redis_chan(redis_obj, redis_chan):
+def get_stream_hostnames_of_redis_chan(redis_obj, redis_chan):
   antennae = get_antennae_of_redis_chan(redis_obj, redis_chan)
   return get_stream_hostname_per_antenna_names(antennae)
 
