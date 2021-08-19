@@ -223,7 +223,8 @@ def populate_meta(snap_hostnames: StringList, ant_names: StringList,
                 'SOURCE'   : source,
                 'RA'       : ra,
                 'DEC'      : dec,
-                'SRC_NAME' : source,    # Rawspec expects these keys (rawspec_rawutils.c#L155-L186)
+                # 'SRC_NAME' : source,    # Rawspec expects these keys (rawspec_rawutils.c#L155-L186)
+                # but let record_in determine SRC_NAME such that it is uniform across antennae-groupings, leading to uniform RAW stems
                 'RA_STR'   : ra,        # Rawspec expects these keys (rawspec_rawutils.c#L155-L186)
                 'DEC_STR'  : dec,       # Rawspec expects these keys (rawspec_rawutils.c#L155-L186)
                 'AZ'       : az,
