@@ -157,9 +157,9 @@ else:
 
 if not args.skip_conf:
 	rfsoc_hostname_regex = r'(?P<boardname>.*)-(?P<pipeline>\d+)$'
+	rfsoc_hostname_configurations_dict = {}
 
 	for (sub_id, stream_sub) in enumerate(stream_subs):
-		rfsoc_hostname_configurations_dict = {}
 		print('Configuring Subarray', sub_id)
 		print('\t', stream_sub)
 
@@ -220,35 +220,35 @@ if not args.skip_conf:
 				print('Cannot make out the kind of FEngine board with hostname \'{}\''.format(stream_hostname))
 		print()
 		
-		for rfsoc_boardname, rfsoc_config in rfsoc_hostname_configurations_dict.items():
-			print('{} Batched reprogramming/configuring RFSoC {} {}'.format('v'*5, rfsoc_boardname, 'v'*5))	
-			rfsoc_hostname = rfsoc_boardname + '-1'
-			print('rfsoc_feng_init.py {} {} {} -i {} -j {} {}{}{}{}'.format(
-					rfsoc_hostname, rfsoc_config['fpga_file'], rfsoc_config['config_yml'],
-					' '.join(map(str, rfsoc_config['feng_ids'])),
-					' '.join(map(str, rfsoc_config['pipeline_ids'])),
-					'-s ' if rfsoc_config['sync'] else '',
-					'--eth_volt ' if rfsoc_config['eth_volt'] else '',
-					'-t ' if rfsoc_config['tvg'] else '',
-					'--noblank ' if rfsoc_config['noblank'] else '',
-					'--skipprog' if rfsoc_config['skip_prog'] else ''
-					)
+	for rfsoc_boardname, rfsoc_config in rfsoc_hostname_configurations_dict.items():
+		print('{} Batched reprogramming/configuring RFSoC {} {}'.format('v'*5, rfsoc_boardname, 'v'*5))	
+		rfsoc_hostname = rfsoc_boardname + '-1'
+		print('rfsoc_feng_init.py {} {} {} -i {} -j {} {}{}{}{}'.format(
+				rfsoc_hostname, rfsoc_config['fpga_file'], rfsoc_config['config_yml'],
+				' '.join(map(str, rfsoc_config['feng_ids'])),
+				' '.join(map(str, rfsoc_config['pipeline_ids'])),
+				'-s ' if rfsoc_config['sync'] else '',
+				'--eth_volt ' if rfsoc_config['eth_volt'] else '',
+				'-t ' if rfsoc_config['tvg'] else '',
+				'--noblank ' if rfsoc_config['noblank'] else '',
+				'--skipprog' if rfsoc_config['skip_prog'] else ''
 				)
-			if args.dry_run:
-				print('*'*5, 'Dry Run', '*'*5)
-			else:
-				rfsoc_feng_init.run(
-					rfsoc_hostname, rfsoc_config['fpga_file'], rfsoc_config['config_yml'],
-					feng_ids = rfsoc_config['feng_ids'],
-					# dest_port = rfsoc_config['dest_port'],
-					pipeline_ids = rfsoc_config['pipeline_ids'],
-					sync = rfsoc_config['sync'],
-					eth_volt = rfsoc_config['eth_volt'],
-					tvg = rfsoc_config['tvg'],
-					noblank = rfsoc_config['noblank'],
-					skipprog = rfsoc_config['skip_prog']
-				)
-			print('{} Batched reprogramming/configuring RFSoC {} {}\n'.format('^'*5, rfsoc_boardname, '^'*5))
+			)
+		if args.dry_run:
+			print('*'*5, 'Dry Run', '*'*5)
+		else:
+			rfsoc_feng_init.run(
+				rfsoc_hostname, rfsoc_config['fpga_file'], rfsoc_config['config_yml'],
+				feng_ids = rfsoc_config['feng_ids'],
+				# dest_port = rfsoc_config['dest_port'],
+				pipeline_ids = rfsoc_config['pipeline_ids'],
+				sync = rfsoc_config['sync'],
+				eth_volt = rfsoc_config['eth_volt'],
+				tvg = rfsoc_config['tvg'],
+				noblank = rfsoc_config['noblank'],
+				skipprog = rfsoc_config['skip_prog']
+			)
+		print('{} Batched reprogramming/configuring RFSoC {} {}\n'.format('^'*5, rfsoc_boardname, '^'*5))
 
 if args.dry_run:
 	print('sync_streams.sync({})'.format(stream_hostnames))
