@@ -81,7 +81,7 @@ stream_subs = []
 for stream_id, stream_str in enumerate(args.groupings):
 	stream_subs.append(stream_str.split(','))
 	stream_cfgs.append(os.path.join(args.config_directory, '{}{}.yml'.format(args.config_stem, stream_id+1)))
-	if len(args.groupings) == 1 and not os.path.exists(stream_cfgs[-1]):
+	if not os.path.exists(stream_cfgs[-1]):
 		stream_cfgs[-1] = os.path.join(args.config_directory, '{}.yml'.format(args.config_stem))
 	assert os.path.exists(stream_cfgs[-1]), '{} path doesn\'t exist'.format(stream_cfgs[-1])
 
