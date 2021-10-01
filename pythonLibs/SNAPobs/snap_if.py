@@ -45,17 +45,17 @@ def setatten(antpol_dict):
     """
 
     logger = logger_defaults.getModuleLogger(__name__)
-    all_ants_list = []
+    antlo_list = []
     for antpol, attenval in antpol_dict.items():
         if not (antpol.endswith("x") or antpol.endswith("y")):
             raise RuntimeError("Antpol (%s) doesn't end with 'x' or 'y'"
                     %(antpol))
         ant = antpol[:-1]
-        all_ants_list.append(ant)
+        antlo_list.append(ant)
 
-    all_ants_list = list(set(all_ants_list))
+    antlo_list = list(set(antlo_list))
 
-    obs_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name.isin(all_ants_list)]
+    obs_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.antlo.isin(antlo_list)]
     attemp_modules = set(ATA_SNAP_IF.module.tolist())
 
 
@@ -65,12 +65,12 @@ def setatten(antpol_dict):
         if_channels = []
         atten_values = []
         for antpol, attenval in antpol_dict.items():
-            ant = antpol[:-1]
+            antlo = antpol[:-1]
             pol = antpol[-1]
-            if ant not in list(ATA_SNAP_TAB.ANT_name):
+            if antlo not in list(ATA_SNAP_TAB.antlo):
                 raise RuntimeError("Antenna (%s) not in antenna list: %s"
-                        %(ant, list(ATA_SNAP_TAB.ANT_name)))
-            snap_hostname = ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name == ant].snap_hostname.values[0]
+                        %(ant, list(ATA_SNAP_TAB.antlo)))
+            snap_hostname = ATA_SNAP_TAB[ATA_SNAP_TAB.antlo == antlo].snap_hostname.values[0]
             if not snap_hostname in list(ata_snap_if_this_attmod.snap_hostname):
                 continue
             snap_if_entry = ATA_SNAP_IF[ATA_SNAP_IF.snap_hostname == snap_hostname]
