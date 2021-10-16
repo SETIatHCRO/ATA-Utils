@@ -24,7 +24,9 @@ parser.add_argument('-H', '--hpguppi-host-ids', nargs='+', type=str, default=['1
 parser.add_argument('-I', '--hpguppi-instances', nargs='+', type=str, default=['0-1'],
         help='the range of instance ids, comma delimited, for the hpguppi machines')
 parser.add_argument('-S', action='store_true',
-        help='Use redishost\'s SYNCTIME value (instead of the values from the antenna-stream boards themselvs).')
+        help='Use redishost\'s SYNCTIME value (instead of the values from the antenna-stream boards).')
+parser.add_argument('--nbits', type=int, default=8,
+        help='The number of bits per sample\'s complex-component, from which TBIN is determined.')
 args = parser.parse_args()
 
 hpguppi_redis_set_channels = None
@@ -59,6 +61,7 @@ if not args.broadcast:
 hpguppi_record_in.record_in(
     obs_delay_s=args.i,
     obs_duration_s=args.n,
+    tbin=hpguppi_defaults.fengine_meta_key_values(args.nbits)['TBIN'],
     hpguppi_redis_set_channels=hpguppi_redis_set_channels,
     force_synctime=args.S,
     reset=args.r,

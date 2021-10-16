@@ -99,6 +99,7 @@ def _calculate_obs_start_stop(t_start, duration_s, sync_time, tbin):
 def record_in(
 				obs_delay_s=DEFAULT_START_IN,
 				obs_duration_s=DEFAULT_OBS_TIME,
+                tbin=hpguppi_defaults.fengine_meta_key_values()['TBIN'],
 				hpguppi_redis_set_channels=None,
 				force_synctime=True,
 				reset=False,
@@ -145,7 +146,7 @@ def record_in(
                     return False
         
         sync_time = universal_sync_time if force_synctime else sync_times[0]
-        obsstart, obsstop, npackets = _calculate_obs_start_stop(t_in_x, obs_duration_s, sync_time, hpguppi_defaults.TBIN)
+        obsstart, obsstop, npackets = _calculate_obs_start_stop(t_in_x, obs_duration_s, sync_time, tbin)
 
         if recording_source_name is None:
             if len(recording_stream_hostname_list) == 0:
