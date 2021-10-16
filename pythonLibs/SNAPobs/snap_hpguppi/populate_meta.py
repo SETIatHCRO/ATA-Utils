@@ -97,6 +97,7 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
 									ignore_control=False,
 									hpguppi_daq_instance=-1,
 									n_chans=None,
+									n_bits=hpguppi_defaults.NBITS,
 									start_chan=None,
 									dests=None,
                                     max_packet_nchan=hpguppi_defaults.MAX_CHANS_PER_PKT,
@@ -104,6 +105,8 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
 									zero_obs_startstop=True,
 									dry_run=False,
                                     default_dir=False):
+
+    fengine_meta_keyvalues = hpguppi_defaults.fengine_meta_key_values(n_bits)
 
     if configfile is not None and configfile != '':
         if not os.path.exists(configfile):
@@ -166,7 +169,7 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
 
     assert len(set(list(skyfreq_mapping.values()))) != 0, "subbarray antennas must have the same frequencies"
     lo_obsfreq = skyfreq_mapping[stream_hostnames[0]]
-    centre_channel = hpguppi_defaults.FENCHAN/2
+    centre_channel = fengine_meta_keyvalues['FENCHAN']/2
     source     = ant0_obs_params['SOURCE']
     ra      = ant0_obs_params['RA']
     dec     = ant0_obs_params['DEC']
@@ -209,7 +212,7 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
         nstrm = n_chans_per_dest // n_chans_per_pkt
 
 
-        chan_bw = hpguppi_defaults.FOFF
+        chan_bw = fengine_meta_keyvalues['FOFF']
         obsbw   = len(chan_lst)*chan_bw
         band_centre_chan = np.mean(np.array(chan_lst) + 0.5)
         obsfreq = lo_obsfreq + (band_centre_chan - centre_channel - 0.5)*chan_bw 
@@ -249,13 +252,13 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
                 # 'BINDHOST' : BINDHOST, # static once the instance starts
                 # 'BINDPORT' : dest_port, # static once the instance starts
                 'CHAN_BW'  : chan_bw,
-                'FENCHAN'  : hpguppi_defaults.FENCHAN,
+                'FENCHAN'  : fengine_meta_keyvalues['FENCHAN'],
                 'NANTS'    : nants,
-                'NPOL'     : hpguppi_defaults.NPOL,
+                'NPOL'     : fengine_meta_keyvalues['NPOL'],
                 'PKTNCHAN' : n_chans_per_pkt,
-                'TBIN'     : hpguppi_defaults.TBIN,
-                'NBITS'    : hpguppi_defaults.NBITS,
-                'PKTNTIME' : hpguppi_defaults.N_TIMES_PER_PKT,
+                'TBIN'     : fengine_meta_keyvalues['TBIN'],
+                'NBITS'    : fengine_meta_keyvalues['NBITS'],
+                'PKTNTIME' : fengine_meta_keyvalues['N_TIMES_PER_PKT'],
                 'SYNCTIME' : sync_time,
                 # 'DATADIR'  : DATADIR, # best left to the configuration (numactl grouping of NVMe mounts)
                 'PKTFMT'   : hpguppi_defaults.PKTFMT,
