@@ -40,7 +40,7 @@ psrplot -pfreq+ -N5x5 -jDT */*ar.clfd -D/xs
 cp all.png ${utc}_${name}.png
 
 #channels=C01HKMMQVUZ
-curl -F file=@./${utc}_${name}.png -F channels=C6KK9EX70 -H "Authorization: Bearer xoxp-18246494320-18247803318-911958760085-cf70d8641df97c4d8fda4a85516daf89" https://slack.com/api/files.upload
+curl -F file=@./${utc}_${name}.png -F channels=C6KK9EX70 -H "Authorization: Bearer ${ATATOKEN}" https://slack.com/api/files.upload
 
 pam -T -F -e ".clfd.tf" */*.ar.clfd
 
