@@ -19,10 +19,12 @@ def main():
     az_offset = 20.
     el_offset = 0.
 
-    ant_list = ["1a", "1f", "1c", "2a", "2b", "2h",
-            "3c", "4g", "1k", "5c", "1h", "4j"]
+    #ant_list = ["1a", "1f", "1c", "2a", "2b", "3d",
+    #        "4g", "1k", "5c", "1h", "4j", "2h"]
+    ant_list = ["1a", "1c", "2a", "4j", "2h",
+            "3d", "4g", "1k", "5c", "1h", "2b"]
     ata_control.reserve_antennas(ant_list)
-    atexit.register(ata_control.release_antennas,ant_list, False)
+    atexit.register(ata_control.release_antennas,ant_list, True)
 
     obs_time = 30
     n_on_off = 1
