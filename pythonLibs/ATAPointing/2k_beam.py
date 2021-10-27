@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
+import glob
 
 from sigpyproc.Readers import FilReader
 
@@ -50,25 +51,24 @@ dx, = np.diff(centers[:2])/(imgx.shape[1]-1)
 dy, = -np.diff(centers[2:])/(imgx.shape[0]-1)
 extent = [centers[0]-dx/2, centers[1]+dx/2, centers[2]+dy/2, centers[3]-dy/2]
 
-plt.figure(figsize=[8,8])
+plt.figure(0, figsize=[12,8])
 
-plt.imshow(10*np.log10(imgx), interpolation='none', extent=[-10.5,8.5,-10.5,8.5])
-plt.xlabel("Elevation (deg)")
+plt.imshow(10*np.log10(imgx.T), interpolation='none', extent=[-10.5,8.5,-10.5,8.5], origin='lower')
 plt.xticks(np.arange(centers[0], centers[1]+dx, dx))
 plt.yticks(np.arange(centers[3], centers[2]+dy, dy))
-plt.ylabel("Azimuth (deg)")
+plt.ylabel("Elevation (deg)")
+plt.xlabel("Azimuth (deg)")
 plt.title("X Polarization")
 plt.colorbar()
-plt.show()
 
 
-plt.figure(figsize=[8,8])
-plt.imshow(10*np.log10(imgy), interpolation='none', extent=[-10.5,8.5,-10.5,8.5])
+plt.figure(1, figsize=[12,8])
+plt.imshow(10*np.log10(imgy.T), interpolation='none', extent=[-10.5,8.5,-10.5,8.5], origin='lower')
 plt.title("Y Polarization")
 plt.xticks(np.arange(centers[0], centers[1]+dx, dx))
 plt.yticks(np.arange(centers[3], centers[2]+dy, dy))
-plt.xlabel("Elevation (deg)")
-plt.ylabel("Azimuth (deg)")
+plt.ylabel("Elevation (deg)")
+plt.xlabel("Azimuth (deg)")
 plt.colorbar()
 
 plt.show()
