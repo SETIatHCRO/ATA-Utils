@@ -16,6 +16,8 @@ import re
 import ast
 import concurrent.futures
 import os
+from time import sleep
+from threading import Thread
 
 from . import ata_remote,ata_constants,snap_array_helpers,logger_defaults
 from .ata_rest import ATARest, ATARestException
@@ -1024,6 +1026,73 @@ def park_antennas(antlist):
         raise
     logger.info("Parked");
 
+
+def check_windsocking():
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    try:
+        endpoint = '/windsocking'
+        windsocking_status = ATARest.get(endpoint)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+    logger.debug('{:s}: {:s}'.format(endpoint, str(windsocking_status)))
+    return windsocking_status.get('windsocking_active', False)
+
+_notifier_callback_list = []
+_notifier_windsocking_state = False
+
+def windsocking_notifier(callback_or_callback_list):
+    """
+    Background windsocking event notifier.
+
+    You should start only one of these in your observation application code.
+    The argument may be a callback routine, or a list [] of callback routines.
+    These callback routines will be called whenever there is a change in
+    windsocking status.
+
+    Callback routines should be simple functions/methods with a single boolean
+    parameter "is_windsocking", where True will indicate windsocking has
+    begun, and False is windsocking is ended.
+
+    # Define a callback
+
+    def my_callback(is_windsocking):
+        some_important_flag = is_windsocking
+        if is_windsocking:
+           maybe_pause_my_observation_or_do_something_important()
+
+    # Register the callback and start the notifier thread
+
+    windsocking_notifier(my_callback)
+
+    # Now my app will receive windsock event callbacks....
+
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    global _notifier_windsocking_state
+
+    def windsocking_watcher():
+        while True:
+            try:
+                new_status = check_windsocking()
+                logger.debug('windsocking status: ' + str(new_status))
+                global _notifier_windsocking_state
+                if new_status != _notifier_windsocking_state:
+                    _notifier_windsocking_state = new_status
+                    for callback in _notifier_callback_list:
+                        callback(new_status)
+            except:
+                pass
+            sleep(15.0)
+
+    if isinstance(callback_or_callback_list, list):
+        _notifier_callback_list = callback_or_callback_list.copy()
+    else:
+        _notifier_callback_list = [callback_or_callback_list]
+    _notifier_windsocking_state = check_windsocking()
+    Thread(target=windsocking_watcher, daemon=True).start()
 
 #####
 #
