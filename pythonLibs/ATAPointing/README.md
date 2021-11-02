@@ -7,3 +7,5 @@ This directory contains a few python scripts to help visualize the results of th
 2. `pointing_azel_print.py` - This script simply prints the above values for each antena
 
 3. `pointing_elxel_plot.py` - This script plots the elevation and x-el offsets against elevation and x-el for all antennas. 
+
+4. `multiants_beam.py` - This script disp;ays the beam pattern of the raster scan observation with multiple antennas. The range and step size can be changed accordingly 
