@@ -19,7 +19,7 @@ from SNAPobs import snap_defaults, snap_config
 from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
 
 # Collate the snap hostnames
-streams_to_marshall = [i.snap_hostname for i in snap_config.get_ata_snap_tab().itertuples() if i.snap_hostname[0:6] not in ['rfsoc4', 'rfsoc5']]
+streams_to_marshall = [i.snap_hostname for i in snap_config.get_ata_snap_tab().itertuples()]
 
 # Gather antenna-configuration for the listed snaps
 stream_ant_name_dict = hpguppi_auxillary.get_antenna_name_dict_for_stream_hostnames(streams_to_marshall)
