@@ -76,8 +76,17 @@ def redis_hget_retry(redis_obj, redis_chan, key, retry_count=5):
   return value
 
 def get_antennae_of_redis_chan(redis_obj, redis_chan):
-  antennae_names = redis_hget_retry(redis_obj, redis_chan, 'ANTNAMES').split(',')
-  antennae_count = int(redis_hget_retry(redis_obj, redis_chan, 'NANTS'))
+  antennae_names = redis_hget_retry(redis_obj, redis_chan, 'ANTNAMES')
+  if antennae_names is None:
+    antennae_names = []
+  else:
+    antennae_names = antennae_names.split(',')
+  
+  antennae_count = redis_hget_retry(redis_obj, redis_chan, 'NANTS')
+  if antennae_count is None:
+    antennae_count = 0
+  else:
+    antennae_count = int(antennae_count)
   key_enum = 0
   while(antennae_count > len(antennae_names)):
     key_enum += 1
@@ -97,3 +106,31 @@ def get_stream_hostnames_of_redis_chan(redis_obj, redis_chan):
 def redis_publish_command_from_dict(key_val_dict):
   return "\n".join(['%s=%s' %(key,val)
             for key,val in key_val_dict.items()])
+
+def filter_unique_fengines(feng_objs):
+    host_unique_fengs = {}
+    for feng in feng_objs:
+      host_name = feng.host
+      if host_name.startswith('rfsoc'):
+        rfsoc_match = re.match(r'(rfsoc\d+.*)-(\d+)$', host_name)
+        if int(rfsoc_match.group(2)) < 5:
+          host_name = rfsoc_match.group(1) + '-1'
+        else:
+          host_name = rfsoc_match.group(1) + '-4'
+      if host_name not in host_unique_fengs:
+        host_unique_fengs[host_name] = feng
+    return list(host_unique_fengs.values())
+
+def filter_unique_hostnames(host_names):
+    unique_host_names = {}
+    for full_host_name in host_names:
+      host_name = full_host_name
+      if host_name.startswith('rfsoc'):
+        rfsoc_match = re.match(r'(rfsoc\d+.*)-(\d+)$', host_name)
+        if int(rfsoc_match.group(2)) < 5:
+          host_name = rfsoc_match.group(1) + '-1'
+        else:
+          host_name = rfsoc_match.group(1) + '-4'
+      if host_name not in unique_host_names:
+        unique_host_names[host_name] = full_host_name
+    return list(unique_host_names.values())
