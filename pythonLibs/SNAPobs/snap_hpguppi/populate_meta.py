@@ -63,18 +63,27 @@ def _gather_ants(radec, azel, source):
     for ant in radec.keys():
         obsvals = {}
         obsvals['SOURCE']                       = source[ant]
-        obsvals['RA'], obsvals['DEC']           = radec[ant]
-        obsvals['AZ'], obsvals['EL']            = azel[ant]
+        obsvals['RA'], obsvals['DEC']           = radec[ant] if radec[ant] is not None else None, None
+        obsvals['AZ'], obsvals['EL']            = azel[ant] if azel[ant] is not None else None, None
         obsDict[ant] = obsvals
     return obsDict
+
+def _safe_ata_control_get(antlist, get_func):
+    ret = {}
+    for ant in antlist:
+        try:
+            ret.update(get_func([ant]))
+        except:
+            ret.update({ant: None})
+    return ret
 
 def _get_obs_params(antlo_list):
     ant_list = [ant[:2] for ant in antlo_list]
     ant_list = list(set(ant_list))
 
-    source_s = ata_control.get_eph_source(ant_list)
-    radec_s = ata_control.getRaDec(ant_list)
-    azel_s  = ata_control.getAzEl(ant_list)
+    source_s = _safe_ata_control_get(ant_list, ata_control.get_eph_source)
+    radec_s = _safe_ata_control_get(ant_list, ata_control.getRaDec)
+    azel_s  = _safe_ata_control_get(ant_list, ata_control.getAzEl)
 
     radec   = {}
     azel    = {}
@@ -171,10 +180,11 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
     lo_obsfreq = skyfreq_mapping[stream_hostnames[0]]
     centre_channel = fengine_meta_keyvalues['FENCHAN']/2
     source     = ant0_obs_params['SOURCE']
-    ra      = ant0_obs_params['RA']
-    dec     = ant0_obs_params['DEC']
-    az      = ant0_obs_params['AZ']
-    el      = ant0_obs_params['EL']
+    ra      = ant0_obs_params['RA'][0]
+    dec     = ant0_obs_params['RA'][1] #ant0_obs_params['DEC']
+    az      = ant0_obs_params['AZ'][0]
+    el      = ant0_obs_params['AZ'][1] #ant0_obs_params['EL']
+    source =  source.replace(' ', '_')
 
     # logic to deal with multi-instance hashpipes
     # if the gethostbyaddr(ip0) == gethostbyaddr(ip1), assume that
@@ -209,8 +219,8 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
         n_packets_per_dest = int(np.ceil(n_chans_per_dest / max_packet_nchan))
         n_chans_per_pkt  = n_chans_per_dest // n_packets_per_dest
         schan = chan_lst[0]
-        nstrm = n_chans_per_dest // n_chans_per_pkt
-
+        expected_GBps = nants * (n_chans_per_dest/fengine_meta_keyvalues['FENCHAN'])
+        expected_GBps *= 2.0 if n_bits == 4 else 4.0 if n_bits == 8 else -1.0
 
         chan_bw = fengine_meta_keyvalues['FOFF']
         obsbw   = len(chan_lst)*chan_bw
@@ -247,7 +257,7 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
         key_val = {
                 'OBSBW'    : obsbw,
                 'SCHAN'    : schan,
-                'NSTRM'    : nstrm,
+                'NCHAN'    : n_chans_per_dest,
                 'OBSFREQ'  : obsfreq,
                 # 'BINDHOST' : BINDHOST, # static once the instance starts
                 # 'BINDPORT' : dest_port, # static once the instance starts
@@ -271,8 +281,10 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
                 'DEC_STR'  : dec,       # Rawspec expects these keys (rawspec_rawutils.c#L155-L186)
                 'AZ'       : az,
                 'EL'       : el,
-                'ANTNAMES' : ant_names_string[0:71]
+                'ANTNAMES' : ant_names_string[0:71],
+                'XPCTGBPS' : '{:.3f}GBps {:.3f}Gbps'.format(expected_GBps, expected_GBps*8)
         }
+
         # manage limited entry length
         if(len(ant_names_string) >= 71): #79 - len('ANTNMS##')
             key_enum = 0
