@@ -23,7 +23,7 @@ def collect_feng_obj(antlo_stream_list=None, all_streams=False, check_stop_all=T
         print(hpguppi_auxillary.get_stream_hostname_dict_for_antenna_names(antlo_stream_list))
         antstream_hostname_list_to_silence = hpguppi_auxillary.get_stream_hostname_per_antenna_names(antlo_stream_list)
 
-    return snap_control.init_snaps(antstream_hostname_list_to_silence)
+    return hpguppi_auxillary.filter_unique_fengines(snap_control.init_snaps(antstream_hostname_list_to_silence))
 
 if __name__ == '__main__':    
     parser = argparse.ArgumentParser(description='Stops the ethernet output of snaps')
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('-S', '--enable-eth', action='store_true',
                         help='Enable the ethernet output instead of stopping it.')
     parser.add_argument('-H', '--hostnames', nargs='*', type=str,
-                    help='The DSP source stream hostnames as comma (,) separated lists [] (hostnames can be regex, overrules groupings)',
+                    help='The DSP source stream hostnames as comma (,) separated lists [] (hostnames can be regex)',
                     default=[])
     parser.add_argument('--all', action='store_true',
                         help='Stop the ethernet output of every stream (listed in ATA_SNAP_TAB) before configuring...')
