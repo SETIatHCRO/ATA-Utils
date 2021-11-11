@@ -19,7 +19,7 @@ from SNAPobs import snap_defaults, snap_config
 from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
 
 # Collate the snap hostnames
-streams_to_marshall = [i.snap_hostname for i in snap_config.get_ata_snap_tab().itertuples() if i.snap_hostname[0:6] not in ['rfsoc4', 'rfsoc5']]
+streams_to_marshall = [i.snap_hostname for i in snap_config.get_ata_snap_tab().itertuples()]
 
 # Gather antenna-configuration for the listed snaps
 stream_ant_name_dict = hpguppi_auxillary.get_antenna_name_dict_for_stream_hostnames(streams_to_marshall)
@@ -120,14 +120,15 @@ def read_chan_dest_ips(feng, interface, ignore_null_packets=True):
     return []
 
   try:
-    feng_headers = feng._read_headers(interface)
+    if isinstance(feng, ata_rfsoc_fengine.AtaRfsocFengine):
+      feng_headers = feng._read_headers()
+    else:
+      feng_headers = feng._read_headers(interface)
   except:
     print('Failed to query headers of {}[{}]'.format(feng.host, interface))
     return []
-  
-  if isinstance(feng, ata_rfsoc_fengine.AtaRfsocFengine):
-    pipeline_n_words = 512//8 # TODO get this from somewhere ??? calc_n_words(feng)*8
-    feng_headers = feng._read_headers(interface, pipeline_n_words, (feng.pipeline_id)*pipeline_n_words)
+
+  test_vectors_enabled = feng.fpga.read_int('spec_tvg_tvg_en')
   
   packet_dest_ips = []
   for header in feng_headers:
@@ -137,7 +138,7 @@ def read_chan_dest_ips(feng, interface, ignore_null_packets=True):
       if len(packet_dest_ips) > 0 and packet_dest_ips[-1]['dest'] == ip:
         packet_dest_ips[-1]['end_chan'] = header['chans']
       else:
-        packet_dest_ips.append({'dest':ip, 'start_chan':header['chans'], 'end_chan':header['chans'], 'packet_nchan':header['n_chans']})
+        packet_dest_ips.append({'dest':ip, 'start_chan':header['chans'], 'end_chan':header['chans'], 'packet_nchan':header['n_chans'], 'is_8bit':header['is_8_bit']})
 
   for packet_dest_ip in packet_dest_ips:
     packet_dest_ip['end_chan'] += packet_dest_ip['packet_nchan']
@@ -148,6 +149,8 @@ def read_chan_dest_ips(feng, interface, ignore_null_packets=True):
     if packet_dest_ip['n_chans'] % packet_dest_ip['packet_nchan'] != 0:
       print('Read headers from {} that indicate non-integer number of streams, there is probably an issue in the collation procedure: {} / {} = {}'.format(feng.host, packet_dest_ip['n_chans'], packet_dest_ip['packet_nchan'], packet_dest_ip['n_strm']))
     packet_dest_ip['n_strm'] = int(0.5 + packet_dest_ip['n_strm'])
+    
+    packet_dest_ip['test_vectors'] = test_vectors_enabled
 
   # print('{}[{}]: {}\n'.format(feng.host, interface, packet_dest_ips))
   return packet_dest_ips
@@ -270,6 +273,7 @@ while(True):
         n_chan = 0 # not ideal, collects the largest number of channels sent per destination
         destIps = []
         max_nchan_per_packet = 0
+        stream_is_8bit = None
         
         for interface in destinations[i]:
           for dest_details in interface:
@@ -277,6 +281,10 @@ while(True):
             n_chan = max(dest_details['n_chans'], n_chan)
             destIps.append(dest_details['dest'])
             max_nchan_per_packet = max(dest_details['packet_nchan'], max_nchan_per_packet)
+            if stream_is_8bit is None:
+              stream_is_8bit = dest_details['is_8bit']
+            elif stream_is_8bit != dest_details['is_8bit']:
+              print('Incosistent sample bit depth in streams detected!')
         
         destIps = unique(destIps)
         n_chan = n_chan*len(destIps) # assume each destination receives the same number of channels
@@ -305,6 +313,7 @@ while(True):
                   hpguppi_auxillary.get_antenna_name_per_stream_hostnames(stream_hostnames),
                   None,
                   n_chans=n_chan,
+                  n_bits=8 if stream_is_8bit else 4,
                   start_chan=start_chan,
                   dests=destIps,
                   silent=not new_publication,
@@ -316,7 +325,8 @@ while(True):
         if new_publication:
           print()
         exceptions_caught = 0
-      except:
+      except (RuntimeError, Exception) as e:
+        print("Exception: ", e)
         exceptions_caught += 1
         if exceptions_caught > exception_limit:
           print('Too many exceptions (%d)'%exception_limit)
