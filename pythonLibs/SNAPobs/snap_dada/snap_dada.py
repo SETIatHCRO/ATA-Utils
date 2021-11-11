@@ -384,7 +384,8 @@ def start_recording(antlo_list, tobs, npolout = 2, ics=False,
     headers = create_headers(obsParams)
     header_paths = []
     #for ant in sub_tab.ANT_name:
-    for antlo in antlo_list:
+
+    for antlo in sub_tab.antlo:
         header_paths.append(os.path.join(base_obs, antlo,
             "obs.header"))
         write_dada_header(header_paths[-1], headers[antlo])

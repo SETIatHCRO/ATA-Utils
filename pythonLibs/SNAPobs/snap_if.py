@@ -23,8 +23,6 @@ ATA_CFG      = snap_config.get_ata_cfg()
 ATA_SNAP_IF  = snap_config.get_ata_snap_if() 
 ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
 
-FPGFILE = ATA_CFG['SNAPFPG']
-
 
 def round50th(list_n):
     ans = []
@@ -47,17 +45,19 @@ def setatten(antpol_dict):
     """
 
     logger = logger_defaults.getModuleLogger(__name__)
-    all_ants_list = []
+
+    antlo_list = []
     for antpol, attenval in antpol_dict.items():
         if not (antpol.endswith("x") or antpol.endswith("y")):
             raise RuntimeError("Antpol (%s) doesn't end with 'x' or 'y'"
                     %(antpol))
         ant = antpol[:-1]
-        all_ants_list.append(ant)
 
-    all_ants_list = list(set(all_ants_list))
+        antlo_list.append(ant)
 
-    obs_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name.isin(all_ants_list)]
+    antlo_list = list(set(antlo_list))
+
+    obs_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.antlo.isin(antlo_list)]
     attemp_modules = set(ATA_SNAP_IF.module.tolist())
 
 
@@ -67,12 +67,12 @@ def setatten(antpol_dict):
         if_channels = []
         atten_values = []
         for antpol, attenval in antpol_dict.items():
-            ant = antpol[:-1]
+            antlo = antpol[:-1]
             pol = antpol[-1]
-            if ant not in list(ATA_SNAP_TAB.ANT_name):
+            if antlo not in list(ATA_SNAP_TAB.antlo):
                 raise RuntimeError("Antenna (%s) not in antenna list: %s"
-                        %(ant, list(ATA_SNAP_TAB.ANT_name)))
-            snap_hostname = ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name == ant].snap_hostname.values[0]
+                        %(ant, list(ATA_SNAP_TAB.antlo)))
+            snap_hostname = ATA_SNAP_TAB[ATA_SNAP_TAB.antlo == antlo].snap_hostname.values[0]
             if not snap_hostname in list(ata_snap_if_this_attmod.snap_hostname):
                 continue
             snap_if_entry = ATA_SNAP_IF[ATA_SNAP_IF.snap_hostname == snap_hostname]
@@ -109,8 +109,7 @@ def _setatten(chanlist, attenlist, module=0):
 
 
 
-def tune_if(snap_hosts, fpgfile=None, 
-        target_rms=TARGET_RMS):
+def tune_if(snap_hosts):
     """
     Function to tune the IF
     """
@@ -181,7 +180,8 @@ def tune_if(snap_hosts, fpgfile=None,
                 x,y = snap.adc_get_samples()
                 x = np.array(x)
                 y = np.array(y)
-                print(x,y)
+
+                print(np.std(x),np.std(y))
                 release_device_lock(snap_name)
 
                 rms.append(x.std())
@@ -190,7 +190,8 @@ def tune_if(snap_hosts, fpgfile=None,
             rms = np.array(rms)
             d_attn = 20*np.log10(rms/target_rms)
             prev_attn = round50th(prev_attn + d_attn)
-        logger.info("IF tuner ended")
+    snap_control.disconnect_snaps(snaps)
+    logger.info("IF tuner ended")
 
 
 def tune_if_ants(ant_list, target_rms=TARGET_RMS):
@@ -200,7 +201,7 @@ def tune_if_ants(ant_list, target_rms=TARGET_RMS):
     snap_hosts = list(obs_ant_tab.snap_hostname.values)
     print("snap_hosts:")
     print(snap_hosts)
-    tune_if(snap_hosts, target_rms=target_rms)
+    tune_if(snap_hosts)
 
 
 def tune_if_antslo(antlo_list):
