@@ -26,14 +26,14 @@ def generate_ephem_el_swivel(az_start, el_start, el_end, t_start, t_span,  steps
                time span of the swivel in seconds
     steps    : float
                Number of data points required
-    invr    :  float
+    invr     : float
                Inverse radius of the source
 
     Returns
     -------
-    ephem : numpy_array
-            Returns an array with 4 columns for time in TAI ns, azimuth, elevation 
-            and inverse radius of the source
+    ephem    : numpy_array
+               Returns an array with 4 columns for time in TAI ns, azimuth, elevation 
+               and inverse radius of the source
                 
     Notes
     -----
@@ -82,14 +82,14 @@ def generate_ephem_az_swivel(az_start, az_end, el_start, t_start, t_span,  steps
                time span of the swivel in seconds
     steps    : float
                Number of data points required
-    invr    :  float
+    invr     : float
                Inverse radius of the source
 
     Returns
     -------
-    ephem : numpy_array
-            Returns an array with 4 columns for time in TAI ns, azimuth, elevation 
-            and inverse radius of the source
+    ephem    : numpy_array
+               Returns an array with 4 columns for time in TAI ns, azimuth, elevation 
+               and inverse radius of the source
                 
     Notes
     -----
