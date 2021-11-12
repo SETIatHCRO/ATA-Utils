@@ -1,15 +1,5 @@
 #!/home/obsuser/miniconda3/envs/ATAobs/bin/python
-from ATATools import ata_control, logger_defaults
-import atexit
-from SNAPobs import snap_dada, snap_if
 import numpy as np
-import sys
-import time
-
-import argparse
-import logging
-
-import os
 
 
 def generate_ephem_el_swivel(az_start, el_start, el_end, t_start, t_span,  steps, invr):
@@ -44,7 +34,7 @@ def generate_ephem_el_swivel(az_start, el_start, el_end, t_start, t_span,  steps
                 
     Note
     ----
-    ATA TAI is 37 seconds ahead of the current time
+    ATA TAI time takes leap seconds into account (37s) and therefore is 37 seconds ahead of the current time
 
     """
     tai = np.linspace(t_start*1e9, (t_start + t_span)*1e9, steps)
@@ -95,7 +85,7 @@ def generate_ephem_az_swivel(az_start, az_end, el_start, t_start, t_span,  steps
                 
     Note
     ----
-    ATA TAI is 37 seconds ahead of the current time
+    ATA TAI time takes leap seconds into account (37s) and therefore is 37 seconds ahead of the current time
 
     """
     tai = np.linspace(t_start*1e9, (t_start + t_span)*1e9, steps)
