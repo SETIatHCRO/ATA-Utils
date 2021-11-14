@@ -395,6 +395,34 @@ def upload_ephemeris(ephemeris_filename):
         logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
         raise
 
+def upload_ephemeris(ephemeris_filename):
+    """
+    Upload a custom generated ephemeris to the control server
+
+    :param ephemeris_filename: name of existing file on local filesystem
+    :return id of ephemeris on the server, suitable for track_ephemeris()
+    :raises Exception on an parameter error or execution problem.
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    # Use the PUT operation on this endpoint
+
+    endpoint = '/ephemeris'
+
+    try:
+        with open(ephemeris_filename, 'r') as f:
+            data = f.read()
+
+        response = ATARest.put(endpoint, json={
+            'ephemeris_filename': os.path.basename(ephemeris_filename),
+            'ephemeris_data': data,
+        })
+        return response['id']
+    
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
 def track_ephemeris(ephemeris_id, antlist, wait=True):
     logger = logger_defaults.getModuleLogger(__name__)
 
