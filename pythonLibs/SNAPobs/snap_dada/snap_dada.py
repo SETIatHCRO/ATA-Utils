@@ -322,7 +322,7 @@ def start_recording(antlo_list, tobs, npolout = 2, ics=False,
         obsParams[ant]['HOST'] = snaps[ant].host
 
 
-    grace_period = 3 #seconds
+    grace_period = 2.0 #seconds
     # now create a utc start as rough estimate
     utc_str = get_utc_dada_now(grace_period)
     logger.info("UTC start: %s" %utc_str)
@@ -357,6 +357,8 @@ def start_recording(antlo_list, tobs, npolout = 2, ics=False,
         bufsze_list = [snap_dada_defaults.bufsze//fact]*(len(snaps))
         snap_dada_control.create_buffers(keylist, bufsze_list, buflogfile)
 
+    # Always start at the start+0.3 of a second
+    ata_helpers.wait_until(np.ceil(time.time()) + 0.3)
     unix_time_start = time.time() + grace_period
     expected_synctime = int(np.ceil(unix_time_start)) + 2
 
@@ -379,12 +381,17 @@ def start_recording(antlo_list, tobs, npolout = 2, ics=False,
     synctime = snap_control.arm_snaps(list(snaps.values()))
     logger.info("Expected synctime: %i, synctime: %i",
             expected_synctime, synctime)
+    if expected_synctime != synctime:
+        print(unix_time_start)
+        print(time.time())
+    # Make sure synctime match what is expected
+    assert expected_synctime == synctime, "synctimes do not match"
 
 
     headers = create_headers(obsParams)
     header_paths = []
     #for ant in sub_tab.ANT_name:
-    for antlo in antlo_list:
+    for antlo in sub_tab.antlo:
         header_paths.append(os.path.join(base_obs, antlo,
             "obs.header"))
         write_dada_header(header_paths[-1], headers[antlo])
