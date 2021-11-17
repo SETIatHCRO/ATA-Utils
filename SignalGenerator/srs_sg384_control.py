@@ -64,7 +64,7 @@ def set_amp(amp):
     telnet = telnetlib.Telnet()
     telnet.open(_host, _port)
 
-    telnet.write("AMPR {} MHz\n".format(amp))
+    telnet.write("AMPR {} Dbm\n".format(amp))
 
 def get_clock_settings():
 
