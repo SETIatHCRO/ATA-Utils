@@ -41,7 +41,7 @@ def main():
     #ant_list = ["1f", "5c", "1a",   "1c", "2a", "4j",    "2h", "1k", "1h"]
     #freqs = [950]*3 + [1600]*3 + [2250]*3
 
-    ant_list = ["1a", "1f", "1c", "2a", "2h", "3d", "5c", "2b", "1h", "4g", "4j"]
+    ant_list = ["1a", "1f", "1c", "2a", "2h", "3d", "1k", "5c", "2b", "4g", "4j"]
     freqs = [1500]*len(ant_list)
 
     ata_control.reserve_antennas(ant_list)
@@ -49,7 +49,7 @@ def main():
 
     source = "J1935+1616"
     ata_control.make_and_track_ephems(source, ant_list)
-    ata_control.autotune(ant_list)
+    ata_control.autotune(ant_list, power_level=-15)
     snap_dada.set_freq_auto(freqs, ant_list)
     time.sleep(30)
 
