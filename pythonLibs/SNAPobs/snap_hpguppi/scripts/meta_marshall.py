@@ -121,6 +121,8 @@ def read_chan_dest_ips(feng, interface, ignore_null_packets=True):
 
   try:
     if isinstance(feng, ata_rfsoc_fengine.AtaRfsocFengine):
+      feng._read_parameters_from_fpga()
+      feng._calc_output_ids()
       feng_headers = feng._read_headers()
     else:
       feng_headers = feng._read_headers(interface)
