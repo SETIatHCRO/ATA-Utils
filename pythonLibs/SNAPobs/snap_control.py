@@ -5,28 +5,40 @@ import numpy as np
 import argparse
 import warnings
 from ATATools import logger_defaults
+from .snap_config import get_ata_cfg
 
-from ata_snap import ata_snap_fengine
+from ata_snap import ata_snap_fengine, ata_rfsoc_fengine
 
 
-def init_snaps(snap_list, get_system_information=False):
+def init_snaps(snap_list, load_system_information=False):
     logger = logger_defaults.getModuleLogger(__name__)
     logger.info("Initialising snaps: %s" %snap_list)
-    snaps = [ata_snap_fengine.AtaSnapFengine(snap, 
-        transport=casperfpga.KatcpTransport) for snap in snap_list]
+    snaps = []
 
-    if get_system_information:
-        if type(get_system_information) == bool:
-            from .snap_config import get_ata_cfg
-            ata_cfg = get_ata_cfg()
-            fpg_file = ata_cfg['SNAPFPG']
-        elif type(get_system_information) == str:
-            fpg_file = get_system_information
+    for snap_name in snap_list:
+        if snap_name.startswith("frb-snap"):
+            snaps.append(ata_snap_fengine.AtaSnapFengine(snap_name,
+                transport=casperfpga.KatcpTransport))
+        elif snap_name.startswith("rfsoc"):
+            pipeline_id = int(snap_name[-1])
+            snaps.append(ata_rfsoc_fengine.AtaRfsocFengine(snap_name, 
+                    pipeline_id=pipeline_id-1))
 
-        for snap in snaps:
-            snap.fpga.get_system_information(fpg_file)
+    if load_system_information:
+        get_system_information(snaps)
 
     return snaps
+
+def get_system_information(snaps):
+    ata_cfg = get_ata_cfg()
+    snap_fpg_file = ata_cfg['SNAPFPG']
+    rfsoc_fpg_file = ata_cfg['RFSOCFPG']
+
+    for snap in snaps:
+        if snap.host.startswith("frb-snap"):
+            snap.fpga.get_system_information(snap_fpg_file)
+        elif snap.host.startswith("rfsoc"):
+            snap.fpga.get_system_information(rfsoc_fpg_file)
 
 
 def disconnect_snaps(snaps):
@@ -50,6 +62,7 @@ def set_acc_len(snaps, acclen):
 
 def arm_snaps(snaps):
     logger = logger_defaults.getModuleLogger(__name__)
+
     logger.info("Arming snaps...")
 
     disable_ethernet_output(snaps)
@@ -98,5 +111,17 @@ def stop_snaps(snaps):
 
 
 def get_acc_len_single(snap):
-    tb_syn_period = snap.fpga.read_int('timebase_sync_period')
+    ntries = 0
+    tb_syn_period = 0
+    while True:
+        try:
+            tb_syn_period = snap.fpga.read_int('timebase_sync_period')
+            break
+        except Exception as e:
+            if ntries >= 3:
+                raise e
+            logger.error("get_acc_len_single() throw the following error:\n", e)
+            ntries += 1
+            time.sleep(0.5)
+
     return float(tb_syn_period/snap.n_chans_f/2*8) # *2 for real-FFT; /8 for ADC demux

@@ -61,12 +61,10 @@ def set_freq_auto(freqs, ant_list):
         ata_control.set_freq(freq, ants_sub, lo)
 
 
-
+"""
 def get_freq_auto(ant_list):
-    """
     Automatically gets sky/focus frequencies
     according to the ant-LO mapping in the config files
-    """
     logger = logger_defaults.getModuleLogger(__name__)
 
     obs_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name.isin(ant_list)]
@@ -78,6 +76,26 @@ def get_freq_auto(ant_list):
         ants_sub_list = list(obs_ant_tab[obs_ant_tab.LO == lo].ANT_name)
         skyfreq = ata_control.get_freq(ants_sub_list, lo=lo)
         retdict.update(skyfreq)
+
+    return retdict
+"""
+
+
+def get_freq_auto(antlo_list):
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    ant_list = list(set([ant[:2] for ant in antlo_list]))
+    los  = list(set(ant[2] for ant in antlo_list))
+
+    focus_freq = ata_control.get_freq_focus(ant_list)
+    sky_freq   = {lo:ata_control.get_sky_freq(lo) for lo in los}
+
+    retdict = {}
+
+    for antlo in antlo_list:
+        ant = antlo[:2]
+        lo  = antlo[2]
+        retdict[antlo] = [sky_freq[lo], focus_freq[ant]]
 
     return retdict
 
@@ -173,10 +191,9 @@ def add_discone(obsParams):
     obsParams[snap_defaults.discone_name]['FOCUSFREQ'] = 0.0
 
 
+"""
 def get_obs_params(ant_list, given_source):
-    """
     getting every that has to do with source/obsfreq/position
-    """
     # add special case for discone
     if snap_defaults.discone_name in ant_list:
         discone = True
@@ -204,10 +221,50 @@ def get_obs_params(ant_list, given_source):
         ant_list.append(snap_defaults.discone_name)
 
     return obsParams
+"""
+
+
+def get_obs_params(antlo_list):
+    ant_list = [ant[:2] for ant in antlo_list]
+    ant_list = list(set(ant_list))
+
+    source_s = ata_control.get_eph_source(ant_list)
+    radec_s = ata_control.getRaDec(ant_list)
+    azel_s  = ata_control.getAzEl(ant_list)
+    pamvals_s = ata_control.get_pams(ant_list)
+    detvals_s = ata_control.get_dets(ant_list)
+    #ifattnvals
+
+    radec   = {}
+    azel    = {}
+    pamvals = {}
+    detvals = {}
+    source  = {}
+
+    # adding LOs to the dictionary
+    for antlo in antlo_list:
+        ant = antlo[:2]
+        lo  = antlo[2]
+        radec[ant+lo]   = radec_s[ant]
+        azel[ant+lo]    = azel_s[ant]
+        source[ant+lo]  = source_s[ant]
+        pamvals[ant+lo+"x"] = pamvals_s[ant+"x"]
+        pamvals[ant+lo+"y"] = pamvals_s[ant+"y"]
+        detvals[ant+lo+"x"] = detvals_s[ant+"x"]
+        detvals[ant+lo+"y"] = detvals_s[ant+"y"]
+
+    skyfreq     = get_freq_auto(antlo_list)
+    ifattnvals = snap_if.getatten(antlo_list)
+
+    obsParams = gather_ants(radec, azel, skyfreq,
+            pamvals, detvals, ifattnvals, source)
+
+    return obsParams
 
 
 def write_dada_header(headerdir, headerlist):
     open(headerdir, "w").writelines(headerlist)
+
 
 def check_if_valid_ants(ant_list):
     valid_ants = ATA_CFG['ACTIVE_ANTS']
@@ -218,14 +275,25 @@ def check_if_valid_ants(ant_list):
                 %(ant_list, valid_ants))
 
 
-def start_recording(ant_list, tobs, npolout = 2, ics=False, 
+def start_recording(antlo_list, tobs, npolout = 2, ics=False, 
         acclen=None, dbnull=None, disable_rfi=False, source=None):
     logger =  logger_defaults.getModuleLogger(__name__)
 
-    check_if_valid_ants(ant_list)
-    snap_names = []
+    if len(antlo_list[0]) != 3:
+        raise RuntimeError("Make sure to include the LO in the ant list")
 
-    sub_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name.isin(ant_list)]
+    ant_list = [ant[:2] for ant in antlo_list] #can be duplicated
+    lo_list  = [ant[2] for ant in antlo_list]
+
+    check_if_valid_ants(ant_list)
+
+    #sub_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name.isin(ant_list)]
+    sub_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.antlo.isin(antlo_list)]
+
+    if len(sub_tab) != len(antlo_list):
+        raise RuntimeError("The specified ant-los (%s) are not in the configuration file (%s)"
+                %(antlo_list, sub_tab[['snap_hostname', 'ANT_name', 'LO']]))
+
     snap_names = list(sub_tab.snap_hostname)
 
     # better put them in a dictionary
@@ -235,7 +303,8 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
     #    snaps[ant] = s[iant]
     for isnap_name, snap_name in enumerate(snap_names):
         ant = (sub_tab.ANT_name[sub_tab.snap_hostname == snap_name]).values[0]
-        snaps[ant] = s[isnap_name]
+        lo  = (sub_tab.LO[sub_tab.snap_hostname == snap_name]).values[0].upper()
+        snaps[ant+lo] = s[isnap_name]
 
     # set accumulation length if provided
     if not acclen:
@@ -244,7 +313,7 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
 
     snap_control.stop_snaps(list(snaps.values()))
 
-    obsParams = get_obs_params(ant_list, source)
+    obsParams = get_obs_params(antlo_list)
 
     for ant in obsParams:
         acc_len = snap_control.get_acc_len_single(snaps[ant])
@@ -253,7 +322,7 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
         obsParams[ant]['HOST'] = snaps[ant].host
 
 
-    grace_period = 3 #seconds
+    grace_period = 2.0 #seconds
     # now create a utc start as rough estimate
     utc_str = get_utc_dada_now(grace_period)
     logger.info("UTC start: %s" %utc_str)
@@ -269,7 +338,7 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
 
     if ics:
         snap_dirs.create_dir(os.path.join(base_obs, "ICS"))
-    for ant in ant_list:
+    for ant in antlo_list:
         snap_dirs.create_dir(os.path.join(base_obs, ant))
 
     #buflogfile = os.path.join(base_obs, "dadadb.log")
@@ -288,6 +357,8 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
         bufsze_list = [snap_dada_defaults.bufsze//fact]*(len(snaps))
         snap_dada_control.create_buffers(keylist, bufsze_list, buflogfile)
 
+    # Always start at the start+0.3 of a second
+    ata_helpers.wait_until(np.ceil(time.time()) + 0.3)
     unix_time_start = time.time() + grace_period
     expected_synctime = int(np.ceil(unix_time_start)) + 2
 
@@ -310,14 +381,20 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
     synctime = snap_control.arm_snaps(list(snaps.values()))
     logger.info("Expected synctime: %i, synctime: %i",
             expected_synctime, synctime)
+    if expected_synctime != synctime:
+        print(unix_time_start)
+        print(time.time())
+    # Make sure synctime match what is expected
+    assert expected_synctime == synctime, "synctimes do not match"
 
 
     headers = create_headers(obsParams)
     header_paths = []
-    for ant in sub_tab.ANT_name:
-        header_paths.append(os.path.join(base_obs, ant,
+    #for ant in sub_tab.ANT_name:
+    for antlo in sub_tab.antlo:
+        header_paths.append(os.path.join(base_obs, antlo,
             "obs.header"))
-        write_dada_header(header_paths[-1], headers[ant])
+        write_dada_header(header_paths[-1], headers[antlo])
 
     logger.info("Starting udp capture code")
     #cpu_cores = list(range(8, len(ant_list)+8))
@@ -338,7 +415,7 @@ def start_recording(ant_list, tobs, npolout = 2, ics=False,
         snap_dada_control.dbnull(keylist)
     else:
         #dbsigproc_cores = snap_dada_defaults.proc_cores[:len(ant_list)]
-        dbsigproc_cores = dup_arr(snap_dada_defaults.proc_cores, len(ant_list))
+        dbsigproc_cores = dup_arr(snap_dada_defaults.proc_cores, len(antlo_list))
         if ics:
             #snap_dada_control.dbsigproc(keylist[-1])
             raise RuntimeError("ICS mode not fully implemented")

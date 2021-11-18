@@ -3,23 +3,41 @@ from . import snap_hpguppi_defaults as hpguppi_defaults
 from . import record_in as hpguppi_record_in
 import re
 
-# Gather antenna-configuration for the listed snaps
-def get_antenna_name_dict_for_snap_hostnames(snap_hostnames):
+# Gather antenna-names for the listed stream hostnames
+def get_antenna_name_dict_for_stream_hostnames(stream_hostnames):
   ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
-  if not all(snap in list(ATA_SNAP_TAB.snap_hostname) for snap in snap_hostnames):
-      raise RuntimeError("Not all snaps (%s) are provided in the config table (%s)",
-              snap_hostnames, ATA_SNAP_TAB.snap_hostname)
-  snap_hostnames_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname.isin(snap_hostnames)]
-  return {i.snap_hostname:i.ANT_name for i in snap_hostnames_ant_tab.itertuples()}
+  if not all(snap in list(ATA_SNAP_TAB.snap_hostname) for snap in stream_hostnames):
+      raise RuntimeError("Not all stream hostnames (%s) are provided in the config table (%s)",
+              stream_hostnames, ATA_SNAP_TAB.snap_hostname)
+  stream_hostnames_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname.isin(stream_hostnames)]
+  return {i.snap_hostname:i.antlo for i in stream_hostnames_ant_tab.itertuples()}
 
-# Gather antenna-configuration for the listed snaps
-def get_snap_hostname_dict_for_antenna_names(antenna_names):
+# List antenna-names instead of the given stream names
+def get_antenna_name_per_stream_hostnames(stream_hostnames):
   ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
-  if not all(ant in list(ATA_SNAP_TAB.ANT_name) for ant in antenna_names):
+  if not all(snap in list(ATA_SNAP_TAB.snap_hostname) for snap in stream_hostnames):
+      raise RuntimeError("Not all snaps (%s) are provided in the config table (%s)",
+              stream_hostnames, ATA_SNAP_TAB.snap_hostname)
+  stream_hostnames_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname.isin(stream_hostnames)]
+  return [i.antlo for i in stream_hostnames_ant_tab.itertuples()]
+
+# Gather stream hostnames for the listed antenna names
+def get_stream_hostname_dict_for_antenna_names(antenna_names):
+  ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
+  if not all(ant in list(ATA_SNAP_TAB.antlo) for ant in antenna_names):
       raise RuntimeError("Not all antennae (%s) are provided in the config table (%s)",
-              antenna_names, ATA_SNAP_TAB.ANT_name)
-  antenna_names_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name.isin(antenna_names)]
-  return {i.ANT_name:i.snap_hostname for i in antenna_names_ant_tab.itertuples()}
+              antenna_names, ATA_SNAP_TAB.antlo)
+  antenna_names_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.antlo.isin(antenna_names)]
+  return {i.antlo:i.snap_hostname for i in antenna_names_ant_tab.itertuples()}
+
+# List stream hostnames instead of the listed antenna names
+def get_stream_hostname_per_antenna_names(antenna_names):
+  ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
+  if not all(ant in list(ATA_SNAP_TAB.antlo) for ant in antenna_names):
+      raise RuntimeError("Not all antennae (%s) are provided in the config table (%s)",
+              antenna_names, ATA_SNAP_TAB.antlo)
+  antenna_names_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.antlo.isin(antenna_names)]
+  return [i.snap_hostname for i in antenna_names_ant_tab.itertuples()]
 
 def redis_get_channel_from_set_channel(set_channel):
   match = re.match(hpguppi_defaults.REDISSETGW_re, set_channel)
@@ -42,8 +60,8 @@ def generate_hpguppi_redis_get_channels(hpguppi_hostnames, hpguppi_instance_ids)
 def generate_freq_auto_string_per_channel(redis_obj, hpguppi_redis_get_channels):
   log_string_per_channel = []
   for channel in hpguppi_redis_get_channels:
-    snaps = get_snaps_of_redis_chan(redis_obj, channel)
-    antdict = get_antenna_name_dict_for_snap_hostnames(snaps)
+    snaps = get_stream_hostnames_of_redis_chan(redis_obj, channel)
+    antdict = get_antenna_name_dict_for_stream_hostnames(snaps)
     log_string_per_channel.append(str(snap_dada.get_freq_auto([antdict[snap] for snap in snaps])))
   return log_string_per_channel
 
@@ -58,13 +76,61 @@ def redis_hget_retry(redis_obj, redis_chan, key, retry_count=5):
   return value
 
 def get_antennae_of_redis_chan(redis_obj, redis_chan):
-  return redis_hget_retry(redis_obj, redis_chan, 'ANTNAMES').split(',')
+  antennae_names = redis_hget_retry(redis_obj, redis_chan, 'ANTNAMES')
+  if antennae_names is None:
+    antennae_names = []
+  else:
+    antennae_names = antennae_names.split(',')
+  
+  antennae_count = redis_hget_retry(redis_obj, redis_chan, 'NANTS')
+  if antennae_count is None:
+    antennae_count = 0
+  else:
+    antennae_count = int(antennae_count)
+  key_enum = 0
+  while(antennae_count > len(antennae_names)):
+    key_enum += 1
+    ant_names = redis_hget_retry(redis_obj, redis_chan, 'ANTNMS%02d'%key_enum)
+    if ant_names is None:
+      print('Could only collect {}/{} antennae, {} does not exist in channel {}'.format(
+        len(antennae_names), antennae_count, 'ANTNMS%02d'%key_enum, redis_chan
+      ))
+      break
+    antennae_names += ant_names.split(',')
+  return antennae_names
 
-def get_snaps_of_redis_chan(redis_obj, redis_chan):
+def get_stream_hostnames_of_redis_chan(redis_obj, redis_chan):
   antennae = get_antennae_of_redis_chan(redis_obj, redis_chan)
-  ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
-  return [i.snap_hostname for i in ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name.isin(antennae)].itertuples()]
+  return get_stream_hostname_per_antenna_names(antennae)
 
 def redis_publish_command_from_dict(key_val_dict):
   return "\n".join(['%s=%s' %(key,val)
             for key,val in key_val_dict.items()])
+
+def filter_unique_fengines(feng_objs):
+    host_unique_fengs = {}
+    for feng in feng_objs:
+      host_name = feng.host
+      if host_name.startswith('rfsoc'):
+        rfsoc_match = re.match(r'(rfsoc\d+.*)-(\d+)$', host_name)
+        if int(rfsoc_match.group(2)) < 5:
+          host_name = rfsoc_match.group(1) + '-1'
+        else:
+          host_name = rfsoc_match.group(1) + '-4'
+      if host_name not in host_unique_fengs:
+        host_unique_fengs[host_name] = feng
+    return list(host_unique_fengs.values())
+
+def filter_unique_hostnames(host_names):
+    unique_host_names = {}
+    for full_host_name in host_names:
+      host_name = full_host_name
+      if host_name.startswith('rfsoc'):
+        rfsoc_match = re.match(r'(rfsoc\d+.*)-(\d+)$', host_name)
+        if int(rfsoc_match.group(2)) < 5:
+          host_name = rfsoc_match.group(1) + '-1'
+        else:
+          host_name = rfsoc_match.group(1) + '-4'
+      if host_name not in unique_host_names:
+        unique_host_names[host_name] = full_host_name
+    return list(unique_host_names.values())

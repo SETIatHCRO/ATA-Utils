@@ -39,24 +39,19 @@ def _log_recording(start_time, duration, obsstart, npackets, redisset_chan_list,
             ]
             csvwr.writerow(row_strings)
 
-def _get_sync_time_for_snaps(snaps):
-    fengs = snap_control.init_snaps(snaps)
-    return [feng.fpga.read_int('sync_sync_time') for feng in fengs]
+def _get_sync_time_for_streams(stream_hostnames):
+    fengs = snap_control.init_snaps(hpguppi_auxillary.filter_unique_hostnames(stream_hostnames))
+    sync_times = [feng.fpga.read_int('sync_sync_time') for feng in fengs]
+    snap_control.disconnect_snaps(fengs)
+    return sync_times
 
-def _get_uniform_source_name_for_snaps(snaps):
-    ant_name_dict = hpguppi_auxillary.get_antenna_name_dict_for_snap_hostnames(snaps)
-    ant_names = [ant_name_dict[snap] for snap in snaps]
-    source_dict = ata_control.get_eph_source(ant_names[0:1])
-    return source_dict[ant_names[0]]
-
-def _stitch_pattern_for_sequence(pattern, sequence):
-    return [seq.join(pattern.split(',')) for seq in sequence.split(',')]
-
-def _get_snaps_of_redis_chan(redis_obj, redis_chan):
-    return _stitch_pattern_for_sequence(redis_obj.hget(redis_chan, "SNAPPAT").decode(), redis_obj.hget(redis_chan, "SNAPSEQ").decode())
+def _get_uniform_source_name_for_streams(streams):
+    ant_names_no_LO = [ant_name[0:-1] for ant_name in hpguppi_auxillary.get_antenna_name_per_stream_hostnames(streams)]
+    source_dict = ata_control.get_eph_source(ant_names_no_LO[0:1])
+    return source_dict[ant_names_no_LO[0]].replace(' ', '_')
 
 def _block_until_key_has_value(hashes, key, value, verbose=True):
-    len_per_value = 50//len(hashes)
+    len_per_value = 80//len(hashes)
     value_slice = slice(-len_per_value, None)
     while True:
         rr = [hpguppi_defaults.redis_obj.hget(hsh, key) for hsh in hashes]
@@ -65,8 +60,8 @@ def _block_until_key_has_value(hashes, key, value, verbose=True):
             print_strings = [
                 ('{: ^%d}'%len_per_value).format(ret[value_slice]) for ret in rets
             ]
-            print('[{: ^66}]'.format(', '.join(print_strings)), end='\r')
-        if all([ret[0:len(value)]==value for ret in rets]):
+            print('[{: ^80}]'.format(', '.join(print_strings)), end='\r')
+        if all([ret.startswith(value) for ret in rets]):
             if verbose:
                 print()
             break
@@ -79,8 +74,8 @@ def block_until_post_processing_waiting(hashes, verbose=True):
     _block_until_key_has_value(hashes, "PPSTATUS", "WAITING", verbose=verbose)
 
 def _publish_obs_start_stop(redis_obj, channel_list, obsstart, obsstop, obs_source_name, dry_run=False):
-    cmd = "OBSSTART=%i\nOBSSTOP=%i\n"  %(obsstart, obsstop)
-    cmd += "PKTSTART=%i\nPKTSTOP=%i"  %(obsstart, obsstop)
+    # cmd = "OBSSTART=%i\nOBSSTOP=%i\n"  %(obsstart, obsstop)
+    cmd = "PKTSTART=%i\nPKTSTOP=%i"  %(obsstart, obsstop)
     if obs_source_name:
         cmd +="\nSRC_NAME=%s" % obs_source_name
 
@@ -106,6 +101,7 @@ def _calculate_obs_start_stop(t_start, duration_s, sync_time, tbin):
 def record_in(
 				obs_delay_s=DEFAULT_START_IN,
 				obs_duration_s=DEFAULT_OBS_TIME,
+                tbin=hpguppi_defaults.fengine_meta_key_values()['TBIN'],
 				hpguppi_redis_set_channels=None,
 				force_synctime=True,
 				reset=False,
@@ -134,33 +130,34 @@ def record_in(
     
     if not reset:
         sync_times = []
-        recording_snap_list = []
+        recording_stream_hostname_list = []
         for channel_i, channel in enumerate(hpguppi_redis_set_channels):
             assert re.match(hpguppi_defaults.REDISSETGW_re, channel) or channel == hpguppi_defaults.REDISSET
 
             if not reset and not force_synctime:
-                snaps = hpguppi_auxillary.get_snaps_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_auxillary.redis_get_channel_from_set_channel(channel))
-                recording_snap_list.extend(snaps)
+                stream_hostnames = hpguppi_auxillary.get_stream_hostnames_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_auxillary.redis_get_channel_from_set_channel(channel))
+                recording_stream_hostname_list.extend(stream_hostnames)
 
-                channel_sync_times = _get_sync_time_for_snaps(snaps)
+                channel_sync_times = _get_sync_time_for_streams(stream_hostnames)
                 sync_times.extend(channel_sync_times)
                 if len(set(sync_times)) != 1:
-                    print("Hpguppi channel", channel, "has the following snaps, with non-uniform sync-times:")
-                    for i in range(len(snaps)):
-                        print(snaps[i], channel_sync_times[i])
+                    print("Hpguppi channel", channel, "has the following stream_hostnames, with non-uniform sync-times:")
+                    for i in range(len(stream_hostnames)):
+                        print(stream_hostnames[i], channel_sync_times[i])
                     print("Cannot reliably start a recording.")
                     return False
         
         sync_time = universal_sync_time if force_synctime else sync_times[0]
-        obsstart, obsstop, npackets = _calculate_obs_start_stop(t_in_x, obs_duration_s, sync_time, hpguppi_defaults.TBIN)
+        obsstart, obsstop, npackets = _calculate_obs_start_stop(t_in_x, obs_duration_s, sync_time, tbin)
 
         if recording_source_name is None:
-            if len(recording_snap_list) == 0:
-                recording_snap_list = hpguppi_auxillary.get_snaps_of_redis_chan(
+            if len(recording_stream_hostname_list) == 0:
+                recording_stream_hostname_list = hpguppi_auxillary.get_stream_hostnames_of_redis_chan(
                     hpguppi_defaults.redis_obj,
-                    hpguppi_auxillary.redis_get_channel_from_set_channel(hpguppi_redis_set_channels[0]))
+                    hpguppi_auxillary.redis_get_channel_from_set_channel(hpguppi_redis_set_channels[0])
+                )
             
-            recording_source_name = _get_uniform_source_name_for_snaps(recording_snap_list)
+            recording_source_name = _get_uniform_source_name_for_streams(recording_stream_hostname_list)
     
     _publish_obs_start_stop(hpguppi_defaults.redis_obj, hpguppi_redis_set_channels, obsstart, obsstop, recording_source_name, dry_run)
     if log and not reset:# and not dry_run:
