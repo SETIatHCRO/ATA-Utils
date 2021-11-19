@@ -11,6 +11,7 @@ from ATATools import ata_control
 
 from . import snap_hpguppi_defaults as hpguppi_defaults
 from . import auxillary as hpguppi_auxillary
+from . import record_in as hpguppi_record_in
 
 ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
 
@@ -154,7 +155,7 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
 
     nants      = len(stream_hostnames)
     n_dests    = len(dests)
-    sync_time  = int(hpguppi_defaults.redis_obj.get('SYNCTIME'))
+    sync_time  = ','.join(map(str, np.unique(hpguppi_record_in._get_sync_time_for_streams(stream_hostnames))))
     # snapseq    = ",".join([isnap.replace('frb-snap','').replace('-pi','')
     #     for isnap in stream_hostnames]) #this contains the "physical" snapID
 
