@@ -181,7 +181,7 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
     lo_obsfreq = skyfreq_mapping[stream_hostnames[0]]
     centre_channel = fengine_meta_keyvalues['FENCHAN']/2
     source     = ant0_obs_params['SOURCE']
-    ra      = ant0_obs_params['RA'][0]
+    ra      = ant0_obs_params['RA'][0] * 360 / 24 # convert from hours to degrees
     dec     = ant0_obs_params['RA'][1] #ant0_obs_params['DEC']
     az      = ant0_obs_params['AZ'][0]
     el      = ant0_obs_params['AZ'][1] #ant0_obs_params['EL']
