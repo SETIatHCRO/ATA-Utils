@@ -88,7 +88,7 @@ def calc_n_words(feng):
   return feng.n_chans_f * feng.n_times_per_packet * feng.n_pols // feng.tge_n_samples_per_word // feng.packetizer_granularity
 
 def get_feng_id(feng):
-  return feng._read_headers(0, 1)[0]['feng_id']
+  return feng._read_headers(n_words=1)[0]['feng_id']
 
 def read_chan_dest_ips(feng, interface, ignore_null_packets=True):
   '''
@@ -292,10 +292,10 @@ while(True):
         n_chan = n_chan*len(destIps) # assume each destination receives the same number of channels
 
         feng_id_hostname_dict = {get_feng_id(hostname_feng_dict[hostname]):hostname for hostname in groups[i]}
-        feng_ids = sorted(feng_id_hostname_dict)
-        stream_hostnames = [feng_id_hostname_dict[feng_id] for feng_id in feng_ids]
+        stream_hostnames = [feng_id_hostname_dict[feng_id] for feng_id in sorted(feng_id_hostname_dict.keys())]
 
         if new_publication:
+          print('n_ant', len(stream_hostnames))
           print('start_chan', start_chan)
           print('n_chan', n_chan)
           print('destIps', destIps)
