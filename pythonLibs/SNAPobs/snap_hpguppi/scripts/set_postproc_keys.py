@@ -15,6 +15,8 @@ if __name__ == "__main__":
 
         parser.add_argument('-r', '--rm-only', action='store_true',
                 help='sets up the keys to only remove the RAW files captured by hpguppi_daq')
+        parser.add_argument('-s', '--skip-only', action='store_true',
+                help='sets up the keys to not do anything in post-processing')
 
         parser.add_argument('--POSTPROC', type=str, default='rawspec turboseti candidate_filter log cp rm',
                 help='Set the value for the POSTPROC key [\'rawspec turboseti candidate_filter log cp rm\']')
@@ -90,6 +92,10 @@ if __name__ == "__main__":
                 keyval_dict = {
                         'POSTPROC':'rm',
                         'PPRMINP':'hpguppi &*.raw',
+                }
+        if(args.skip_only):
+                keyval_dict = {
+                        'POSTPROC':'skip'
                 }
 
         for key_value_str in args.prefix:
