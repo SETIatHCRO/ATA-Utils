@@ -838,7 +838,7 @@ def get_freq_focus(ant_list):
         retdict[ant] = focus
     return retdict
 
-def set_freq(freq, antlist, lo='a'):
+def set_freq(freq, antlist, lo='a', nofocus=False):
     """
     Sets both LO frequency and antenna focus frequency to
     given freq in MHz
@@ -859,8 +859,8 @@ def set_freq(freq, antlist, lo='a'):
         raise
 
     # Set ant focus
-
-    set_freq_focus(freq, antlist)
+    if not nofocus:
+        set_freq_focus(freq, antlist)
 
 def get_freq(ant_list, lo='a'):
     """
