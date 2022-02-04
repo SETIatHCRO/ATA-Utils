@@ -322,7 +322,8 @@ while(True):
                   zero_obs_startstop=False,
                   dry_run=False,
                   max_packet_nchan=max_nchan_per_packet,
-                  default_dir=different_conf)
+                  dut1=True
+        )
         
         if new_publication:
           print()

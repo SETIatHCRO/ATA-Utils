@@ -9,6 +9,9 @@ from typing import List
 from SNAPobs import snap_defaults, snap_config
 from ATATools import ata_control
 
+from datetime import datetime
+from astropy.time import Time as astropy_Time
+
 from . import snap_hpguppi_defaults as hpguppi_defaults
 from . import auxillary as hpguppi_auxillary
 from . import record_in as hpguppi_record_in
@@ -114,7 +117,8 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
 									silent=False,
 									zero_obs_startstop=True,
 									dry_run=False,
-                                    default_dir=False):
+                                    default_dir=False,
+                                    dut1=False):
 
     fengine_meta_keyvalues = hpguppi_defaults.fengine_meta_key_values(n_bits)
 
@@ -186,6 +190,9 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
     az      = ant0_obs_params['AZ'][0]
     el      = ant0_obs_params['AZ'][1] #ant0_obs_params['EL']
     source =  source.replace(' ', '_')
+    if dut1 is True or dut1 is None:
+        # get dut1 at the beginning of today
+        dut1 = astropy_Time(datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)).get_delta_ut1_utc().value
 
     # logic to deal with multi-instance hashpipes
     # if the gethostbyaddr(ip0) == gethostbyaddr(ip1), assume that
@@ -209,6 +216,7 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
         'EL'        : el,
         'antennae'  : [],
         'dests'     : [],
+        'dut1'      : dut1,
     }
     for antname in ant_names:
         report_dict['antennae'].append({antname:stream_hostname_dict[antname]})
@@ -312,6 +320,9 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
             key_val['PROJID']   = hpguppi_defaults.PROJID
             key_val['BANK']     = hpguppi_defaults.BANK
             key_val['BACKEND']  = hpguppi_defaults.BACKEND
+        
+        if isinstance(dut1, float):
+            key_val['DUT1'] = dut1
 
         redis_publish_command = hpguppi_auxillary.redis_publish_command_from_dict(key_val)
         if not silent:
