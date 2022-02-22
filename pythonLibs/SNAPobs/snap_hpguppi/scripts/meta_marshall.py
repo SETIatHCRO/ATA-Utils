@@ -204,7 +204,6 @@ exceptions_caught = 0
 exception_limit = 5
 
 have_published = False
-different_conf = True
 last_published = 0
 sections_updated = [False for i in range(5)]
 section_strings = [
@@ -350,9 +349,8 @@ while(True):
     for section_idx, not_updated in enumerate(same):
       sections_updated[section_idx] = sections_updated[section_idx] or not not_updated
     have_published = False
-    different_conf = not (same[0] or same[1])
   else: # groups and destinations are stable and have published
-    different_conf = False
+    pass
 
   time.sleep(0.5)
 
