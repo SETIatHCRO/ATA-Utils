@@ -16,6 +16,8 @@ from . import snap_hpguppi_defaults as hpguppi_defaults
 from . import auxillary as hpguppi_auxillary
 from . import record_in as hpguppi_record_in
 
+from ATATools.ata_rest import ATARestException
+
 ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
 
 def _get_stream_mapping(stream_hosts, ignore_control=False):
@@ -86,8 +88,8 @@ def _get_obs_params(antlo_list):
     ant_list = list(set(ant_list))
 
     source_s = _safe_ata_control_get(ant_list, ata_control.get_eph_source)
-    radec_s = _safe_ata_control_get(ant_list, ata_control.getRaDec)
-    azel_s  = _safe_ata_control_get(ant_list, ata_control.getAzEl)
+    radec_s = _safe_ata_control_get(ant_list, ata_control.get_ra_dec)
+    azel_s  = _safe_ata_control_get(ant_list, ata_control.get_az_el)
 
     radec   = {}
     azel    = {}
@@ -97,9 +99,18 @@ def _get_obs_params(antlo_list):
     for antlo in antlo_list:
         ant = antlo[:2]
         lo  = antlo[2]
-        radec[ant+lo]   = radec_s[ant]
+
         azel[ant+lo]    = azel_s[ant]
         source[ant+lo]  = source_s[ant]
+        try: # Try getting the ra dec of the source using the ephemeris file name
+                # This will fail if we are tracking a non-sidereal source
+                # or a custom RA/Dec pair
+                radec[ant+lo]   = ata_control.get_source_ra_dec(source[ant+lo])
+        except ATARestException as e:
+                # These are a bit off because we are using ra/dec values that have been
+                # refraction corrected. Offsets are pretty small (sub-arcsecond), so
+                # not too major for the ATA
+                radec[ant+lo]   = radec_s[ant]
 
     return _gather_ants(radec, azel, source)
 
