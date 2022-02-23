@@ -20,7 +20,9 @@ setuptools.setup(
     keywords=['ATA'],
     long_description=long_description,
     url="https://github.com/SETIatHCRO/ATA-Utils/",
-    scripts=['SNAPmon/atasnapmon.py', 'SNAPobs/snap_hpguppi/scripts/meta_marshall.py', 'SNAPobs/snap_hpguppi/scripts/set_postproc_keys.py', 
+    scripts=['SNAPmon/atasnapmon.py', 'SNAPobs/snap_hpguppi/scripts/meta_marshall.py',
+             'SNAPobs/snap_hpguppi/scripts/set_postproc_keys.py', 
+             'SNAPobs/snap_hpguppi/scripts/set_hashpipe_keys.py', 
              'SNAPobs/snap_hpguppi/scripts/populate_meta.py', 'SNAPobs/snap_hpguppi/scripts/start_record_in_x.py', 
              'ATAPointing/pointing_elxel_plot.py', 'ATAPointing/pointing_azel_table.py','ATAPointing/pointing_azel_print.py']
     #entry_points={'console_scripts': ['GPIBLOControl = GPIBLOControl.GPIBLOControl:main']},
