@@ -61,9 +61,10 @@ if not args.broadcast:
 hpguppi_record_in.record_in(
     obs_delay_s=args.i,
     obs_duration_s=args.n,
-    tbin=hpguppi_defaults.fengine_meta_key_values(args.nbits)['TBIN'],
-    hpguppi_redis_set_channels=hpguppi_redis_set_channels,
-    force_synctime=args.S,
+    hashpipe_targets=hpguppi_redis_set_channels,
+    universal_synctime=args.S,
+    universal_tbin=hpguppi_defaults.fengine_meta_key_values(args.nbits)['TBIN'],
+    universal_source_name="UNKNOWN",
     reset=args.r,
     dry_run=args.d,
     log=True,
