@@ -310,7 +310,9 @@ def get_hashpipe_capture_dir(instance=0):
     for key, default in defaults.items():
         key_value = get_hashpipe_key_value_str_ensured(key, instance)
         part_str = default
-        if key_value is not False:
+        if (key_value is not False and
+            key_value is not None and
+            len(key_value) > 0):
             part_str = key_value
         else:
             if default is None:
@@ -344,6 +346,35 @@ def get_latest_raw_stem_in_dir(rawfiledir):
 
     latest = files[0]
     stemmatch = re.match(r'(.*)\.\d{4}\.raw', latest, re.M|re.I)
+    if not stemmatch:
+        print('Could not match a stem pattern against "', latest, '".', sep="")
+        return False
+    return stemmatch.group(1)
+
+def get_latest_stem_in_dir(filedir, extension='*'):
+    '''
+    Finds the latest files in the given directory and
+    returns the filepath excluding .0000.*, the stem.
+
+    Parameters
+    ----------
+    filedir: str
+        The directory to analyse
+    
+    Returns
+    -------
+    str: The stem-filepath of the latest hashpipe output, or None
+    '''
+    files = glob.glob('{}/*.{}'.format(filedir, extension))
+
+    if len(files) == 0:
+        print('Could not find any files in "', filedir, '".', sep="")
+        return None
+    
+    files.sort(key=os.path.getmtime, reverse=True)
+
+    latest = files[0]
+    stemmatch = re.match(r'(.*?)(\.\d{4})?(\.[^\.]+?$)', latest, re.M|re.I)
     if not stemmatch:
         print('Could not match a stem pattern against "', latest, '".', sep="")
         return False
