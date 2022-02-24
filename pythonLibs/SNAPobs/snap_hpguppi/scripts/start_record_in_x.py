@@ -1,6 +1,7 @@
 #!/home/sonata/miniconda3/bin/python
 import argparse
 import redis
+import re
 from SNAPobs.snap_hpguppi import record_in as hpguppi_record_in
 from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
 from SNAPobs.snap_hpguppi import snap_hpguppi_defaults as hpguppi_defaults
@@ -13,60 +14,78 @@ parser.add_argument('-i', type=int, default=hpguppi_record_in.DEFAULT_START_IN,
         help='Seconds from now to start obs [%i]' %hpguppi_record_in.DEFAULT_START_IN)
 parser.add_argument('-r', action='store_true',
         help='Reset OBSSTART and OBSSTOP to 0')
-parser.add_argument('-d', action='store_true',
+parser.add_argument('-d', '--dry-run', action='store_true',
         help='dry run (don\'t publish)')
 parser.add_argument('-b', '--broadcast', action='store_true',
         help='Broadcast on hpguppi:///set instead of targetting the hpguppi hosts specified by hpguppi-[hostname-pattern, host-ids, instances] arguments')
-parser.add_argument('-P', '--hpguppi-hostname-pattern', nargs=2, type=str, default=['seti-node', ''],
-        help='the prefix and suffix for the hostnames of the hpguppi machines')
-parser.add_argument('-H', '--hpguppi-host-ids', nargs='+', type=str, default=['1-3'],
-        help='the range of host ids, comma delimited, for the hpguppi machines')
-parser.add_argument('-I', '--hpguppi-instances', nargs='+', type=str, default=['0-1'],
-        help='the range of instance ids, comma delimited, for the hpguppi machines')
+parser.add_argument('-t', '--hashpipe-targets', nargs='+', type=str, default=[],
+        help='hashpipe targets formed as `hostname:[inst...]`, comma-delimited listed pairs, for the observation.'+
+        '\nhostname can contain a `[\d,-]` specified range.'
+)
 parser.add_argument('-S', action='store_true',
         help='Use redishost\'s SYNCTIME value (instead of the values from the antenna-stream boards).')
 parser.add_argument('--nbits', type=int, default=8,
         help='The number of bits per sample\'s complex-component, from which TBIN is determined.')
 args = parser.parse_args()
 
-hpguppi_redis_set_channels = None
+regex_hostname_range = r'(.*?)\[([\d\-,]+)\](.*)'
+
+hashpipe_targets = None
 log_string_per_channel = None
 if not args.broadcast:
-        def process_range_strings(range_strings):
+        def process_range_string(range_string):
                 ret = []
-                for range_str in range_strings:
-                        if '-' in range_str:
-                                range_bounds = range_str.split('-')
-                                for id_ in range(int(range_bounds[0]), int(range_bounds[1])+1):
-                                        ret.append(str(id_))
-                        else:
-                                ret.append(range_str)
+                if '-' in range_string:
+                        range_bounds = range_string.split('-')
+                        for id_ in range(int(range_bounds[0]), int(range_bounds[1])+1):
+                                ret.append(str(id_))
+                else:
+                        ret = range_string.split(',')
                 return ret
 
+        hashpipe_targets = {}
+        hpguppi_redis_get_channels = []
+        for hostname_inst_pairstring in args.hashpipe_targets:
+                hostnames_str, inst_cs_str = hostname_inst_pairstring.split(':')
+                instances = inst_cs_str.split(',')
 
-        hpguppi_hostname_ids = process_range_strings(args.hpguppi_host_ids)
-        hpguppi_instance_ids = process_range_strings(args.hpguppi_instances)
-        hpguppi_hostnames = [hostid.join(args.hpguppi_hostname_pattern) for hostid in hpguppi_hostname_ids]
+                hostnames = [hostnames_str] 
 
-        hpguppi_redis_set_channels = hpguppi_auxillary.generate_hpguppi_redis_set_channels(hpguppi_hostnames, hpguppi_instance_ids)
-        hpguppi_redis_get_channels = hpguppi_auxillary.generate_hpguppi_redis_get_channels(hpguppi_hostnames, hpguppi_instance_ids)
+                hostname_range_match = re.match(regex_hostname_range, hostnames_str)
+                if hostname_range_match is not None:
+                        hostname_pattern = [
+                                hostname_range_match.group(1),
+                                hostname_range_match.group(3)
+                        ]
+                        hostname_range = process_range_string(hostname_range_match.group(2))
+                        hostnames = [hostid.join(hostname_pattern) for hostid in hostname_range]
+                
+                for hostname in hostnames:
+                        hashpipe_targets[hostname] = instances
 
-        r = redis.Redis(host=hpguppi_defaults.REDISHOST)
+                hpguppi_redis_get_channels.extend(
+                        hpguppi_auxillary.generate_hpguppi_redis_get_channels(
+                                hostnames, instances
+                        )
+                )
+
         print(hpguppi_redis_get_channels)
         try:
-                log_string_per_channel = hpguppi_auxillary.generate_freq_auto_string_per_channel(r, hpguppi_redis_get_channels)
+                log_string_per_channel = hpguppi_auxillary.generate_freq_auto_string_per_channel(
+                                hpguppi_defaults.redis_obj, hpguppi_redis_get_channels
+                )
         except:
                 pass
 
 hpguppi_record_in.record_in(
     obs_delay_s=args.i,
     obs_duration_s=args.n,
-    hashpipe_targets=hpguppi_redis_set_channels,
+    hashpipe_targets=hashpipe_targets,
     universal_synctime=args.S,
     universal_tbin=hpguppi_defaults.fengine_meta_key_values(args.nbits)['TBIN'],
     universal_source_name="UNKNOWN",
     reset=args.r,
-    dry_run=args.d,
+    dry_run=args.dry_run,
     log=True,
     log_string_per_channel=log_string_per_channel
     )

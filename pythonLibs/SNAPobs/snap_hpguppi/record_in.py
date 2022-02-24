@@ -167,11 +167,12 @@ def record_in(
         assert recording_source_name is not None, "universal_source_name argument must be provided in the case of broadcast"
     else:
         tbin = None # ignore any tbin value
+        recording_source_name = None # ignore any tbin value
     
     if isinstance(hashpipe_targets, dict):
         # fabricate the channels from {hostname: [instance_num]} dict
         redis_channel_list = []
-        for (hostname, instance_num_list) in hashpipe_targets:
+        for (hostname, instance_num_list) in hashpipe_targets.items():
              for instance_num in instance_num_list:
                  redis_channel_list.append(hpguppi_defaults.REDISSETGW.substitute(host=hostname, inst=instance_num))
         hashpipe_targets = redis_channel_list
@@ -210,7 +211,10 @@ def record_in(
                     return False
                 
         if hpguppi_redis_get_channels is not None: # instance-unique tbin
-            tbin_values = [hpguppi_defaults.redis_obj.hget(hsh, 'TBIN') for hsh in hpguppi_redis_get_channels]
+            tbin_values = [
+                float(hpguppi_defaults.redis_obj.hget(hsh, 'TBIN'))
+                    for hsh in hpguppi_redis_get_channels
+            ]
             if len(set(tbin_values)) != 1:
                 print("Hpguppi channels have the following non-uniform tbin values:")
                 for i in range(len(tbin_values)):
