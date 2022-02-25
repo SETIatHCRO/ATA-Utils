@@ -171,11 +171,7 @@ def record_in(
 
     if isinstance(hashpipe_targets, dict):
         # fabricate the channels from {hostname: [instance_num]} dict
-        redis_channel_list = []
-        for (hostname, instance_num_list) in hashpipe_targets.items():
-             for instance_num in instance_num_list:
-                 redis_channel_list.append(hpguppi_defaults.REDISSETGW.substitute(host=hostname, inst=instance_num))
-        hashpipe_targets = redis_channel_list
+        hashpipe_targets = hpguppi_auxillary.redis_hashpipe_set_channels_from_dict(hashpipe_targets)
 
     if reset:
         print('Resetting observations:')

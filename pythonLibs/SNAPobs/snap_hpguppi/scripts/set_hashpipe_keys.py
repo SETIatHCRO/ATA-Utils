@@ -4,22 +4,6 @@ import socket
 from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
 from SNAPobs.snap_hpguppi import snap_hpguppi_defaults as hpguppi_defaults
 
-def publish_keyval_dict_to_redis(keyval_dict, redis_targets, dry_run=False):
-    print(keyval_dict)
-    redis_publish_command = hpguppi_auxillary.redis_publish_command_from_dict(keyval_dict)
-    redis_pubsub_channels = [chan.decode() for chan in hpguppi_defaults.redis_obj.pubsub_channels()]
-    if dry_run:
-        print('*** Dry Run ***')
-    else:
-        print('Publishing to:')
-        for rtarget in redis_targets:
-            if rtarget in redis_pubsub_channels:
-                print('\t', rtarget)
-                hpguppi_defaults.redis_obj.publish(rtarget, redis_publish_command)
-            else:
-                print('\t# ', rtarget)
-                hpguppi_defaults.redis_obj.hset(rtarget, mapping=keyval_dict)
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Set key-values for a Hashpipe instance.')
     parser.add_argument('-d', '--dry-run', action='store_true',
@@ -56,4 +40,4 @@ if __name__ == "__main__":
         key_value = key_value_str.split('=')
         keyval_dict[key_value[0]] = key_value[1]
 
-    publish_keyval_dict_to_redis(keyval_dict, channels, dry_run=args.dry_run)
+    hpguppi_auxillary.publish_keyval_dict_to_redis(keyval_dict, channels, dry_run=args.dry_run)
