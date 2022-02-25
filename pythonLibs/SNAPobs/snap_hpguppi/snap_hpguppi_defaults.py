@@ -33,5 +33,22 @@ REDISGETGW_re = r'hashpipe://(?P<host>[^/]+)/(?P<inst>[^/]+)/status'
 REDISSETGW = Template('hashpipe://${host}/${inst}/set')
 REDISSETGW_re = r'hashpipe://(?P<host>[^/]+)/(?P<inst>[^/]+)/set'
 REDISSET = 'hashpipe:///set'
+REDISPOSTPROCHASH = Template('postprocpype://${host}/${inst}/status')
+REDISPOSTPROCHASH_re = r'postprocpype://(?P<host>[^/]+)/(?P<inst>[^/]+)/status'
+REDISPOSTPROCSET = 'postprocpype:///set'
 
 redis_obj = redis.Redis(host=REDISHOST)
+
+hashpipe_targets_LoB = {
+	'seti-node1': [0],
+	'seti-node2': [0,1],
+	'seti-node3': [0,1],
+	'seti-node4': [0,1],
+}
+
+hashpipe_targets_LoC = {
+	'seti-node5': [0,1],
+	'seti-node6': [0,1],
+	'seti-node7': [0,1],
+	'seti-node8': [0],
+}
