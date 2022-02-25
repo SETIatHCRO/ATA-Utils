@@ -24,10 +24,13 @@ def _log_recording(start_time, duration, obsstart, npackets, redisset_chan_list,
     logdir = '~'
     if os.path.exists('/home/sonata/logs'):
         logdir = '/home/sonata/logs'
-		
+	
+    if isinstance(redisset_chan_list, str):
+        redisset_chan_list = [redisset_chan_list]
+
     with open(os.path.join(logdir, 'record_in_log.csv'), 'a', newline='') as csvfile:
         csvwr = csv.writer(csvfile, delimiter=',',
-                            quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                            quotechar='\'', quoting=csv.QUOTE_MINIMAL)
         for i, redisset_chan in enumerate(redisset_chan_list):
             row_strings = [
                 str(datetime.fromtimestamp(start_time)),
@@ -55,7 +58,7 @@ def _block_until_key_has_value(hashes, key, value, verbose=True):
     value_slice = slice(-len_per_value, None)
     while True:
         rr = [hpguppi_defaults.redis_obj.hget(hsh, key) for hsh in hashes]
-        rets = [r.decode() if(r) else "NONE" for r in rr]
+        rets = [r.decode() if(r) else 'NONE' for r in rr]
         if verbose:
             print_strings = [
                 ('{: ^%d}'%len_per_value).format(ret[value_slice]) for ret in rets
@@ -68,16 +71,16 @@ def _block_until_key_has_value(hashes, key, value, verbose=True):
         time.sleep(1)
 
 def block_until_hpguppi_idling(hashes, verbose=True):
-    _block_until_key_has_value(hashes, "DAQSTATE", "idling", verbose=verbose)
+    _block_until_key_has_value(hashes, 'DAQSTATE', 'idling', verbose=verbose)
         
 def block_until_post_processing_waiting(hashes, verbose=True):
-    _block_until_key_has_value(hashes, "PPSTATUS", "WAITING", verbose=verbose)
+    _block_until_key_has_value(hashes, 'PPSTATUS', 'WAITING', verbose=verbose)
 
 def _publish_obs_start_stop(redis_obj, channel_list, obsstart, obsstop, obs_source_name, dry_run=False):
-    # cmd = "OBSSTART=%i\nOBSSTOP=%i\n"  %(obsstart, obsstop)
-    cmd = "PKTSTART=%i\nPKTSTOP=%i"  %(obsstart, obsstop)
+    # cmd = 'OBSSTART=%i\nOBSSTOP=%i\n'  %(obsstart, obsstop)
+    cmd = 'PKTSTART=%i\nPKTSTOP=%i'  %(obsstart, obsstop)
     if obs_source_name:
-        cmd +="\nSRC_NAME=%s" % obs_source_name
+        cmd +='\nSRC_NAME=%s' % obs_source_name
 
     if isinstance(channel_list, str):
         channel_list = [channel_list]
@@ -153,22 +156,19 @@ def record_in(
     bool: True if no issue occurred, False otherwise.
     '''
     
-    obsstart = 0
-    obsstop = 0
-    t_now  = time.time()
-    t_in_x = int(ceil(t_now + obs_delay_s))
-
-    tbin = universal_tbin
-    recording_source_name = universal_source_name
-
     if hashpipe_targets is None:
         hashpipe_targets = [hpguppi_defaults.REDISSET]
-        assert tbin is not None, "universal_tbin argument must be provided in the case of broadcast"
-        assert recording_source_name is not None, "universal_source_name argument must be provided in the case of broadcast"
     else:
-        tbin = None # ignore any tbin value
-        recording_source_name = None # ignore any tbin value
-    
+        # ignore any universal values passed in
+        universal_tbin = False
+        universal_source_name = False
+
+    if hpguppi_defaults.REDISSET in hashpipe_targets:
+        # not possible to query universal tbin/source_name from broadcast channel
+        assert universal_tbin is not None, 'universal_tbin argument must be provided in the case of broadcast'
+        assert universal_source_name is not None, 'universal_source_name argument must be provided in the case of broadcast'
+        assert universal_synctime, 'universal_synctime argument must be True in the case of broadcast'
+
     if isinstance(hashpipe_targets, dict):
         # fabricate the channels from {hostname: [instance_num]} dict
         redis_channel_list = []
@@ -177,72 +177,111 @@ def record_in(
                  redis_channel_list.append(hpguppi_defaults.REDISSETGW.substitute(host=hostname, inst=instance_num))
         hashpipe_targets = redis_channel_list
 
-    hpguppi_redis_get_channels = None
-    if tbin is None: # instance-unique tbin
-        hpguppi_redis_get_channels = [
-            hpguppi_auxillary.redis_get_channel_from_set_channel(chan) for chan in hashpipe_targets
-        ]
-
-    universal_sync_time = None
     if reset:
         print('Resetting observations:')
     elif universal_synctime:
-        universal_sync_time = int(hpguppi_defaults.redis_obj.get('SYNCTIME'))
-        print("Will broadcast the OBSSTART and OBSSTOP values, based on redishost's SYNCTIME of", universal_sync_time)
+        universal_synctime = int(hpguppi_defaults.redis_obj.get('SYNCTIME'))
+        print(
+            ('Will broadcast the OBSSTART and OBSSTOP values, based on'
+                'redishost\'s SYNCTIME of'),
+            universal_synctime
+        )
         print()
     
-    if not reset:
-        sync_times = []
-        recording_stream_hostname_list = []
-        for channel_i, channel in enumerate(hashpipe_targets):
-            assert re.match(hpguppi_defaults.REDISSETGW_re, channel) or channel == hpguppi_defaults.REDISSET
-
-            if not reset and not universal_synctime:
-                stream_hostnames = hpguppi_auxillary.get_stream_hostnames_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_auxillary.redis_get_channel_from_set_channel(channel))
-                recording_stream_hostname_list.extend(stream_hostnames)
-
-                channel_sync_times = _get_sync_time_for_streams(stream_hostnames)
-                sync_times.extend(channel_sync_times)
-                if len(set(sync_times)) != 1:
-                    print("Hpguppi channel", channel, "has the following stream_hostnames, with non-uniform sync-times:")
-                    for i in range(len(stream_hostnames)):
-                        print(stream_hostnames[i], channel_sync_times[i])
-                    print("Cannot reliably start a recording.")
-                    return False
-                
-        if hpguppi_redis_get_channels is not None: # instance-unique tbin
-            tbin_values = [
-                float(hpguppi_defaults.redis_obj.hget(hsh, 'TBIN'))
-                    for hsh in hpguppi_redis_get_channels
-            ]
-            if len(set(tbin_values)) != 1:
-                print("Hpguppi channels have the following non-uniform tbin values:")
-                for i in range(len(tbin_values)):
-                    print(hpguppi_redis_get_channels, tbin_values[i])
-                print("Cannot reliably start a recording.")
-                return False
-            tbin = tbin_values[0]
-        
-        sync_time = universal_sync_time if universal_synctime else sync_times[0]
-        obsstart, obsstop, npackets = _calculate_obs_start_stop(t_in_x, obs_duration_s, sync_time, tbin)
-
-        if recording_source_name is None:
-            if len(recording_stream_hostname_list) == 0:
-                recording_stream_hostname_list = hpguppi_auxillary.get_stream_hostnames_of_redis_chan(
-                    hpguppi_defaults.redis_obj,
-                    hpguppi_auxillary.redis_get_channel_from_set_channel(hashpipe_targets[0])
+    target_sync_times = {}
+    target_tbin_values = {}
+    target_source_names = {}
+    # gather data first, then calculate obsstart/stop for syncronicity
+    # (reading sync_time from the FEngines is the biggest bottleneck)
+    for set_channel in hashpipe_targets:
+        assert (re.match(hpguppi_defaults.REDISSETGW_re, set_channel) or
+         set_channel == hpguppi_defaults.REDISSET
+        )
+        if not reset:
+            if set_channel != hpguppi_defaults.REDISSET:
+                get_channel = hpguppi_auxillary.redis_get_channel_from_set_channel(
+                    set_channel
                 )
-            recording_source_name = _get_uniform_source_name_for_streams(recording_stream_hostname_list)
+                # get the hostnames of the antenna streams for this hashpipe instance
+                stream_hostnames = hpguppi_auxillary.get_stream_hostnames_of_redis_chan(
+                    hpguppi_defaults.redis_obj, get_channel
+                )
+
+            if universal_synctime is False: # 
+                channel_sync_times = _get_sync_time_for_streams(stream_hostnames)
+                channel_synct_times_setlen = len(set(channel_sync_times))
+                if channel_synct_times_setlen == 0:
+                    print(
+                        'Hpguppi channel',
+                        get_channel,
+                        'has nostream_hostnames, excluding from observation.'
+                    )
+                    continue
+                elif channel_synct_times_setlen > 1:
+                    error_statement = (
+                        'Hpguppi channel {} has the following'
+                        'stream_hostnames, with non-uniform sync-times:\n'
+                    ).format(get_channel)
+                    for i in range(len(stream_hostnames)):
+                        error_statement += "{} {}\n".format(
+                            stream_hostnames[i],
+                            channel_sync_times[i]
+                        )
+                    error_statement = (
+                        'Cannot reliably start a recording: {}'.format(
+                            error_statement
+                        )
+                    )
+                    raise RuntimeError(error_statement)
+                
+                target_sync_times[set_channel] = channel_sync_times[0]
+            else: # universal_synctime
+                target_sync_times[set_channel] = universal_synctime
+            
+            if universal_tbin is False:
+                tbin = hpguppi_defaults.redis_obj.hget(get_channel, 'TBIN')
+                try:
+                    target_tbin_values[set_channel] = float(tbin)
+                except:
+                    error_statement = (
+                        'Cannot reliably start a recording: Hpguppi channel {} '
+                        'has a non-numeric TBIN value {}.').format(
+                            get_channel, tbin)
+                    raise RuntimeError(error_statement)
+            else:
+                target_tbin_values[set_channel] = float(universal_tbin)
+
+            if universal_source_name is False:
+                target_source_names[set_channel] = _get_uniform_source_name_for_streams(stream_hostnames)
+            else:
+                target_source_names[set_channel] = universal_source_name
+
+        
+    assert len(target_sync_times.keys()) == len(target_tbin_values.keys()) == len(target_source_names.keys())
+
+    obsstart = 0
+    obsstop = 0
+    npackets = 0
+    t_now  = time.time()
+    t_in_x = int(ceil(t_now + obs_delay_s))
+
+    for target_i, target_set_chan in enumerate(target_sync_times.keys()):
+        if not reset:
+            sync_time = target_sync_times[target_set_chan]
+            tbin = target_tbin_values[target_set_chan]
+            source_name = target_source_names[target_set_chan]
+            obsstart, obsstop, npackets = _calculate_obs_start_stop(t_in_x, obs_duration_s, sync_time, tbin)
+
+        _publish_obs_start_stop(hpguppi_defaults.redis_obj, target_set_chan, obsstart, obsstop, source_name, dry_run)
     
-    _publish_obs_start_stop(hpguppi_defaults.redis_obj, hashpipe_targets, obsstart, obsstop, recording_source_name, dry_run)
-    if log and not reset:# and not dry_run:
-        _log_recording(
-            t_in_x,
-            obs_duration_s,
-            obsstart,
-            npackets,
-            hashpipe_targets,
-            log_string_per_channel
+        if log and not reset and not dry_run:
+            _log_recording(
+                t_in_x,
+                obs_duration_s,
+                obsstart,
+                npackets,
+                target_set_chan,
+                log_string_per_channel[target_i:]
             )
 
-    return True
+    return target_sync_times.keys()

@@ -18,10 +18,16 @@ parser.add_argument('-d', '--dry-run', action='store_true',
         help='dry run (don\'t publish)')
 parser.add_argument('-b', '--broadcast', action='store_true',
         help='Broadcast on hpguppi:///set instead of targetting the hpguppi hosts specified by hpguppi-[hostname-pattern, host-ids, instances] arguments')
+
 parser.add_argument('-t', '--hashpipe-targets', nargs='+', type=str, default=[],
         help='hashpipe targets formed as `hostname:[inst...]`, comma-delimited listed pairs, for the observation.'+
         '\nhostname can contain a `[\d,-]` specified range.'
 )
+parser.add_argument('-H', '--hashpipe-host-ids', nargs='+', type=str, default=[],
+        help='the range of host ids, comma delimited, for the hashpipe machines')
+parser.add_argument('-I', '--hashpipe-instances', nargs='+', type=str, default=['0-1'],
+        help='the range of instance ids, comma delimited, for the hashpipe machines')
+
 parser.add_argument('-S', action='store_true',
         help='Use redishost\'s SYNCTIME value (instead of the values from the antenna-stream boards).')
 parser.add_argument('--nbits', type=int, default=8,
@@ -45,29 +51,55 @@ if not args.broadcast:
 
         hashpipe_targets = {}
         hpguppi_redis_get_channels = []
-        for hostname_inst_pairstring in args.hashpipe_targets:
-                hostnames_str, inst_cs_str = hostname_inst_pairstring.split(':')
-                instances = inst_cs_str.split(',')
+        if len(args.hashpipe_targets) > 0:
+                for hostname_inst_pairstring in args.hashpipe_targets:
+                        hostnames_str, inst_cs_str = hostname_inst_pairstring.split(':')
+                        instances = process_range_string(inst_cs_str)
 
-                hostnames = [hostnames_str] 
+                        hostnames = [hostnames_str] 
 
-                hostname_range_match = re.match(regex_hostname_range, hostnames_str)
-                if hostname_range_match is not None:
-                        hostname_pattern = [
-                                hostname_range_match.group(1),
-                                hostname_range_match.group(3)
-                        ]
-                        hostname_range = process_range_string(hostname_range_match.group(2))
-                        hostnames = [hostid.join(hostname_pattern) for hostid in hostname_range]
-                
-                for hostname in hostnames:
-                        hashpipe_targets[hostname] = instances
+                        hostname_range_match = re.match(regex_hostname_range, hostnames_str)
+                        if hostname_range_match is not None:
+                                hostname_pattern = [
+                                        hostname_range_match.group(1),
+                                        hostname_range_match.group(3)
+                                ]
+                                hostname_range = process_range_string(hostname_range_match.group(2))
+                                hostnames = [hostid.join(hostname_pattern) for hostid in hostname_range]
+                        
+                        for hostname in hostnames:
+                                hashpipe_targets[hostname] = instances
 
-                hpguppi_redis_get_channels.extend(
-                        hpguppi_auxillary.generate_hpguppi_redis_get_channels(
-                                hostnames, instances
+                        hpguppi_redis_get_channels.extend(
+                                hpguppi_auxillary.generate_hpguppi_redis_get_channels(
+                                        hostnames, instances
+                                )
                         )
-                )
+        elif len(args.hashpipe_host_ids) > 0:
+                instances = []
+                for instance_str in args.hashpipe_instances:
+                        instances.extend(process_range_string(instance_str))
+                for hostnames_str in args.hashpipe_host_ids:
+                        hostnames = [hostnames_str] 
+
+                        hostname_range_match = re.match(regex_hostname_range, hostnames_str)
+                        if hostname_range_match is not None:
+                                hostname_pattern = [
+                                        hostname_range_match.group(1),
+                                        hostname_range_match.group(3)
+                                ]
+                                hostname_range = process_range_string(hostname_range_match.group(2))
+                                hostnames = [hostid.join(hostname_pattern) for hostid in hostname_range]
+                        
+                        for hostname in hostnames:
+                                hashpipe_targets[hostname] = instances
+
+                        hpguppi_redis_get_channels.extend(
+                                hpguppi_auxillary.generate_hpguppi_redis_get_channels(
+                                        hostnames, instances
+                                )
+                        )
+
 
         print(hpguppi_redis_get_channels)
         try:
