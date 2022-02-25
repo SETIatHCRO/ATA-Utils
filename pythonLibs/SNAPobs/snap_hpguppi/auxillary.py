@@ -1,7 +1,7 @@
 from SNAPobs import snap_config, snap_dada
 from . import snap_hpguppi_defaults as hpguppi_defaults
-from . import record_in as hpguppi_record_in
 import re
+import time
 
 # Gather antenna-names for the listed stream hostnames
 def get_antenna_name_dict_for_stream_hostnames(stream_hostnames):
@@ -135,14 +135,20 @@ def get_stream_hostnames_of_redis_chan(redis_obj, redis_chan):
   antennae = get_antennae_of_redis_chan(redis_obj, redis_chan)
   return get_stream_hostname_per_antenna_names(antennae)
 
-def redis_hashpipe_set_channels_from_dict(hashpipe_targets, postproc=False):
+def redis_hashpipe_channels_from_dict(
+  hashpipe_targets,
+  set_channels=True,
+  postproc=False
+):
   '''
   Parameters
   ----------
   hashpipe_targets: dict
     expected to be of form {hostname: [instance_num]}
+  set_channels: bool
+    switch to template set channels or get channels
   postproc: bool
-    switch to template channels for hashpipe, or postproc
+    switch to template channels for hashpipe or postproc
   
   Returns
   -------
@@ -150,8 +156,8 @@ def redis_hashpipe_set_channels_from_dict(hashpipe_targets, postproc=False):
     template, or `hpguppi_defaults.REDISPOSTPROCHASH`)
   '''
   redis_channel_list = []
-  template = hpguppi_defaults.REDISSETGW
-  if not postproc:
+  template = hpguppi_defaults.REDISSETGW if set_channels else hpguppi_defaults.REDISGETGW
+  if postproc:
     template = hpguppi_defaults.REDISPOSTPROCHASH
   for (hostname, instance_num_list) in hashpipe_targets.items():
         for instance_num in instance_num_list:
@@ -191,7 +197,7 @@ def publish_keyval_dict_to_redis(keyval_dict, targets, dry_run=False):
   ]
   
   if isinstance(targets, dict):
-    targets = redis_hashpipe_set_channels_from_dict(targets)
+    targets = redis_hashpipe_channels_from_dict(targets)
   
   print('Publishing to:')
   for target in targets:
@@ -210,6 +216,41 @@ def publish_keyval_dict_to_redis(keyval_dict, targets, dry_run=False):
         print('*** Dry Run ***')
       else:
         hpguppi_defaults.redis_obj.hset(target, mapping=keyval_dict)
+
+
+def _block_until_key_has_value(targets, key, value, verbose=True):
+    '''
+    Loop (block) until the key in all the targets match the value given.
+
+    Parameters
+    ----------
+    targets: list,dict
+      Specifies the redis hashes to consult the key in.
+      Expected to be a list of redis channels or hashes to populate with the
+      keyvals.
+    key: str
+        The key, the value of which is to be consulted
+    value: str,regex
+        The value to be matched (uses `re.fullmatch`)
+    verbose: bool
+        Whether or not to print the values while blocking
+    '''
+    len_per_value = 80//len(targets)
+    value_slice = slice(-len_per_value, None)
+
+    while True:
+      rr = [hpguppi_defaults.redis_obj.hget(hsh, key) for hsh in targets]
+      rets = [r.decode() if(r) else 'NONE' for r in rr]
+      if verbose:
+        print_strings = [
+          ('{: ^%d}'%len_per_value).format(ret[value_slice]) for ret in rets
+        ]
+        print('[{: ^80}]'.format(', '.join(print_strings)), end='\r')
+      if all([re.fullmatch(value, ret) for ret in rets]):
+        if verbose:
+          print()
+        break
+      time.sleep(1)
 
 def filter_unique_fengines(feng_objs):
     host_unique_fengs = {}

@@ -2,14 +2,11 @@ from numpy import ceil
 import re
 import time
 from datetime import datetime
-import socket
-from string import Template
 
 import csv
 
 from ata_snap import ata_snap_fengine
 from SNAPobs import snap_control
-import casperfpga
 import os
 
 from . import snap_hpguppi_defaults as hpguppi_defaults
@@ -53,28 +50,83 @@ def _get_uniform_source_name_for_streams(streams):
     source_dict = ata_control.get_eph_source(ant_names_no_LO[0:1])
     return source_dict[ant_names_no_LO[0]].replace(' ', '_')
 
-def _block_until_key_has_value(hashes, key, value, verbose=True):
-    len_per_value = 80//len(hashes)
-    value_slice = slice(-len_per_value, None)
-    while True:
-        rr = [hpguppi_defaults.redis_obj.hget(hsh, key) for hsh in hashes]
-        rets = [r.decode() if(r) else 'NONE' for r in rr]
-        if verbose:
-            print_strings = [
-                ('{: ^%d}'%len_per_value).format(ret[value_slice]) for ret in rets
-            ]
-            print('[{: ^80}]'.format(', '.join(print_strings)), end='\r')
-        if all([ret.startswith(value) for ret in rets]):
-            if verbose:
-                print()
-            break
-        time.sleep(1)
+def block_until_hpguppi_idling(targets, verbose=True):
+    '''
+    Loop (block) until the key in all the targets match the value given.
 
-def block_until_hpguppi_idling(hashes, verbose=True):
-    _block_until_key_has_value(hashes, 'DAQSTATE', 'idling', verbose=verbose)
+    Parameters
+    ----------
+    targets: list,dict
+        Specifies the redis hashes to consult the key in.
+        If a list, then expected to be a list of redis channels or hashes to 
+        populate with the keyvals.
+        If a dict, then expected to be of form {hostname: [instance_num]} to 
+        populate with the keyvals.
+    verbose: bool
+        Whether or not to print the values while blocking
+    '''
+    if isinstance(targets, dict):
+        targets = hpguppi_auxillary.redis_hashpipe_channels_from_dict(
+            targets,
+            set_channels=False,
+            postproc=False
+        )
+    else:
+        if not all([
+            re.match(target, hpguppi_defaults.REDISGETGW_re)
+                for target in targets
+        ]):
+            raise RuntimeError(
+                'Not all targets match:{}'.format(
+                    hpguppi_defaults.REDISGETGW_re
+                )
+            )
+    
+    hpguppi_auxillary._block_until_key_has_value(
+        targets,
+        'DAQSTATE',
+        'idling',
+        verbose=verbose
+    )
         
-def block_until_post_processing_waiting(hashes, verbose=True):
-    _block_until_key_has_value(hashes, 'PPSTATUS', 'WAITING', verbose=verbose)
+def block_until_post_processing_waiting(targets, verbose=True):
+    '''
+    Loop (block) until the key in all the targets match the value given.
+
+    Parameters
+    ----------
+    targets: list,dict
+        Specifies the redis hashes to consult the key in.
+        If a list, then expected to be a list of redis channels or hashes to 
+        populate with the keyvals.
+        If a dict, then expected to be of form {hostname: [instance_num]} to 
+        populate with the keyvals.
+    verbose: bool
+        Whether or not to print the values while blocking
+    '''
+    if isinstance(targets, dict):
+        targets = hpguppi_auxillary.redis_hashpipe_channels_from_dict(
+            targets,
+            set_channels=False,
+            postproc=True
+        )
+    else:
+        if not all([
+            re.match(target, hpguppi_defaults.REDISPOSTPROCHASH_re)
+                for target in targets
+        ]):
+            raise RuntimeError(
+                'Not all targets match:{}'.format(
+                    hpguppi_defaults.REDISPOSTPROCHASH_re
+                )
+            )
+    
+    hpguppi_auxillary._block_until_key_has_value(
+        targets,
+        'STATUS',
+        r'^WAITING.*',
+        verbose=verbose
+    )
 
 def _publish_obs_start_stop(redis_obj, channel_list, obsstart, obsstop, obs_source_name, dry_run=False):
     # cmd = 'OBSSTART=%i\nOBSSTOP=%i\n'  %(obsstart, obsstop)
@@ -171,7 +223,7 @@ def record_in(
 
     if isinstance(hashpipe_targets, dict):
         # fabricate the channels from {hostname: [instance_num]} dict
-        hashpipe_targets = hpguppi_auxillary.redis_hashpipe_set_channels_from_dict(hashpipe_targets)
+        hashpipe_targets = hpguppi_auxillary.redis_hashpipe_channels_from_dict(hashpipe_targets)
 
     if reset:
         print('Resetting observations:')
