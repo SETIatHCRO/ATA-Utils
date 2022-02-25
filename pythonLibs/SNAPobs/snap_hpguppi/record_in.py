@@ -262,7 +262,7 @@ def record_in(
                     print(
                         'Hpguppi channel',
                         get_channel,
-                        'has nostream_hostnames, excluding from observation.'
+                        'has no stream_hostnames, excluding from observation.'
                     )
                     continue
                 elif channel_synct_times_setlen > 1:
