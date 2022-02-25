@@ -246,6 +246,8 @@ def record_in(
          set_channel == hpguppi_defaults.REDISSET
         )
         if not reset:
+            target_sync_times[set_channel] = None
+        else:
             if set_channel != hpguppi_defaults.REDISSET:
                 get_channel = hpguppi_auxillary.redis_get_channel_from_set_channel(
                     set_channel
@@ -312,6 +314,7 @@ def record_in(
     npackets = 0
     t_now  = time.time()
     t_in_x = int(ceil(t_now + obs_delay_s))
+    source_name = None
 
     for target_i, target_set_chan in enumerate(target_sync_times.keys()):
         if not reset:
@@ -322,6 +325,8 @@ def record_in(
 
         _publish_obs_start_stop(hpguppi_defaults.redis_obj, target_set_chan, obsstart, obsstop, source_name, dry_run)
     
+        log_string = log_string_per_channel[target_i:] if log_string_per_channel is not None else None
+
         if log and not reset and not dry_run:
             _log_recording(
                 t_in_x,
@@ -329,7 +334,7 @@ def record_in(
                 obsstart,
                 npackets,
                 target_set_chan,
-                log_string_per_channel[target_i:]
+                log_string
             )
 
     return target_sync_times.keys()
