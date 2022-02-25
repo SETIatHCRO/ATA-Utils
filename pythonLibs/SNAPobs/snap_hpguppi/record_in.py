@@ -245,8 +245,11 @@ def record_in(
         assert (re.match(hpguppi_defaults.REDISSETGW_re, set_channel) or
          set_channel == hpguppi_defaults.REDISSET
         )
-        if not reset:
+        if reset:
             target_sync_times[set_channel] = None
+            target_tbin_values[set_channel] = None
+            target_source_names[set_channel] = None
+            break
         else:
             if set_channel != hpguppi_defaults.REDISSET:
                 get_channel = hpguppi_auxillary.redis_get_channel_from_set_channel(
