@@ -173,7 +173,12 @@ def redis_publish_command_from_dict(key_val_dict):
   return "\n".join(['%s=%s' %(key,val)
             for key,val in key_val_dict.items()])
 
-def publish_keyval_dict_to_redis(keyval_dict, targets, dry_run=False):
+def publish_keyval_dict_to_redis(
+  keyval_dict,
+  targets,
+  postproc=False,
+  dry_run=False
+):
   '''
   Will determine if the targets are channels or hashes, and populate
   with the keyval_dict's items.
@@ -187,6 +192,10 @@ def publish_keyval_dict_to_redis(keyval_dict, targets, dry_run=False):
     populate with the keyvals.
     If a dict, then expected to be of form {hostname: [instance_num]} to 
     populate with the keyvals.
+  postproc: bool
+    Passed through to redis_hashpipe_channels_from_dict if targets is dict 
+  dry_run: bool
+    Whether or not to publish the keys, or just print
   '''
 
   print(keyval_dict)
@@ -197,7 +206,7 @@ def publish_keyval_dict_to_redis(keyval_dict, targets, dry_run=False):
   ]
   
   if isinstance(targets, dict):
-    targets = redis_hashpipe_channels_from_dict(targets)
+    targets = redis_hashpipe_channels_from_dict(targets, postproc=postproc)
   
   print('Publishing to:')
   for target in targets:
