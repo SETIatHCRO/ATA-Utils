@@ -249,7 +249,6 @@ def record_in(
             target_sync_times[set_channel] = None
             target_tbin_values[set_channel] = None
             target_source_names[set_channel] = None
-            break
         else:
             if set_channel != hpguppi_defaults.REDISSET:
                 get_channel = hpguppi_auxillary.redis_get_channel_from_set_channel(
@@ -292,7 +291,7 @@ def record_in(
                 target_sync_times[set_channel] = universal_synctime
             
             if universal_tbin is False:
-                tbin = hpguppi_defaults.redis_obj.hget(get_channel, 'TBIN')
+                tbin = hpguppi_auxillary.redis_hget_retry(hpguppi_defaults.redis_obj, get_channel, 'TBIN')
                 try:
                     target_tbin_values[set_channel] = float(tbin)
                 except:
