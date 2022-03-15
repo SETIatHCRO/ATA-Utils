@@ -19,11 +19,13 @@ from SNAPobs import snap_defaults, snap_config
 from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
 
 # Collate the snap hostnames
-streams_to_marshall = [i.snap_hostname for i in snap_config.get_ata_snap_tab().itertuples()]
+def generate_stream_antnames_to_marshall():
+  streams_to_marshall = [i.snap_hostname for i in snap_config.get_ata_snap_tab().itertuples() if i.snap_hostname.startswith('rfsoc')]
 
-# Gather antenna-configuration for the listed snaps
-stream_ant_name_dict = hpguppi_auxillary.get_antenna_name_dict_for_stream_hostnames(streams_to_marshall)
-antenna_names = [ant_name for stream_name, ant_name in stream_ant_name_dict.items()]
+  # Gather antenna-configuration for the listed snaps
+  stream_ant_name_dict = hpguppi_auxillary.get_antenna_name_dict_for_stream_hostnames(streams_to_marshall)
+  antenna_names = [ant_name for stream_name, ant_name in stream_ant_name_dict.items()]
+  return streams_to_marshall, antenna_names
 
 def eth_get_dest_port(feng, interfaces='all'):
   '''
@@ -184,18 +186,22 @@ def ata_control_get_safe(antname_nolo_list, get_func):
       failed_antname_nolo_list.append(antname_nolo)
   return ret, failed_antname_nolo_list
 
+
+### Begin
+
+streams_to_marshall, antenna_names = generate_stream_antnames_to_marshall()
+antname_nolo_list = list(set([ant[:2] for ant in antenna_names]))
 # Create the AtaSnapFengine list from the names
 fengs = snap_control.init_snaps(streams_to_marshall)#, load_system_information=False)
 hostname_feng_dict = {feng.host:feng for feng in fengs}
+last_consulted_anttab = time.time()
 
-# print([eth_get_dest_port(feng) for feng in fengs])
-# exit(0)
 
 last_groups = []
 last_destinations = []
 last_skyfreq_mapping, _ = hpguppi_populate_meta._get_stream_mapping(streams_to_marshall)
 last_skyfreq_mapping = collect_values_from_dict(last_skyfreq_mapping, streams_to_marshall)
-antname_nolo_list = list(set([ant[:2] for ant in antenna_names]))
+
 last_az_el, failed_antname_nolo_list = ata_control_get_safe(antname_nolo_list, ata_control.get_az_el)
 safe_antname_nolo_list = list(last_az_el.keys())
 last_eph_source = ata_control.get_eph_source(safe_antname_nolo_list)
@@ -205,7 +211,6 @@ exception_limit = 5
 
 have_published = False
 last_published = 0
-sections_updated = [False for i in range(5)]
 section_strings = [
   'Grouping',  
   'Destinations', 
@@ -213,7 +218,18 @@ section_strings = [
   'AzEl',
   'Source' 
 ]
+sections_updated = [False for i in range(len(section_strings))]
+
 while(True):
+  # reconsult the ANT TAB file
+  if time.time() - last_consulted_anttab > 5:
+    streams_to_marshall, antenna_names = generate_stream_antnames_to_marshall()
+    antname_nolo_list = list(set([ant[:2] for ant in antenna_names]))
+    # Create the AtaSnapFengine list from the names
+    fengs = snap_control.init_snaps(streams_to_marshall)#, load_system_information=False)
+    hostname_feng_dict = {feng.host:feng for feng in fengs}
+    last_consulted_anttab = time.time()
+
   # Collect the destination
   feng_interface_dest_details = {feng.host:
     [read_chan_dest_ips(feng, interface, ignore_null_packets=True)
@@ -359,58 +375,3 @@ while(True):
   last_skyfreq_mapping = skyfreq_mapping
   last_az_el = az_el
   last_eph_source = eph_source
-
-exit(0)
-
-# import numpy as np
-# import argparse
-# import redis
-# import time
-# from SNAPobs import snap_defaults
-# import casperfpga
-# import sys
-# from SNAPobs import snap_dada
-# from math import isclose
-# from ATATools import ata_control, logger_defaults
-
-# # print(ata_control.get_az_el(ant_name_list))
-# # print(snap_dada.get_freq_auto(ant_name_list))
-
-# antenna_info = snap_dada.get_obs_params(ant_name_list, None)
-# print(antenna_info.keys())
-
-# def discern_antenna_groups(antenna_info_dicts):
-# 	groups = []
-# 	discerning_keys = [
-# 		'RFFREQ',
-# 		'SOURCE',
-# 		'AZ',
-# 		'EL'
-# 	]
-# 	for ant_name in antenna_info_dicts:
-# 		antenna_info_dict = antenna_info_dicts[ant_name]
-# 		print(antenna_info_dict)
-# 		ant_params = {key:antenna_info_dict[key] for key in discerning_keys}
-# 		groupid = -1
-# 		for i in range(len(groups)):
-# 			group = groups[i]
-# 			group_match = True
-# 			for key in discerning_keys:
-# 				if type(group[key]) == float:
-# 					group_match = isclose(group[key], ant_params[key], abs_tol=0.01)
-# 				else:
-# 					group_match = group[key] == ant_params[key]
-# 				if not group_match:
-# 					break
-# 			if group_match:
-# 				groupid = i
-# 				break
-    
-# 		if groupid == -1:
-# 			groups.append(ant_params)
-  
-# 	return groups
-
-# grouped_antenna_info = discern_antenna_groups(antenna_info)
-# print(grouped_antenna_info)
-# print(len(grouped_antenna_info))
