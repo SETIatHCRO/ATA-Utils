@@ -173,7 +173,7 @@ if args.stop_all_eth_first:
 		snap_control.stop_snaps(fengs)
 
 if not args.dry_run:
-	hpguppi_record_in.record_in(hpguppi_redis_set_channels=hpguppi_redis_reset_chans, reset=True)
+	hpguppi_record_in.record_in(hashpipe_targets=hpguppi_redis_reset_chans, reset=True)
 else:
 	print('hpguppi_daq redis channels to reset:', hpguppi_redis_reset_chans)
 
