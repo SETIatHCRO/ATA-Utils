@@ -278,17 +278,25 @@ if not args.sync_only:
 		if args.dry_run:
 			print('*'*5, 'Dry Run', '*'*5)
 		else:
-			rfsoc_feng_init.run(
-				rfsoc_hostname, rfsoc_config['fpga_file'], rfsoc_config['config_yml'],
-				feng_ids = rfsoc_config['feng_ids'],
-				pipeline_ids = rfsoc_config['pipeline_ids'],
-				dests = rfsoc_config['dests'],
-				sync = rfsoc_config['sync'],
-				eth_volt = rfsoc_config['eth_volt'],
-				tvg = rfsoc_config['tvg'],
-				noblank = rfsoc_config['noblank'],
-				skipprog = rfsoc_config['skip_prog']
-			)
+			for i in range(3):
+				try:
+					rfsoc_feng_init.run(
+						rfsoc_hostname, rfsoc_config['fpga_file'], rfsoc_config['config_yml'],
+						feng_ids = rfsoc_config['feng_ids'],
+						pipeline_ids = rfsoc_config['pipeline_ids'],
+						dests = rfsoc_config['dests'],
+						sync = rfsoc_config['sync'],
+						eth_volt = rfsoc_config['eth_volt'],
+						tvg = rfsoc_config['tvg'],
+						noblank = rfsoc_config['noblank'],
+						skipprog = rfsoc_config['skip_prog']
+					)
+					break
+				except BaseException as e:
+					if i == 2:
+						raise e
+					print('Retrying...')
+
 		print('{} Batched reprogramming/configuring RFSoC {} {}\n'.format('^'*5, rfsoc_boardname, '^'*5))
 
 if args.dry_run:
