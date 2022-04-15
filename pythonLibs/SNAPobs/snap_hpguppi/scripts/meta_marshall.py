@@ -194,7 +194,6 @@ antname_nolo_list = list(set([ant[:2] for ant in antenna_names]))
 # Create the AtaSnapFengine list from the names
 fengs = snap_control.init_snaps(streams_to_marshall)#, load_system_information=False)
 hostname_feng_dict = {feng.host:feng for feng in fengs}
-last_consulted_anttab = time.time()
 
 
 last_groups = []
@@ -221,14 +220,7 @@ section_strings = [
 sections_updated = [False for i in range(len(section_strings))]
 
 while(True):
-  # reconsult the ANT TAB file
-  if time.time() - last_consulted_anttab > 5:
-    streams_to_marshall, antenna_names = generate_stream_antnames_to_marshall()
-    antname_nolo_list = list(set([ant[:2] for ant in antenna_names]))
-    # Create the AtaSnapFengine list from the names
-    fengs = snap_control.init_snaps(streams_to_marshall)#, load_system_information=False)
-    hostname_feng_dict = {feng.host:feng for feng in fengs}
-    last_consulted_anttab = time.time()
+  # TODO: reconsult the ANT TAB file periodically. This requires a `reload_ata_tab` in snap_config...
 
   # Collect the destination
   feng_interface_dest_details = {feng.host:
