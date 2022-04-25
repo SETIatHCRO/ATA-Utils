@@ -174,12 +174,18 @@ def tune_if(snap_hosts):
             for snap_name in list(if_tab_sub.snap_hostname.values):
                 snap = snaps_dict[snap_name]
 
+                x, y = (), ()
+
                 set_device_lock(snap_name)
-                x,y = snap.adc_get_samples()
+                for i in range(5):
+                    tmpx, tmpy = snap.adc_get_samples()
+                    x += tmpx
+                    y += tmpy
+                release_device_lock(snap_name)
+
                 x = np.array(x)
                 y = np.array(y)
                 print(np.std(x),np.std(y))
-                release_device_lock(snap_name)
 
                 rms.append(x.std())
                 rms.append(y.std())
