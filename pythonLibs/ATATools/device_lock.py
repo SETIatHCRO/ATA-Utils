@@ -9,7 +9,6 @@ MAX_NTRIES = int(NSEC/SLEEP_TIME)
 DEFAULT_EXPIRE = 3 #time in seconds afterwhich lock will expire
 
 LOCK_ON  = b'1'
-LOCK_OFF = b'0'
 
 
 class LockError(Exception):
@@ -30,7 +29,7 @@ def set_device_lock(device_hostname,expire=DEFAULT_EXPIRE):
     ntries = 0
     if lock:
         # make sure we can obtain lock
-        while lock != LOCK_OFF:
+        while lock:
             lock = REDIS.get(lockname)
             time.sleep(0.1)
             ntries += 1
@@ -59,8 +58,5 @@ def set_device_lock(device_hostname,expire=DEFAULT_EXPIRE):
 def release_device_lock(device_hostname):
     lockname = device_hostname+"_lock"
 
-    resp = REDIS.set(lockname, LOCK_OFF)
-    if resp:
-        return 1
-    else:
-        raise LockError("Could not unset lock %s" %lockname)
+    resp = REDIS.delete(lockname)
+    return resp
