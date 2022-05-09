@@ -18,4 +18,10 @@ In this program the vibration and the power of the cryo cooler is plotted over t
 
 ![1e](https://user-images.githubusercontent.com/99358159/167219086-3c1aa845-8b8e-47ac-8696-ee72cdb0d57c.png)
 
+## vibration_by_power.py ##
 
+To look at the vibration caused by the cryo cooler the average vibration at each power level of the cryo cooler is plotted. Also this program creates a histogram of the selected time frame to see the amount of time the cryo cooler ran at each power level. 
+
+![plt2hap](https://user-images.githubusercontent.com/99358159/167479902-4204aaee-e7a9-4e1c-927e-bd155ea210f9.png)
+
+![plt2hpt](https://user-images.githubusercontent.com/99358159/167479914-96a6896d-8658-467d-ad2b-174593968688.png)
