@@ -1,0 +1,391 @@
+2021-08-12 00:57:27 INFO SNAPobs.snap_if: IF tuner entered
+2021-08-12 00:57:27 INFO SNAPobs.snap_control: Initialising snaps: ['rfsoc1-ctrl-1', 'rfsoc1-ctrl-2', 'rfsoc1-ctrl-3', 'rfsoc1-ctrl-4', 'rfsoc2-ctrl-1', 'rfsoc2-ctrl-2', 'rfsoc2-ctrl-4', 'rfsoc3-ctrl-1', 'rfsoc3-ctrl-2', 'rfsoc3-ctrl-3', 'rfsoc4-ctrl-2', 'rfsoc4-ctrl-3', 'rfsoc4-ctrl-4', 'rfsoc5-ctrl-1', 'rfsoc5-ctrl-2', 'rfsoc5-ctrl-3', 'rfsoc5-ctrl-4']
+2021-08-12 00:57:27 INFO AtaRfsocFengine0: Setting PPS source to board
+2021-08-12 00:57:27 INFO AtaRfsocFengine1: Setting PPS source to board
+2021-08-12 00:57:27 INFO AtaRfsocFengine2: Setting PPS source to board
+2021-08-12 00:57:27 INFO AtaRfsocFengine3: Setting PPS source to board
+2021-08-12 00:57:27 INFO AtaRfsocFengine0: Setting PPS source to board
+2021-08-12 00:57:27 INFO AtaRfsocFengine1: Setting PPS source to board
+2021-08-12 00:57:27 INFO AtaRfsocFengine3: Setting PPS source to board
+2021-08-12 00:57:27 INFO AtaRfsocFengine0: Setting PPS source to board
+2021-08-12 00:57:27 INFO AtaRfsocFengine1: Setting PPS source to board
+2021-08-12 00:57:27 INFO AtaRfsocFengine2: Setting PPS source to board
+2021-08-12 00:57:27 INFO AtaRfsocFengine1: Setting PPS source to board
+2021-08-12 00:57:27 INFO AtaRfsocFengine2: Setting PPS source to board
+2021-08-12 00:57:27 INFO AtaRfsocFengine3: Setting PPS source to board
+2021-08-12 00:57:27 INFO AtaRfsocFengine0: Setting PPS source to board
+2021-08-12 00:57:27 INFO AtaRfsocFengine1: Setting PPS source to board
+2021-08-12 00:57:27 INFO AtaRfsocFengine2: Setting PPS source to board
+2021-08-12 00:57:27 INFO AtaRfsocFengine3: Setting PPS source to board
+2021-08-12 00:57:30 INFO SNAPobs.snap_if: Tuning: 12    rfsoc1-ctrl-1
+13    rfsoc1-ctrl-2
+14    rfsoc1-ctrl-3
+15    rfsoc1-ctrl-4
+20    rfsoc2-ctrl-1
+21    rfsoc2-ctrl-2
+23    rfsoc2-ctrl-4
+28    rfsoc3-ctrl-1
+29    rfsoc3-ctrl-2
+30    rfsoc3-ctrl-3
+37    rfsoc4-ctrl-2
+38    rfsoc4-ctrl-3
+39    rfsoc4-ctrl-4
+44    rfsoc5-ctrl-1
+45    rfsoc5-ctrl-2
+46    rfsoc5-ctrl-3
+47    rfsoc5-ctrl-4
+Name: snap_hostname, dtype: object
+2021-08-12 00:57:30 INFO SNAPobs.snap_if: Attemp chans: ['1' '9' '2' '10' '3' '11' '4' '12']
+2021-08-12 00:57:30 INFO SNAPobs.snap_if: ssh sonata@gain-module1 'python attenuatorMain.py -n 1 9 2 10 3 11 4 12 -a 27.0 27.0 27.0 27.0 27.0 27.0 27.0 27.0'
+2021-08-12 00:57:33 INFO SNAPobs.snap_if: ssh sonata@gain-module1 'python attenuatorMain.py -n 1 9 2 10 3 11 4 12 -a 8.5 11.5 1.0 8.5 5.0 10.5 14.0 11.5'
+/home/obsuser/miniconda3/envs/rfsoc/lib/python3.9/site-packages/SNAPobs/snap_if.py:168: UserWarning: Trying to set attenuator on channels ['2'] to values [-1.0], which is less than min [0]
+  warnings.warn("Trying to set attenuator on channels %s to values %s, which is less than min [%i]"
+2021-08-12 00:57:35 INFO SNAPobs.snap_if: ssh sonata@gain-module1 'python attenuatorMain.py -n 1 9 2 10 3 11 4 12 -a 7.5 10.0 0.0 7.5 4.0 9.0 13.0 11.0'
+2021-08-12 00:57:38 INFO SNAPobs.snap_if: Tuning: 12    rfsoc1-ctrl-1
+13    rfsoc1-ctrl-2
+14    rfsoc1-ctrl-3
+15    rfsoc1-ctrl-4
+20    rfsoc2-ctrl-1
+21    rfsoc2-ctrl-2
+23    rfsoc2-ctrl-4
+28    rfsoc3-ctrl-1
+29    rfsoc3-ctrl-2
+30    rfsoc3-ctrl-3
+37    rfsoc4-ctrl-2
+38    rfsoc4-ctrl-3
+39    rfsoc4-ctrl-4
+44    rfsoc5-ctrl-1
+45    rfsoc5-ctrl-2
+46    rfsoc5-ctrl-3
+47    rfsoc5-ctrl-4
+Name: snap_hostname, dtype: object
+2021-08-12 00:57:38 INFO SNAPobs.snap_if: Attemp chans: ['1' '9' '2' '10' '4' '12']
+2021-08-12 00:57:38 INFO SNAPobs.snap_if: ssh sonata@gain-module2 'python attenuatorMain.py -n 1 9 2 10 4 12 -a 27.0 27.0 27.0 27.0 27.0 27.0'
+2021-08-12 00:57:41 INFO SNAPobs.snap_if: ssh sonata@gain-module2 'python attenuatorMain.py -n 1 9 2 10 4 12 -a 9.0 9.0 5.5 7.5 5.0 10.0'
+2021-08-12 00:57:43 INFO SNAPobs.snap_if: ssh sonata@gain-module2 'python attenuatorMain.py -n 1 9 2 10 4 12 -a 9.0 8.5 3.5 6.0 3.5 9.0'
+2021-08-12 00:57:45 INFO SNAPobs.snap_if: Tuning: 12    rfsoc1-ctrl-1
+13    rfsoc1-ctrl-2
+14    rfsoc1-ctrl-3
+15    rfsoc1-ctrl-4
+20    rfsoc2-ctrl-1
+21    rfsoc2-ctrl-2
+23    rfsoc2-ctrl-4
+28    rfsoc3-ctrl-1
+29    rfsoc3-ctrl-2
+30    rfsoc3-ctrl-3
+37    rfsoc4-ctrl-2
+38    rfsoc4-ctrl-3
+39    rfsoc4-ctrl-4
+44    rfsoc5-ctrl-1
+45    rfsoc5-ctrl-2
+46    rfsoc5-ctrl-3
+47    rfsoc5-ctrl-4
+Name: snap_hostname, dtype: object
+2021-08-12 00:57:45 INFO SNAPobs.snap_if: Attemp chans: ['1' '9' '2' '10' '3' '11']
+2021-08-12 00:57:45 INFO SNAPobs.snap_if: ssh sonata@gain-module3 'python attenuatorMain.py -n 1 9 2 10 3 11 -a 27.0 27.0 27.0 27.0 27.0 27.0'
+2021-08-12 00:57:48 INFO SNAPobs.snap_if: ssh sonata@gain-module3 'python attenuatorMain.py -n 1 9 2 10 3 11 -a 6.5 1.0 13.5 16.5 12.0 1.0'
+/home/obsuser/miniconda3/envs/rfsoc/lib/python3.9/site-packages/SNAPobs/snap_if.py:168: UserWarning: Trying to set attenuator on channels ['9', '11'] to values [-1.0, -1.0], which is less than min [0]
+  warnings.warn("Trying to set attenuator on channels %s to values %s, which is less than min [%i]"
+2021-08-12 00:57:50 INFO SNAPobs.snap_if: ssh sonata@gain-module3 'python attenuatorMain.py -n 1 9 2 10 3 11 -a 5.0 0.0 12.5 15.0 10.5 0.0'
+2021-08-12 00:57:53 INFO SNAPobs.snap_if: Tuning: 12    rfsoc1-ctrl-1
+13    rfsoc1-ctrl-2
+14    rfsoc1-ctrl-3
+15    rfsoc1-ctrl-4
+20    rfsoc2-ctrl-1
+21    rfsoc2-ctrl-2
+23    rfsoc2-ctrl-4
+28    rfsoc3-ctrl-1
+29    rfsoc3-ctrl-2
+30    rfsoc3-ctrl-3
+37    rfsoc4-ctrl-2
+38    rfsoc4-ctrl-3
+39    rfsoc4-ctrl-4
+44    rfsoc5-ctrl-1
+45    rfsoc5-ctrl-2
+46    rfsoc5-ctrl-3
+47    rfsoc5-ctrl-4
+Name: snap_hostname, dtype: object
+2021-08-12 00:57:53 INFO SNAPobs.snap_if: Attemp chans: ['2' '10' '3' '11' '4' '12']
+2021-08-12 00:57:53 INFO SNAPobs.snap_if: ssh sonata@gain-module4 'python attenuatorMain.py -n 2 10 3 11 4 12 -a 27.0 27.0 27.0 27.0 27.0 27.0'
+/home/obsuser/miniconda3/envs/rfsoc/lib/python3.9/site-packages/SNAPobs/snap_if.py:168: UserWarning: Trying to set attenuator on channels ['10'] to values [-0.5], which is less than min [0]
+  warnings.warn("Trying to set attenuator on channels %s to values %s, which is less than min [%i]"
+2021-08-12 00:57:56 INFO SNAPobs.snap_if: ssh sonata@gain-module4 'python attenuatorMain.py -n 2 10 3 11 4 12 -a 2.0 0.0 12.5 12.0 0.5 2.5'
+/home/obsuser/miniconda3/envs/rfsoc/lib/python3.9/site-packages/SNAPobs/snap_if.py:168: UserWarning: Trying to set attenuator on channels ['2', '10', '4'] to values [-0.5, -2.5, -2.0], which is less than min [0]
+  warnings.warn("Trying to set attenuator on channels %s to values %s, which is less than min [%i]"
+2021-08-12 00:57:58 INFO SNAPobs.snap_if: ssh sonata@gain-module4 'python attenuatorMain.py -n 2 10 3 11 4 12 -a 0.0 0.0 12.0 11.5 0.0 0.5'
+2021-08-12 00:58:00 INFO SNAPobs.snap_if: Tuning: 12    rfsoc1-ctrl-1
+13    rfsoc1-ctrl-2
+14    rfsoc1-ctrl-3
+15    rfsoc1-ctrl-4
+20    rfsoc2-ctrl-1
+21    rfsoc2-ctrl-2
+23    rfsoc2-ctrl-4
+28    rfsoc3-ctrl-1
+29    rfsoc3-ctrl-2
+30    rfsoc3-ctrl-3
+37    rfsoc4-ctrl-2
+38    rfsoc4-ctrl-3
+39    rfsoc4-ctrl-4
+44    rfsoc5-ctrl-1
+45    rfsoc5-ctrl-2
+46    rfsoc5-ctrl-3
+47    rfsoc5-ctrl-4
+Name: snap_hostname, dtype: object
+2021-08-12 00:58:00 INFO SNAPobs.snap_if: Attemp chans: ['1' '9' '2' '10' '3' '11' '4' '12']
+2021-08-12 00:58:00 INFO SNAPobs.snap_if: ssh sonata@gain-module5 'python attenuatorMain.py -n 1 9 2 10 3 11 4 12 -a 27.0 27.0 27.0 27.0 27.0 27.0 27.0 27.0'
+/home/obsuser/miniconda3/envs/rfsoc/lib/python3.9/site-packages/SNAPobs/snap_if.py:168: UserWarning: Trying to set attenuator on channels ['3'] to values [-2.5], which is less than min [0]
+  warnings.warn("Trying to set attenuator on channels %s to values %s, which is less than min [%i]"
+2021-08-12 00:58:04 INFO SNAPobs.snap_if: ssh sonata@gain-module5 'python attenuatorMain.py -n 1 9 2 10 3 11 4 12 -a 4.5 11.0 10.0 6.5 0.0 2.5 6.5 0.0'
+/home/obsuser/miniconda3/envs/rfsoc/lib/python3.9/site-packages/SNAPobs/snap_if.py:168: UserWarning: Trying to set attenuator on channels ['3', '12'] to values [-6.5, -2.5], which is less than min [0]
+  warnings.warn("Trying to set attenuator on channels %s to values %s, which is less than min [%i]"
+2021-08-12 00:58:06 INFO SNAPobs.snap_if: ssh sonata@gain-module5 'python attenuatorMain.py -n 1 9 2 10 3 11 4 12 -a 3.5 11.0 9.0 5.0 0.0 0.5 5.0 0.0'
+2021-08-12 00:58:09 INFO SNAPobs.snap_control: disconnecting snaps
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Stopping ioloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe257844640>
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Managed tornado IOloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe257844640> stopped
+/home/obsuser/miniconda3/envs/rfsoc/lib/python3.9/site-packages/SNAPobs/snap_control.py:51: UserWarning: 10
+  warnings.warn(str(e))
+/home/obsuser/miniconda3/envs/rfsoc/lib/python3.9/site-packages/SNAPobs/snap_control.py:51: UserWarning: 14
+  warnings.warn(str(e))
+/home/obsuser/miniconda3/envs/rfsoc/lib/python3.9/site-packages/SNAPobs/snap_control.py:51: UserWarning: 18
+  warnings.warn(str(e))
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Stopping ioloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe257005bb0>
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Managed tornado IOloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe257005bb0> stopped
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Stopping ioloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe2578582e0>
+/home/obsuser/miniconda3/envs/rfsoc/lib/python3.9/site-packages/SNAPobs/snap_control.py:51: UserWarning: 26
+  warnings.warn(str(e))
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Stopping ioloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe256ffd4f0>
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Managed tornado IOloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe2578582e0> stopped
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Stopping ioloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe25701d700>
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Managed tornado IOloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe25701d700> stopped
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Managed tornado IOloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe256ffd4f0> stopped
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Stopping ioloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe25701fa90>
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Stopping ioloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe257019160>
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Managed tornado IOloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe25701fa90> stopped
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Managed tornado IOloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe257019160> stopped
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Stopping ioloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe25702f190>
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Managed tornado IOloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe25702f190> stopped
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Stopping ioloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe2547b2790>
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Managed tornado IOloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe2547b2790> stopped
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Stopping ioloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe2547b70d0>
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Managed tornado IOloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe2547b70d0> stopped
+/home/obsuser/miniconda3/envs/rfsoc/lib/python3.9/site-packages/SNAPobs/snap_control.py:51: UserWarning: 50
+  warnings.warn(str(e))
+/home/obsuser/miniconda3/envs/rfsoc/lib/python3.9/site-packages/SNAPobs/snap_control.py:51: UserWarning: 54
+  warnings.warn(str(e))
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Stopping ioloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe2547cd130>
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Stopping ioloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe2547c03a0>
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Managed tornado IOloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe2547cd130> stopped
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Managed tornado IOloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe2547c03a0> stopped
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Stopping ioloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe2547c9910>
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Stopping ioloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe2547da400>
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Managed tornado IOloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe2547c9910> stopped
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Managed tornado IOloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe2547da400> stopped
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Stopping ioloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe2547e00a0>
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Managed tornado IOloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe2547e00a0> stopped
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Stopping ioloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe2547e37c0>
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Managed tornado IOloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe2547e37c0> stopped
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Stopping ioloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe254773550>
+2021-08-12 00:58:09 INFO katcp.ioloop_manager: Managed tornado IOloop <tornado.platform.asyncio.AsyncIOLoop object at 0x7fe254773550> stopped
+2021-08-12 00:58:09 INFO SNAPobs.snap_if: IF tuner ended
+snap_hosts:
+['rfsoc1-ctrl-1', 'rfsoc1-ctrl-2', 'rfsoc1-ctrl-3', 'rfsoc1-ctrl-4', 'rfsoc2-ctrl-1', 'rfsoc2-ctrl-2', 'rfsoc2-ctrl-4', 'rfsoc3-ctrl-1', 'rfsoc3-ctrl-2', 'rfsoc3-ctrl-3', 'rfsoc4-ctrl-2', 'rfsoc4-ctrl-3', 'rfsoc4-ctrl-4', 'rfsoc5-ctrl-1', 'rfsoc5-ctrl-2', 'rfsoc5-ctrl-3', 'rfsoc5-ctrl-4']
+    snap_hostname module chx chy
+12  rfsoc1-ctrl-1      1   1   9
+13  rfsoc1-ctrl-2      1   2  10
+14  rfsoc1-ctrl-3      1   3  11
+15  rfsoc1-ctrl-4      1   4  12
+20  rfsoc2-ctrl-1      2   1   9
+21  rfsoc2-ctrl-2      2   2  10
+23  rfsoc2-ctrl-4      2   4  12
+28  rfsoc3-ctrl-1      3   1   9
+29  rfsoc3-ctrl-2      3   2  10
+30  rfsoc3-ctrl-3      3   3  11
+37  rfsoc4-ctrl-2      4   2  10
+38  rfsoc4-ctrl-3      4   3  11
+39  rfsoc4-ctrl-4      4   4  12
+44  rfsoc5-ctrl-1      5   1   9
+45  rfsoc5-ctrl-2      5   2  10
+46  rfsoc5-ctrl-3      5   3  11
+47  rfsoc5-ctrl-4      5   4  12
+1
+    snap_hostname module chx chy
+12  rfsoc1-ctrl-1      1   1   9
+13  rfsoc1-ctrl-2      1   2  10
+14  rfsoc1-ctrl-3      1   3  11
+15  rfsoc1-ctrl-4      1   4  12
+rfsoc1-ctrl-1
+rfsoc1-ctrl-2
+rfsoc1-ctrl-3
+rfsoc1-ctrl-4
+ssh sonata@gain-module1 'python attenuatorMain.py -n 1 9 2 10 3 11 4 12 -a 27.0 27.0 27.0 27.0 27.0 27.0 27.0 27.0'
+123.96572467544442 168.16887303648167
+52.779470570699864 124.67258462442172
+81.70049387433532 151.9839290229197
+234.1337832744793 176.52392055025842
+ssh sonata@gain-module1 'python attenuatorMain.py -n 1 9 2 10 3 11 4 12 -a 8.5 11.5 1.0 8.5 5.0 10.5 14.0 11.5'
+887.9510862946665 862.187060387483
+810.7443741665849 904.7555409298943
+899.9433110014605 880.7535059369419
+931.9444432460774 973.2326747176294
+ssh sonata@gain-module1 'python attenuatorMain.py -n 1 9 2 10 3 11 4 12 -a 7.5 10.0 0.0 7.5 4.0 9.0 13.0 11.0'
+992.1424824343586 1059.5431923524445
+898.5203958614053 1021.7034016640772
+998.0959536266745 1052.5887917701193
+1032.1036736344515 1024.8614078369023
+    snap_hostname module chx chy
+12  rfsoc1-ctrl-1      1   1   9
+13  rfsoc1-ctrl-2      1   2  10
+14  rfsoc1-ctrl-3      1   3  11
+15  rfsoc1-ctrl-4      1   4  12
+20  rfsoc2-ctrl-1      2   1   9
+21  rfsoc2-ctrl-2      2   2  10
+23  rfsoc2-ctrl-4      2   4  12
+28  rfsoc3-ctrl-1      3   1   9
+29  rfsoc3-ctrl-2      3   2  10
+30  rfsoc3-ctrl-3      3   3  11
+37  rfsoc4-ctrl-2      4   2  10
+38  rfsoc4-ctrl-3      4   3  11
+39  rfsoc4-ctrl-4      4   4  12
+44  rfsoc5-ctrl-1      5   1   9
+45  rfsoc5-ctrl-2      5   2  10
+46  rfsoc5-ctrl-3      5   3  11
+47  rfsoc5-ctrl-4      5   4  12
+2
+    snap_hostname module chx chy
+20  rfsoc2-ctrl-1      2   1   9
+21  rfsoc2-ctrl-2      2   2  10
+23  rfsoc2-ctrl-4      2   4  12
+rfsoc2-ctrl-1
+rfsoc2-ctrl-2
+rfsoc2-ctrl-4
+ssh sonata@gain-module2 'python attenuatorMain.py -n 1 9 2 10 4 12 -a 27.0 27.0 27.0 27.0 27.0 27.0'
+126.75597346448586 129.20671007370348
+84.00640279345754 108.56932026243
+81.85447896961091 144.5755267773998
+ssh sonata@gain-module2 'python attenuatorMain.py -n 1 9 2 10 4 12 -a 9.0 9.0 5.5 7.5 5.0 10.0'
+1013.680988406689 953.9965321999626
+816.9089681786559 881.1839579385145
+878.5934661875631 926.7319988867234
+ssh sonata@gain-module2 'python attenuatorMain.py -n 1 9 2 10 4 12 -a 9.0 8.5 3.5 6.0 3.5 9.0'
+1004.1813058446648 1004.0322664098936
+1032.811193969524 1044.586081197163
+1019.4582590909785 1035.4248636062625
+    snap_hostname module chx chy
+12  rfsoc1-ctrl-1      1   1   9
+13  rfsoc1-ctrl-2      1   2  10
+14  rfsoc1-ctrl-3      1   3  11
+15  rfsoc1-ctrl-4      1   4  12
+20  rfsoc2-ctrl-1      2   1   9
+21  rfsoc2-ctrl-2      2   2  10
+23  rfsoc2-ctrl-4      2   4  12
+28  rfsoc3-ctrl-1      3   1   9
+29  rfsoc3-ctrl-2      3   2  10
+30  rfsoc3-ctrl-3      3   3  11
+37  rfsoc4-ctrl-2      4   2  10
+38  rfsoc4-ctrl-3      4   3  11
+39  rfsoc4-ctrl-4      4   4  12
+44  rfsoc5-ctrl-1      5   1   9
+45  rfsoc5-ctrl-2      5   2  10
+46  rfsoc5-ctrl-3      5   3  11
+47  rfsoc5-ctrl-4      5   4  12
+3
+    snap_hostname module chx chy
+28  rfsoc3-ctrl-1      3   1   9
+29  rfsoc3-ctrl-2      3   2  10
+30  rfsoc3-ctrl-3      3   3  11
+rfsoc3-ctrl-1
+rfsoc3-ctrl-2
+rfsoc3-ctrl-3
+ssh sonata@gain-module3 'python attenuatorMain.py -n 1 9 2 10 3 11 -a 27.0 27.0 27.0 27.0 27.0 27.0'
+98.32001564608512 52.17480467607597
+218.06379423361483 303.307669605251
+178.1592462318165 50.918473098768004
+ssh sonata@gain-module3 'python attenuatorMain.py -n 1 9 2 10 3 11 -a 6.5 1.0 13.5 16.5 12.0 1.0'
+882.9768872933931 793.6819672594833
+923.4774389065709 885.9649506097543
+863.6193728300213 811.9984051895453
+ssh sonata@gain-module3 'python attenuatorMain.py -n 1 9 2 10 3 11 -a 5.0 0.0 12.5 15.0 10.5 0.0'
+1071.1677722160398 973.1731507908953
+1050.3181503011122 1121.0701968573283
+975.6795857942832 897.9615978704212
+    snap_hostname module chx chy
+12  rfsoc1-ctrl-1      1   1   9
+13  rfsoc1-ctrl-2      1   2  10
+14  rfsoc1-ctrl-3      1   3  11
+15  rfsoc1-ctrl-4      1   4  12
+20  rfsoc2-ctrl-1      2   1   9
+21  rfsoc2-ctrl-2      2   2  10
+23  rfsoc2-ctrl-4      2   4  12
+28  rfsoc3-ctrl-1      3   1   9
+29  rfsoc3-ctrl-2      3   2  10
+30  rfsoc3-ctrl-3      3   3  11
+37  rfsoc4-ctrl-2      4   2  10
+38  rfsoc4-ctrl-3      4   3  11
+39  rfsoc4-ctrl-4      4   4  12
+44  rfsoc5-ctrl-1      5   1   9
+45  rfsoc5-ctrl-2      5   2  10
+46  rfsoc5-ctrl-3      5   3  11
+47  rfsoc5-ctrl-4      5   4  12
+4
+    snap_hostname module chx chy
+37  rfsoc4-ctrl-2      4   2  10
+38  rfsoc4-ctrl-3      4   3  11
+39  rfsoc4-ctrl-4      4   4  12
+rfsoc4-ctrl-2
+rfsoc4-ctrl-3
+rfsoc4-ctrl-4
+ssh sonata@gain-module4 'python attenuatorMain.py -n 2 10 3 11 4 12 -a 27.0 27.0 27.0 27.0 27.0 27.0'
+57.91348362850398 43.81962370539434
+196.68434109740622 186.69314187371518
+47.331611985933364 59.47304597573455
+ssh sonata@gain-module4 'python attenuatorMain.py -n 2 10 3 11 4 12 -a 2.0 0.0 12.5 12.0 0.5 2.5'
+785.2594276815348 756.7306596309107
+963.9642776379079 974.6980274752225
+782.5992369736484 798.4066524033531
+ssh sonata@gain-module4 'python attenuatorMain.py -n 2 10 3 11 4 12 -a 0.0 0.0 12.0 11.5 0.0 0.5'
+1044.051923454375 785.6534460284837
+982.5741094714189 993.681258355288
+835.9727337870529 974.2615749501374
+    snap_hostname module chx chy
+12  rfsoc1-ctrl-1      1   1   9
+13  rfsoc1-ctrl-2      1   2  10
+14  rfsoc1-ctrl-3      1   3  11
+15  rfsoc1-ctrl-4      1   4  12
+20  rfsoc2-ctrl-1      2   1   9
+21  rfsoc2-ctrl-2      2   2  10
+23  rfsoc2-ctrl-4      2   4  12
+28  rfsoc3-ctrl-1      3   1   9
+29  rfsoc3-ctrl-2      3   2  10
+30  rfsoc3-ctrl-3      3   3  11
+37  rfsoc4-ctrl-2      4   2  10
+38  rfsoc4-ctrl-3      4   3  11
+39  rfsoc4-ctrl-4      4   4  12
+44  rfsoc5-ctrl-1      5   1   9
+45  rfsoc5-ctrl-2      5   2  10
+46  rfsoc5-ctrl-3      5   3  11
+47  rfsoc5-ctrl-4      5   4  12
+5
+    snap_hostname module chx chy
+44  rfsoc5-ctrl-1      5   1   9
+45  rfsoc5-ctrl-2      5   2  10
+46  rfsoc5-ctrl-3      5   3  11
+47  rfsoc5-ctrl-4      5   4  12
+rfsoc5-ctrl-1
+rfsoc5-ctrl-2
+rfsoc5-ctrl-3
+rfsoc5-ctrl-4
+ssh sonata@gain-module5 'python attenuatorMain.py -n 1 9 2 10 3 11 4 12 -a 27.0 27.0 27.0 27.0 27.0 27.0 27.0 27.0'
+75.93255028939123 166.64179517690116
+141.34000460418892 98.83915921096198
+34.43639780139606 60.43946570875364
+94.30992533365423 46.06099036963694
+ssh sonata@gain-module5 'python attenuatorMain.py -n 1 9 2 10 3 11 4 12 -a 4.5 11.0 10.0 6.5 0.0 2.5 6.5 0.0'
+903.4422885589736 999.5004323792155
+895.1747529019092 881.1475139333269
+490.8428768002772 816.1694992952487
+883.164104139506 755.9247817722804
+ssh sonata@gain-module5 'python attenuatorMain.py -n 1 9 2 10 3 11 4 12 -a 3.5 11.0 9.0 5.0 0.0 0.5 5.0 0.0'
+1001.838277639346 992.465192234878
+1012.6364612200323 1084.4825408957192
+507.85666330553255 980.5407053634436
+1018.9857601249655 744.6929859759704

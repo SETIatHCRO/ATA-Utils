@@ -1,3 +1,4 @@
-# Observation Scripts
+# SETI Survey Scripts 
 
-Contains all scripts relating to observations
+Contains all required scripts to perform the SETI Survey (Including Calibration and Post-processing)
+
