@@ -34,3 +34,12 @@ To look at the vibration caused by the cryo cooler the average vibration at each
 ![plt2hap](https://user-images.githubusercontent.com/99358159/167479902-4204aaee-e7a9-4e1c-927e-bd155ea210f9.png)
 
 ![plt2hpt](https://user-images.githubusercontent.com/99358159/167479914-96a6896d-8658-467d-ad2b-174593968688.png)
+
+## vibration_gui.py ##
+
+To run this program you need fun_gui.py and fun_get_timeseries.py it's a graphical user interface to create the different plots, with an easy way to select a time frame and singular antennas. The program lets you plot and save the plots to a selected directory. To add new antennas to the program in the vibration_gui.py the checkbox for the new antenna needs to be activated.
+
+<img width="560" alt="data analyzing tool" src="https://user-images.githubusercontent.com/99358159/168887769-4a278f96-e58e-428b-a7fe-3c4e5ef6fe7c.png">
+
+
+
