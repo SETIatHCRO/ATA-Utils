@@ -2,6 +2,15 @@
 
 Repository for Sebastian Lang thesis project
 
+## Python modules used ##
+
+- telnetlib
+- mysql.connector
+- datetime
+- pytz
+- matplotlib
+- tkinter
+- tkcalendar
 
 ## weatherstation-to-mysql-v0.py ## 
 
