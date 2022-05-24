@@ -3,7 +3,7 @@ import pytz
 import numpy as np
 import matplotlib.pyplot as plt
 from pickle import TRUE
-
+import pandas as pd
 
 
 def vibration(startdatec,enddatec,ants,saveflg,showflg,plotpath):
@@ -368,11 +368,18 @@ def cryoplot(startdatec,enddatec,ants,saveflg,showflg,plotpath):
         time1 = [(timeseries1['time'][x].timestamp()-timeseries1['time'][0].timestamp())/3600 for x in range(len(timeseries1['time']))] # lets the timeseries time start at 0 and is then changed into hours
         time2 = [(timeseries2['time'][x].timestamp()-timeseries2['time'][0].timestamp())/3600 for x in range(len(timeseries2['time']))]
 
+        df = pd.DataFrame({
+            'value1':data1,
+            'value2':data2
+            })  
+
+        corrlevel = round((df['value2'].corr(df['value1'])),3)
+
         # plotting both datasets in one plot
         plt.figure(count+1)
 
         fig, ax1 = plt.subplots()
-        fig.suptitle(f'Antenna {ant}', fontsize=12)
+        fig.suptitle(f'Antenna {ant} Corrlevel: {corrlevel}', fontsize=12)
         color = 'tab:red'
         ax1.set_xlabel('time in h')
         ax1.set_ylabel(dataset1+' '+ant+' in g', color=color)
