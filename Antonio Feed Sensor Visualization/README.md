@@ -9,6 +9,7 @@ Repository for Sebastian Lang thesis project
 - datetime
 - pytz
 - matplotlib
+- pandas
 - tkinter
 - tkcalendar
 
