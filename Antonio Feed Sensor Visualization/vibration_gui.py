@@ -1,6 +1,6 @@
 import tkinter as tk
 import tkcalendar as tkc
-from fun_gui import vibration,cryopower,cryotemp,cryoplot,temp_distribution
+from fun_gui import vibration,cryopower,cryotemp,cryoplot,temp_distribution,vibrationxyz
 from datetime import datetime,date
 from tkinter import filedialog
 
@@ -31,6 +31,13 @@ def run_vibration():
     saveflg = saveflag.get()
     showflg = showflag.get()
     vibration(time[0],time[1],ants,saveflg,showflg,plotpath)
+
+def run_vibrationxyz():
+    time = time_frame()
+    ants = update_ants()
+    saveflg = saveflag.get()
+    showflg = showflag.get()
+    vibrationxyz(time[0],time[1],ants,saveflg,showflg,plotpath)
 
 def run_cryopower():
     time = time_frame()
@@ -444,19 +451,22 @@ button1 = tk.Button(root,text = 'Vibration/Cryopower',command = run_vibration)
 button1.grid(row = 9, column = 0)
 
 button2 = tk.Button(root, text = 'Cryopower distribution',command = run_cryopower)
-button2.grid(row = 10, column = 0)
+button2.grid(row = 11, column = 0)
 
 button3 = tk.Button(root, text = 'Cryopower/Temperature', command = run_cryotemp)
-button3.grid(row = 11, column = 0)
+button3.grid(row = 12, column = 0)
 
 button4 = tk.Button(root, text = 'Cryopower and Vibration', command = run_cryoplot)
-button4.grid(row = 12, column = 0)
+button4.grid(row = 13, column = 0)
 
 button5 = tk.Button(root,text = 'Temperature distribution', command = run_tempdist)
-button5.grid(row = 13, column = 0)
+button5.grid(row = 14, column = 0)
 
 button6 = tk.Button(root,text = 'Select directory for plots',command = get_directory)
 button6.grid(row = 9, column = 1)
+
+button7 = tk.Button(root,text = 'Vibration_x_y_z/Cryopower',command = run_vibrationxyz)
+button7.grid(row = 10, column = 0)
 
 savecheck = tk.Checkbutton(root, text = 'Save plots',variable = saveflag)
 savecheck.grid(row = 10, column = 1)
