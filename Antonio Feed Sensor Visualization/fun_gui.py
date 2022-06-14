@@ -587,7 +587,7 @@ def vibrationxyz(startdatec,enddatec,ants,saveflg,showflg,plotpath):
         axs[2].set(ylabel='z-vibration',xlabel='Cryopower in W')
 
         if saveflg == 1:
-            plt.savefig(plotpath+'vibrationplt'+ant+'.png')
+            plt.savefig(plotpath+'vibrationxyzplt'+ant+'.png')
         # plt.savefig(r"C:\Users\sebas\Documents\Informatik\Bachelorarbeit\Measurements\Power-Accel-March\plt"+f'{ant}ap.png') # uncomment if figures should be safed
 
     if showflg == 1:
