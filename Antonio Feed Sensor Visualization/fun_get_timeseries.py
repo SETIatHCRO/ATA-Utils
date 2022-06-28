@@ -37,7 +37,7 @@ def get_timeseries(dataseries,table,startdate,enddate,ants=""):
 
     # connectiing to the sql database    
     try:        
-        conn = mysql.connector.connect(user='grafanauser', password='Mars2020', host='data.hcro.org', database='grafanadata', auth_plugin='mysql_native_password')
+        conn = mysql.connector.connect(user='USERNAME', password='PASSWORD', host='data.hcro.org', database='grafanadata', auth_plugin='mysql_native_password')
     except:
         print("Connection to database failed")
 
