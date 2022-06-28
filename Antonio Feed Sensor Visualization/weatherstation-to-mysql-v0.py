@@ -452,7 +452,7 @@ def main():
 
     #establishing the connection
     try:
-        conn = mysql.connector.connect(user='grafanauser', password='Mars2020', host='data.hcro.org', database='grafanadata', auth_plugin='mysql_native_password')
+        conn = mysql.connector.connect(user='USERNAME', password='PASSWORD', host='data.hcro.org', database='grafanadata', auth_plugin='mysql_native_password')
     except:
         logger.error("Connection to database failed")
     #Creating a cursor object using the cursor() method
