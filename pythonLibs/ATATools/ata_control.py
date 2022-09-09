@@ -570,41 +570,38 @@ def make_and_track_ra_dec(ra, dec, antstr, **ephem_kwargs):
 #
 #####
 
-def autotune(ants, power_level=-10):
+def autotune(ants, power_level=-10.0, **kwargs):
     """
     calls autotune functionality (Power level for RF-Fiber conversion)
     on selected antennas.
-    ants is either a list of antennas, e.g. ['1a','1b']
-    or comma separated string, e.g. '1a,1b'
 
-    logger is used for autotune response
-
-    Raises RuntimeError if autotune execution fails.
+    :param ants: either a list of antennas, e.g. ['1a','1b'] or comma separated string, e.g. '1a,1b'
+    :param power: target power to tune to (dB)
+    :param kwargs: keyword args dict of optional autotuning control parameters
+    :keyword min_atten: minimum attenuation (default is 5.0 dB)
+    :keyword course_atten: course searching attenuation change (default is 2.0 dB)
+    :keyword tolerance: target power search tolerance (default is 1.0 dB)
+    :raises Exception on parameter or execution errors
     """
     assert power_level < 0, "ataautotune: power level should be negative"
     logger = logger_defaults.getModuleLogger(__name__)
     antstr = snap_array_helpers.input_to_string(ants)
 
+    if len(set(kwargs.keys()) - {'min_atten', 'course_atten', 'tolerance'}) > 0:
+        logger.error('autotune(): bad args')
+        raise Exception('autotune(): bad args')
+
     try:
         logger.info("autotuning: {}".format(ants))
-        endpoint = '/antennas/{:s}/autotune'.format(antstr)
-        retval = ATARest.put(endpoint, data={'power': power_level})
+        endpoint = '/antennas/{:s}/autotune2'.format(antstr)
+        kwargs.update({'power': power_level})
+        retval = ATARest.put(endpoint, data=kwargs)
+        return retval
     except Exception as e:
         logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
         raise
 
-    str_out = retval['stdout']
-    str_err = retval['stderr']
-
-    #searching for warnings or errors
-    rwarn = str_out.find("WARNING")
-    logger.info(str_err)
-    if rwarn != -1:
-        logger.warning(str_out)
-    rerr = str_err.find("ERROR")
-    if rerr != -1:
-        logger.error(str_out)
-        raise RuntimeError("Autotune execution error")
+    #raise RuntimeError("Autotune execution error")
 
 def set_pams(antdict):
     """
