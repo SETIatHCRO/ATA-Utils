@@ -196,7 +196,8 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
     lo_obsfreq = skyfreq_mapping[stream_hostnames[0]]
     centre_channel = fengine_meta_keyvalues['FENCHAN']/2
     source     = ant0_obs_params['SOURCE']
-    ra      = ant0_obs_params['RA'][0] * 360 / 24 # convert from hours to degrees
+    ra_hrs  = ant0_obs_params['RA'][0] # hours
+    ra      = ra_hrs * 360 / 24 # convert from hours to degrees
     dec     = ant0_obs_params['RA'][1] #ant0_obs_params['DEC']
     az      = ant0_obs_params['AZ'][0]
     el      = ant0_obs_params['AZ'][1] #ant0_obs_params['EL']
@@ -278,6 +279,7 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
                 'OBSBW'    : obsbw,
                 'SCHAN'    : schan,
                 'NCHAN'    : n_chans_per_dest,
+                'OBSNCHAN' : nants*n_chans_per_dest,
                 'OBSFREQ'  : obsfreq,
                 # 'BINDHOST' : BINDHOST, # static once the instance starts
                 # 'BINDPORT' : dest_port, # static once the instance starts
@@ -297,7 +299,7 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
                 'DEC'      : dec,
                 # 'SRC_NAME' : source,    # Rawspec expects these keys (rawspec_rawutils.c#L155-L186)
                 # but let record_in determine SRC_NAME such that it is uniform across antennae-groupings, leading to uniform RAW stems
-                'RA_STR'   : ra,        # Rawspec expects these keys (rawspec_rawutils.c#L155-L186)
+                'RA_STR'   : ra_hrs,    # Rawspec expects these keys (rawspec_rawutils.c#L155-L186)
                 'DEC_STR'  : dec,       # Rawspec expects these keys (rawspec_rawutils.c#L155-L186)
                 'AZ'       : az,
                 'EL'       : el,
