@@ -49,9 +49,9 @@ for i, filename in enumerate(sys.argv[1:]):
 
         f.close()
 
-    eloff  = np.array(eloff).astype(np.float).squeeze()
-    azoff  = np.array(azoff).astype(np.float).squeeze()
-    el_com = np.array(el_com).astype(np.float).squeeze()
+    eloff  = np.array(eloff).astype(float).squeeze()
+    azoff  = np.array(azoff).astype(float).squeeze()
+    el_com = np.array(el_com).astype(float).squeeze()
 
     rese = eloff
     resa = azoff
