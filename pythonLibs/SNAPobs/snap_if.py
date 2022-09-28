@@ -131,10 +131,10 @@ def tune_if(snap_hosts):
     #ant_ch = if_tab.values[:,1:].flatten()
     att_numbs = if_tab.module.unique()
     for att_num in att_numbs:
-        print(if_tab)
-        print(att_num)
+        #print(if_tab)
+        #print(att_num)
         if_tab_sub = if_tab[if_tab.module == att_num]
-        print(if_tab_sub)
+        #print(if_tab_sub)
         ant_ch = if_tab_sub[['chx', 'chy']].values.flatten()
 
         logger.info("Tuning: %s" %if_tab.snap_hostname)
@@ -143,7 +143,7 @@ def tune_if(snap_hosts):
         prev_attn = np.array([START_ATTN]*len(ant_ch))
         target_rms = []
         for host_name in if_tab_sub.snap_hostname:
-            print(host_name)
+            #print(host_name)
             if host_name.startswith("frb-snap"):
                 target_rms.append(17) #X pol
                 target_rms.append(17) #Y pol
@@ -176,12 +176,19 @@ def tune_if(snap_hosts):
 
                 x, y = (), ()
 
-                set_device_lock(snap_name)
+                if snap_name.lower().startswith('rfsoc'):
+                    # e.g. snap_name "rfsoc2-ctrl-3"
+                    # so lock_name = "rfsoc2"
+                    lock_name = snap_name[:6]
+                else:
+                    lock_name = snap_name
+
+                set_device_lock(lock_name)
                 for i in range(5):
                     tmpx, tmpy = snap.adc_get_samples()
                     x += tmpx
                     y += tmpy
-                release_device_lock(snap_name)
+                release_device_lock(lock_name)
 
                 x = np.array(x)
                 y = np.array(y)
@@ -202,8 +209,8 @@ def tune_if_ants(ant_list, target_rms=TARGET_RMS):
 
     obs_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.ANT_name.isin(ant_list)]
     snap_hosts = list(obs_ant_tab.snap_hostname.values)
-    print("snap_hosts:")
-    print(snap_hosts)
+    #print("snap_hosts:")
+    #print(snap_hosts)
     tune_if(snap_hosts)
 
 
@@ -212,8 +219,8 @@ def tune_if_antslo(antlo_list):
 
     obs_ant_tab = ATA_SNAP_TAB[ATA_SNAP_TAB.antlo.isin(antlo_list)]
     snap_hosts = list(obs_ant_tab.snap_hostname.values)
-    print("snap_hosts:")
-    print(snap_hosts)
+    #print("snap_hosts:")
+    #print(snap_hosts)
     tune_if(snap_hosts)
 
 
