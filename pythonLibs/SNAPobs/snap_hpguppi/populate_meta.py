@@ -306,6 +306,8 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
                 'ANTNAMES' : ant_names_string[0:71],
                 'XPCTGBPS' : '{:.3f}GBps {:.3f}Gbps'.format(expected_GBps, expected_GBps*8)
         }
+        if len(ant_names) > 0:
+            key_val["TUNING"] = f"Lo{ant_names[0][-1]}"
 
         # manage limited entry length
         if(len(ant_names_string) >= 71): #79 - len('ANTNMS##')
