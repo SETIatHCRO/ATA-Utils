@@ -1,6 +1,7 @@
 import redis
 from string import Template
 from SNAPobs import snap_defaults
+from SNAPobs.snap_hpguppi import auxillary as hpguppi_aux
 
 NBITS              = 4
 REDISHOST          = 'redishost'
@@ -52,3 +53,38 @@ hashpipe_targets_LoC = {
 	'seti-node7': [0,1],
 	'seti-node8': [0],
 }
+
+def resolve_hashpipe_targets():
+	global hashpipe_targets_LoB, hashpipe_targets_LoC
+
+	seti_nodes = [
+		f"seti-node{i}"
+		for i in range(1, 10)
+	]
+	instances = [0, 1]
+
+	hashpipe_targets_LoB = {}
+	hashpipe_targets_LoC = {}
+	for seti_node in seti_nodes:
+		for instance in instances:
+			redis_get_chan = REDISGETGW.substitute(
+				host=seti_node, inst=instance
+			)
+
+			antenna_list = hpguppi_aux.get_antennae_of_redis_chan(
+				redis_obj,
+				redis_get_chan
+			)
+			if len(antenna_list) == 0:
+				continue
+
+			# print(f"{seti_node}.{instance}: {antenna_list}")
+			lo = antenna_list[0][-1]
+			if lo == "B":
+				hashpipe_targets_LoB[seti_node] = hashpipe_targets_LoB.get(seti_node, [])
+				hashpipe_targets_LoB[seti_node].append(instance)
+			elif lo == "C":
+				hashpipe_targets_LoC[seti_node] = hashpipe_targets_LoC.get(seti_node, [])
+				hashpipe_targets_LoC[seti_node].append(instance)
+
+resolve_hashpipe_targets()
