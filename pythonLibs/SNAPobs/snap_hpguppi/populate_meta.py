@@ -278,6 +278,7 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
         key_val = {
                 'OBSBW'    : obsbw,
                 'SCHAN'    : schan,
+                'SUBBAND'  : 'C{}'.format(str(schan).zfill(4)),
                 'NCHAN'    : n_chans_per_dest,
                 'OBSNCHAN' : nants*n_chans_per_dest,
                 'OBSFREQ'  : obsfreq,
