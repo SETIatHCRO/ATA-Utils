@@ -130,7 +130,7 @@ def main():
     print(f'\nThere are {len(target_only)} hits for the target beam out of {len(passed_filtering)} total hits.\n')
 
     # plot the histograms for hits within the target beam
-    diagnostic_plotter(target_only, csv[:-4], saving=True, outdir=outdir)
+    diagnostic_plotter(target_only, csv.split('/')[-1][:-4], saving=True, outdir=outdir)
 
     # sort and find some maxima in the target only hit data
     target_only.reset_index(drop=True, inplace=True)
