@@ -258,13 +258,19 @@ def main():
     plt.xlabel('Average Correlation Scores')
     plt.ylabel('SNR')
     plt.yscale('log')
+    plt.xlim(0,1)
     plt.savefig(outdir + f'{obs}_SNRx.png')
     plt.close()
 
     # This block prints the elapsed time of the entire program.
+    print("Program complete!\n")
     end, time_label = get_elapsed_time(start)
     print(f"\t{len(dat_files)} dats with {len(full_df)} hits processed in %.2f {time_label}.\n" %end)
-    print(f"The full dataframe was saved to: {outdir}{obs}_CCFnbeam.csv")
+    print(f"\t{len(full_df[full_df.x>0.75])}/{len(full_df)} hits above an average correlation score of 0.75")
+    print(f"\t{len(full_df[full_df.x<0.75])}/{len(full_df)} hits below an average correlation score of 0.75")
+    print(f"\t{len(full_df[full_df.x<0.5])}/{len(full_df)} hits below an average correlation score of 0.5")
+    print(f"\t{len(full_df[full_df.x<0.25])}/{len(full_df)} hits below an average correlation score of 0.25")
+    print(f"\nThe full dataframe was saved to: {outdir}{obs}_CCFnbeam.csv")
     return None
 # run it!
 if __name__ == "__main__":
