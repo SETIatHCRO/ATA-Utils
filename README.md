@@ -6,7 +6,7 @@ It will recursively scan all subfolders of the input directories for the requisi
 
 1. Use tset_bash.sh with hardcoded observation directory to run fscrunch and turboSETI.
     - h5 or fil files --> dat and log files.
-
+<br>
 2.  
     - OLD METHOD: 2beam_spatial_filter.py does the spatial filtering with a given target beam as input
         - dats and logs --> csv
