@@ -181,3 +181,51 @@ def plot_waterfall_subplots(wf, wf_name, index, ax, fig, f_start=None, f_stop=No
         ax[index].set_ylabel("Time [s]")
     
     return None
+
+# plots the histograms showing snr, frequency, and drift rates of all the hits
+def diagnostic_plotter(df, tag, saving=False, log=True, outdir='./'):
+    # initialize figure with subplots
+    fig, ax = plt.subplots(nrows=1, ncols=3, figsize=((20,5)))
+    label_size=20
+    tick_label_size=14
+    tick_size=4
+    w=2
+    # snr histogram subplot
+    s=0
+    ax[s].semilogy()
+    ax[s].tick_params(axis='both', which='major', size=tick_size, labelsize=tick_label_size, width=w)
+    ax[s].set_xlabel('SNR',size=label_size)
+    ax[s].set_ylabel('Count',size=label_size)
+    ax[s].set_title('SNR Distribution',size=label_size)
+    ax[s].hist(df['SNR'], 
+         bins=100,
+         range=[0,1000],
+        color='rebeccapurple');
+    # freq histogram subplot
+    s=1
+    if log == True:
+        ax[s].semilogy()
+    ax[s].tick_params(axis='both', which='major', size=tick_size, labelsize=tick_label_size, width=w)
+    ax[s].set_xlabel('Frequency (GHz)',size=label_size)
+    ax[s].set_ylabel('Count',size=label_size)
+    ax[s].set_title('Frequency Distribution',size=label_size)
+    ax[s].hist(df['Corrected_Frequency'], 
+        bins=100,
+        color='teal');
+    # drift rate histogram subplot
+    s=2
+    ax[s].semilogy()
+    ax[s].tick_params(axis='both', which='major', size=tick_size, labelsize=tick_label_size, width=w)
+    ax[s].set_xlabel('Drift Rate (nHz)',size=label_size)
+    ax[s].set_ylabel('Count',size=label_size)
+    ax[s].set_title('Drift Rate Distribution',size=label_size)
+    ax[s].hist(df['normalized_dr'], 
+         bins=100,
+        color='firebrick');
+    # adjust layout and save figure
+    fig.text(0.5, 0.98, tag.replace('sfh','spatially_filtered_hits').replace('_',' '), va='top', ha='center', size=26)
+    fig.tight_layout(rect=[0, 0, 1, 0.9])
+    if saving == True:
+        plt.savefig(outdir + tag + '_diagnostic_plots.jpg')
+    plt.close()
+    return None
