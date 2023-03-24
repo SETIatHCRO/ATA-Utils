@@ -24,6 +24,6 @@ It will recursively scan all subfolders of the input directories for the requisi
     - OPTIONAL if using CCFnbeam.py (hits already filtered on target beam and histograms plotted)
     - Recommended if using nbeam_spatial_filter.py to filter by target beam
 
-4. plot_target_hits.py uses plot_target_utils.py to plot the hits in the input csv.
+4. plot_CCF_hits.py OR plot_target_hits.py, uses plot_target_utils.py to plot the hits in the input csv.
     - csv --> waterfall plots
     - input arguments allow for filtering of csv
