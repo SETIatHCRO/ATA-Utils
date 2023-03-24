@@ -1,6 +1,4 @@
-#NOTE: DRIFT RATE CHECKING CURRENTLY TURNED OFF
-# This code is currently hardcoded to identify TRAPPIST integration folders in get_dat_tuples() function
-# The program uses cross-correlation to identify the same signal that exists in target and off-target beams
+# The program uses a simple correlation to identify if similar signals exist in target and off-target beams
 
     # Import Packages
 import pandas as pd
@@ -29,8 +27,6 @@ def parse_args():
                         help='output target directory')
     parser.add_argument('-b', '--beam',metavar='target_beam',type=str,nargs=1,default='0',
                         help='target beam, 0 or 1. Default is 0.')
-    parser.add_argument('-clobber', action='store_true',
-                        help='overwrite files if they already exist')
     args = parser.parse_args()
     # Check for trailing slash in the directory path and add it if absent
     odict = vars(args)
@@ -121,10 +117,6 @@ def load_dat_df(dat_file,filtuple):
 def wf_data(fil,f1,f2):
     return bl.Waterfall(fil,f1,f2).grab_data(f1,f2)
 
-# normalize a 2D array
-def normalize(x):
-    return x/norm(x, axis=1, ord=1).reshape(np.shape(x)[0],1)
-
 # correlate two 2D arrays and return the correlation coefficient
 def sig_cor(s1,s2):
     ACF1=((s1*s1).sum(axis=1)).sum()/np.shape(s1)[0]/np.shape(s1)[1]
@@ -133,20 +125,8 @@ def sig_cor(s1,s2):
     x=CCF/np.sqrt(ACF1*ACF2)
     return x
 
-# simulate a 2D array of random noise
-def sim_noise(rows,columns,mean,std):
-    return np.random.normal(mean,std,(rows,columns))
-
 # comb through each hit in the dataframe and look for corresponding hits in each of the beams.
 def comb_df(df):
-    # initialize timing counters
-    wfend=0
-    wfcount=0
-    corend=0
-    corcount=0
-    flen=0
-    y=[]
-    ACF=[]
     # loop over every row in the dataframe
     for r,row in df.iterrows():
         # identify the target beam .fil file 
@@ -155,81 +135,25 @@ def comb_df(df):
         # identify the frequency range of the signal in this row of the dataframe
         f1=row['freq_start']
         f2 = row['freq_end']
-        frange=max(f1,f2)-min(f1,f2)
-        # # get the integration time for this observation
-        # with open(row['dat_name'], 'r') as f:
-        #     intime=float([line.split('obs_length: ')[1].split('\n')[0] for line in f.readlines() if 'obs_length: ' in line][0])
-        # # get the amount of frequency the signal drifts over according to the drift rate
-        # # for drift rates near 0.0 set a minimum frequency range of 10 Hz
-        # if row['Drift_Rate']*intime>5:
-        #     freq_drift = abs(intime*row['Drift_Rate']/1e6)
-        # else:
-        #     freq_drift = 5/1e6
-        # # narrow the frequency range around the signal based on the perceived drift rate
-        # df1 = row['Corrected_Frequency']-freq_drift
-        # df2 = row['Corrected_Frequency']+freq_drift
-        # fstart =max(min(f1,f2),min(df1,df2)) - frange*0.1
-        # fstop = min(max(f1,f2),max(df1,df2)) + frange*0.1
         fstart= min(f1,f2)
         fstop = max(f1,f2)
         # grab the signal data in the target beam fil file
-        wfstart=time.time()
         frange,s1=wf_data(target_fil,fstart,fstop)
-        wfcount+=1
-        wfend += time.time()-wfstart
-        flen+=len(frange)/len(df)
-        # use sigma clipping to approximate the noise without the signal
-        masked = sc(s1,sigma=3)
-        # subtract off the median of the approximated noise
-        s1=s1-np.ma.median(masked)
-        # simulate noise based on the sigma clipped data mask
-        n1 = sim_noise(np.shape(s1)[0],np.shape(s1)[1],np.ma.median(masked),np.ma.std(masked)) - np.ma.median(masked)
-        # correlate simulated noise from the target fil with the signal in the target beam fils
-        corstart=time.time()
-        y.append(sig_cor(n1,s1))
-        cort = time.time()-corstart
-        corend+=cort
-        corcount+=1
-        # save the autocorrelation of the signal just in case
-        ACF.append(((s1*s1).sum(axis=1)).sum()/np.shape(s1)[0]/np.shape(s1)[1])
         # get a list of all the other fil files for all the other beams
         other_cols = row.loc[row.index.str.startswith('fil_') & (row.index != matching_col)]
         # initialize empty correlation coefficient lists for appending
-        x=[]
+        xs=[]
         for col_name, other_fil in other_cols.iteritems():
-            # # grab an adjacent slice of data as "noise" from the other beam file with the same shape as the signal data
-            # deltaf = fstop-fstart
-            # try:
-            #     fstop2 = fstop+deltaf
-            #     wfstart=time.time()
-            #     _,n2=wf_data(other_fil,fstop,fstop2)
-            # # the exception catches cases that are accidentally outside the frequency bounds of the fil file
-            # except:
-            #     fstop2 = fstart-deltaf
-            #     wfstart=time.time()
-            #     _,n2=wf_data(other_fil,fstop2,fstart)
-            # wfcount+=1
-            # wfend += time.time()-wfstart
-
             # grab the data from the non-target fil in the same location
-            wfstart=time.time()
             _,s2=wf_data(other_fil,fstart,fstop)
-            wfcount+=1
-            wfend += time.time()-wfstart
-            # use sigma clipping to approximate the noise without the signal
-            masked2 = sc(s2,sigma=3)
-            # subtract off the median of that approximated noise
-            s2=s2-np.ma.median(masked2)
             # correlate the signal in the target beam with the same location in the non-target beam
-            corstart=time.time()
-            x.append(sig_cor(s1,s2))
-            cort = time.time()-corstart
-            corend+=cort
-            corcount+=1
-        df.loc[r,'x'] = sum(x)/len(x)           # the average correlation coefficient of the signal with the other beams
-    df['y'] = y                                 # the correlation coefficient of the signal with random noise
-    df['ACF'] = ACF                             # the correlation coefficient of the signal with itself
-    return wfend,wfcount,corend,corcount,flen,df
+            xs.append(sig_cor(s1,s2))
+        # loop over each correlation score in the tuple to add to the dataframe
+        for i,x in enumerate(xs):
+            col_name = row["dat_name"].split('beam')[-1].split('.fil')[0]+'_x_'+other_cols[i].split('beam')[-1].split('.fil')[0]
+            df[col_name] = x
+        df.loc[r,'x'] = sum(xs)/len(xs)           # the average correlation coefficient of the signal with the other beams
+    return df
 
 # plots the histograms showing snr, frequency, and drift rates of all the hits
 def diagnostic_plotter(df, tag, saving=False, log=True, outdir='./'):
@@ -239,7 +163,6 @@ def diagnostic_plotter(df, tag, saving=False, log=True, outdir='./'):
     tick_label_size=14
     tick_size=4
     w=2
-
     # snr histogram subplot
     s=0
     ax[s].semilogy()
@@ -251,7 +174,6 @@ def diagnostic_plotter(df, tag, saving=False, log=True, outdir='./'):
          bins=100,
          range=[0,1000],
         color='rebeccapurple');
-    
     # freq histogram subplot
     s=1
     if log == True:
@@ -263,7 +185,6 @@ def diagnostic_plotter(df, tag, saving=False, log=True, outdir='./'):
     ax[s].hist(df['Corrected_Frequency'], 
         bins=100,
         color='teal');
-
     # drift rate histogram subplot
     s=2
     ax[s].semilogy()
@@ -274,7 +195,6 @@ def diagnostic_plotter(df, tag, saving=False, log=True, outdir='./'):
     ax[s].hist(df['normalized_dr'], 
          bins=100,
         color='firebrick');
-    
     # adjust layout and save figure
     fig.text(0.5, 0.98, tag.replace('sfh','spatially_filtered_hits').replace('_',' '), va='top', ha='center', size=26)
     fig.tight_layout(rect=[0, 0, 1, 0.9])
@@ -282,6 +202,7 @@ def diagnostic_plotter(df, tag, saving=False, log=True, outdir='./'):
         plt.savefig(outdir + tag + '_diagnostic_plots.jpg')
     plt.close()
     return None
+
 
     # Main program execution
 def main():
@@ -295,9 +216,8 @@ def main():
     beam = cmd_args["beam"][0]      # optional, default = 0
     beam = str(int(beam)).zfill(4)  # force beam format as four char string with leading zeros. Ex: '0010'
     outdir = cmd_args["outdir"]     # optional (defaults to current directory)
-    clobber = cmd_args["clobber"]   # optional (currently not in use)
 
-    # create the outdir if the specified path does not exist
+    # create the output directory if the specified path does not exist
     if not os.path.isdir(outdir):
         os.mkdir(outdir)
 
@@ -307,12 +227,6 @@ def main():
     # initialize the final dataframe that will contain all the uncorrelated hits
     full_df=pd.DataFrame()
     
-    # initialize counters for timing purposes
-    wftime=0
-    wfcounts=0
-    cortime=0
-    corcounts=0
-    flens=0
     # loop through the list of tuples, perform cross-correlation to pare down the list of hits, 
     # and put the remaining hits into a dataframe.
     for d,dat in enumerate(dat_files):
@@ -324,82 +238,32 @@ def main():
         df = df.sort_values('Corrected_Frequency').reset_index(drop=True)
         print(f"{len(df)} hits in this dat file.\n")
         # comb through the dataframe and cross-correlate each hit to identify any that show up in multiple beams
-        wfend,wfcount,corend,corcount,flen,temp_df = comb_df(df)
+        temp_df = comb_df(df)
         full_df = pd.concat([full_df, temp_df],ignore_index=True)
-        wftime+=wfend
-        wfcounts+=wfcount
-        cortime+=corend
-        corcounts+=corcount
-        flens+=flen/len(dat_files)
-    # print(full_df)
-    xs = full_df.x
-    ys = full_df.y
-    ACFs = full_df.ACF
-    SNR = full_df.SNR
-    murky=xs[xs<max(ys)]
-    reduced_df = full_df[full_df['x'] < full_df['y'].max()]
-    cutoff=max(ys)
-    diff_df = full_df[full_df['x'] - full_df['y'].max()<=cutoff]
-    # interesting = full_df[(full_df['y']>0.2) & (full_df['SNR']/(full_df['y']-1)<=-200/0.8)]
-    # print(interesting)
 
-    # save the dataframe to csv
+    # save the full dataframe to csv
     try:
         obs="obs_"+"-".join([i.split('-')[1:3] for i in datdir.split('/') if ':' in i][0])
     except:
         obs="obs_UNKNOWN"
     full_df.to_csv(f"{outdir}{obs}_CCFnbeam.csv")
-    # reduced_df.to_csv(f"{outdir}{obs}_CCFnbeam_reduced.csv")
-
-    # print timing stats
-    print(f"{wfcounts} wf objects took {wftime:.3f} total seconds. Average: {(wftime/wfcounts):.3f} seconds per wf grab.")
-    print(f"{corcounts} CCFs took {cortime:.3f} total seconds. Average: {(cortime/corcounts):.3f} seconds per CCF.")
-    print(f'{len(murky)} hits below the maximum "Signal x Noise" correlation score: {max(ys):.3f}')
-    print(f"{len(diff_df)} hits with a difference in correlation scores less than {cutoff:.3f} ")
 
     # plot the histograms for hits within the target beam
     diagnostic_plotter(full_df, obs, saving=True, outdir=outdir)
 
-    plt.hist(ys, density=True, bins=20, label="Signal x Noise",align='left',alpha=0.6,edgecolor='k')
-    # plt.hist(zs, density=True, bins=20, label="Noise",align='left',alpha=0.6,edgecolor='k')
-    plt.hist(xs, density=True, bins=20, label="Signal x Signal",align='left',alpha=0.6,edgecolor='k')
-    plt.xlabel('Correlation Scores')
-    plt.ylabel('Number of Hits')
-    if len(set(xs)) > 1:
-        mn, mx = plt.xlim()
-        plt.xlim(mn, mx)
-        kde_xs = np.linspace(mn, mx, 300)
-        kde = st.gaussian_kde(xs)
-        plt.plot(kde_xs, kde.pdf(kde_xs), label="PDF")
-    plt.legend(loc="upper center")
-    plt.savefig(outdir + f'{obs}_x_hist.png')
-    plt.close()
-
-    plt.scatter(ys, SNR, label="Signal x Noise", color='b', alpha=0.5,zorder=20)
-    plt.scatter(xs,SNR,label="Signal x Signal",color='orange',alpha=0.5,edgecolor='k')
-    plt.xlabel('Correlation Scores')
+    # plot the average correlation scores vs the SNR for each hit in the target beam
+    xs = full_df.x
+    SNR = full_df.SNR
+    plt.scatter(xs,SNR,color='orange',alpha=0.5,edgecolor='k')
+    plt.xlabel('Average Correlation Scores')
     plt.ylabel('SNR')
     plt.yscale('log')
-    plt.legend(loc="upper center")
     plt.savefig(outdir + f'{obs}_SNRx.png')
-    plt.close()
-
-    reduced_df=full_df[full_df.x-full_df.y<0.2]
-    plt.scatter(xs-ys, SNR, color='purple', label="Difference in Scores [x-y]", alpha=0.5)
-    plt.scatter(reduced_df.x, reduced_df.SNR, color='orange',label="Signal x Signal [x]", alpha=0.5)
-    plt.scatter(reduced_df.y, reduced_df.SNR, color='blue', label="Signal x Noise [y]", alpha=0.5)
-    plt.xlabel('Scores and Differences')
-    plt.ylabel('SNR')
-    plt.xlim(min(min(xs-ys)-0.1,-0.1),max(max(xs-ys)+0.1,1.1))
-    plt.yscale('log')
-    plt.legend(loc="upper left")
-    plt.savefig(outdir + f'{obs}_SNRdxy.png')
     plt.close()
 
     # This block prints the elapsed time of the entire program.
     end, time_label = get_elapsed_time(start)
-    # print(f"\n\t{errors} log file errors. {len(full_df)} uncorrelated hits found.")
-    print(f"\t{len(dat_files)} dats with {len(full_df)} hits and an average frequency range of {flens:.2f} elements processed in %.2f {time_label}.\n" %end)
+    print(f"\t{len(dat_files)} dats with {len(full_df)} hits processed in %.2f {time_label}.\n" %end)
     print(f"The full dataframe was saved to: {outdir}{obs}_CCFnbeam.csv")
     return None
 # run it!
