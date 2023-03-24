@@ -20,8 +20,8 @@ It will recursively scan all subfolders of the input directories for the requisi
 
 3. target_beam_stats.py conducts statistical analysis on the correlated hits of the target vs off-target beams.
     - csv --> histograms & csv
-    - input arguments allow for filtering of csv
-    - OPTIONAL if using CCFnbeam.py
+    - filters csv to hits in target beam
+    - OPTIONAL if using CCFnbeam.py (hits already filtered on target beam)
     - Necessary if using nbeam_spatial_filter.py
 
 4. plot_target_hits.py uses plot_target_utils.py to plot the hits in the input csv.
