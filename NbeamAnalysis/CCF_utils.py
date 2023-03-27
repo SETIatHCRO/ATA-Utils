@@ -37,7 +37,7 @@ def get_dats(root_dir,beam):
     dat_files = []
     for dirpath, dirnames, filenames in os.walk(root_dir):
         for f in filenames:
-            if f.endswith('.dat') and f.split('beam')[1].split('.')[0]==beam:
+            if f.endswith('.dat') and f.split('beam')[-1].split('.')[0]==beam:
                 log_file = os.path.join(dirpath, f).replace('.dat','.log')
                 if check_logs(log_file)=="incomplete" or not os.path.isfile(log_file):
                     print(f"{log_file} is incomplete. Please check it. Skipping this file...")
@@ -63,7 +63,10 @@ def load_dat_df(dat_file,filtuple):
     full_dat_df = full_dat_df.assign(dat_name = dat_file)
     # loop over each .fil file in the tuple to add to the dataframe
     for i,fil in enumerate(filtuple):
-        col_name = 'fil_'+fil.split('beam')[-1].split('.fil')[0]
+        if filtuple[0].split('.')[-1]=='fil':
+            col_name = 'fil_'+fil.split('beam')[-1].split('.fil')[0]
+        elif filtuple[0].split('.')[-1]=='h5':
+            col_name = 'fil_'+fil.split('beam')[-1].split('.h5')[0]
         full_dat_df[col_name] = fil
     # calculate the drift rate in nHz for each hit and add it to the dataframe
     full_dat_df['normalized_dr'] = full_dat_df['Drift_Rate'] / (full_dat_df[['freq_start','freq_end']].max(axis=1) / 10**3)
@@ -106,7 +109,7 @@ def comb_df(df):
             xs.append(sig_cor(s1,s2))
         # loop over each correlation score in the tuple to add to the dataframe
         for i,x in enumerate(xs):
-            col_name = row["dat_name"].split('beam')[-1].split('.dat')[0]+'_x_'+other_cols[i].split('beam')[-1].split('.fil')[0]
+            col_name = row["dat_name"].split('beam')[-1].split('.dat')[0]+'_x_'+other_cols[i].split('beam')[-1].split('.')[0]
             df[col_name] = x
         df.loc[r,'x'] = sum(xs)/len(xs)           # the average correlation coefficient of the signal with the other beams
     return df
@@ -124,6 +127,7 @@ def get_freq_res(tupl):
     return deltaf[0]
 
 # cross reference hits in the target beam dat with the other beams dats for identical signals
+#NOTE: Not yet implemented
 def cross_ref(dat_df,dat_file):
     datdir=dat_file.split(dat_file.split('/')[-1])[0]
     dats=sorted(glob.glob(datdir+"*.dat"))

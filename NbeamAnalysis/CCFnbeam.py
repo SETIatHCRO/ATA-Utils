@@ -69,6 +69,11 @@ def main():
 
     # find and get a list of tuples of all the dat files corresponding to each subset of the observation
     dat_files,errors = ccf.get_dats(datdir,beam)
+    # make sure dat_files is not empty
+    if not dat_files:
+        print(f'\n\tERROR: No .dat files found in subfolders.'+
+                f'Please check the input directory and/or beam number, and then try again:\n{datdir}\n')
+        sys.exit()
 
     # initialize the final dataframe that will contain all the uncorrelated hits
     full_df=pd.DataFrame()
@@ -79,6 +84,8 @@ def main():
         mid=time.time()
         # make a tuple with the corresponding .fil files
         fils=sorted(glob.glob(fildir+dat.split(datdir)[1].split(dat.split('/')[-1])[0]+'*.fil'))
+        if not fils:
+            fils=sorted(glob.glob(fildir+dat.split(datdir)[1].split(dat.split('/')[-1])[0]+'*.h5'))
         # make a dataframe containing all the hits from all the .dat files in the tuple and sort them by frequency
         df = ccf.load_dat_df(dat,fils)
         df = df.sort_values('Corrected_Frequency').reset_index(drop=True)
