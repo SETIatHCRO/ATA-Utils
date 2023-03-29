@@ -2,6 +2,7 @@
 
 import pandas as pd
 import numpy as np
+import pickle
 import time
 import os
 import glob
@@ -85,9 +86,52 @@ def sig_cor(s1,s2):
     return x
 
 # comb through each hit in the dataframe and look for corresponding hits in each of the beams.
-def comb_df(df):
+# def comb_df(df):
+#     # loop over every row in the dataframe
+#     for r,row in df.iterrows():
+#         # identify the target beam .fil file 
+#         matching_col = row.filter(like='fil_').apply(lambda x: x == row['dat_name']).idxmax()
+#         target_fil = row[matching_col]
+#         # identify the frequency range of the signal in this row of the dataframe
+#         f1=row['freq_start']
+#         f2 = row['freq_end']
+#         fstart= min(f1,f2)
+#         fstop = max(f1,f2)
+#         # grab the signal data in the target beam fil file
+#         frange,s1=wf_data(target_fil,fstart,fstop)
+#         # get a list of all the other fil files for all the other beams
+#         other_cols = row.loc[row.index.str.startswith('fil_') & (row.index != matching_col)]
+#         # initialize empty correlation coefficient lists for appending
+#         xs=[]
+#         for col_name, other_fil in other_cols.iteritems():
+#             # grab the data from the non-target fil in the same location
+#             _,s2=wf_data(other_fil,fstart,fstop)
+#             # correlate the signal in the target beam with the same location in the non-target beam
+#             xs.append(sig_cor(s1,s2))
+#         # loop over each correlation score in the tuple to add to the dataframe
+#         for i,x in enumerate(xs):
+#             col_name = row["dat_name"].split('beam')[-1].split('.dat')[0]+'_x_'+other_cols[i].split('beam')[-1].split('.')[0]
+#             df[col_name] = x
+#         df.loc[r,'x'] = sum(xs)/len(xs)           # the average correlation coefficient of the signal with the other beams
+#     return df
+
+# extract index and dataframe from pickle files to resume from last checkpoint
+def resume(pickle_file, df):
+    index = 0 # initialize at 0
+    if os.path.exists(pickle_file):
+        # If a checkpoint file exists, load the dataframe and row index from the file
+        with open(pickle_file, "rb") as f:
+            index, df = pickle.load(f)
+        print(f'\t***pickle checkpoint file found. Resuming from step {index+1}\n')
+    return index, df
+
+# comb through each hit in the dataframe and look for corresponding hits in each of the beams.
+def comb_df(df, outdir='./', resume_index=None):
     # loop over every row in the dataframe
     for r,row in df.iterrows():
+        if resume_index is not None and r < resume_index:
+            continue  # skip rows before the resume index
+
         # identify the target beam .fil file 
         matching_col = row.filter(like='fil_').apply(lambda x: x == row['dat_name']).idxmax()
         target_fil = row[matching_col]
@@ -111,8 +155,15 @@ def comb_df(df):
         for i,x in enumerate(xs):
             col_name = row["dat_name"].split('beam')[-1].split('.dat')[0]+'_x_'+other_cols[i].split('beam')[-1].split('.')[0]
             df[col_name] = x
-        df.loc[r,'x'] = sum(xs)/len(xs)           # the average correlation coefficient of the signal with the other beams
+        df.loc[r,'x'] = sum(xs)/len(xs)           # the average correlation coefficient of the signal with the other beams        
+        # pickle the dataframe and row index for resuming
+        with open(outdir+'comb_df.pkl', 'wb') as f:
+            pickle.dump((r, df), f) 
+    # remove the pickle checkpoint file after all loops complete
+    if os.path.exists(outdir+"comb_df.pkl"):
+        os.remove(outdir+"comb_df.pkl") 
     return df
+
 
 # retrieve the frequency resolution of the dat files from their headers (should all be the same)
 def get_freq_res(tupl):

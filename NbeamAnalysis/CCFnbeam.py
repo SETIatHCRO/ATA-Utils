@@ -25,6 +25,8 @@ def parse_args():
                         help='output target directory')
     parser.add_argument('-b', '--beam',metavar='target_beam',type=str,nargs=1,default='0',
                         help='target beam, 0 or 1. Default is 0.')
+    parser.add_argument('-update', action='store_true',
+                        help='overwrite files if they already exist')
     args = parser.parse_args()
     # Check for trailing slash in the directory path and add it if absent
     odict = vars(args)
@@ -63,6 +65,7 @@ def main():
     beam = cmd_args["beam"][0]      # optional, default = 0
     beam = str(int(beam)).zfill(4)  # force beam format as four char string with leading zeros. Ex: '0010'
     outdir = cmd_args["outdir"]     # optional (defaults to current directory)
+    update = cmd_args["update"]    # optional, flag on or default off
 
     # create the output directory if the specified path does not exist
     if not os.path.isdir(outdir):
@@ -76,17 +79,10 @@ def main():
                 f'Please check the input directory and/or beam number, and then try again:\n{datdir}\n')
         sys.exit()
 
-    # Set up a checkpointing system
-    checkpoint_file = outdir+"checkpoint.pkl"
-    if os.path.exists(checkpoint_file):
-        # If a checkpoint file exists, load the final dataframe state from the file
-        with open(checkpoint_file, "rb") as f:
-            d, full_df = pickle.load(f)
-        print(f'\t***checkpoint.pkl file found. Resuming from step {d}/{len(dat_files)}\n')
-    else:
-        # Otherwise, initialize the final dataframe that will contain all the uncorrelated hits
-        d = 0
-        full_df = pd.DataFrame()
+    # check for pickle checkpoint files to resume from, or initialize the dataframe
+    full_df = pd.DataFrame()
+    d, full_df = ccf.resume(outdir+"full_df.pkl", full_df)
+    ndats=len(dat_files[d:])
     
     # loop through the list of tuples, starting from the last processed file (d), 
     # perform cross-correlation to pare down the list of hits, and put the remaining hits into a dataframe.
@@ -102,42 +98,44 @@ def main():
         df = ccf.load_dat_df(dat,fils)
         df = df.sort_values('Corrected_Frequency').reset_index(drop=True)
         print(f"Working through {len(df)} hits in dat file {d}/{len(dat_files)}:\n{dat}")
+        # check for checkpoint pickle files to resume from
+        resume_index, df = ccf.resume(outdir+"comb_df.pkl",df)
         # comb through the dataframe and cross-correlate each hit to identify any that show up in multiple beams
-        temp_df = ccf.comb_df(df)
+        temp_df = ccf.comb_df(df,outdir,resume_index=resume_index)
         full_df = pd.concat([full_df, temp_df],ignore_index=True)
         # Save the current state to the checkpoint file
-        with open(checkpoint_file, "wb") as f:
+        with open(outdir+"full_df.pkl", "wb") as f:
             pickle.dump((d, full_df), f)
 
-        #NOTE: The csv and plot outputs are included within the loop to track progress for longer loops
-        # save the full dataframe to csv
-        try:
-            obs="obs_"+"-".join([i.split('-')[1:3] for i in datdir.split('/') if ':' in i][0])
-        except:
-            obs="obs_UNKNOWN"
-        full_df.to_csv(f"{outdir}{obs}_CCFnbeam.csv")
+        if update or i==ndats-1:
+            # save the full dataframe to csv
+            try:
+                obs="obs_"+"-".join([i.split('-')[1:3] for i in datdir.split('/') if ':' in i][0])
+            except:
+                obs="obs_UNKNOWN"
+            full_df.to_csv(f"{outdir}{obs}_CCFnbeam.csv")
 
-        # plot the histograms for hits within the target beam
-        diagnostic_plotter(full_df, obs, saving=True, outdir=outdir)
+            # plot the histograms for hits within the target beam
+            diagnostic_plotter(full_df, obs, saving=True, outdir=outdir)
 
-        # plot the average correlation scores vs the SNR for each hit in the target beam
-        xs = full_df.x
-        SNR = full_df.SNR
-        fig,ax=plt.subplots(figsize=(12,10))
-        plt.scatter(xs,SNR,color='orange',alpha=0.5,edgecolor='k')
-        plt.xlabel('Average Correlation Scores')
-        plt.ylabel('SNR')
-        plt.yscale('log')
-        plt.xlim(-0.01,1.01)
-        plt.savefig(outdir + f'{obs}_SNRx.png',bbox_inches='tight',format='png',dpi=fig.dpi,facecolor='white', transparent=False)
-        plt.close()
+            # plot the average correlation scores vs the SNR for each hit in the target beam
+            xs = full_df.x
+            SNR = full_df.SNR
+            fig,ax=plt.subplots(figsize=(12,10))
+            plt.scatter(xs,SNR,color='orange',alpha=0.5,edgecolor='k')
+            plt.xlabel('Average Correlation Scores')
+            plt.ylabel('SNR')
+            plt.yscale('log')
+            plt.xlim(-0.01,1.01)
+            plt.savefig(outdir + f'{obs}_SNRx.png',bbox_inches='tight',format='png',dpi=fig.dpi,facecolor='white', transparent=False)
+            plt.close()
 
         # print processing time for this loop
         end, time_label = ccf.get_elapsed_time(mid)
         print(f"\tProcessed in %.2f {time_label}.\n" %end)
 
-    # remove the checkpoint file
-    os.remove(checkpoint_file)
+    # remove the full dataframe pickle file after all loops complete
+    os.remove(outdir+"full_df.pkl")
 
     # This block prints the elapsed time of the entire program.
     print("Program complete!\n")
