@@ -3,6 +3,7 @@
 
     # Import Packages
 import pandas as pd
+import pickle
 import numpy as np
 import time
 import os
@@ -75,17 +76,28 @@ def main():
                 f'Please check the input directory and/or beam number, and then try again:\n{datdir}\n')
         sys.exit()
 
-    # initialize the final dataframe that will contain all the uncorrelated hits
-    full_df=pd.DataFrame()
+    # Set up a checkpointing system
+    checkpoint_file = outdir+"checkpoint.pkl"
+    if os.path.exists(checkpoint_file):
+        # If a checkpoint file exists, load the final dataframe state from the file
+        with open(checkpoint_file, "rb") as f:
+            d, full_df = pickle.load(f)
+        print(f'\t***checkpoint.pkl file found. Resuming from step {d}/{len(dat_files)}\n')
+    else:
+        # Otherwise, initialize the final dataframe that will contain all the uncorrelated hits
+        d = 0
+        full_df = pd.DataFrame()
     
-    # loop through the list of tuples, perform cross-correlation to pare down the list of hits, 
-    # and put the remaining hits into a dataframe.
-    for d,dat in enumerate(dat_files):
+    # loop through the list of tuples, starting from the last processed file (d), 
+    # perform cross-correlation to pare down the list of hits, and put the remaining hits into a dataframe.
+    for i, dat in enumerate(dat_files[d:]):
+        # Increment the loop counter (d) by 1 so that it starts from the next file in the next iteration
+        d += 1
         mid=time.time()
         # make a tuple with the corresponding .fil files
-        fils=sorted(glob.glob(fildir+dat.split(datdir)[1].split(dat.split('/')[-1])[0]+'*.fil'))
+        fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+'*.fil'))
         if not fils:
-            fils=sorted(glob.glob(fildir+dat.split(datdir)[1].split(dat.split('/')[-1])[0]+'*.h5'))
+            fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+'*.h5'))
         # make a dataframe containing all the hits from all the .dat files in the tuple and sort them by frequency
         df = ccf.load_dat_df(dat,fils)
         df = df.sort_values('Corrected_Frequency').reset_index(drop=True)
@@ -93,31 +105,39 @@ def main():
         # comb through the dataframe and cross-correlate each hit to identify any that show up in multiple beams
         temp_df = ccf.comb_df(df)
         full_df = pd.concat([full_df, temp_df],ignore_index=True)
+        # Save the current state to the checkpoint file
+        with open(checkpoint_file, "wb") as f:
+            pickle.dump((d, full_df), f)
+
+        #NOTE: The csv and plot outputs are included within the loop to track progress for longer loops
+        # save the full dataframe to csv
+        try:
+            obs="obs_"+"-".join([i.split('-')[1:3] for i in datdir.split('/') if ':' in i][0])
+        except:
+            obs="obs_UNKNOWN"
+        full_df.to_csv(f"{outdir}{obs}_CCFnbeam.csv")
+
+        # plot the histograms for hits within the target beam
+        diagnostic_plotter(full_df, obs, saving=True, outdir=outdir)
+
+        # plot the average correlation scores vs the SNR for each hit in the target beam
+        xs = full_df.x
+        SNR = full_df.SNR
+        fig,ax=plt.subplots(figsize=(12,10))
+        plt.scatter(xs,SNR,color='orange',alpha=0.5,edgecolor='k')
+        plt.xlabel('Average Correlation Scores')
+        plt.ylabel('SNR')
+        plt.yscale('log')
+        plt.xlim(-0.01,1.01)
+        plt.savefig(outdir + f'{obs}_SNRx.png',bbox_inches='tight',format='png',dpi=fig.dpi,facecolor='white', transparent=False)
+        plt.close()
+
+        # print processing time for this loop
         end, time_label = ccf.get_elapsed_time(mid)
         print(f"\tProcessed in %.2f {time_label}.\n" %end)
 
-    # save the full dataframe to csv
-    try:
-        obs="obs_"+"-".join([i.split('-')[1:3] for i in datdir.split('/') if ':' in i][0])
-    except:
-        obs="obs_UNKNOWN"
-    full_df.to_csv(f"{outdir}{obs}_CCFnbeam.csv")
-
-    # plot the histograms for hits within the target beam
-    diagnostic_plotter(full_df, obs, saving=True, outdir=outdir)
-
-    # plot the average correlation scores vs the SNR for each hit in the target beam
-    xs = full_df.x
-    SNR = full_df.SNR
-    fig,ax=plt.subplots(figsize=(12,10))
-    plt.scatter(xs,SNR,color='orange',alpha=0.5,edgecolor='k')
-    plt.xlabel('Average Correlation Scores')
-    plt.ylabel('SNR')
-    plt.yscale('log')
-    plt.xlim(-0.01,1.01)
-    # plt.grid()
-    plt.savefig(outdir + f'{obs}_SNRx.png',bbox_inches='tight',format='png',dpi=fig.dpi,facecolor='white', transparent=False)
-    plt.close()
+    # remove the checkpoint file
+    os.remove(checkpoint_file)
 
     # This block prints the elapsed time of the entire program.
     print("Program complete!\n")
