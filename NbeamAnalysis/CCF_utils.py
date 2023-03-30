@@ -2,12 +2,40 @@
 
 import pandas as pd
 import numpy as np
+import logging
 import pickle
 import time
 import os
 import glob
 import argparse
 import blimpy as bl
+import logging
+import sys
+
+def setup_logging(log_filename):
+    # Import the logging module and configure the root logger
+    logging.basicConfig(level=logging.INFO, format='%(message)s')
+
+    # Get the root logger instance
+    logger = logging.getLogger()
+
+    # Remove any existing handlers from the logger
+    for handler in logger.handlers:
+        logger.removeHandler(handler)
+
+    # Create a console handler that writes to sys.stdout
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    logger.addHandler(console_handler)
+
+    # Create a file handler that writes to the specified file
+    file_handler = logging.FileHandler(log_filename)
+    file_handler.setLevel(logging.INFO)
+    logger.addHandler(file_handler)
+
+    # Set the logger as the default logger for the logging module
+    logging.getLogger('').handlers = [console_handler, file_handler]
+    return None
 
 # elapsed time function
 def get_elapsed_time(start=0):
@@ -41,7 +69,7 @@ def get_dats(root_dir,beam):
             if f.endswith('.dat') and f.split('beam')[-1].split('.')[0]==beam:
                 log_file = os.path.join(dirpath, f).replace('.dat','.log')
                 if check_logs(log_file)=="incomplete" or not os.path.isfile(log_file):
-                    print(f"{log_file} is incomplete. Please check it. Skipping this file...")
+                    logging.info(f"{log_file} is incomplete. Please check it. Skipping this file...")
                     errors+=1
                     continue
                 dat_files.append(os.path.join(dirpath, f))
@@ -122,11 +150,11 @@ def resume(pickle_file, df):
         # If a checkpoint file exists, load the dataframe and row index from the file
         with open(pickle_file, "rb") as f:
             index, df = pickle.load(f)
-        print(f'\t***pickle checkpoint file found. Resuming from step {index+1}\n')
+        logging.info(f'\t***pickle checkpoint file found. Resuming from step {index+1}\n')
     return index, df
 
 # comb through each hit in the dataframe and look for corresponding hits in each of the beams.
-def comb_df(df, outdir='./', resume_index=None):
+def comb_df(df, outdir='./', obs='UNKNOWN', resume_index=None):
     # loop over every row in the dataframe
     for r,row in df.iterrows():
         if resume_index is not None and r < resume_index:
@@ -157,11 +185,11 @@ def comb_df(df, outdir='./', resume_index=None):
             df[col_name] = x
         df.loc[r,'x'] = sum(xs)/len(xs)           # the average correlation coefficient of the signal with the other beams        
         # pickle the dataframe and row index for resuming
-        with open(outdir+'comb_df.pkl', 'wb') as f:
+        with open(outdir+f'{obs}_comb_df.pkl', 'wb') as f:
             pickle.dump((r, df), f) 
     # remove the pickle checkpoint file after all loops complete
-    if os.path.exists(outdir+"comb_df.pkl"):
-        os.remove(outdir+"comb_df.pkl") 
+    if os.path.exists(outdir+f"{obs}_comb_df.pkl"):
+        os.remove(outdir+f"{obs}_comb_df.pkl") 
     return df
 
 # retrieve the frequency resolution of the dat files from their headers (should all be the same)
@@ -173,7 +201,7 @@ def get_freq_res(tupl):
             if "DELTAF(Hz):  " in line:
                 deltaf.append(float(line.split("DELTAF(Hz):  ")[-1].split("	")[0]))
     if deltaf[0]!=deltaf[1]:
-        print(f"ERROR: DELTAF(Hz) values do not match for this tuple:\n{tupl}\nProceeding with first DELTAF(Hz) value anyway.")
+        logging.info(f"ERROR: DELTAF(Hz) values do not match for this tuple:\n{tupl}\nProceeding with first DELTAF(Hz) value anyway.")
     return deltaf[0]
 
 # cross reference hits in the target beam dat with the other beams dats for identical signals
