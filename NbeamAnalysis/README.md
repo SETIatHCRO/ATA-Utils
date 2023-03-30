@@ -13,9 +13,11 @@ It will recursively scan all subfolders of the input directories for the requisi
         - filters on overlapping frequencies of hits in each dat file (isolating only those with no obvious pair)
         - faster than new method because it only looks at dat text files
     - NEW METHOD: CCFnbeam.py uses cross-correlation to identify the same signals in both beams
-        - dats and logs --> csv & histograms & csv
-        - correlates frequency ranges of hits in target beam with other beams
+        - dats and logs --> histograms, correlation plot, output log, and csv
+        - first cross references hits like the old method to pare down the hit list
+        - then correlates frequency ranges of remaining hits in target beam with other beams
         - should work with any number of beams
+        - uses pickle files to resume interrupted scripts
         - slower than old method because it draws blimpy waterfall data slice for each hit in all beams
 
 3. target_beam_stats.py conducts statistical analysis on the correlated hits of the target vs off-target beams.
