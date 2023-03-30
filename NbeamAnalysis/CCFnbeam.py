@@ -95,9 +95,11 @@ def main():
         if not fils:
             fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+'*.h5'))
         # make a dataframe containing all the hits from all the .dat files in the tuple and sort them by frequency
-        df = ccf.load_dat_df(dat,fils)
-        df = df.sort_values('Corrected_Frequency').reset_index(drop=True)
-        print(f"Working through {len(df)} hits in dat file {d}/{len(dat_files)}:\n{dat}")
+        df0 = ccf.load_dat_df(dat,fils)
+        df0 = df0.sort_values('Corrected_Frequency').reset_index(drop=True)
+        df = ccf.cross_ref(df0)
+        print(f"{len(df0)-len(df)}/{len(df0)} hits removed as exact frequency matches. "+
+                 f"Combing through the remaining {len(df)} hits in dat file {d}/{len(dat_files)}:\n{dat}")
         # check for checkpoint pickle files to resume from
         resume_index, df = ccf.resume(outdir+"comb_df.pkl",df)
         # comb through the dataframe and cross-correlate each hit to identify any that show up in multiple beams

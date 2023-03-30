@@ -164,7 +164,6 @@ def comb_df(df, outdir='./', resume_index=None):
         os.remove(outdir+"comb_df.pkl") 
     return df
 
-
 # retrieve the frequency resolution of the dat files from their headers (should all be the same)
 def get_freq_res(tupl):
     deltaf=[]
@@ -178,81 +177,49 @@ def get_freq_res(tupl):
     return deltaf[0]
 
 # cross reference hits in the target beam dat with the other beams dats for identical signals
-#NOTE: Not yet implemented
-def cross_ref(dat_df,dat_file):
-    datdir=dat_file.split(dat_file.split('/')[-1])[0]
-    dats=sorted(glob.glob(datdir+"*.dat"))
-    status=[]
-    for h,hit in dat_df.iterrows():
-        close_enough_width = 2e-6 # 2 Hz, arbitrary
-        freq_res = get_freq_res(dats) # 1.907349 #Hz
-        fmid_lower = hit.Corrected_Frequency - close_enough_width
-        fmid_upper = hit.Corrected_Frequency + close_enough_width
-        fstart_lower = hit.freq_start - close_enough_width
-        fstart_upper = hit.freq_start + close_enough_width
-        fstop_lower = hit.freq_end - close_enough_width
-        fstop_upper = hit.freq_end + close_enough_width
-        for d,dat in enumerate(dats):
-            df = pd.read_csv(dat_file, delim_whitespace=True, names=['Top_Hit_#','Drift_Rate','SNR',
-                                    'Uncorrected_Frequency','Corrected_Frequency','Index','freq_start','freq_end',
-                                    'SEFD','SEFD_freq','Coarse_Channel_Number','Full_number_of_hits'], skiprows=9)
-            df=df[df.Corrected_Frequency.between(fmid_lower,fmid_upper)].reset_index(drop=True)
-            df=df[df.freq_start.between(fstart_lower,fstart_upper)].reset_index(drop=True)
-            df=df[df.freq_end.between(fstop_lower,fstop_upper)].reset_index(drop=True)
-            if len(df)>0:
-                status.append('disqualified')
+def cross_ref(input_df):
+    if len(input_df)==0:
+        return input_df
+    # first, make sure the indices are reset
+    input_df=input_df.reset_index(drop=True)
+    # Extract directory path from the first row of the dat_name column
+    dat_path = os.path.dirname(input_df['dat_name'].iloc[0])
+    
+    # Find all dat files in the directory
+    dat_files = [f for f in os.listdir(dat_path) if f.endswith('.dat')]
+    
+    # Load each dat file into a separate dataframe and store in a list
+    dat_dfs = []
+    for dat_file in dat_files:
+        if dat_file == os.path.basename(input_df['dat_name'].iloc[0]):
+            continue  # Skip the dat file corresponding to the dat_name column
+        dat_df = pd.read_csv(os.path.join(dat_path, dat_file), delim_whitespace=True,
+                             names=['Top_Hit_#','Drift_Rate','SNR','Uncorrected_Frequency',
+                                    'Corrected_Frequency','Index','freq_start','freq_end',
+                                    'SEFD','SEFD_freq','Coarse_Channel_Number',
+                                    'Full_number_of_hits'], skiprows=9)
+        dat_dfs.append(dat_df)
+    
+    # Iterate through rows in input dataframe and prune if necessary
+    rows_to_drop = []
+    for idx, row in input_df.iterrows():
+        drop_row = False
+        
+        # Check if values are within tolerance in any of the dat file dataframes
+        for dat_df in dat_dfs:
+            within_tolerance = ((dat_df['Corrected_Frequency'] - row['Corrected_Frequency']).abs() < 2e-6) & \
+                               ((dat_df['freq_start'] - row['freq_start']).abs() < 2e-6) & \
+                               ((dat_df['freq_end'] - row['freq_end']).abs() < 2e-6)
+            if within_tolerance.any():
+                drop_row = True
                 break
-        # collect all the dats for all the beams to cross reference
-        dats=sorted(glob.glob(datdir+dat.split(datdir)[1].split(dat.split('/')[-1])[0]+'*.dat'))
-        full_dat_df = load_dat_df(dats,fils)
-        full_df = full_dat_df.reset_index(drop=True)
-        #from header
-        freq_res = get_freq_res(dats) # 1.907349 #Hz
-        close_enough_width = 2e-6 #10 Hz, arbitrary
-        #getting frequency and drift rate info
-        fmid_list = full_df.Corrected_Frequency.values
-        fstart_list = full_df.freq_start.values
-        fstop_list = full_df.freq_end.values
-        used_fmid_list = []
-        deleted_hits_indices = []
-        success_indices = []
-        #loop through all frequencies in the 2-beam set
-        for index, trial_fmid in enumerate(fmid_list):
-            #check that the frequency hasn't already been used
-            if trial_fmid not in used_fmid_list and index not in deleted_hits_indices:
-                #look for other hits starting within d of the detected hit
-                trial_fmid_lbound = trial_fmid - close_enough_width
-                trial_fmid_hbound = trial_fmid + close_enough_width
-                trial_fstart_lbound = fstart_list[index] - close_enough_width
-                trial_fstart_hbound = fstart_list[index] + close_enough_width
-                trial_fstop_lbound = fstop_list[index] - close_enough_width
-                trial_fstop_hbound = fstop_list[index] + close_enough_width
-                #check off the freq by appending to used_freqs_list
-                used_fmid_list.append(trial_fmid)
-                #if it is the only hit, it is by definition localized
-                if len(fmid_list) == 1:
-                    success_indices.append(index)
-                #default the hit to "this is localized"
-                localized_trial = True
-                #for each other hit
-                for index_check, fmid_check in enumerate(fmid_list):
-                    if index_check != index:
-                        #get the characteristics of the "comparison" hit
-                        if (trial_fmid_lbound <= fmid_check <= trial_fmid_hbound):
-                            if (trial_fstart_lbound <= fstart_list[index_check] <= trial_fstart_hbound):
-                                if (trial_fstop_lbound <= fstop_list[index_check] <= trial_fstop_hbound):
-                                    #if the check hit is consistent with the trial freq bounds, strike it off, and the trial too
-                                    localized_trial = False
-                                    deleted_hits_indices.append(index_check)
-                #after checking all of the frequencies, go back and deal with the results on the original trial frequency
-                if localized_trial == True:
-                    success_indices.append(index)
-                else:
-                    deleted_hits_indices.append(index)
-        test_successes = full_df.iloc[success_indices]
-        if start_flag == True:
-            location_filtered = test_successes
-            start_flag = False
-        else:
-            location_filtered = pd.concat([location_filtered, test_successes])
-    return df
+        
+        # Add row to list of rows to drop if within tolerance in any of the dat file dataframes
+        if drop_row:
+            rows_to_drop.append(idx)
+    
+    # Drop rows that are within tolerance
+    trimmed_df = input_df.drop(rows_to_drop)
+    
+    # Reset index and return trimmed dataframe
+    return trimmed_df.reset_index(drop=True)
