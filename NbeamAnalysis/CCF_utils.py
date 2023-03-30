@@ -2,11 +2,40 @@
 
 import pandas as pd
 import numpy as np
+import logging
+import pickle
 import time
 import os
 import glob
 import argparse
 import blimpy as bl
+import logging
+import sys
+
+def setup_logging(log_filename):
+    # Import the logging module and configure the root logger
+    logging.basicConfig(level=logging.INFO, format='%(message)s')
+
+    # Get the root logger instance
+    logger = logging.getLogger()
+
+    # Remove any existing handlers from the logger
+    for handler in logger.handlers:
+        logger.removeHandler(handler)
+
+    # Create a console handler that writes to sys.stdout
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    logger.addHandler(console_handler)
+
+    # Create a file handler that writes to the specified file
+    file_handler = logging.FileHandler(log_filename)
+    file_handler.setLevel(logging.INFO)
+    logger.addHandler(file_handler)
+
+    # Set the logger as the default logger for the logging module
+    logging.getLogger('').handlers = [console_handler, file_handler]
+    return None
 
 # elapsed time function
 def get_elapsed_time(start=0):
@@ -37,10 +66,10 @@ def get_dats(root_dir,beam):
     dat_files = []
     for dirpath, dirnames, filenames in os.walk(root_dir):
         for f in filenames:
-            if f.endswith('.dat') and f.split('beam')[1].split('.')[0]==beam:
+            if f.endswith('.dat') and f.split('beam')[-1].split('.')[0]==beam:
                 log_file = os.path.join(dirpath, f).replace('.dat','.log')
                 if check_logs(log_file)=="incomplete" or not os.path.isfile(log_file):
-                    print(f"{log_file} is incomplete. Please check it. Skipping this file...")
+                    logging.info(f"{log_file} is incomplete. Please check it. Skipping this file...")
                     errors+=1
                     continue
                 dat_files.append(os.path.join(dirpath, f))
@@ -63,7 +92,10 @@ def load_dat_df(dat_file,filtuple):
     full_dat_df = full_dat_df.assign(dat_name = dat_file)
     # loop over each .fil file in the tuple to add to the dataframe
     for i,fil in enumerate(filtuple):
-        col_name = 'fil_'+fil.split('beam')[-1].split('.fil')[0]
+        if filtuple[0].split('.')[-1]=='fil':
+            col_name = 'fil_'+fil.split('beam')[-1].split('.fil')[0]
+        elif filtuple[0].split('.')[-1]=='h5':
+            col_name = 'fil_'+fil.split('beam')[-1].split('.h5')[0]
         full_dat_df[col_name] = fil
     # calculate the drift rate in nHz for each hit and add it to the dataframe
     full_dat_df['normalized_dr'] = full_dat_df['Drift_Rate'] / (full_dat_df[['freq_start','freq_end']].max(axis=1) / 10**3)
@@ -82,9 +114,52 @@ def sig_cor(s1,s2):
     return x
 
 # comb through each hit in the dataframe and look for corresponding hits in each of the beams.
-def comb_df(df):
+# def comb_df(df):
+#     # loop over every row in the dataframe
+#     for r,row in df.iterrows():
+#         # identify the target beam .fil file 
+#         matching_col = row.filter(like='fil_').apply(lambda x: x == row['dat_name']).idxmax()
+#         target_fil = row[matching_col]
+#         # identify the frequency range of the signal in this row of the dataframe
+#         f1=row['freq_start']
+#         f2 = row['freq_end']
+#         fstart= min(f1,f2)
+#         fstop = max(f1,f2)
+#         # grab the signal data in the target beam fil file
+#         frange,s1=wf_data(target_fil,fstart,fstop)
+#         # get a list of all the other fil files for all the other beams
+#         other_cols = row.loc[row.index.str.startswith('fil_') & (row.index != matching_col)]
+#         # initialize empty correlation coefficient lists for appending
+#         xs=[]
+#         for col_name, other_fil in other_cols.iteritems():
+#             # grab the data from the non-target fil in the same location
+#             _,s2=wf_data(other_fil,fstart,fstop)
+#             # correlate the signal in the target beam with the same location in the non-target beam
+#             xs.append(sig_cor(s1,s2))
+#         # loop over each correlation score in the tuple to add to the dataframe
+#         for i,x in enumerate(xs):
+#             col_name = row["dat_name"].split('beam')[-1].split('.dat')[0]+'_x_'+other_cols[i].split('beam')[-1].split('.')[0]
+#             df[col_name] = x
+#         df.loc[r,'x'] = sum(xs)/len(xs)           # the average correlation coefficient of the signal with the other beams
+#     return df
+
+# extract index and dataframe from pickle files to resume from last checkpoint
+def resume(pickle_file, df):
+    index = 0 # initialize at 0
+    if os.path.exists(pickle_file):
+        # If a checkpoint file exists, load the dataframe and row index from the file
+        with open(pickle_file, "rb") as f:
+            index, df = pickle.load(f)
+        logging.info(f'\t***pickle checkpoint file found. Resuming from step {index+1}\n')
+    return index, df
+
+# comb through each hit in the dataframe and look for corresponding hits in each of the beams.
+def comb_df(df, outdir='./', obs='UNKNOWN', resume_index=None):
     # loop over every row in the dataframe
     for r,row in df.iterrows():
+        if resume_index is not None and r < resume_index:
+            continue  # skip rows before the resume index
+
         # identify the target beam .fil file 
         matching_col = row.filter(like='fil_').apply(lambda x: x == row['dat_name']).idxmax()
         target_fil = row[matching_col]
@@ -106,9 +181,15 @@ def comb_df(df):
             xs.append(sig_cor(s1,s2))
         # loop over each correlation score in the tuple to add to the dataframe
         for i,x in enumerate(xs):
-            col_name = row["dat_name"].split('beam')[-1].split('.dat')[0]+'_x_'+other_cols[i].split('beam')[-1].split('.fil')[0]
+            col_name = row["dat_name"].split('beam')[-1].split('.dat')[0]+'_x_'+other_cols[i].split('beam')[-1].split('.')[0]
             df[col_name] = x
-        df.loc[r,'x'] = sum(xs)/len(xs)           # the average correlation coefficient of the signal with the other beams
+        df.loc[r,'x'] = sum(xs)/len(xs)           # the average correlation coefficient of the signal with the other beams        
+        # pickle the dataframe and row index for resuming
+        with open(outdir+f'{obs}_comb_df.pkl', 'wb') as f:
+            pickle.dump((r, df), f) 
+    # remove the pickle checkpoint file after all loops complete
+    if os.path.exists(outdir+f"{obs}_comb_df.pkl"):
+        os.remove(outdir+f"{obs}_comb_df.pkl") 
     return df
 
 # retrieve the frequency resolution of the dat files from their headers (should all be the same)
@@ -120,84 +201,53 @@ def get_freq_res(tupl):
             if "DELTAF(Hz):  " in line:
                 deltaf.append(float(line.split("DELTAF(Hz):  ")[-1].split("	")[0]))
     if deltaf[0]!=deltaf[1]:
-        print(f"ERROR: DELTAF(Hz) values do not match for this tuple:\n{tupl}\nProceeding with first DELTAF(Hz) value anyway.")
+        logging.info(f"ERROR: DELTAF(Hz) values do not match for this tuple:\n{tupl}\nProceeding with first DELTAF(Hz) value anyway.")
     return deltaf[0]
 
 # cross reference hits in the target beam dat with the other beams dats for identical signals
-def cross_ref(dat_df,dat_file):
-    datdir=dat_file.split(dat_file.split('/')[-1])[0]
-    dats=sorted(glob.glob(datdir+"*.dat"))
-    status=[]
-    for h,hit in dat_df.iterrows():
-        close_enough_width = 2e-6 # 2 Hz, arbitrary
-        freq_res = get_freq_res(dats) # 1.907349 #Hz
-        fmid_lower = hit.Corrected_Frequency - close_enough_width
-        fmid_upper = hit.Corrected_Frequency + close_enough_width
-        fstart_lower = hit.freq_start - close_enough_width
-        fstart_upper = hit.freq_start + close_enough_width
-        fstop_lower = hit.freq_end - close_enough_width
-        fstop_upper = hit.freq_end + close_enough_width
-        for d,dat in enumerate(dats):
-            df = pd.read_csv(dat_file, delim_whitespace=True, names=['Top_Hit_#','Drift_Rate','SNR',
-                                    'Uncorrected_Frequency','Corrected_Frequency','Index','freq_start','freq_end',
-                                    'SEFD','SEFD_freq','Coarse_Channel_Number','Full_number_of_hits'], skiprows=9)
-            df=df[df.Corrected_Frequency.between(fmid_lower,fmid_upper)].reset_index(drop=True)
-            df=df[df.freq_start.between(fstart_lower,fstart_upper)].reset_index(drop=True)
-            df=df[df.freq_end.between(fstop_lower,fstop_upper)].reset_index(drop=True)
-            if len(df)>0:
-                status.append('disqualified')
+def cross_ref(input_df):
+    if len(input_df)==0:
+        return input_df
+    # first, make sure the indices are reset
+    input_df=input_df.reset_index(drop=True)
+    # Extract directory path from the first row of the dat_name column
+    dat_path = os.path.dirname(input_df['dat_name'].iloc[0])
+    
+    # Find all dat files in the directory
+    dat_files = [f for f in os.listdir(dat_path) if f.endswith('.dat')]
+    
+    # Load each dat file into a separate dataframe and store in a list
+    dat_dfs = []
+    for dat_file in dat_files:
+        if dat_file == os.path.basename(input_df['dat_name'].iloc[0]):
+            continue  # Skip the dat file corresponding to the dat_name column
+        dat_df = pd.read_csv(os.path.join(dat_path, dat_file), delim_whitespace=True,
+                             names=['Top_Hit_#','Drift_Rate','SNR','Uncorrected_Frequency',
+                                    'Corrected_Frequency','Index','freq_start','freq_end',
+                                    'SEFD','SEFD_freq','Coarse_Channel_Number',
+                                    'Full_number_of_hits'], skiprows=9)
+        dat_dfs.append(dat_df)
+    
+    # Iterate through rows in input dataframe and prune if necessary
+    rows_to_drop = []
+    for idx, row in input_df.iterrows():
+        drop_row = False
+        
+        # Check if values are within tolerance in any of the dat file dataframes
+        for dat_df in dat_dfs:
+            within_tolerance = ((dat_df['Corrected_Frequency'] - row['Corrected_Frequency']).abs() < 2e-6) & \
+                               ((dat_df['freq_start'] - row['freq_start']).abs() < 2e-6) & \
+                               ((dat_df['freq_end'] - row['freq_end']).abs() < 2e-6)
+            if within_tolerance.any():
+                drop_row = True
                 break
-        # collect all the dats for all the beams to cross reference
-        dats=sorted(glob.glob(datdir+dat.split(datdir)[1].split(dat.split('/')[-1])[0]+'*.dat'))
-        full_dat_df = load_dat_df(dats,fils)
-        full_df = full_dat_df.reset_index(drop=True)
-        #from header
-        freq_res = get_freq_res(dats) # 1.907349 #Hz
-        close_enough_width = 2e-6 #10 Hz, arbitrary
-        #getting frequency and drift rate info
-        fmid_list = full_df.Corrected_Frequency.values
-        fstart_list = full_df.freq_start.values
-        fstop_list = full_df.freq_end.values
-        used_fmid_list = []
-        deleted_hits_indices = []
-        success_indices = []
-        #loop through all frequencies in the 2-beam set
-        for index, trial_fmid in enumerate(fmid_list):
-            #check that the frequency hasn't already been used
-            if trial_fmid not in used_fmid_list and index not in deleted_hits_indices:
-                #look for other hits starting within d of the detected hit
-                trial_fmid_lbound = trial_fmid - close_enough_width
-                trial_fmid_hbound = trial_fmid + close_enough_width
-                trial_fstart_lbound = fstart_list[index] - close_enough_width
-                trial_fstart_hbound = fstart_list[index] + close_enough_width
-                trial_fstop_lbound = fstop_list[index] - close_enough_width
-                trial_fstop_hbound = fstop_list[index] + close_enough_width
-                #check off the freq by appending to used_freqs_list
-                used_fmid_list.append(trial_fmid)
-                #if it is the only hit, it is by definition localized
-                if len(fmid_list) == 1:
-                    success_indices.append(index)
-                #default the hit to "this is localized"
-                localized_trial = True
-                #for each other hit
-                for index_check, fmid_check in enumerate(fmid_list):
-                    if index_check != index:
-                        #get the characteristics of the "comparison" hit
-                        if (trial_fmid_lbound <= fmid_check <= trial_fmid_hbound):
-                            if (trial_fstart_lbound <= fstart_list[index_check] <= trial_fstart_hbound):
-                                if (trial_fstop_lbound <= fstop_list[index_check] <= trial_fstop_hbound):
-                                    #if the check hit is consistent with the trial freq bounds, strike it off, and the trial too
-                                    localized_trial = False
-                                    deleted_hits_indices.append(index_check)
-                #after checking all of the frequencies, go back and deal with the results on the original trial frequency
-                if localized_trial == True:
-                    success_indices.append(index)
-                else:
-                    deleted_hits_indices.append(index)
-        test_successes = full_df.iloc[success_indices]
-        if start_flag == True:
-            location_filtered = test_successes
-            start_flag = False
-        else:
-            location_filtered = pd.concat([location_filtered, test_successes])
-    return df
+        
+        # Add row to list of rows to drop if within tolerance in any of the dat file dataframes
+        if drop_row:
+            rows_to_drop.append(idx)
+    
+    # Drop rows that are within tolerance
+    trimmed_df = input_df.drop(rows_to_drop)
+    
+    # Reset index and return trimmed dataframe
+    return trimmed_df.reset_index(drop=True)
