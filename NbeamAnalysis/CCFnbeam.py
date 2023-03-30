@@ -67,6 +67,10 @@ def main():
     outdir = cmd_args["outdir"]     # optional (defaults to current directory)
     update = cmd_args["update"]    # optional, flag on or default off
 
+    # create the output directory if the specified path does not exist
+    if not os.path.isdir(outdir):
+        os.mkdir(outdir)
+
     # set a unique file identifier based on info in the datdir if available
     try:
         obs="obs_"+"-".join([i.split('-')[1:3] for i in datdir.split('/') if ':' in i][0])
@@ -85,10 +89,6 @@ def main():
     ccf.setup_logging(logfile)
     logger = logging.getLogger()
     logging.info("\nExecuting program...")
-
-    # create the output directory if the specified path does not exist
-    if not os.path.isdir(outdir):
-        os.mkdir(outdir)
 
     # find and get a list of tuples of all the dat files corresponding to each subset of the observation
     dat_files,errors = ccf.get_dats(datdir,beam)
