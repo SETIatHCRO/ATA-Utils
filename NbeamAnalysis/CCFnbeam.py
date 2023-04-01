@@ -148,7 +148,8 @@ def main():
             plt.ylabel('SNR')
             plt.yscale('log')
             plt.xlim(-0.01,1.01)
-            plt.savefig(outdir + f'{obs}_SNRx.png',bbox_inches='tight',format='png',dpi=fig.dpi,facecolor='white', transparent=False)
+            plt.savefig(outdir + f'{obs}_SNRx.png',
+                        bbox_inches='tight',format='png',dpi=fig.dpi,facecolor='white', transparent=False)
             plt.close()
 
         # print processing time for this loop

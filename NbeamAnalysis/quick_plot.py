@@ -19,7 +19,7 @@ import plot_target_utils as ptu
 %matplotlib inline
 
 # define main plotting function
-def plot_beams(name_array, fstart, fstop, drift_rate, SNR, x):
+def plot_beams(name_array, fstart, fstop, drift_rate, SNR, x, save=False):
     # make waterfall objects for plotting from the filenames
     fil_array = []
     f1 = min(fstart,fstop)
@@ -62,7 +62,14 @@ def plot_beams(name_array, fstart, fstop, drift_rate, SNR, x):
                  size=25)
     fig.tight_layout(rect=[0, 0, 1, 1.05])
     # show the plot
-    plt.show()
+    if save==True:
+        path='/home/ntusay/scripts/temp/'
+        plt.savefig(f'{path}MJD_{MJD}_SNR_{SNR:.3f}_DR_{drift_rate:.3f}_fstart_{fstart:.6f}.png',
+                    bbox_inches='tight',format='png',dpi=fig.dpi,facecolor='white', transparent=False)
+        plt.show()
+        plt.close()
+    else:
+        plt.show()
     return None
 
 # %%
@@ -70,12 +77,12 @@ def plot_beams(name_array, fstart, fstop, drift_rate, SNR, x):
 csv = '/home/ntusay/scripts/processed/obs_10-30_CCFnbeam.csv'
 csv = '/home/ntusay/scripts/injection_test/CCF_results3/obs_UNKNOWN_CCFnbeam.csv'
 column = 'x'
-value = 0.5
+value = 0.9
 
 df = pd.read_csv(csv)
 signals_of_interest = df[df[column] < value]
 # output the number of hits selected so you can see if it's too many
-print(f'{len(signals_of_interest)} hits selected')
+print(f'{len(signals_of_interest)} hits selected out of {len(df)}')
 # %%
 # loop over all the hits selected and plot
 for index, row in signals_of_interest.reset_index(drop=True).iterrows():
@@ -85,5 +92,17 @@ for index, row in signals_of_interest.reset_index(drop=True).iterrows():
             row['freq_end'],
             row['Drift_Rate'],
             row['SNR'],
-            row['x'])
+            row['x'],
+            save=True)
+# %%
+x = df.x
+y = df.SNR
+z = abs(df.Drift_Rate)
+fig = plt.figure(figsize=(12, 12))
+ax = fig.add_subplot(projection='3d')
+ax.scatter(xs=x,ys=y,zs=z)
+ax.set_xlabel('x')
+ax.set_ylabel('SNR')
+ax.set_zlabel('Drift Rate')
+plt.show()
 # %%
