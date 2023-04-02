@@ -75,9 +75,9 @@ def plot_beams(name_array, fstart, fstop, drift_rate, SNR, x, save=False):
 # %%
 # hardcode the csv string and filtering parameters
 csv = '/home/ntusay/scripts/processed/obs_10-30_CCFnbeam.csv'
-csv = '/home/ntusay/scripts/injection_test/CCF_results3/obs_UNKNOWN_CCFnbeam.csv'
+csv = '/home/ntusay/scripts/NbeamAnalysis/injection_test/CCF_results/obs_UNKNOWN_CCFnbeam.csv'
 column = 'x'
-value = 0.9
+value = 0.5
 
 df = pd.read_csv(csv)
 signals_of_interest = df[df[column] < value]
@@ -95,6 +95,8 @@ for index, row in signals_of_interest.reset_index(drop=True).iterrows():
             row['x'],
             save=True)
 # %%
+# This is me playing with 3D plotting to include drift rate on top of correlation score and SNR
+# It feels somewhat useless so far
 x = df.x
 y = df.SNR
 z = abs(df.Drift_Rate)

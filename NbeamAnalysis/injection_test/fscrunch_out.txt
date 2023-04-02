@@ -1,0 +1,886 @@
+
+Executing program...
+
+Using the following input arguments:
+fildir		/home/ntusay/scripts/injection_test/
+outdir		/home/ntusay/scripts/injection_test/
+MDR		15.0
+SNR		10.0
+Scrunch_Factor		2
+
+
+
+Converting .fil file into .h5 file. 
+Placing in /home/ntusay/scripts/injection_test/ with new name...
+
+blimpy.waterfall INFO     Detecting high frequency resolution data.
+blimpy.waterfall INFO     __write_to_hdf5_heavy: For /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000.h5, chunk_dim=(1, 1, 1048576), blob_dim=(11, 1, 95944704), n_blobs=4
+blimpy.waterfall INFO     __write_to_hdf5_heavy: Processing blob 1 of 4
+blimpy.waterfall INFO     __write_to_hdf5_heavy: Processing blob 2 of 4
+blimpy.waterfall INFO     __write_to_hdf5_heavy: Processing blob 3 of 4
+blimpy.waterfall INFO     __write_to_hdf5_heavy: Processing blob 4 of 4
+blimpy.waterfall INFO     Conversion time: 271.96sec
+
+Executing turboSETI over a drift rate range of 0 to 0.06253602074795082...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: hires nchans not divisible by 2^20 and not GBT
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -1.0005763319672132e-06, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 95944704, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_0-1.h5, max_drift=0.06253602074795082, min_drift=0, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.0016911368177245994
+
+
+	This hit search took 3.25 minutes.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0000_DR_0-1.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_0-1.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_1-2.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_1-2.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 203.86sec
+bl_scrunch: End
+
+	This scrunch took 4.87 minutes.
+
+
+Executing turboSETI over a drift rate range of 0.06253602074795082 to 0.12507204149590165...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: hires nchans not divisible by 2^20 and not GBT
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -2.0011526639344263e-06, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 47972352, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_1-2.h5, max_drift=0.12507204149590165, min_drift=0.06253602074795082, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.0033822736354491988
+
+
+	This hit search took 1.35 minutes.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0000_DR_1-2.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_1-2.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_2-3.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_2-3.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 49.12sec
+bl_scrunch: End
+
+	This scrunch took 55.46 seconds.
+
+
+Executing turboSETI over a drift rate range of 0.12507204149590165 to 0.2501440829918033...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: hires nchans not divisible by 2^20 and not GBT
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -4.002305327868853e-06, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 23986176, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_2-3.h5, max_drift=0.2501440829918033, min_drift=0.12507204149590165, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.0067645472708983976
+
+
+	This hit search took 39.26 seconds.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0000_DR_2-3.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_2-3.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_3-4.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_3-4.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 24.23sec
+bl_scrunch: End
+
+	This scrunch took 27.42 seconds.
+
+
+Executing turboSETI over a drift rate range of 0.2501440829918033 to 0.5002881659836066...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: hires nchans not divisible by 2^20 and not GBT
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -8.004610655737705e-06, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 11993088, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_3-4.h5, max_drift=0.5002881659836066, min_drift=0.2501440829918033, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.013529094541796795
+
+
+	This hit search took 19.32 seconds.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0000_DR_3-4.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_3-4.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_4-5.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_4-5.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 11.53sec
+bl_scrunch: End
+
+	This scrunch took 13.18 seconds.
+
+
+Executing turboSETI over a drift rate range of 0.5002881659836066 to 1.0005763319672132...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: hires nchans not divisible by 2^20 and not GBT
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -1.600922131147541e-05, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 5996544, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_4-5.h5, max_drift=1.0005763319672132, min_drift=0.5002881659836066, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.02705818908359359
+
+
+	This hit search took 8.62 seconds.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0000_DR_4-5.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_4-5.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_5-6.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_5-6.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 5.58sec
+bl_scrunch: End
+
+	This scrunch took 6.32 seconds.
+
+
+Executing turboSETI over a drift rate range of 1.0005763319672132 to 2.0011526639344264...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: hires nchans not divisible by 2^20 and not GBT
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -3.201844262295082e-05, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 2998272, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_5-6.h5, max_drift=2.0011526639344264, min_drift=1.0005763319672132, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.05411637816718718
+
+
+	This hit search took 4.19 seconds.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0000_DR_5-6.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_5-6.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_6-7.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_6-7.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 2.80sec
+bl_scrunch: End
+
+	This scrunch took 3.19 seconds.
+
+
+Executing turboSETI over a drift rate range of 2.0011526639344264 to 4.002305327868853...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: hires nchans not divisible by 2^20 and not GBT
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -6.403688524590164e-05, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 1499136, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_6-7.h5, max_drift=4.002305327868853, min_drift=2.0011526639344264, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.10823275633437436
+
+
+	This hit search took 2.11 seconds.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0000_DR_6-7.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_6-7.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_7-8.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_7-8.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 1.26sec
+bl_scrunch: End
+
+	This scrunch took 1.44 seconds.
+
+
+Executing turboSETI over a drift rate range of 4.002305327868853 to 8.004610655737705...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: not hires and not GBT. Setting a value of 1
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -0.00012807377049180329, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 749568, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_7-8.h5, max_drift=8.004610655737705, min_drift=4.002305327868853, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.21646551266874872
+
+
+	This hit search took 1.32 seconds.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0000_DR_7-8.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_7-8.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_8-9.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_8-9.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 0.72sec
+bl_scrunch: End
+
+	This scrunch took 0.81 seconds.
+
+
+Executing turboSETI over a drift rate range of 8.004610655737705 to 16.00922131147541...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: not hires and not GBT. Setting a value of 1
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -0.00025614754098360657, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 374784, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_8-9.h5, max_drift=16.00922131147541, min_drift=8.004610655737705, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.43293102533749744
+
+
+	This hit search took 2.55 seconds.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0000_DR_8-9.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_8-9.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_9-10.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_9-10.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 1.68sec
+bl_scrunch: End
+
+	This scrunch took 1.74 seconds.
+
+
+Executing turboSETI over a drift rate range of 16.00922131147541 to 32.01844262295082...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: not hires and not GBT. Setting a value of 1
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -0.0005122950819672131, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 187392, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_9-10.h5, max_drift=32.01844262295082, min_drift=16.00922131147541, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.8658620506749949
+
+
+	This hit search took 0.74 seconds.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0000_DR_9-10.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_9-10.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_10-11.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_10-11.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 0.19sec
+bl_scrunch: End
+
+	This scrunch took 0.22 seconds.
+
+
+Executing turboSETI over a drift rate range of 32.01844262295082 to 64.03688524590164...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: not hires and not GBT. Setting a value of 1
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -0.0010245901639344263, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 93696, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_10-11.h5, max_drift=64.03688524590164, min_drift=32.01844262295082, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 1.7317241013499898
+
+
+	This hit search took 0.76 seconds.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0000_DR_10-11.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_10-11.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_11-12.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_11-12.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 0.11sec
+bl_scrunch: End
+
+	This scrunch took 0.13 seconds.
+
+
+Executing turboSETI over a drift rate range of 64.03688524590164 to 128.0737704918033...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: not hires and not GBT. Setting a value of 1
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -0.0020491803278688526, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 46848, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_11-12.h5, max_drift=128.0737704918033, min_drift=64.03688524590164, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 3.4634482026999796
+
+
+	This hit search took 0.73 seconds.
+
+
+	dats and log consolidated.
+
+
+	This file took 20.56 minutes to process.
+
+
+Converting .fil file into .h5 file. 
+Placing in /home/ntusay/scripts/injection_test/ with new name...
+
+blimpy.waterfall INFO     Detecting high frequency resolution data.
+blimpy.waterfall INFO     __write_to_hdf5_heavy: For /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001.h5, chunk_dim=(1, 1, 1048576), blob_dim=(11, 1, 95944704), n_blobs=4
+blimpy.waterfall INFO     __write_to_hdf5_heavy: Processing blob 1 of 4
+blimpy.waterfall INFO     __write_to_hdf5_heavy: Processing blob 2 of 4
+blimpy.waterfall INFO     __write_to_hdf5_heavy: Processing blob 3 of 4
+blimpy.waterfall INFO     __write_to_hdf5_heavy: Processing blob 4 of 4
+blimpy.waterfall INFO     Conversion time: 234.88sec
+
+Executing turboSETI over a drift rate range of 0 to 0.06253602074795082...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: hires nchans not divisible by 2^20 and not GBT
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -1.0005763319672132e-06, 'ibeam': 1, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 95944704, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -4.8914422 deg>, 'src_raj': <Angle 23.10815594 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_0-1.h5, max_drift=0.06253602074795082, min_drift=0, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.0016911368177245994
+
+
+	This hit search took 2.81 minutes.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0001_DR_0-1.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_0-1.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_1-2.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_1-2.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 213.54sec
+bl_scrunch: End
+
+	This scrunch took 3.75 minutes.
+
+
+Executing turboSETI over a drift rate range of 0.06253602074795082 to 0.12507204149590165...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: hires nchans not divisible by 2^20 and not GBT
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -2.0011526639344263e-06, 'ibeam': 1, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 47972352, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -4.8914422 deg>, 'src_raj': <Angle 23.10815594 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_1-2.h5, max_drift=0.12507204149590165, min_drift=0.06253602074795082, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.0033822736354491988
+
+
+	This hit search took 1.43 minutes.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0001_DR_1-2.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_1-2.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_2-3.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_2-3.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 50.49sec
+bl_scrunch: End
+
+	This scrunch took 56.75 seconds.
+
+
+Executing turboSETI over a drift rate range of 0.12507204149590165 to 0.2501440829918033...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: hires nchans not divisible by 2^20 and not GBT
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -4.002305327868853e-06, 'ibeam': 1, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 23986176, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -4.8914422 deg>, 'src_raj': <Angle 23.10815594 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_2-3.h5, max_drift=0.2501440829918033, min_drift=0.12507204149590165, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.0067645472708983976
+
+
+	This hit search took 41.88 seconds.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0001_DR_2-3.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_2-3.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_3-4.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_3-4.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 23.19sec
+bl_scrunch: End
+
+	This scrunch took 26.31 seconds.
+
+
+Executing turboSETI over a drift rate range of 0.2501440829918033 to 0.5002881659836066...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: hires nchans not divisible by 2^20 and not GBT
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -8.004610655737705e-06, 'ibeam': 1, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 11993088, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -4.8914422 deg>, 'src_raj': <Angle 23.10815594 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_3-4.h5, max_drift=0.5002881659836066, min_drift=0.2501440829918033, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.013529094541796795
+
+
+	This hit search took 17.56 seconds.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0001_DR_3-4.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_3-4.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_4-5.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_4-5.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 11.87sec
+bl_scrunch: End
+
+	This scrunch took 13.36 seconds.
+
+
+Executing turboSETI over a drift rate range of 0.5002881659836066 to 1.0005763319672132...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: hires nchans not divisible by 2^20 and not GBT
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -1.600922131147541e-05, 'ibeam': 1, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 5996544, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -4.8914422 deg>, 'src_raj': <Angle 23.10815594 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_4-5.h5, max_drift=1.0005763319672132, min_drift=0.5002881659836066, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.02705818908359359
+
+
+	This hit search took 10.07 seconds.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0001_DR_4-5.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_4-5.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_5-6.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_5-6.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 6.00sec
+bl_scrunch: End
+
+	This scrunch took 6.80 seconds.
+
+
+Executing turboSETI over a drift rate range of 1.0005763319672132 to 2.0011526639344264...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: hires nchans not divisible by 2^20 and not GBT
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -3.201844262295082e-05, 'ibeam': 1, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 2998272, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -4.8914422 deg>, 'src_raj': <Angle 23.10815594 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_5-6.h5, max_drift=2.0011526639344264, min_drift=1.0005763319672132, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.05411637816718718
+
+
+	This hit search took 4.67 seconds.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0001_DR_5-6.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_5-6.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_6-7.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_6-7.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 2.95sec
+bl_scrunch: End
+
+	This scrunch took 3.39 seconds.
+
+
+Executing turboSETI over a drift rate range of 2.0011526639344264 to 4.002305327868853...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: hires nchans not divisible by 2^20 and not GBT
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -6.403688524590164e-05, 'ibeam': 1, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 1499136, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -4.8914422 deg>, 'src_raj': <Angle 23.10815594 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_6-7.h5, max_drift=4.002305327868853, min_drift=2.0011526639344264, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.10823275633437436
+
+
+	This hit search took 2.49 seconds.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0001_DR_6-7.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_6-7.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_7-8.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_7-8.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 1.49sec
+bl_scrunch: End
+
+	This scrunch took 1.72 seconds.
+
+
+Executing turboSETI over a drift rate range of 4.002305327868853 to 8.004610655737705...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: not hires and not GBT. Setting a value of 1
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -0.00012807377049180329, 'ibeam': 1, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 749568, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -4.8914422 deg>, 'src_raj': <Angle 23.10815594 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_7-8.h5, max_drift=8.004610655737705, min_drift=4.002305327868853, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.21646551266874872
+
+
+	This hit search took 1.76 seconds.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0001_DR_7-8.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_7-8.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_8-9.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_8-9.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 0.72sec
+bl_scrunch: End
+
+	This scrunch took 0.84 seconds.
+
+
+Executing turboSETI over a drift rate range of 8.004610655737705 to 16.00922131147541...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: not hires and not GBT. Setting a value of 1
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -0.00025614754098360657, 'ibeam': 1, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 374784, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -4.8914422 deg>, 'src_raj': <Angle 23.10815594 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_8-9.h5, max_drift=16.00922131147541, min_drift=8.004610655737705, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.43293102533749744
+
+
+	This hit search took 1.11 seconds.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0001_DR_8-9.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_8-9.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_9-10.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_9-10.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 0.39sec
+bl_scrunch: End
+
+	This scrunch took 0.44 seconds.
+
+
+Executing turboSETI over a drift rate range of 16.00922131147541 to 32.01844262295082...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: not hires and not GBT. Setting a value of 1
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -0.0005122950819672131, 'ibeam': 1, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 187392, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -4.8914422 deg>, 'src_raj': <Angle 23.10815594 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_9-10.h5, max_drift=32.01844262295082, min_drift=16.00922131147541, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.8658620506749949
+
+
+	This hit search took 0.63 seconds.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0001_DR_9-10.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_9-10.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_10-11.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_10-11.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 0.20sec
+bl_scrunch: End
+
+	This scrunch took 0.23 seconds.
+
+
+Executing turboSETI over a drift rate range of 32.01844262295082 to 64.03688524590164...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: not hires and not GBT. Setting a value of 1
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -0.0010245901639344263, 'ibeam': 1, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 93696, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -4.8914422 deg>, 'src_raj': <Angle 23.10815594 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_10-11.h5, max_drift=64.03688524590164, min_drift=32.01844262295082, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 1.7317241013499898
+
+
+	This hit search took 0.78 seconds.
+
+
+Scrunching fil_59884_17225_248799804_trappist1_0001-beam0001_DR_10-11.h5 by a factor of 2...
+
+bl_scrunch: Input path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_10-11.h5
+bl_scrunch: Averaging 2 frequency channels at a time.
+bl_scrunch: Output path: /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_11-12.h5
+blimpy.waterfall INFO     __write_to_hdf5_light: Writing the spectra matrix for /home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_11-12.h5 without blobbing.
+blimpy.waterfall INFO     Frequency scrunching by 2
+blimpy.waterfall INFO     Conversion time: 0.10sec
+bl_scrunch: End
+
+	This scrunch took 0.11 seconds.
+
+
+Executing turboSETI over a drift rate range of 64.03688524590164 to 128.0737704918033...
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+blimpy.io.base_reader WARNING  blimpy:io:base_reader:calc_n_coarse_chan: not hires and not GBT. Setting a value of 1
+blimpy.io.base_reader INFO     Setting a value of 64 (SWAG). In turbo_seti, you can specify n_course_chan explicitly.
+data_handler    INFO     From blimpy, n_coarse_chan=64
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -0.0020491803278688526, 'ibeam': 1, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 46848, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -4.8914422 deg>, 'src_raj': <Angle 23.10815594 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001_DR_11-12.h5, max_drift=128.0737704918033, min_drift=64.03688524590164, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 3.4634482026999796
+
+
+	This hit search took 0.43 seconds.
+
+
+	dats and log consolidated.
+
+
+	This file took 18.58 minutes to process.
+
+
+	This whole program took 39.15 minutes.
+
