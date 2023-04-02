@@ -1,0 +1,226 @@
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -1.0005763319672132e-06, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 95944704, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_0-1.h5, max_drift=0.06253602074795082, min_drift=0, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.0016911368177245994
+
+Top hit found! SNR 79.161705, Drift Rate -0.000993, index 469728
+Top hit found! SNR 26.552322, Drift Rate -0.000993, index 969440
+Top hit found! SNR 1543.667114, Drift Rate 0.061579, index 249871
+Top hit found! SNR 1536.755249, Drift Rate 0.061579, index 250370
+
+===== Search time: 3.10 minutes
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -2.0011526639344263e-06, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 47972352, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_1-2.h5, max_drift=0.12507204149590165, min_drift=0.06253602074795082, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.0033822736354491988
+
+Top hit found! SNR 2241.977051, Drift Rate 0.069525, index 124936
+Top hit found! SNR 2248.032227, Drift Rate 0.071511, index 125186
+
+===== Search time: 1.28 minutes
+
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -0.0010245901639344263, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 93696, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_10-11.h5, max_drift=64.03688524590164, min_drift=32.01844262295082, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 1.7317241013499898
+
+
+===== Search time: 0.01 minutes
+
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -0.0020491803278688526, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 46848, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_11-12.h5, max_drift=128.0737704918033, min_drift=64.03688524590164, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 3.4634482026999796
+
+
+===== Search time: 0.01 minutes
+
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -4.002305327868853e-06, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 23986176, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_2-3.h5, max_drift=0.2501440829918033, min_drift=0.12507204149590165, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.0067645472708983976
+
+Top hit found! SNR 228.202621, Drift Rate 0.135076, index 62470
+
+===== Search time: 0.62 minutes
+
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -8.004610655737705e-06, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 11993088, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_3-4.h5, max_drift=0.5002881659836066, min_drift=0.2501440829918033, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.013529094541796795
+
+Top hit found! SNR 86.396416, Drift Rate 0.254261, index 31242
+
+===== Search time: 0.31 minutes
+
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -1.600922131147541e-05, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 5996544, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_4-5.h5, max_drift=1.0005763319672132, min_drift=0.5002881659836066, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.02705818908359359
+
+Top hit found! SNR 41.871647, Drift Rate 0.524413, index 15656
+
+===== Search time: 0.14 minutes
+
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -3.201844262295082e-05, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 2998272, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_5-6.h5, max_drift=2.0011526639344264, min_drift=1.0005763319672132, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.05411637816718718
+
+Top hit found! SNR 35.076862, Drift Rate 1.144175, index 7826
+
+===== Search time: 0.07 minutes
+
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -6.403688524590164e-05, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 1499136, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_6-7.h5, max_drift=4.002305327868853, min_drift=2.0011526639344264, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.10823275633437436
+
+Top hit found! SNR 17.913918, Drift Rate 2.479046, index 3914
+
+===== Search time: 0.03 minutes
+
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -0.00012807377049180329, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 749568, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_7-8.h5, max_drift=8.004610655737705, min_drift=4.002305327868853, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.21646551266874872
+
+
+===== Search time: 0.02 minutes
+
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -0.00025614754098360657, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 374784, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_8-9.h5, max_drift=16.00922131147541, min_drift=8.004610655737705, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.43293102533749744
+
+
+===== Search time: 0.04 minutes
+
+
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6935.7499994997115, 'foff': -0.0005122950819672131, 'ibeam': 0, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 187392, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -5.041444 deg>, 'src_raj': <Angle 23.108156 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000_DR_9-10.h5, max_drift=32.01844262295082, min_drift=16.00922131147541, snr=10.0, out_dir=/home/ntusay/scripts/injection_test/, coarse_chans=None, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=y, blank_dc=True, precision=1, append_output=False, log_level_int=30, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.8658620506749949
+
+
+===== Search time: 0.01 minutes
+
+===== END OF LOG

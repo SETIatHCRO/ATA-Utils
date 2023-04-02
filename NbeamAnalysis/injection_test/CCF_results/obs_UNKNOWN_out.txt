@@ -1,0 +1,17 @@
+
+Executing program...
+2/11 hits removed as exact frequency matches. Combing through the remaining 9 hits in dat file 1/1:
+/home/ntusay/scripts/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000.dat
+	Processed in 1.38 seconds.
+
+Program complete!
+
+	1 dats with 11 total hits cross referenced and 2 hits removed as exact matches.
+		The remaining 9 hits were correlated and processed in 1.42 seconds.
+
+	0/9 hits above an average correlation score of 0.75
+	9/9 hits below an average correlation score of 0.75
+	9/9 hits below an average correlation score of 0.5
+	7/9 hits below an average correlation score of 0.25
+
+The full dataframe was saved to: /home/ntusay/scripts/injection_test/CCF_results3/obs_UNKNOWN_CCFnbeam.csv
