@@ -132,7 +132,7 @@ def main():
         with open(outdir+f"{obs}_full_df.pkl", "wb") as f:
             pickle.dump((d, full_df), f)
 
-        if update or i==ndats-1:
+        if (update or i==ndats-1) and 'x' in full_df.columns and full_df['x'].notnull().any():
             # save the full dataframe to csv
             full_df.to_csv(f"{outdir}{obs}_CCFnbeam.csv")
 

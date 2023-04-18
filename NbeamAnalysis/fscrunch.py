@@ -24,7 +24,7 @@ import logging
 # parse input arguments
 def parse_args():
     parser = argparse.ArgumentParser(description='turboSETI processing diagnostics.')
-    parser.add_argument('fildir', metavar='/fil_or_h5_file', type=str, nargs=1,
+    parser.add_argument('fil', metavar='/fil_or_h5_file', type=str, nargs=1,
                         help='the original filterbank or h5 file to be worked on.')
     parser.add_argument('-o', '--outdir',metavar='OUT_DIR', type=str, nargs=1,default='./',
                         help='Location for output files. Default: local dir.')
@@ -32,19 +32,13 @@ def parse_args():
                         help='Maximum drift rate in nHz. Used to calculate drift in Hz/s with file freqs. Default = 200.0 nHz')
     parser.add_argument('-s', dest='SNR', metavar='SNR', type=float, default=25.0,
                         help='Signal to noise ratio. Default = 25.0')
-    # parser.add_argument('-n', '--new_filename',metavar='NEW_FILENAME', type=str,
-    #                     help='New filename. Default: replaces the file extension with .scrunched.fil or .scrunched .h5.')
     parser.add_argument('-f', dest='Scrunch_Factor', metavar='F_SCRUNCH', type=int, default=2,
                         help='Number of frequency channels to average (scrunch) together. Default = 2')
-    # parser.add_argument('-d', '--delete_input', action='store_true',
-    #                     help='This option deletes the scrunched files after conversion.')
+    parser.add_argument('-l', '--log_level', type=str, choices=['info', 'debug', 'warning'], default='warning',
+                        help='Logging level')
     args = parser.parse_args()
     odict = vars(args)
-    if odict["fildir"]:
-        fildir = odict["fildir"][0]
-        if fildir[-1] != "/":
-            fildir += "/"
-        odict["fildir"] = fildir  
+    odict["fil"] = odict["fil"][0]
     if odict["outdir"]:
         outdir = odict["outdir"][0]
         if outdir[-1] != "/":
@@ -52,6 +46,8 @@ def parse_args():
         odict["outdir"] = outdir  
     else:
         odict["outdir"] = ""
+    log_level_map = {'info': logging.INFO, 'debug': logging.DEBUG, 'warning': logging.WARNING}
+    odict['log_level'] = log_level_map[odict['log_level']]
     return odict
 
 # elapsed time function
@@ -143,96 +139,97 @@ def main():
     for cmd in cmd_args:
         print(f"{cmd}\t\t{cmd_args[f'{cmd}']}")
     print('\n')
-    fildir = cmd_args["fildir"]         # required input
+    fil = cmd_args["fil"]               # required input
     outdir = cmd_args["outdir"]         # optional input, defaults in current directory
     MaxDrift_nHz = cmd_args["MDR"]      # optional input, defaults to 200.0 nHz
     SNR = cmd_args["SNR"]               # optional input, defaults to 25
     sf = cmd_args["Scrunch_Factor"]     # optional input, defaults to 2 (double)
+    log_level = cmd_args["log_level"]   # optional input, defaults to warning (quiet)
 
-    # gather all the filterbank files to be processed in the input directory
-    fils = sorted(glob.glob(fildir+'*.fil'))
-    if not fils:
-        fils = sorted(glob.glob(fildir+'*.h5'))
+    # # gather all the filterbank files to be processed in the input directory
+    # fils = sorted(glob.glob(fildir+'*.fil'))
+    # if not fils:
+    #     fils = sorted(glob.glob(fildir+'*.h5'))
 
     # process each filterbank file in the list
-    for fil in fils:
-        loop_start=time.time()
-        # use file header to get freq and tsamp
-        max_freq=rh(fil)['fch1']
-        tsamp = rh(fil)['tsamp']
+    # for fil in fils:
+    loop_start=time.time()
+    # use file header to get freq and tsamp
+    max_freq=rh(fil)['fch1']
+    tsamp = rh(fil)['tsamp']
+    
+    # calculate the list of drift rate intervals up to the maximum
+    MaxDrift_Hz2 = MaxDrift_nHz*max_freq/1000
+    fbin = 1/tsamp
+    DR_list = fbin*sf**np.arange(np.ceil(np.log(MaxDrift_Hz2/fbin)/np.log(sf))+1)
+    
+    # loop over the list of drift rates and make the frequency scrunched h5s
+    filename=fil.split('/')[-1]
+    minDR=0
+    for i,DR in enumerate(DR_list):
+        # rename the filterbank file based on the drift rate range to identify as a "scrunched" file
+        if i==0:
+            # set up "scrunched" filename
+            new_filename=filename.split('.')[0]+f"_DR_{i}-{i+1}.h5"
+            # compress .fil files into .h5 files, rename it with _DR_, remove the vanilla h5
+            if fil.split('.')[-1]=='fil':
+                print(f'\nConverting .fil file into .h5 file. \nPlacing in {outdir} with new name...\n')
+                bl.fil2h5.make_h5_file(fil,out_dir=outdir)
+                shutil.copyfile(outdir+filename[:-3]+'h5', outdir+new_filename)
+                os.remove(outdir+filename[:-3]+'h5')
+            # if it's already in h5 format, just copy it into the output folder and rename it
+            elif fil.split('.')[-1]=='h5':
+                print(f'\nInput file already in h5 format. \nCopying h5 into {outdir} with new name...\n')
+                shutil.copyfile(fil, outdir+new_filename)
+            # Remove any extraneous copies of the original filterbank file from the output directory
+            if os.path.isfile(outdir+filename) and outdir != fildir:
+                print(f'\tRemoving original file from {outdir}...\n')
+                os.remove(outdir+filename)
         
-        # calculate the list of drift rate intervals up to the maximum
-        MaxDrift_Hz2 = MaxDrift_nHz*max_freq/1000
-        fbin = 1/tsamp
-        DR_list = fbin*sf**np.arange(np.ceil(np.log(MaxDrift_Hz2/fbin)/np.log(sf))+1)
-        
-        # loop over the list of drift rates and make the frequency scrunched h5s
-        filename=fil.split('/')[-1]
-        minDR=0
-        for i,DR in enumerate(DR_list):
-            # rename the filterbank file based on the drift rate range to identify as a "scrunched" file
-            if i==0:
-                # set up "scrunched" filename
-                new_filename=filename.split('.')[0]+f"_DR_{i}-{i+1}.h5"
-                # compress .fil files into .h5 files, rename it with _DR_, remove the vanilla h5
-                if fil.split('.')[-1]=='fil':
-                    print(f'\nConverting .fil file into .h5 file. \nPlacing in {outdir} with new name...\n')
-                    bl.fil2h5.make_h5_file(fil,out_dir=outdir)
-                    shutil.copyfile(outdir+filename[:-3]+'h5', outdir+new_filename)
-                    os.remove(outdir+filename[:-3]+'h5')
-                # if it's already in h5 format, just copy it into the output folder and rename it
-                elif fil.split('.')[-1]=='h5':
-                    print(f'\nInput file already in h5 format. \nCopying h5 into {outdir} with new name...\n')
-                    shutil.copyfile(fil, outdir+new_filename)
-                # Remove any extraneous copies of the original filterbank file from the output directory
-                if os.path.isfile(outdir+filename) and outdir != fildir:
-                    print(f'\tRemoving original file from {outdir}...\n')
-                    os.remove(outdir+filename)
-            
-            # use the existing "scrunched" file to continue scrunching the frequency bins and searching for hits
-            else:
-                fil = outdir+filename   # new_filename becomes filename after the first iteration
-                new_filename=filename.split('_DR_')[0]+f"_DR_{i}-{i+1}.h5"
-                print(f'\nScrunching {filename} by a factor of {sf}...\n')
-                new_start=time.time()
-                # scrunch it with blimpy tools
-                scrunch(fil, 
-                        out_dir=outdir, 
-                        new_filename=new_filename, 
-                        max_load=None, 
-                        f_scrunch=sf)
-                # remove the previous scrunched file
-                os.remove(fil)
-                end, time_label = get_elapsed_time(new_start)
-                print(f"\n\tThis scrunch took %.2f {time_label}.\n" %end)
-
-            filename=new_filename   # make the newly scrunched file the file to work on
-
-            # execute FindDoppler to search for hits in this newly frequency scrunched regime
-            print(f'\nExecuting turboSETI over a drift rate range of {minDR} to {DR}...\n')
+        # use the existing "scrunched" file to continue scrunching the frequency bins and searching for hits
+        else:
+            fil = outdir+filename   # new_filename becomes filename after the first iteration
+            new_filename=filename.split('_DR_')[0]+f"_DR_{i}-{i+1}.h5"
+            print(f'\nScrunching {filename} by a factor of {sf}...\n')
             new_start=time.time()
-            FindDoppler(outdir+new_filename,
-                        max_drift=DR,
-                        min_drift=minDR,
-                        snr=SNR,
-                        out_dir=outdir,
-                        gpu_backend='y',
-                        log_level_int=logging.WARNING).search(n_partitions=1)
+            # scrunch it with blimpy tools
+            scrunch(fil, 
+                    out_dir=outdir, 
+                    new_filename=new_filename, 
+                    max_load=None, 
+                    f_scrunch=sf)
+            # remove the previous scrunched file
+            os.remove(fil)
             end, time_label = get_elapsed_time(new_start)
-            print(f"\n\tThis hit search took %.2f {time_label}.\n" %end)
+            print(f"\n\tThis scrunch took %.2f {time_label}.\n" %end)
 
-            minDR=DR    # make the drift rate in the list the new minimum drift rate for the next iteration
+        filename=new_filename   # make the newly scrunched file the file to work on
 
-        # remove the final h5 file.
-        os.remove(outdir+new_filename)
+        # execute FindDoppler to search for hits in this newly frequency scrunched regime
+        print(f'\nExecuting turboSETI over a drift rate range of {minDR} to {DR}...\n')
+        new_start=time.time()
+        FindDoppler(outdir+new_filename,
+                    max_drift=DR,
+                    min_drift=minDR,
+                    snr=SNR,
+                    out_dir=outdir,
+                    gpu_backend='y',
+                    log_level_int=log_level).search(n_partitions=1)
+        end, time_label = get_elapsed_time(new_start)
+        print(f"\n\tThis hit search took %.2f {time_label}.\n" %end)
 
-        # clean up the dats and logs.
-        concat_dats(outdir,DR_list[-1])
-        concat_logs(outdir)
-        print('\n\tdats and log consolidated.\n')
-        
-        end, time_label = get_elapsed_time(loop_start)
-        print(f"\n\tThis file took %.2f {time_label} to process.\n" %end)
+        minDR=DR    # make the drift rate in the list the new minimum drift rate for the next iteration
+
+    # remove the final h5 file.
+    os.remove(outdir+new_filename)
+
+    # clean up the dats and logs.
+    concat_dats(outdir,DR_list[-1])
+    concat_logs(outdir)
+    print('\n\tdats and log consolidated.\n')
+    
+    end, time_label = get_elapsed_time(loop_start)
+    print(f"\n\tThis file took %.2f {time_label} to process.\n" %end)
 
     # This block prints the elapsed time of the entire program.
     end, time_label = get_elapsed_time(start)
