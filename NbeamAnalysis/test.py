@@ -51,3 +51,47 @@ dirs=sorted(glob.glob(PPO+'*'))
 beam='0000'
 hits(dirs,beam)
 # %%
+import os
+import glob
+import blimpy as bl
+import matplotlib.pyplot as plt
+%matplotlib inline
+
+def get_fils(root_dir,beam):
+    """Recursively finds all files with the '.dat' extension in a directory
+    and its subdirectories, and returns a list of the full paths of files 
+    where each file corresponds to the target beam."""
+    fil_files = []
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+        for f in filenames:
+            if f.endswith('.fil') and f.split('beam')[-1].split('.')[0]==beam:
+                fil_files.append(os.path.join(dirpath, f))
+    return fil_files
+
+def freq_span(dirs,beam):
+    fmin=1e12
+    fmax=0
+    for d,dir in enumerate(dirs):
+        f1=1e12
+        f2=0
+        fil_files = get_fils(dir,beam)
+        label = "-".join(dir.split('/')[-1].split('2022-')[-1].split('-')[0:2])
+        for fil in fil_files:
+            waterfall_data = bl.Waterfall(fil,load_data=False)
+            fch1 = waterfall_data.header['fch1']
+            fch2 = fch1 + waterfall_data.header['foff'] * waterfall_data.header['nchans']
+            f1=min(min(fch1,fch2),f1)
+            f2=max(max(fch1,fch2),f2)
+        fmin=min(fmin,f1)
+        fmax=max(fmax,f2)
+        plt.plot([f1,f2],[d+1,d+1],label=label)
+    plt.legend()
+    plt.show()
+    print(f'Frequency coverage spans {fmin:.6f} to {fmax:.6f} MHz.')
+    return None
+
+PPO='/mnt/datac-netStorage-40G/projects/p004/'
+dirs=sorted(glob.glob(PPO+'2022*'))
+beam='0000'
+freq_span(dirs,beam)
+# %%
