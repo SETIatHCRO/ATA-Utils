@@ -15,7 +15,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 plt.rcParams.update({'font.size': 22})
 
-import plot_target_utils as ptu
+import plot_utils as ptu
 %matplotlib inline
 
 # define main plotting function
@@ -74,15 +74,14 @@ def plot_beams(name_array, fstart, fstop, drift_rate, SNR, x, save=False):
 
 # %%
 # hardcode the csv string and filtering parameters
-csv = '/home/ntusay/scripts/processed/obs_10-30_CCFnbeam.csv'
-csv = '/home/ntusay/scripts/processed/obs_10-28_CCFnbeam.csv'
+csv = '/home/ntusay/scripts/processed2/obs_10-27_CCFnbeam.csv'
 # csv = '/home/ntusay/scripts/processed/obs_10-29_CCFnbeam.csv'
-csv = '/home/ntusay/scripts/NbeamAnalysis/injection_test/CCF_results/obs_UNKNOWN_CCFnbeam.csv'
-# csv = '/home/ntusay/scripts/Mars_fscrunched/redo/obs_UNKNOWN_CCFnbeam.csv'
+# csv = '/home/ntusay/scripts/NbeamAnalysis/injection_test/CCF_results/obs_UNKNOWN_CCFnbeam.csv'
+csv = '/home/ntusay/scripts/Mars_fscrunched/redo/obs_UNKNOWN_CCFnbeam.csv'
 # csv = '/home/ntusay/scripts/Mars_test/redo/obs_UNKNOWN_CCFnbeam.csv'
-csv = '/home/ntusay/scripts/processed2/obs_11-01_CCFnbeam.csv'
+# csv = '/home/ntusay/scripts/processed2/obs_11-09_CCFnbeam.csv'
 column = 'x'
-value = 0.5
+value = 0.2
 
 df = pd.read_csv(csv)
 signals_of_interest = df[df[column] < value]
@@ -156,4 +155,53 @@ for i in range(len(df)):
 
 # Print the number of points below the line
 print(f"Number of points below the line: {num_points_below_line}/{len(df)}")
+# %%
+import glob
+import pandas as pd
+import matplotlib.pyplot as plt
+%matplotlib inline
+path='/home/ntusay/scripts/processed2/'
+csvs = sorted(glob.glob(path+'*.csv'))
+full_df = pd.DataFrame()
+column = 'x'
+value = 0.2
+for csv in csvs:
+    temp_df = pd.read_csv(csv)
+    print(f'{len(temp_df[temp_df[column] < value])} hits in csv {csv.split("/")[-1].split("_CCF")[0]}')
+    full_df = pd.concat([full_df, temp_df],ignore_index=True)
+xs = full_df.x
+SNR = full_df.SNR
+fig,ax=plt.subplots(figsize=(12,10))
+plt.scatter(xs,SNR,color='orange',alpha=0.5,edgecolor='k')
+plt.xlabel('Average Correlation Scores')
+plt.ylabel('SNR')
+plt.yscale('log')
+plt.xlim(-0.01,1.01)
+# plt.savefig(outdir + f'{obs}_SNRx.png',
+#             bbox_inches='tight',format='png',dpi=fig.dpi,facecolor='white', transparent=False)
+plt.show()
+
+signals_of_interest = full_df[full_df[column] < value]
+print(f'{len(signals_of_interest)} hits selected out of {len(full_df)}')
+# %%
+import pandas as pd
+import matplotlib.pyplot as plt
+%matplotlib inline
+csv1='/home/ntusay/scripts/median_test/obs_UNKNOWN_CCFnbeam.csv'
+csv2='/home/ntusay/scripts/Mars_fscrunched/redo/obs_UNKNOWN_CCFnbeam.csv'
+# csv1='/home/ntusay/scripts/median_test/obs_11-01_CCFnbeam.csv'
+# csv2='/home/ntusay/scripts/processed2/obs_11-01_CCFnbeam.csv'
+csv1='/home/ntusay/scripts/plot_test/noise_test0.csv'
+csv2='/home/ntusay/scripts/plot_test/noise_test1.csv'
+# df1=pd.read_csv(csv1).sort_values(by="Corrected_Frequency")
+# df2=pd.read_csv(csv2).sort_values(by="Corrected_Frequency")
+df1=pd.read_csv(csv1)
+df2=pd.read_csv(csv2)
+fig,ax=plt.subplots(figsize=(20,8))
+plt.scatter(df1.freqs1,abs(df2.medians2-df1.medians1)/df1.medians1,s=1)
+# plt.scatter(df2.freqs2,df2.medians2)
+# plt.xlabel('median percent difference')
+# plt.ylabel('difference in correlation scores')
+# plt.xlim(1950,2450)
+plt.show()
 # %%
