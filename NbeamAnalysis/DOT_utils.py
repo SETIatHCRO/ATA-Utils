@@ -105,7 +105,7 @@ def load_dat_df(dat_file,filtuple):
 def wf_data(fil,f1,f2):
     return bl.Waterfall(fil,f1,f2).grab_data(f1,f2)
 
-# correlate two 2D arrays and return the correlation coefficient
+# correlate two 2D arrays and return the correlation score
 def sig_cor(s1,s2):
     ACF1=((s1*s1).sum(axis=1)).sum()/np.shape(s1)[0]/np.shape(s1)[1]
     ACF2=((s2*s2).sum(axis=1)).sum()/np.shape(s2)[0]/np.shape(s2)[1]
@@ -140,28 +140,22 @@ def comb_df(df, outdir='./', obs='UNKNOWN', resume_index=None):
         fstop = max(f1,f2)
         # grab the signal data in the target beam fil file
         frange,s1=wf_data(target_fil,fstart,fstop)
-        median1 = np.median(s1)
-        # s1=s1-np.median(s1)
         # get a list of all the other fil files for all the other beams
         other_cols = row.loc[row.index.str.startswith('fil_') & (row.index != matching_col)]
-        # initialize empty correlation coefficient lists for appending
+        # initialize empty correlation score lists for appending
         xs=[]
         for col_name, other_fil in other_cols.iteritems():
             # grab the data from the non-target fil in the same location
             _,s2=wf_data(other_fil,fstart,fstop)
-            median2=np.median(s2)
-            # s2=s2-np.median(s2)
             # correlate the signal in the target beam with the same location in the non-target beam
-            xs.append(sig_cor(s1-np.median(s2),s2-np.median(s2)))
+            # subtracting off the median of the off-target beam to roughly center the noise around zero.
+            xs.append(sig_cor(s1-np.median(s2),s2-np.median(s2))) 
         # loop over each correlation score in the tuple to add to the dataframe
         for i,x in enumerate(xs):
             col_name = row["dat_name"].split('beam')[-1].split('.dat')[0]+'_x_'+other_cols[i].split('beam')[-1].split('.')[0]
             df.loc[r,col_name] = x
-        if len(xs)>0:
-            df.loc[r,'x'] = sum(xs)/len(xs)           # the average correlation coefficient of the signal with the other beams  
-            df.loc[r,'m1']= median1
-            df.loc[r,'m2']= median2   
-            df.loc[r,'dm']= abs(median2-median1)/median1
+        if len(xs)>0:   # this conditional makes the code not break if there's only one filterbank file for some reason
+            df.loc[r,'x'] = sum(xs)/len(xs)           # the average correlation score of the signal with the other beams  
         # pickle the dataframe and row index for resuming
         with open(outdir+f'{obs}_comb_df.pkl', 'wb') as f:
             pickle.dump((r, df), f) 

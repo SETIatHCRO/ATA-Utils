@@ -164,7 +164,7 @@ path='/home/ntusay/scripts/processed2/'
 csvs = sorted(glob.glob(path+'*.csv'))
 full_df = pd.DataFrame()
 column = 'x'
-value = 0.2
+value = 0.25
 for csv in csvs:
     temp_df = pd.read_csv(csv)
     print(f'{len(temp_df[temp_df[column] < value])} hits in csv {csv.split("/")[-1].split("_CCF")[0]}')
