@@ -2,8 +2,8 @@
 import pandas as pd
 import os
 import glob
-from CCF_utils import check_logs
-from CCF_utils import get_dats
+from DOT_utils import check_logs
+from DOT_utils import get_dats
 
 # %%
 df0=pd.read_csv('/home/ntusay/scripts/NbeamAnalysis/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000.dat',
@@ -31,8 +31,8 @@ for r0,row0 in df0.iterrows():
 # %%
 import os
 import glob
-from CCF_utils import check_logs
-from CCF_utils import get_dats
+from DOT_utils import check_logs
+from DOT_utils import get_dats
 
 def hits(dirs,beam):
     tot=0
