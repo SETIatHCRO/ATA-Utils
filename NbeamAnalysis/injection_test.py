@@ -37,6 +37,9 @@ f1=min(fch1,fch2)
 f2=max(fch1,fch2)
 
 ### Signal 1
+'''The first signal is a very strong signal added to a 
+    blank slice where no other signals are present, only noise.'''
+
 fil0 = '/home/ntusay/scripts/NbeamAnalysis/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000.fil'
 frame0 = stg.Frame(fil0, f_start=f1, f_stop=f2)
 end, time_label = get_elapsed_time(start)
@@ -61,6 +64,9 @@ end, time_label = get_elapsed_time(start)
 print(f'\n\t\t*** Program complete in %.2f {time_label}.\n' %end)
 
 # ### Signal 2
+# '''This second signal is added on top of a known RFI signal,
+#       with much more power (x1000) than the RFI.'''
+
 # fil0 = '/home/ntusay/scripts/NbeamAnalysis/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000.fil'
 # frame0 = stg.Frame(fil0, f_start=f1, f_stop=f2)
 # end, time_label = get_elapsed_time(start)
@@ -81,6 +87,9 @@ print(f'\n\t\t*** Program complete in %.2f {time_label}.\n' %end)
 # print(f'\n\t\t*** Program complete in %.2f {time_label}.\n' %end)
 
 # ### Signal 3
+# '''This third signal is added on top of a known RFI signal,
+#       but with power comparable to that of the RFI signal.'''
+
 # fil0 = '/home/ntusay/scripts/NbeamAnalysis/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000.fil'
 # frame0 = stg.Frame(fil0, f_start=f1, f_stop=f2)
 # end, time_label = get_elapsed_time(start)
