@@ -35,6 +35,8 @@ def parse_args():
     parser.add_argument('-val',metavar="", type=str, default=None, help='Filter value')
     parser.add_argument('-clobber', action='store_true',
                         help='overwrite files if they already exist')
+    parser.add_argument('-pdf', action='store_true',
+                        help='plot file format as pdf (default is png)')
     args = parser.parse_args()
     odict = vars(args)
     if odict["outdir"]:
@@ -64,7 +66,7 @@ def purge(dir, pattern):
         os.remove(f)
 
 # plot the hit using the plotting function from plot_target_utils.py
-def plot_beams(name_array, fstart, fstop, drift_rate, SNR, x, path):
+def plot_beams(name_array, fstart, fstop, drift_rate, SNR, x, path, pdf=False):
     # make waterfall objects for plotting from the filenames
     fil_array = []
     f1 = min(fstart,fstop)
@@ -107,7 +109,12 @@ def plot_beams(name_array, fstart, fstop, drift_rate, SNR, x, path):
                  size=25)
     fig.tight_layout(rect=[0, 0, 1, 1.05])
     # save the plot
-    plt.savefig(f'{path}MJD_{MJD}_SNR_{SNR:.3f}_X_{x:.3f}_fmax_{f2:.6f}.png')
+    if pdf==True:
+        ext='pdf'
+    else:
+        ext='png'
+    plt.savefig(f'{path}MJD_{MJD}_X_{x:.3f}_SNR_{SNR:.3f}_fmax_{f2:.6f}.{ext}',
+                bbox_inches='tight',format=ext,dpi=fig.dpi,facecolor='white', transparent=False)
     plt.close()
     return None
 
@@ -124,6 +131,7 @@ def main():
     operator = cmd_args["op"]           # optional, default None
     value = cmd_args["val"]             # optional, default None
     clobber = cmd_args["clobber"]       # optional, flag on or default off
+    pdf = cmd_args["pdf"]               # optional, flag on or default off
     paths_cleared=[]                    # clobber counter
 
     # load the csv into a df and filter based on the input parameters
@@ -144,6 +152,7 @@ def main():
             signals_of_interest = df[df[column] > value]
         elif operator == 'is':
             signals_of_interest = df[df[column] == value]
+        signals_of_interest = signals_of_interest.sort_values(by='x').reset_index(drop=True)
     print(f"{len(signals_of_interest)}/{len(df)} total hits from the input dataframe will be plotted.")
 
     # iterate through the csv of interesting hits and plot row by row
@@ -161,14 +170,15 @@ def main():
             purge(path,'*.png')
             paths_cleared.append(path)
         # plot
-        print(f'Plotting {index}/{len(signals_of_interest)} starting at {row["freq_start"]:.6f} MHz')
+        print(f'Plotting {index}/{len(signals_of_interest)} starting at {row["freq_start"]:.6f} MHz, correlation score: {row["x"]:.3f}')
         plot_beams(beams,
                     row['freq_start'],
                     row['freq_end'],
                     row['Drift_Rate'],
                     row['SNR'],
                     row['x'],
-                    path)
+                    path,
+                    pdf)
 
     # This block prints the elapsed time of the entire program.
     end, time_label = get_elapsed_time(start)
