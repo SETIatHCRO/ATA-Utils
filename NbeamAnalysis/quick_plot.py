@@ -73,6 +73,10 @@ def plot_beams(name_array, fstart, fstop, drift_rate, SNR, x, save=False):
     return None
 
 # %%
+'''
+Filter individual csvs on a value.
+Output number of hits selected.
+'''
 # hardcode the csv string and filtering parameters
 csv = '/home/ntusay/scripts/processed2/obs_10-27_CCFnbeam.csv'
 # csv = '/home/ntusay/scripts/processed/obs_10-29_CCFnbeam.csv'
@@ -91,7 +95,9 @@ signals_of_interest = signals_of_interest.sort_values(by='x').reset_index(drop=T
 # output the number of hits selected so you can see if it's too many
 print(f'{len(signals_of_interest)} hits selected out of {len(df)}')
 # %%
-# loop over all the hits selected and plot
+'''
+Loop over all the hits selected and plot both beams
+'''
 for index, row in signals_of_interest.reset_index(drop=True).iterrows():
     print(f"Index: {index}")
     beams = [row[i] for i in list(signals_of_interest) if i.startswith('fil_')]
@@ -103,6 +109,10 @@ for index, row in signals_of_interest.reset_index(drop=True).iterrows():
             row['x'],
             save=False)
 # %%
+'''
+Pick a specific row to look at and plot the beams
+with some frequency width.
+'''
 j = 36
 dHz = 2000*1e-6
 row = signals_of_interest.iloc[j]
@@ -115,8 +125,11 @@ plot_beams(beams,
         row['x'],
         save=False)
 # %%
-# This is me playing with 3D plotting to include drift rate on top of correlation score and SNR
-# It feels somewhat useless so far
+'''
+This is me playing with 3D plotting 
+to include drift rate on top of correlation score and SNR.
+It feels somewhat useless so far
+'''
 x = df.x
 y = df.SNR
 z = abs(df.Drift_Rate)
@@ -128,34 +141,9 @@ ax.set_ylabel('SNR')
 ax.set_zlabel('Drift Rate')
 plt.show()
 # %%
-df=df.sort_values('x')
-x=df.x
-# y=np.log10(df.SNR)**(1/x)**(1/x)+10
-y=((1-x)*10)**(1/x)**(1/x)+200
-# y=x**2*np.log10(df.SNR)
-# y=1/x+15
-# y=df.x**np.log10(df.SNR)
-# plt.scatter(x,y)
-# plt.scatter(df.x,df.SNR)
-plt.scatter(x,df.SNR*np.log10(df.ACF))
-plt.plot(x,y,color='g',linestyle='--')
-# x=[0.4,0.897,0.925,0.962,1]
-# y=[max(df.SNR),34.814,15.379,10.645,10]
-# x=np.linspace(min(df.x),1,len(df))
-# y=np.logspace(np.log10(max(df.SNR)),1,len(df))
-# plt.plot(x,y,color='r')
-# plt.hlines(y=1,xmin=0,xmax=1,color='g',linestyle='--')
-plt.yscale('log')
-plt.show()
-# Count the number of points below the line
-num_points_below_line = 0
-for i in range(len(df)):
-    if df.SNR[i]*np.log10(df.ACF[i]) < y[i]:
-        num_points_below_line += 1
-
-# Print the number of points below the line
-print(f"Number of points below the line: {num_points_below_line}/{len(df)}")
-# %%
+'''
+Scatter Plot of SNR vs Score for ALL observations
+'''
 import glob
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -164,13 +152,15 @@ path='/home/ntusay/scripts/processed2/'
 csvs = sorted(glob.glob(path+'*.csv'))
 full_df = pd.DataFrame()
 column = 'x'
-value = 0.25
+value = 0.2903
+
 for csv in csvs:
     temp_df = pd.read_csv(csv)
-    print(f'{len(temp_df[temp_df[column] < value])} hits in csv {csv.split("/")[-1].split("_CCF")[0]}')
+    print(f'{len(temp_df[temp_df[column] <= value])} hits in csv {csv.split("/")[-1].split("_CCF")[0]}')
     full_df = pd.concat([full_df, temp_df],ignore_index=True)
 xs = full_df.x
 SNR = full_df.SNR
+# DR = abs(full_df.Drift_Rate)
 fig,ax=plt.subplots(figsize=(12,10))
 plt.scatter(xs,SNR,color='orange',alpha=0.5,edgecolor='k')
 plt.xlabel('Average Correlation Scores')
@@ -181,9 +171,12 @@ plt.xlim(-0.01,1.01)
 #             bbox_inches='tight',format='png',dpi=fig.dpi,facecolor='white', transparent=False)
 plt.show()
 
-signals_of_interest = full_df[full_df[column] < value]
+signals_of_interest = full_df[full_df[column] <= value]
 print(f'{len(signals_of_interest)} hits selected out of {len(full_df)}')
 # %%
+'''
+Probing the noise between two beams of the same observation
+'''
 import pandas as pd
 import matplotlib.pyplot as plt
 %matplotlib inline
@@ -204,4 +197,197 @@ plt.scatter(df1.freqs1,abs(df2.medians2-df1.medians1)/df1.medians1,s=1)
 # plt.ylabel('difference in correlation scores')
 # plt.xlim(1950,2450)
 plt.show()
+# %%
+'''
+This KDE approach doesn't work for large data arrays.
+Histogram is way better and easier.
+'''
+import time
+start=time.time()
+import glob
+import numpy as np
+import pandas as pd
+from scipy.stats import gaussian_kde
+import matplotlib.pyplot as plt
+
+# Load data
+path='/home/ntusay/scripts/processed2/'
+csvs = sorted(glob.glob(path+'*.csv'))
+full_df = pd.DataFrame()
+for csv in csvs:
+    temp_df = pd.read_csv(csv)
+    full_df = pd.concat([full_df, temp_df],ignore_index=True)
+full_df = full_df.sort_values(by='x').reset_index(drop=True)
+x = full_df['x']
+# csv = '/home/ntusay/scripts/processed2/obs_10-27_CCFnbeam.csv'
+# csv = '/home/ntusay/scripts/processed2/obs_10-28_CCFnbeam.csv'
+# csv = '/home/ntusay/scripts/processed2/obs_10-29_CCFnbeam.csv'
+# csv = '/home/ntusay/scripts/processed2/obs_10-30_CCFnbeam.csv'
+# csv = '/home/ntusay/scripts/processed2/obs_11-01_CCFnbeam.csv'
+# csv = '/home/ntusay/scripts/processed2/obs_11-02_CCFnbeam.csv'
+# csv = '/home/ntusay/scripts/processed2/obs_11-05_CCFnbeam.csv'
+# csv = '/home/ntusay/scripts/processed2/obs_11-09_CCFnbeam.csv'
+# print(f"{csv.split('/')[-1].split('_CCF')[0]}")
+# df = pd.read_csv(csv)
+# df = df.sort_values(by='x').reset_index(drop=True)
+# x = df['x']
+
+# Estimate the density of the points using a Gaussian kernel
+density_func = gaussian_kde(x)
+
+# Evaluate the density function at each point
+density = density_func(x)
+
+# Compute a threshold below which points are considered low-density
+percentile = 0.1
+threshold = np.percentile(density, percentile)
+
+# Identify points with low density
+low_density_indices = np.where(density < threshold)[0]
+
+# Find the maximum x value of the low-density points that is less than the maximum x value of the high-density points
+last_low_density_index = low_density_indices[-1]
+high_density_indices = np.where(density >= threshold)[0]
+max_high_density_x = np.max(x[high_density_indices])
+x_threshold = np.max(x[low_density_indices[x[low_density_indices] < max_high_density_x]])
+
+# Plot the results
+fig, ax = plt.subplots()
+ax.hist(x, bins=50, density=True, alpha=0.5, color='blue')
+ax.scatter(x, density, color='red',s=20)
+ax.axhline(threshold, linestyle='--', color='gray')
+ax.axvline(x_threshold, linestyle='--', color='green')
+ax.set_xlabel('Average Correlation Score')
+ax.set_ylabel('Density')
+plt.show()
+print(f'Max correlation score for the bottom {percentile} percentile: {x_threshold:.3f}')
+print(f'There are {len(full_df[full_df.x <= x_threshold])} hits less than or equal to this threshold.')
+# %%
+'''
+Diagnostic Plotter
+'''
+from plot_utils import diagnostic_plotter as dp
+import glob
+import pandas as pd
+
+# Load data
+path='/home/ntusay/scripts/processed2/'
+csvs = sorted(glob.glob(path+'*.csv'))
+full_df = pd.DataFrame()
+for csv in csvs:
+    temp_df = pd.read_csv(csv)
+    full_df = pd.concat([full_df, temp_df],ignore_index=True)
+full_df = full_df.sort_values(by='x').reset_index(drop=True)
+dp(full_df,tag='ALL_obs')
+
+# %%
+'''
+Cutoff calculation and plots using Median Absolute Deviation (MAD)
+'''
+import pandas as pd
+import numpy as np
+import matplotlib
+import subprocess
+import matplotlib.pyplot as plt
+plt.style.use('/home/ntusay/scripts/NbeamAnalysis/plt_format.mplstyle')
+import glob
+
+def calculate_cutoffs(xs, k):
+    mad = np.median(np.abs(xs - np.median(xs)))
+    median = np.median(xs)
+    cutoff_mad = median - k * mad
+    return cutoff_mad
+
+def calculate_sigmas(xs, cutoff_mad):
+    mad = np.median(np.abs(xs - np.median(xs)))
+    median = np.median(xs)
+    k = (median - cutoff_mad) / mad
+    return k
+
+def mkplt(x, fig, ax, c=(0, 0), numx=500, obs='All'):
+    # set params
+    k = int(np.log10(len(x)*np.log10(len(x))**2))
+    # k = 8
+    log=False
+    bins = 100
+
+    # # calculate cutoff from MAD at some sigma k
+    # cutoff_mad = calculate_cutoffs(x, k)
+
+    # calculate the sigma given some cutoff value
+    cutoff_mad=sorted(x)[numx]
+    k = calculate_sigmas(x, cutoff_mad)
+    if isinstance(ax, np.ndarray):
+        nrows, ncols = ax.shape  # get the number of rows and columns in ax
+        row, col = c // ncols, c % ncols  # compute the row and column indices
+        ax = ax[row, col]
+    n, xbin, _ = ax.hist(x, bins, log=log,color='C0', edgecolor='C0')
+    ax.stairs(n, xbin,color='purple')
+    ax.axvline(np.median(x), linestyle='--', linewidth=2, color='orange', label=f'Median (x = {np.median(x):.4f})')
+    ax.axvline(cutoff_mad, linestyle=':', linewidth=2, color='red', label=rf'{k:.1f}$\sigma$ MAD Cutoff (x = {cutoff_mad:.4f})')
+    ax.set_ylabel('Number per Bin')
+    ax.set_xlabel('Beam Correlation Scores')
+    ax.legend(loc='upper left',title=f"Observations: {obs}")
+    ax.set_xlim(-0.05,1.05)
+    print(rf'MAD cutoff value: {cutoff_mad:.4f} at {k:.1f} sigma')
+    print(f'Number of values below MAD cutoff: {len(x[x < cutoff_mad])}/{len(x)}')
+    print(f'Percent of values above MAD cutoff: {(len(x) - len(x[x < cutoff_mad])) / len(x) * 100:.3f}%')
+    print('------------------------------------------')
+    return cutoff_mad
+
+# input and output params
+path='/home/ntusay/scripts/processed2/'
+outdir=path
+save=True
+plot_hits=False
+
+# get input data csvs
+csvs = sorted(glob.glob(path+'*.csv'))
+full_df = pd.DataFrame()
+# initialize outliers counter
+outliers=0
+# initialize the plot with subplots
+fig, ax = plt.subplots(nrows=4, ncols=2, figsize=(12,16))
+# loop over each csv to make subplots
+for c,csv in enumerate(csvs):
+    temp_df = pd.read_csv(csv)
+    temp_df = temp_df.sort_values(by='x').reset_index(drop=True)
+    temp_x = temp_df['x']
+    obs=csv.split('obs_')[-1].split('_CCF')[0]+'-2022'
+    print(obs)
+    cutoff_mad = mkplt(temp_x,fig,ax,c,obs=obs)
+    outliers+=len(temp_x[temp_x<cutoff_mad])
+    if plot_hits==True:
+        # plot the hits
+        input_commands = [csv, "-o", f"obs_{obs}_plots", "-col","x","-op","lt","-val",cutoff_mad,"-clobber"]
+        process = subprocess.Popen(["python", "plot_DOT_hits.py"] + input_commands, stdout=subprocess.PIPE)
+        output, error = process.communicate()
+    full_df = pd.concat([full_df, temp_df],ignore_index=True)
+# finalize the subplots
+fig.tight_layout()
+if save==True:
+    ext='pdf'
+    plt.savefig(outdir + f'MAD_subplots.{ext}',
+                bbox_inches='tight',format=ext,dpi=fig.dpi,facecolor='white', transparent=False)
+    print(f"Plot saved to {outdir}MAD_subplots.{ext}")
+plt.show()
+plt.close()
+
+# sort and prep the combined data
+full_df = full_df.sort_values(by='x').reset_index(drop=True)
+obs = 'All'
+x = full_df['x']
+print(obs)
+fig,ax=plt.subplots(1,1,figsize=(10,6))
+mkplt(x,fig,ax,numx=4000)#,save=True,outdir=path)
+save=False
+if save==True:
+    ext='pdf'
+    plt.savefig(outdir + f'MAD_combined.{ext}',
+                bbox_inches='tight',format=ext,dpi=fig.dpi,facecolor='white', transparent=False)
+    print(f"Plot saved to {outdir}MAD_combined.{ext}")
+plt.show()
+plt.close()
+# print(f'Total individual values below cutoffs: {outliers}')
+
 # %%

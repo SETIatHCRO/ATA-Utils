@@ -1,0 +1,31 @@
+axes.titlesize : 18
+axes.labelsize : 16
+axes.linewidth : 2
+axes.axisbelow : True
+
+lines.linewidth : 2
+lines.markersize : 10
+
+xtick.labelsize : 16
+xtick.top : True
+xtick.major.size : 6
+xtick.minor.size : 3
+xtick.major.width:   2     
+xtick.minor.width:   2   
+xtick.major.pad:     10 
+xtick.direction:     in    
+xtick.minor.visible: True   
+
+ytick.labelsize : 16
+ytick.right : True
+ytick.major.size : 6
+ytick.minor.size : 3
+ytick.major.width:   2     
+ytick.minor.width:   2     
+ytick.direction:     in    
+ytick.minor.visible: True   
+
+figure.figsize:     11, 6
+legend.title_fontsize:   12
+legend.fontsize:    10
+legend.borderaxespad: 0.5

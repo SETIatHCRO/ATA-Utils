@@ -65,6 +65,9 @@ def get_dats(root_dir,beam):
     errors=0
     dat_files = []
     for dirpath, dirnames, filenames in os.walk(root_dir):
+        # if 'test' in dirpath:
+        #     print(f'Skipping "test" folder:\n{dirpath}')
+        #     continue
         for f in filenames:
             if f.endswith('.dat') and f.split('beam')[-1].split('.')[0]==beam:
                 log_file = os.path.join(dirpath, f).replace('.dat','.log')
