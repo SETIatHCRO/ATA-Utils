@@ -18,8 +18,20 @@ plt.rcParams.update({'font.size': 22})
 import plot_utils as ptu
 %matplotlib inline
 
+import blimpy as bl
+
+def sig_cor(s1,s2):
+    ACF1=((s1*s1).sum(axis=1)).sum()/np.shape(s1)[0]/np.shape(s1)[1]
+    ACF2=((s2*s2).sum(axis=1)).sum()/np.shape(s2)[0]/np.shape(s2)[1]
+    DOT =((s1*s2).sum(axis=1)).sum()/np.shape(s1)[0]/np.shape(s1)[1]
+    x=DOT/np.sqrt(ACF1*ACF2)
+    return x
+
+def wf_data(fil,f1,f2):
+    return bl.Waterfall(fil,f1,f2).grab_data(f1,f2)
+
 # define main plotting function
-def plot_beams(name_array, fstart, fstop, drift_rate, SNR, x, save=False):
+def plot_beams(name_array, fstart, fstop, drift_rate, SNR, x, save=False, path='/home/ntusay/scripts/temp/',ext='png'):
     # make waterfall objects for plotting from the filenames
     fil_array = []
     f1 = min(fstart,fstop)
@@ -63,9 +75,9 @@ def plot_beams(name_array, fstart, fstop, drift_rate, SNR, x, save=False):
     fig.tight_layout(rect=[0, 0, 1, 1.05])
     # show the plot
     if save==True:
-        path='/home/ntusay/scripts/temp/'
-        plt.savefig(f'{path}MJD_{MJD}_SNR_{SNR:.3f}_DR_{drift_rate:.3f}_fstart_{fstart:.6f}.png',
-                    bbox_inches='tight',format='png',dpi=fig.dpi,facecolor='white', transparent=False)
+        path=path
+        plt.savefig(f'{path}MJD_{MJD}_SNR_{SNR:.3f}_DR_{drift_rate:.3f}_fstart_{fstart:.6f}.{ext}',
+                    bbox_inches='tight',format=f'{ext}',dpi=fig.dpi,facecolor='white', transparent=False)
         plt.show()
         plt.close()
     else:
@@ -324,12 +336,12 @@ def mkplt(x, fig, ax, c=(0, 0), numx=500, obs='All'):
     n, xbin, _ = ax.hist(x, bins, log=log,color='C0', edgecolor='C0')
     ax.stairs(n, xbin,color='purple')
     ax.axvline(np.median(x), linestyle='--', linewidth=2, color='orange', label=f'Median (x = {np.median(x):.4f})')
-    ax.axvline(cutoff_mad, linestyle=':', linewidth=2, color='red', label=rf'{k:.1f}$\sigma$ MAD Cutoff (x = {cutoff_mad:.4f})')
+    ax.axvline(cutoff_mad, linestyle=':', linewidth=2, color='red', label=rf'Cutoff at {k:.1f} MADs (x = {cutoff_mad:.4f})')
     ax.set_ylabel('Number per Bin')
     ax.set_xlabel('Beam Correlation Scores')
     ax.legend(loc='upper left',title=f"Observations: {obs}")
     ax.set_xlim(-0.05,1.05)
-    print(rf'MAD cutoff value: {cutoff_mad:.4f} at {k:.1f} sigma')
+    print(rf'Cutoff value: {cutoff_mad:.4f} at {k:.1f} MADs')
     print(f'Number of values below MAD cutoff: {len(x[x < cutoff_mad])}/{len(x)}')
     print(f'Percent of values above MAD cutoff: {(len(x) - len(x[x < cutoff_mad])) / len(x) * 100:.3f}%')
     print('------------------------------------------')
@@ -390,4 +402,109 @@ plt.show()
 plt.close()
 # print(f'Total individual values below cutoffs: {outliers}')
 
+# %%
+'''
+Re-plot interesting beam plots to zoom out/get pdf version.
+New correlation score calculated for this wider bandwidth.
+Note that the first cell must be run to define the plot_beams function
+'''
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+plt.style.use('/home/ntusay/scripts/NbeamAnalysis/plt_format.mplstyle')
+import glob
+import os
+
+# input and output params
+# 10-27
+png='/home/ntusay/scripts/processed2/obs_10-27-2022_plots/MJD_59879_18519_X_0.483_SNR_11.703_fmax_8647.378070.png'
+png='/home/ntusay/scripts/processed2/obs_10-27-2022_plots/MJD_59879_20811_X_0.260_SNR_10.115_fmax_8243.525317.png'
+png='/home/ntusay/scripts/processed2/obs_10-27-2022_plots/MJD_59879_22298_X_0.532_SNR_992.480_fmax_6666.750284.png'
+png='/home/ntusay/scripts/processed2/obs_10-27-2022_plots/MJD_59879_29275_X_0.485_SNR_10.801_fmax_8654.361263.png'
+png='/home/ntusay/scripts/processed2/obs_10-27-2022_plots/MJD_59879_29275_X_0.503_SNR_10.445_fmax_8654.451684.png'
+# 10-28
+png='/home/ntusay/scripts/processed2/obs_10-28-2022_plots/MJD_59880_03124_X_0.085_SNR_13.402_fmax_1679.878538.png'
+png='/home/ntusay/scripts/processed2/obs_10-28-2022_plots/MJD_59880_04559_X_0.083_SNR_17.167_fmax_1989.579324.png'
+png='/home/ntusay/scripts/processed2/obs_10-28-2022_plots/MJD_59880_07504_X_0.004_SNR_167.142_fmax_1777.805030.png'
+# 10-29
+png='/home/ntusay/scripts/processed2/obs_10-29-2022_plots/MJD_59881_05127_X_0.207_SNR_16.948_fmax_2340.171170.png'
+# 10-30
+png='/home/ntusay/scripts/processed2/obs_10-30-2022_plots/MJD_59882_05307_X_0.088_SNR_37.716_fmax_4000.057944.png'
+# 11-01
+png='/home/ntusay/scripts/processed2/obs_11-01-2022_plots/MJD_59884_18785_X_0.896_SNR_192.699_fmax_8656.000274.png'
+png='/home/ntusay/scripts/processed2/obs_11-01-2022_plots/MJD_59884_18785_X_0.815_SNR_10.947_fmax_8646.465056.png'
+png='/home/ntusay/scripts/processed2/obs_11-01-2022_plots/MJD_59884_19546_X_0.904_SNR_10.253_fmax_8646.486039.png'
+# 11-02
+png='/home/ntusay/scripts/processed2/obs_11-02-2022_plots/MJD_59885_13716_X_0.382_SNR_11.212_fmax_5333.403154.png'
+# 11-05
+png='/home/ntusay/scripts/processed2/obs_11-05-2022_plots/MJD_59888_07902_X_0.430_SNR_145.228_fmax_5777.858606.png'
+png='/home/ntusay/scripts/processed2/obs_11-05-2022_plots/MJD_59888_14276_X_0.314_SNR_12.313_fmax_7504.042134.png'
+# 11-09
+png='/home/ntusay/scripts/processed2/obs_11-09-2022_plots/MJD_59892_04666_X_0.622_SNR_23.137_fmax_7514.946641.png'
+png='/home/ntusay/scripts/processed2/obs_11-09-2022_plots/MJD_59892_10137_X_0.561_SNR_12.011_fmax_7499.998463.png'
+png='/home/ntusay/scripts/processed2/obs_11-09-2022_plots/MJD_59892_19322_X_0.425_SNR_17.969_fmax_8000.113800.png'
+
+padding=5000 # Hz
+save=True
+save=False
+
+# The rest will run automatically
+png_dir=png.split('MJD_')[0]
+pngs=sorted(glob.glob(png_dir+'*.png'))
+csv = png.split('-2022_plots')[0]+'_CCFnbeam.csv'
+outdir=f'{png_dir.split("-2022_plots")[0]}_interesting/'
+if not os.path.exists(outdir):
+    os.mkdir(outdir)
+
+df=pd.read_csv(csv)
+df=df.sort_values(by='x').reset_index(drop=True).iloc[:500]
+pngMJD=png.split('/')[-1].split('MJD_')[-1].split('_X_')[0]
+pngX=float(png.split('/')[-1].split('_X_')[-1].split('_SNR_')[0])
+pngSNR=float(png.split('/')[-1].split('SNR_')[-1].split('_fmax_')[0])
+pngfmax=float(png.split('/')[-1].split('fmax_')[-1].split('.png')[0])
+
+for r,row in df.iterrows():
+    MJD="_".join(row.dat_name.split('/')[-1].split("_")[1:3])
+    fmax=max(row['freq_end'],row['freq_start'])
+    if MJD==pngMJD and round(row['x'],3)==pngX and round(row['SNR'],3)==pngSNR and pngfmax==fmax:
+        print(f'{csv.split("/")[-1].split("_CCF")[0]}\t\tIndex: {r}')
+        print(f'MJD: {MJD}\tfmax: {row.freq_start}')
+        print(f'SNR: {row.SNR:.3f}\t\tx: {row.x:.3f}')
+        f1=row['freq_start']
+        f2=row['freq_end']
+        beams = list(row.filter(regex=r'fil_00..$'))
+        plot_beams(beams,f1,f2,row['Drift_Rate'],row['SNR'],row['x'],save=save,path=outdir,ext='pdf')
+
+        f1+=padding*1e-6
+        f2-=padding*1e-6
+
+        _,s1=wf_data(beams[0],f2,f1)
+        _,s2=wf_data(beams[1],f2,f1)
+        x=sig_cor(s1-np.median(s2),s2-np.median(s2))
+        print(f'Correlation score over wider ({((f1-f2)*1e3):.3f} kHz) bandwidth: {x:.3f}')
+
+        plot_beams(beams,f1,f2,row['Drift_Rate'],row['SNR'],x,save=save,path=outdir,ext='pdf')
+# %%
+# for r,row in df.iterrows():
+#     MJD="_".join(row.dat_name.split('/')[-1].split("_")[1:3])
+#     fmax=max(row['freq_end'],row['freq_start'])
+#     if MJD==pngMJD and round(row['x'],3)==pngX and round(row['SNR'],3)==pngSNR and pngfmax==fmax:
+#         print(f'{csv.split("/")[-1].split("_CCF")[0]}\t\tIndex: {r}')
+#         print(f'MJD: {MJD}\tfmax: {row.freq_start}')
+#         print(f'SNR: {row.SNR:.3f}\t\tx: {row.x:.3f}')
+#         f1=row['freq_start']
+#         f2=row['freq_end']
+#         beams = list(row.filter(regex=r'fil_00..$'))
+#         _,s1=wf_data(beams[0],f2,f1)
+#         x=sig_cor(s1-np.median(s1),s1-np.median(s1))
+#         print(f'Autocorrelation score on signal: {x:.3f}')
+#         padding=150
+#         f1-=padding*1e-6
+#         f2-=padding*1e-6
+#         _,s1=wf_data(beams[0],f2,f1)
+#         _,s2=wf_data(beams[1],f2,f1)
+#         x=sig_cor(s1-np.median(s1),s1-np.median(s1))
+#         print(f'Autocorrelation score on noise: {x:.3f}')
+#         x=sig_cor(s1-np.median(s2),s2-np.median(s2))
+#         print(f'Correlation score on noise: {x:.3f}')
 # %%
