@@ -137,8 +137,8 @@ def main():
     # load the csv into a df and filter based on the input parameters
     df = pd.read_csv(csv)
     if not column or not operator or not value:
-        print(f"Default filtering: 1000 lowest scoring hits.")
-        signals_of_interest = df.sort_values(by='x').reset_index(drop=True).iloc[:1000]
+        print(f"Default filtering: 500 lowest scoring hits.")
+        signals_of_interest = df.sort_values(by='x').reset_index(drop=True).iloc[:500]
         print(f"Max score in this set: {signals_of_interest.iloc[-1].x:.3f}")
     else:
         # Infer the data type of the column from the dataframe

@@ -84,6 +84,7 @@ def freq_span(dirs,beam):
             f2=max(max(fch1,fch2),f2)
         fmin=min(fmin,f1)
         fmax=max(fmax,f2)
+        print(f'{label}\tfmin: {f1:.6f} \tfmax: {f2:.6f} MHz.\tSpan: {(f2-f1):.6f}' )
         plt.plot([f1,f2],[d+1,d+1],label=label)
     plt.legend()
     plt.show()

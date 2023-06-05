@@ -17,7 +17,7 @@ def calculate_cutoffs(xs, k):
     cutoff_mad = median - k * mad
     return cutoff_mad
 
-def calculate_sigmas(xs, cutoff_mad):
+def calculate_MADs(xs, cutoff_mad):
     mad = np.median(np.abs(xs - np.median(xs)))
     median = np.median(xs)
     k = (median - cutoff_mad) / mad
@@ -30,12 +30,12 @@ def mkplt(x, fig, ax, c=(0, 0), numx=500, obs='All'):
     log=False
     bins = 100
 
-    # # calculate cutoff from MAD at some sigma k
+    # # calculate cutoff value at some MAD value k
     # cutoff_mad = calculate_cutoffs(x, k)
 
-    # calculate the sigma given some cutoff value
+    # calculate the MADs value given some cutoff value
     cutoff_mad=sorted(x)[numx]
-    k = calculate_sigmas(x, cutoff_mad)
+    k = calculate_MADs(x, cutoff_mad)
 
     if isinstance(ax, np.ndarray):
         nrows, ncols = ax.shape  # get the number of rows and columns in ax
@@ -44,12 +44,12 @@ def mkplt(x, fig, ax, c=(0, 0), numx=500, obs='All'):
     n, xbin, _ = ax.hist(x, bins, log=log,color='C0', edgecolor='C0')
     ax.stairs(n, xbin,color='purple')
     ax.axvline(np.median(x), linestyle='--', linewidth=2, color='orange', label=f'Median (x = {np.median(x):.4f})')
-    ax.axvline(cutoff_mad, linestyle=':', linewidth=2, color='red', label=rf'{k:.1f}$\sigma$ MAD Cutoff (x = {cutoff_mad:.4f})')
+    ax.axvline(cutoff_mad, linestyle=':', linewidth=2, color='red', label=rf'Cutoff at {k:.1f} MADs (x = {cutoff_mad:.4f})')
     ax.set_ylabel('Number per Bin')
     ax.set_xlabel('Beam Correlation Scores')
     ax.legend(loc='upper left',title=f"Observations: {obs}")
     ax.set_xlim(-0.05,1.05)
-    print(rf'MAD cutoff value: {cutoff_mad:.4f} at {k:.1f} sigma')
+    print(rf'MAD cutoff value: {cutoff_mad:.4f} at {k:.1f} MADs')
     print(f'Number of values below MAD cutoff: {len(x[x < cutoff_mad])}/{len(x)}')
     print(f'Percent of values above MAD cutoff: {(len(x) - len(x[x < cutoff_mad])) / len(x) * 100:.3f}%')
     print('------------------------------------------')
@@ -59,7 +59,7 @@ def mkplt(x, fig, ax, c=(0, 0), numx=500, obs='All'):
 path='/home/ntusay/scripts/processed2/'
 outdir=path
 save=True          # Set this to True to save the histogram plots
-plot_hits=False     # Set this to True to plot all the hits below the cutoff
+plot_hits=True     # Set this to True to plot all the hits below the cutoff
 
 # get input data csvs
 csvs = sorted(glob.glob(path+'*.csv'))
@@ -79,8 +79,9 @@ for c,csv in enumerate(csvs):
     outliers+=len(temp_x[temp_x<cutoff_mad])
     if plot_hits==True:
         # plot the hits
-        input_commands = [csv, "-o", f"{outdir}/obs_{obs}_plots/","-col","x","-op","lt","-val",cutoff_mad,"-clobber"]
-        process = subprocess.Popen(["python", "plot_DOT_hits.py"] + input_commands, stdout=subprocess.PIPE)
+        input_commands = [csv, "-o", f"{outdir}/obs_{obs}_plots/","-col","x","-op","lt","-val",f"{cutoff_mad}","-clobber"]
+        plot_hits_script = '/home/ntusay/scripts/NbeamAnalysis/plot_DOT_hits.py'
+        process = subprocess.Popen(["python", plot_hits_script] + input_commands, stdout=subprocess.PIPE)
         output, error = process.communicate()
     full_df = pd.concat([full_df, temp_df],ignore_index=True)
 # finalize the subplots
