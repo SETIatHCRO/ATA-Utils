@@ -227,5 +227,7 @@ def diagnostic_plotter(df, tag, saving=False, log=True, outdir='./'):
     fig.tight_layout(rect=[0, 0, 1, 0.9])
     if saving == True:
         plt.savefig(outdir + tag + '_diagnostic_plots.jpg')
-    plt.close()
+        plt.close()
+    else:
+        plt.show()
     return None

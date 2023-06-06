@@ -68,7 +68,7 @@ def main():
     beam = str(int(beam)).zfill(4)  # force beam format as four char string with leading zeros. Ex: '0010'
     outdir = cmd_args["outdir"]     # optional (defaults to current directory)
     update = cmd_args["update"]     # optional, flag on or default off
-    tag = cmd_args["tag"]           # optional, default = None
+    tag = cmd_args["tag"][0]        # optional, default = None
 
     # create the output directory if the specified path does not exist
     if not os.path.isdir(outdir):
