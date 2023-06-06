@@ -161,7 +161,7 @@ def main():
         beams = [row[i] for i in list(signals_of_interest) if i.startswith('fil_')]
         # set the path where the plots will be saved (optionally remove old plots with clobber)
         if not outdir:
-            path=row['datdir']+'plots/'
+            path="/".join(csv.split("/")[:-1])+f'/{csv.split("/")[-1].split(".")[0]}_plots/'
         else:
             path=outdir
         if not os.path.exists(path):
