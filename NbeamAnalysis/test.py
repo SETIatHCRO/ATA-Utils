@@ -75,7 +75,7 @@ def freq_span(dirs,beam):
         f1=1e12
         f2=0
         fil_files = get_fils(dir,beam)
-        label = "-".join(dir.split('/')[-1].split('2022-')[-1].split('-')[0:2])
+        label = "-".join(dir.split('/')[-1].split('2022-')[-1].split('-')[0:2])+"-22"
         for fil in fil_files:
             waterfall_data = bl.Waterfall(fil,load_data=False)
             fch1 = waterfall_data.header['fch1']
@@ -85,8 +85,10 @@ def freq_span(dirs,beam):
         fmin=min(fmin,f1)
         fmax=max(fmax,f2)
         print(f'{label}\tfmin: {f1:.6f} \tfmax: {f2:.6f} MHz.\tSpan: {(f2-f1):.6f}' )
-        plt.plot([f1,f2],[d+1,d+1],label=label)
-    plt.legend()
+        plt.plot([f1,f2],[label,label],label=label)
+    # plt.legend()
+    plt.xlabel(f'Frequency Coverage (MHz)')
+    plt.ylabel(f'Observation Date')
     plt.show()
     print(f'Frequency coverage spans {fmin:.6f} to {fmax:.6f} MHz.')
     return None
@@ -95,4 +97,81 @@ PPO='/mnt/datac-netStorage-40G/projects/p004/'
 dirs=sorted(glob.glob(PPO+'2022*'))
 beam='0000'
 freq_span(dirs,beam)
+# %%
+import os
+import glob
+import numpy as np
+import blimpy as bl
+from datetime import datetime, timedelta
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+plt.style.use('/home/ntusay/scripts/NbeamAnalysis/plt_format.mplstyle')
+plt.rcParams.update({'font.size': 22})
+plt.rcParams.update({'ytick.minor.visible': False})
+plt.rcParams.update({'axes.labelsize': 18})
+plt.rcParams.update({'xtick.labelsize': 14})
+plt.rcParams.update({'ytick.labelsize': 14})
+%matplotlib inline
+
+def get_fils(root_dir,beam):
+    """Recursively finds all files with the '.dat' extension in a directory
+    and its subdirectories, and returns a list of the full paths of files 
+    where each file corresponds to the target beam."""
+    fil_files = []
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+        for f in filenames:
+            if f.endswith('.fil') and f.split('beam')[-1].split('.')[0]==beam:
+                fil_files.append(os.path.join(dirpath, f))
+    return fil_files
+
+def freq_span(dirs,beam):
+    colors=['m','r','g','turquoise','blueviolet','b','indigo','violet']
+    labels=[]
+    dts=[]
+    xmin=5000
+    xmax=5000
+    fig, ax = plt.subplots(1,1,figsize=(10,6))
+    for d,dir in enumerate(dirs):
+        fil_files = get_fils(dir,beam)
+        label = "-".join(dir.split('/')[-1].split('2022-')[-1].split('-')[0:2])+"-22"
+        dt=datetime.strptime(label, '%m-%d-%y')
+        dts.append(dt)
+        labels.append(dt.date())
+        for fil in fil_files:
+            waterfall_data = bl.Waterfall(fil,load_data=False)
+            fch1 = waterfall_data.header['fch1']
+            fch2 = fch1 + waterfall_data.header['foff'] * waterfall_data.header['nchans']
+            ax.scatter(fch1,dt,color=colors[d])
+            if fch1<xmin:
+                xmin=fch1
+            if fch1>xmax:
+                xmax=fch1
+    print(xmin,xmax)
+    plt.yticks(labels)
+    myFmt = mdates.DateFormatter('%m-%d')
+    ax.yaxis.set_major_formatter(myFmt)
+    ymin, ymax = ax.get_ylim()
+    ax.set_ylim(ymin,ymax)
+    xmin, xmax = ax.get_xlim()
+    ax.set_xlim(xmin,xmax)
+    plt.xticks(np.arange(1000,10000,1000))
+    ax.axvspan(300,1000,alpha=0.1, color='orange',label='UHF')
+    ax.axvspan(1000,2000,alpha=0.1, color='r',label='L')
+    ax.axvspan(2000,4000,alpha=0.1, color='g',label='S')
+    ax.axvspan(4000,8000,alpha=0.1, color='b',label='C')
+    ax.axvspan(8000,12000,alpha=0.1, color='m',label='X')
+    plt.xlabel(f'Frequency Coverage (MHz)')
+    plt.ylabel(f'Observation Date')
+    legend=plt.legend(loc='upper left',title='Band')
+
+    plt.grid(True, which='major', axis='both', linestyle=':', linewidth=0.25, color='gray')
+    plt.show()
+    # print(f'Frequency coverage spans {fmin:.6f} to {fmax:.6f} MHz.')
+    return None
+
+PPO='/mnt/datac-netStorage-40G/projects/p004/'
+dirs=sorted(glob.glob(PPO+'2022*'))
+beam='0000'
+freq_span(dirs,beam)
+
 # %%
