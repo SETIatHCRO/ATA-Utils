@@ -508,3 +508,20 @@ for r,row in df.iterrows():
 #         x=sig_cor(s1-np.median(s2),s2-np.median(s2))
 #         print(f'Correlation score on noise: {x:.3f}')
 # %%
+'''
+Plotting the 3rd Injection Recovery test that failed:
+'Weak' signal on top of RFI
+'''
+fil0='/home/ntusay/scripts/NbeamAnalysis/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000.fil'
+fil1='/home/ntusay/scripts/NbeamAnalysis/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0001.fil'
+beams=[fil0,fil1]
+f2 = 6881.280127
+f1 = 6881.279876
+drift_rate=-0.000993
+SNR=79.161705
+_,s1=wf_data(beams[0],f1,f2)
+_,s2=wf_data(beams[1],f1,f2)
+x=sig_cor(s1-np.median(s2),s2-np.median(s2))
+path='/home/ntusay/scripts/NbeamAnalysis/injection_test/DOT_results/plots/failed_test/'
+plot_beams(beams, f1, f2, drift_rate, SNR, x, save=True, path=path,ext='pdf')
+# %%
