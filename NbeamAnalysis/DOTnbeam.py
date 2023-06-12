@@ -30,6 +30,8 @@ def parse_args():
                         help='overwrite files if they already exist')
     parser.add_argument('-tag', '--tag',metavar='tag',type=str,nargs=1,default=None,
                         help='output files label')
+    parser.add_argument('-xsf', action='store_true',
+                        help='flag to turn off spatial filtering')
     args = parser.parse_args()
     # Check for trailing slash in the directory path and add it if absent
     odict = vars(args)
@@ -67,8 +69,9 @@ def main():
     beam = cmd_args["beam"][0]      # optional, default = 0
     beam = str(int(beam)).zfill(4)  # force beam format as four char string with leading zeros. Ex: '0010'
     outdir = cmd_args["outdir"]     # optional (defaults to current directory)
-    update = cmd_args["update"]     # optional, flag on or default off
-    tag = cmd_args["tag"][0]        # optional, default = None
+    update = cmd_args["update"]     # optional constant output, flag on or default off
+    tag = cmd_args["tag"][0]        # optional file label, default = None
+    xsf = cmd_args["xsf"]           # optional, flag to turn off spatial filtering
 
     # create the output directory if the specified path does not exist
     if not os.path.isdir(outdir):
@@ -124,11 +127,15 @@ def main():
         # make a dataframe containing all the hits from all the .dat files in the tuple and sort them by frequency
         df0 = DOT.load_dat_df(dat,fils)
         df0 = df0.sort_values('Corrected_Frequency').reset_index(drop=True)
-        df = DOT.cross_ref(df0)
-        exact_matches+=len(df0)-len(df)
-        hits+=len(df0)
-        logging.info(f"{len(df0)-len(df)}/{len(df0)} hits removed as exact frequency matches. "+
-                 f"Combing through the remaining {len(df)} hits in dat file {d}/{len(dat_files)}:\n{dat}")
+        if xsf==False:  # apply spatial filtering unless turned off with xsf flag (default is to run it)
+            df = DOT.cross_ref(df0)
+            exact_matches+=len(df0)-len(df)
+            hits+=len(df0)
+            logging.info(f"{len(df0)-len(df)}/{len(df0)} hits removed as exact frequency matches. "+
+                    f"Combing through the remaining {len(df)} hits in dat file {d}/{len(dat_files)}:\n{dat}")
+        else:
+            df = df0
+            logging.info("No spatial filtering being applied since xsf flag was toggled on input command.")
         # check for checkpoint pickle files to resume from
         resume_index, df = DOT.resume(outdir+f"{obs}_comb_df.pkl",df)
         # comb through the dataframe and cross-correlate each hit to identify any that show up in multiple beams
