@@ -1,5 +1,6 @@
 # The program uses a simple correlation to identify if similar signals exist in target and off-target beams
 # DOT_utils.py and plot_target_utils.py required for modularized functions
+# The main outputs of this program are a csv, a diagnostic histogram plot and a plot of SNR vs correlation score.
 
     # Import Packages
 import pandas as pd
@@ -7,6 +8,7 @@ import pickle
 import numpy as np
 import time
 import os
+import sys
 import glob
 import argparse
 import matplotlib.pyplot as plt
@@ -32,6 +34,8 @@ def parse_args():
                         help='output files label')
     parser.add_argument('-xsf', action='store_true',
                         help='flag to turn off spatial filtering')
+    parser.add_argument('-store', action='store_true',
+                        help='flag to retain pickle files after successful completion')
     args = parser.parse_args()
     # Check for trailing slash in the directory path and add it if absent
     odict = vars(args)
@@ -70,8 +74,9 @@ def main():
     beam = str(int(beam)).zfill(4)  # force beam format as four char string with leading zeros. Ex: '0010'
     outdir = cmd_args["outdir"]     # optional (defaults to current directory)
     update = cmd_args["update"]     # optional constant output, flag on or default off
-    tag = cmd_args["tag"][0]        # optional file label, default = None
+    tag = cmd_args["tag"]           # optional file label, default = None
     xsf = cmd_args["xsf"]           # optional, flag to turn off spatial filtering
+    store = cmd_args["store"]       # optional, flag to retain pickle files
 
     # create the output directory if the specified path does not exist
     if not os.path.isdir(outdir):
@@ -84,7 +89,7 @@ def main():
         except:
             obs="obs_UNKNOWN"
     else:
-        obs = tag
+        obs = tag[0]
 
     # configure the output log file
     logfile=outdir+f'{obs}_out.txt'
@@ -170,10 +175,14 @@ def main():
         logging.info(f"\tProcessed in %.2f {time_label}.\n" %end)
 
     # remove the full dataframe pickle file after all loops complete
-    os.remove(outdir+f"{obs}_full_df.pkl")
+    if store==False:
+        os.remove(outdir+f"{obs}_full_df.pkl")
 
     # This block prints the elapsed time of the entire program.
-    logging.info(completion_code+"\n")
+    if store==False:
+        logging.info(completion_code+"\n")
+    else:
+        logging.info("\n")
     end, time_label = DOT.get_elapsed_time(start)
     logging.info(f"\t{len(dat_files)} dats with {hits} total hits cross referenced and {exact_matches} hits removed as exact matches.")
     logging.info(f"\t\tThe remaining {hits-exact_matches} hits were correlated and processed in %.2f {time_label}.\n" %end)

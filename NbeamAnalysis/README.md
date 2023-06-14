@@ -9,8 +9,8 @@ These scripts will recursively scan all subfolders of the input directories for 
     - fscrunch allows increased sensitivity to larger drift rates
 
 2.  DOTnbeam.py uses dot products and other functions in DOT_utils.py to score signals in the target beam
-    - dats and logs --> stats histograms, DOTScore vs SNR plot, output log, and csv
-    - first cross references hits with identical frequencies (within 2 Hz) to pare down the hit list
+    - dats and logs --> stats histograms, Correlation score vs SNR plot, output log, and csv
+    - first cross references hits with identical frequencies (within 2 Hz) to pare down the hit list (optionally turned off with flag)
     - then correlates frequency ranges of remaining hits in target beam with other beams using a dot product
     - should work with any number of beams
     - uses pickle files to resume interrupted scripts
@@ -20,3 +20,8 @@ These scripts will recursively scan all subfolders of the input directories for 
     - csv --> waterfall plots
     - input arguments allow for filtering of csv
     - defaults to 1000 lowest scored hits
+
+4. cutoffs.py, uses Median Absolute Deviation (MAD) to make a statistical assessment of the user defined score cutoffs.
+    - HARDCODED
+    - csvs --> histogram plots with MADs, combined and individual
+    - optionally uses plot_DOT_hits to plot everything below cutoff
