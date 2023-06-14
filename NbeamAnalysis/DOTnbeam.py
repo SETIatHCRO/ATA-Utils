@@ -111,6 +111,8 @@ def main():
         logging.info(f'\n\tERROR: No .dat files found in subfolders.'+
                 f'Please check the input directory and/or beam number, and then try again:\n{datdir}\n')
         sys.exit()
+    if errors:
+        print(f'{errors} errors when gathering dat files in the input directory. Check the log for skipped files.')
 
     # check for pickle checkpoint files to resume from, or initialize the dataframe
     full_df = pd.DataFrame()
@@ -118,6 +120,7 @@ def main():
     ndats=len(dat_files[d:])
     hits=0
     exact_matches=0
+    skipped=0
     
     # loop through the list of tuples, starting from the last processed file (d), 
     # perform cross-correlation to pare down the list of hits, and put the remaining hits into a dataframe.
@@ -129,6 +132,11 @@ def main():
         fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+'*.fil'))
         if not fils:
             fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+'*.h5'))
+        if not fils:
+            print(f'\n\tWARNING! Could not locate filterbank files in:\n\t{fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]}')
+            print(f'\tSkipping {dat}\n')
+            skipped+=1
+            continue
         # make a dataframe containing all the hits from all the .dat files in the tuple and sort them by frequency
         df0 = DOT.load_dat_df(dat,fils)
         df0 = df0.sort_values('Corrected_Frequency').reset_index(drop=True)
@@ -147,6 +155,7 @@ def main():
         if df.empty:
             print(f'\n\tWARNING! Empty dataframe constructed from dat file:\n\t{dat}')
             print(f'\tSkipping this dat file...\n')
+            skipped+=1
             continue
         temp_df = DOT.comb_df(df,outdir,obs,resume_index=resume_index)
         full_df = pd.concat([full_df, temp_df],ignore_index=True)
@@ -187,6 +196,8 @@ def main():
         logging.info(completion_code+"\n")
     else:
         logging.info("\n")
+    if skipped:
+        print(f'\n\t{skipped} dat files skipped.\n\tCheck the log for skipped filenames.\n')
     end, time_label = DOT.get_elapsed_time(start)
     logging.info(f"\t{len(dat_files)} dats with {hits} total hits cross referenced and {exact_matches} hits removed as exact matches.")
     logging.info(f"\t\tThe remaining {hits-exact_matches} hits were correlated and processed in %.2f {time_label}.\n" %end)
