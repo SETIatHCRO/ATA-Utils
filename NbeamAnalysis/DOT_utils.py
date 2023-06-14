@@ -53,6 +53,8 @@ def get_elapsed_time(start=0):
 def check_logs(log):
     status="fine"
     searchfile = open(log,'r').readlines()
+    if os.path.exists(log)==False:
+        return "incomplete"
     if searchfile[-1]!='===== END OF LOG\n':
         status="incomplete"
     return status
