@@ -144,6 +144,10 @@ def main():
         # check for checkpoint pickle files to resume from
         resume_index, df = DOT.resume(outdir+f"{obs}_comb_df.pkl",df)
         # comb through the dataframe and cross-correlate each hit to identify any that show up in multiple beams
+        if df.empty:
+            print(f'\n\tWARNING! Empty dataframe constructed from dat file:\n\t{dat}')
+            print(f'\tSkipping this dat file...\n')
+            continue
         temp_df = DOT.comb_df(df,outdir,obs,resume_index=resume_index)
         full_df = pd.concat([full_df, temp_df],ignore_index=True)
         # Save the current state to the checkpoint file
