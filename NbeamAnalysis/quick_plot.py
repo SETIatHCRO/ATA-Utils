@@ -523,5 +523,6 @@ _,s1=wf_data(beams[0],f1,f2)
 _,s2=wf_data(beams[1],f1,f2)
 x=sig_cor(s1-np.median(s2),s2-np.median(s2))
 path='/home/ntusay/scripts/NbeamAnalysis/injection_test/DOT_results/plots/failed_test/'
-plot_beams(beams, f1, f2, drift_rate, SNR, x, save=True, path=path,ext='pdf')
+from plot_DOT_hits import plot_beams as pbs
+pbs(beams, f1, f2, drift_rate, SNR, x, path, pdf=True)
 # %%
