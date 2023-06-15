@@ -133,7 +133,7 @@ def main():
         if not fils:
             fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+'*.h5'))
         if not fils:
-            print(f'\n\tWARNING! Could not locate filterbank files in:\n\t{fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]}')
+            print(f'\n\tWARNING! Could not locate filterbank files in:\n\t{fildir+dat.split(datdir)[-1].split(dat.split("/")[-1])[0]}')
             print(f'\tSkipping {dat}\n')
             skipped+=1
             continue
@@ -197,7 +197,7 @@ def main():
     else:
         logging.info("\n")
     if skipped:
-        print(f'\n\t{skipped} dat files skipped.\n\tCheck the log for skipped filenames.\n')
+        print(f'\n\t{skipped}/{len(dat_files[d:])} dat files skipped.\n\tCheck the log for skipped filenames.\n')
     end, time_label = DOT.get_elapsed_time(start)
     logging.info(f"\t{len(dat_files)} dats with {hits} total hits cross referenced and {exact_matches} hits removed as exact matches.")
     logging.info(f"\t\tThe remaining {hits-exact_matches} hits were correlated and processed in %.2f {time_label}.\n" %end)
