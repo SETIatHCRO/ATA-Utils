@@ -1,7 +1,14 @@
 #!/bin/bash
 
-# Takes 2 inputs, .fil file directory and an output directory.
+# This script takes 2 inputs, .fil file directory and an output directory.
 # Creates subfolders with .dat files in the output directory.
+
+STARTTIME=$(date +%s)
+echo " "
+echo "running turboSETI bash script with fscrunch..." 
+echo " "
+echo $(date)
+echo " "
 
 # Check if both input and output directory names are provided as arguments
 if [ $# -lt 2 ]
@@ -45,3 +52,12 @@ do
       rm -f $outdir$relpath/*.h5
   done
 done
+
+echo " "
+echo $(date)
+echo " "
+ENDTIME=$(date +%s)
+echo "It took $(($ENDTIME - $STARTTIME)) seconds to complete this task..."
+echo " "
+echo "Game over. Thanks for playing." 
+echo " "
