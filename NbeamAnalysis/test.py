@@ -31,25 +31,36 @@ for r0,row0 in df0.iterrows():
 # %%
 import os
 import glob
+import pandas as pd
 from DOT_utils import check_logs
 from DOT_utils import get_dats
 
-def hits(dirs,beam):
+def hits(dirs,beam,csvs):
     tot=0
-    for dir in dirs:
+    totf=0
+    print("original hits --> spatially filtered hits")
+    for d,dir in enumerate(dirs):
         dat_files,errors=get_dats(dir,beam)
         hits=0
         for dat in dat_files:
             hits+=len(open(dat,'r').readlines())-9
-        print(dir, hits)
+        filts=len(pd.read_csv(csvs[d]))
+        print(f'{"-".join(dir.split("/")[-1].split("-")[1:3])}: ',
+                hits,
+                f" -->  {filts}",
+                f"  ({(hits-filts)/hits*100:.1f}% reduction)")
         tot+=hits
+        totf+=filts
     print(f'{tot} total hits found in all target beam dat files')
+    print(f'{totf} total hits remaining after spatial filtering')
+    print(f"{(tot-totf)/tot*100:.1f}% reduction")
     return None
 
 PPO='/mnt/buf0/PPO/'
-dirs=sorted(glob.glob(PPO+'*'))
+dirs=sorted(glob.glob(PPO+'2022*'))
+csvs=sorted(glob.glob('/home/ntusay/scripts/processed2/*.csv'))
 beam='0000'
-hits(dirs,beam)
+hits(dirs,beam,csvs)
 # %%
 import os
 import glob
@@ -72,25 +83,50 @@ def freq_span(dirs,beam):
     fmin=1e12
     fmax=0
     for d,dir in enumerate(dirs):
-        f1=1e12
-        f2=0
+        f1s=[]
+        f2s=[]
         fil_files = get_fils(dir,beam)
         label = "-".join(dir.split('/')[-1].split('2022-')[-1].split('-')[0:2])+"-22"
         for fil in fil_files:
             waterfall_data = bl.Waterfall(fil,load_data=False)
             fch1 = waterfall_data.header['fch1']
             fch2 = fch1 + waterfall_data.header['foff'] * waterfall_data.header['nchans']
-            f1=min(min(fch1,fch2),f1)
-            f2=max(max(fch1,fch2),f2)
-        fmin=min(fmin,f1)
-        fmax=max(fmax,f2)
-        print(f'{label}\tfmin: {f1:.6f} \tfmax: {f2:.6f} MHz.\tSpan: {(f2-f1):.6f}' )
-        plt.plot([f1,f2],[label,label],label=label)
+            f1s.append(min(fch1,fch2))
+            f2s.append(max(fch1,fch2))
+        f1s=np.array(f1s)
+        f2s=np.array(f2s)
+        if d==1 or d==2 or d==3 or d==5:
+            f1=min(f1s)
+            f2=max(f2s)
+            print(f'{label}\tfmin: {f1:.6f} \tfmax: {f2:.6f} MHz.\tSpan: {(f2-f1):.6f}' )
+        elif d==0 or d==4:
+            f11=min(f1s)
+            f21=max(f2s[f2s<7500])
+            f12=min(f1s[f1s>7500])
+            f22=max(f2s)
+            print(f'{label}\tfmin: {f11:.6f} \tfmax: {f21:.6f} MHz.\tSpan: {(f21-f11):.6f}' )
+            print(f'\t\tfmin: {f12:.6f} \tfmax: {f22:.6f} MHz.\tSpan: {(f22-f12):.6f}' )
+        elif d==6:
+            f11=min(f1s)
+            f21=max(f2s[f2s<6600])
+            f12=min(f1s[f1s>6600])
+            f22=max(f2s)
+            print(f'{label}\tfmin: {f11:.6f} \tfmax: {f21:.6f} MHz.\tSpan: {(f21-f11):.6f}' )
+            print(f'\t\tfmin: {f12:.6f} \tfmax: {f22:.6f} MHz.\tSpan: {(f22-f12):.6f}' )
+        elif d==7:
+            f11=min(f1s)
+            f21=max(f2s[f2s<8500])
+            f12=min(f1s[f1s>8500])
+            f22=max(f2s)
+            print(f'{label}\tfmin: {f11:.6f} \tfmax: {f21:.6f} MHz.\tSpan: {(f21-f11):.6f}' )
+            print(f'\t\tfmin: {f12:.6f} \tfmax: {f22:.6f} MHz.\tSpan: {(f22-f12):.6f}' )
+        # print(f'{label}\tfmin: {f1:.6f} \tfmax: {f2:.6f} MHz.\tSpan: {(f2-f1):.6f}' )
+        # plt.plot([f1,f2],[label,label],label=label)
     # plt.legend()
-    plt.xlabel(f'Frequency Coverage (MHz)')
-    plt.ylabel(f'Observation Date')
-    plt.show()
-    print(f'Frequency coverage spans {fmin:.6f} to {fmax:.6f} MHz.')
+    # plt.xlabel(f'Frequency Coverage (MHz)')
+    # plt.ylabel(f'Observation Date')
+    # plt.show()
+    # print(f'Frequency coverage spans {fmin:.6f} to {fmax:.6f} MHz.')
     return None
 
 PPO='/mnt/datac-netStorage-40G/projects/p004/'
@@ -124,7 +160,7 @@ def get_fils(root_dir,beam):
                 fil_files.append(os.path.join(dirpath, f))
     return fil_files
 
-def freq_span(dirs,beam):
+def freq_span(dirs,beam,save=False):
     colors=['m','r','g','turquoise','blueviolet','b','indigo','violet']
     labels=[]
     dts=[]
@@ -163,8 +199,12 @@ def freq_span(dirs,beam):
     plt.xlabel(f'Frequency Coverage (MHz)')
     plt.ylabel(f'Observation Date')
     legend=plt.legend(loc='upper left',title='Band')
-
     plt.grid(True, which='major', axis='both', linestyle=':', linewidth=0.25, color='gray')
+    path='/home/ntusay/scripts/processed2/'
+    ext='pdf'
+    if save==True:
+        plt.savefig(f'{path}observations.{ext}',
+                    bbox_inches='tight',format=ext,dpi=fig.dpi,facecolor='white', transparent=False)
     plt.show()
     # print(f'Frequency coverage spans {fmin:.6f} to {fmax:.6f} MHz.')
     return None
@@ -172,6 +212,6 @@ def freq_span(dirs,beam):
 PPO='/mnt/datac-netStorage-40G/projects/p004/'
 dirs=sorted(glob.glob(PPO+'2022*'))
 beam='0000'
-freq_span(dirs,beam)
+freq_span(dirs,beam,save=True)
 
 # %%
