@@ -37,6 +37,8 @@ def parse_args():
                         help='overwrite files if they already exist')
     parser.add_argument('-pdf', action='store_true',
                         help='plot file format as pdf (default is png)')
+    parser.add_argument('-DR', action='store_true',
+                        help='flag to plot frequency range using drift rate instead of given span')
     args = parser.parse_args()
     odict = vars(args)
     if odict["outdir"]:
@@ -132,6 +134,7 @@ def main():
     value = cmd_args["val"]             # optional, default None
     clobber = cmd_args["clobber"]       # optional, flag on or default off
     pdf = cmd_args["pdf"]               # optional, flag on or default off
+    DR = cmd_args["DR"]                 # optional, flag on or default off
     paths_cleared=[]                    # clobber counter
 
     # load the csv into a df and filter based on the input parameters
@@ -169,11 +172,25 @@ def main():
         if clobber and path not in paths_cleared:
             purge(path,'*.png')
             paths_cleared.append(path)
+        # determine frequency range for plot
+        fstart = row['freq_start']
+        fend = row['freq_end']
+        if DR==True:
+            fmid=(fstart+fend)/2
+            searchfile=open(row['dat_name'],'r').readlines()
+            for line in searchfile:
+                if 'obs_length: ' in line:
+                    obs_length=float(line.split('\n')[0].split('obs_length: ')[-1])
+            half_span=row['Drift_Rate']*obs_length
+            if half_span<50:
+                half_span=50
+            fstart=round(fmid+half_span*1e-6,6)
+            fend=round(fmid-half_span*1e-6,6)
         # plot
         print(f'Plotting {index}/{len(signals_of_interest)} starting at {row["freq_start"]:.6f} MHz, correlation score: {row["x"]:.3f}')
         plot_beams(beams,
-                    row['freq_start'],
-                    row['freq_end'],
+                    fstart,
+                    fend,
                     row['Drift_Rate'],
                     row['SNR'],
                     row['x'],
