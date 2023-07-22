@@ -105,7 +105,7 @@ def plot_beams(name_array, fstart, fstop, drift_rate, SNR, x, path, pdf=False):
     MJD = name_deconstructed[1] + '_' + name_deconstructed[2] #+ '_' + name_deconstructed[3]
     fig.suptitle(f'MJD: {MJD} || '+
                  f'fmax: {f2:.6f} MHz || '+
-                 f'Drift Rate: {drift_rate:.3f} nHz ({f2*drift_rate/1000:.3f} Hz/s) || '+
+                 f'Drift Rate: {drift_rate:.3f} Hz/s ({drift_rate/f2*1000:.3f} nHz) || '+
                  f'SNR: {SNR:.3f}'+
                  f'\nCorrelation Score: {x:.3f}',
                  size=25)
