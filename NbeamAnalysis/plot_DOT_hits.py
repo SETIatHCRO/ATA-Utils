@@ -182,8 +182,8 @@ def main():
                 if 'obs_length: ' in line:
                     obs_length=float(line.split('\n')[0].split('obs_length: ')[-1])
             half_span=row['Drift_Rate']*obs_length
-            if half_span<50:
-                half_span=50
+            if half_span<250:
+                half_span=250
             fstart=round(fmid+half_span*1e-6,6)
             fend=round(fmid-half_span*1e-6,6)
         # plot
