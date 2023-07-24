@@ -205,7 +205,13 @@ def main():
     logging.info(f"\t{len(full_df[full_df.x<0.75])}/{len(full_df)} hits below an average correlation score of 0.75")
     logging.info(f"\t{len(full_df[full_df.x<0.5])}/{len(full_df)} hits below an average correlation score of 0.5")
     logging.info(f"\t{len(full_df[full_df.x<0.25])}/{len(full_df)} hits below an average correlation score of 0.25")
-    logging.info(f"\nThe full dataframe was saved to: {outdir}{obs}_DOTnbeam.csv")
+    
+    if 'x' not in full_df.columns or full_df['x'].isnull().any():
+        # save the broken dataframe to csv
+        logging.info(f"\nScores in full dataframe not filled out correctly. Please check it:\n{outdir}{obs}_DOTnbeam.csv")
+        full_df.to_csv(f"{outdir}{obs}_DOTnbeam.csv")
+    else:
+        logging.info(f"\nThe full dataframe was saved to: {outdir}{obs}_DOTnbeam.csv")
     return None
 # run it!
 if __name__ == "__main__":
