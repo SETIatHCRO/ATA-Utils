@@ -68,7 +68,7 @@ def plot_beams(name_array, fstart, fstop, drift_rate, SNR, x, save=False, path='
     MJD = name_deconstructed[1] + '_' + name_deconstructed[2] #+ '_' + name_deconstructed[3]
     fig.suptitle(f'MJD: {MJD} || '+
                  f'fmax: {f2:.6f} MHz || '+
-                 f'Drift Rate: {drift_rate:.3f} nHz ({f2*drift_rate/1000:.3f} Hz/s) || '+
+                 f'Drift Rate: {drift_rate:.3f} Hz/s ({drift_rate/f2*1000:.3f} nHz) || '+
                  f'SNR: {SNR:.3f}'+
                  f'\nCorrelation Score: {x:.3f}',
                  size=25)
@@ -418,33 +418,51 @@ import os
 # input and output params
 # 10-27
 png='/home/ntusay/scripts/processed2/obs_10-27-2022_plots/MJD_59879_18519_X_0.483_SNR_11.703_fmax_8647.378070.png'
+padding=50000 # Hz
 png='/home/ntusay/scripts/processed2/obs_10-27-2022_plots/MJD_59879_20811_X_0.260_SNR_10.115_fmax_8243.525317.png'
+padding=500000 # Hz
 png='/home/ntusay/scripts/processed2/obs_10-27-2022_plots/MJD_59879_22298_X_0.532_SNR_992.480_fmax_6666.750284.png'
+padding=50000 # Hz
 png='/home/ntusay/scripts/processed2/obs_10-27-2022_plots/MJD_59879_29275_X_0.485_SNR_10.801_fmax_8654.361263.png'
+padding=200000 # Hz
 png='/home/ntusay/scripts/processed2/obs_10-27-2022_plots/MJD_59879_29275_X_0.503_SNR_10.445_fmax_8654.451684.png'
-# 10-28
+padding=50000 # Hz
+# # 10-28
 png='/home/ntusay/scripts/processed2/obs_10-28-2022_plots/MJD_59880_03124_X_0.085_SNR_13.402_fmax_1679.878538.png'
-png='/home/ntusay/scripts/processed2/obs_10-28-2022_plots/MJD_59880_04559_X_0.083_SNR_17.167_fmax_1989.579324.png'
-png='/home/ntusay/scripts/processed2/obs_10-28-2022_plots/MJD_59880_07504_X_0.004_SNR_167.142_fmax_1777.805030.png'
-# 10-29
-png='/home/ntusay/scripts/processed2/obs_10-29-2022_plots/MJD_59881_05127_X_0.207_SNR_16.948_fmax_2340.171170.png'
-# 10-30
-png='/home/ntusay/scripts/processed2/obs_10-30-2022_plots/MJD_59882_05307_X_0.088_SNR_37.716_fmax_4000.057944.png'
-# 11-01
-png='/home/ntusay/scripts/processed2/obs_11-01-2022_plots/MJD_59884_18785_X_0.896_SNR_192.699_fmax_8656.000274.png'
-png='/home/ntusay/scripts/processed2/obs_11-01-2022_plots/MJD_59884_18785_X_0.815_SNR_10.947_fmax_8646.465056.png'
-png='/home/ntusay/scripts/processed2/obs_11-01-2022_plots/MJD_59884_19546_X_0.904_SNR_10.253_fmax_8646.486039.png'
-# 11-02
-png='/home/ntusay/scripts/processed2/obs_11-02-2022_plots/MJD_59885_13716_X_0.382_SNR_11.212_fmax_5333.403154.png'
-# 11-05
-png='/home/ntusay/scripts/processed2/obs_11-05-2022_plots/MJD_59888_07902_X_0.430_SNR_145.228_fmax_5777.858606.png'
-png='/home/ntusay/scripts/processed2/obs_11-05-2022_plots/MJD_59888_14276_X_0.314_SNR_12.313_fmax_7504.042134.png'
-# 11-09
-png='/home/ntusay/scripts/processed2/obs_11-09-2022_plots/MJD_59892_04666_X_0.622_SNR_23.137_fmax_7514.946641.png'
-png='/home/ntusay/scripts/processed2/obs_11-09-2022_plots/MJD_59892_10137_X_0.561_SNR_12.011_fmax_7499.998463.png'
-png='/home/ntusay/scripts/processed2/obs_11-09-2022_plots/MJD_59892_19322_X_0.425_SNR_17.969_fmax_8000.113800.png'
-
 padding=5000 # Hz
+png='/home/ntusay/scripts/processed2/obs_10-28-2022_plots/MJD_59880_04559_X_0.083_SNR_17.167_fmax_1989.579324.png'
+padding=5000 # Hz
+png='/home/ntusay/scripts/processed2/obs_10-28-2022_plots/MJD_59880_07504_X_0.004_SNR_167.142_fmax_1777.805030.png'
+padding=2000 # Hz
+# # 10-29
+png='/home/ntusay/scripts/processed2/obs_10-29-2022_plots/MJD_59881_05127_X_0.207_SNR_16.948_fmax_2340.171170.png'
+padding=5000 # Hz
+# # 10-30
+png='/home/ntusay/scripts/processed2/obs_10-30-2022_plots/MJD_59882_05307_X_0.088_SNR_37.716_fmax_4000.057944.png'
+padding=20000 # Hz
+# # 11-01
+png='/home/ntusay/scripts/processed2/obs_11-01-2022_plots/MJD_59884_18785_X_0.896_SNR_192.699_fmax_8656.000274.png'
+padding=700 # Hz
+png='/home/ntusay/scripts/processed2/obs_11-01-2022_plots/MJD_59884_18785_X_0.815_SNR_10.947_fmax_8646.465056.png'
+padding=300000 # Hz
+png='/home/ntusay/scripts/processed2/obs_11-01-2022_plots/MJD_59884_19546_X_0.904_SNR_10.253_fmax_8646.486039.png'
+padding=300000 # Hz
+# # 11-02
+png='/home/ntusay/scripts/processed2/obs_11-02-2022_plots/MJD_59885_13716_X_0.382_SNR_11.212_fmax_5333.403154.png'
+padding=30000 # Hz
+# # 11-05
+png='/home/ntusay/scripts/processed2/obs_11-05-2022_plots/MJD_59888_07902_X_0.430_SNR_145.228_fmax_5777.858606.png'
+padding=30000 # Hz
+png='/home/ntusay/scripts/processed2/obs_11-05-2022_plots/MJD_59888_14276_X_0.314_SNR_12.313_fmax_7504.042134.png'
+padding=2000 # Hz
+# # 11-09
+png='/home/ntusay/scripts/processed2/obs_11-09-2022_plots/MJD_59892_04666_X_0.622_SNR_23.137_fmax_7514.946641.png'
+padding=2000 # Hz
+png='/home/ntusay/scripts/processed2/obs_11-09-2022_plots/MJD_59892_10137_X_0.561_SNR_12.011_fmax_7499.998463.png'
+padding=3500 # Hz
+png='/home/ntusay/scripts/processed2/obs_11-09-2022_plots/MJD_59892_19322_X_0.425_SNR_17.969_fmax_8000.113800.png'
+padding=20000 # Hz
+
 save=True
 save=False
 
@@ -522,7 +540,7 @@ SNR=79.161705
 _,s1=wf_data(beams[0],f1,f2)
 _,s2=wf_data(beams[1],f1,f2)
 x=sig_cor(s1-np.median(s2),s2-np.median(s2))
-path='/home/ntusay/scripts/NbeamAnalysis/injection_test/DOT_results/plots/failed_test/'
+path='/home/ntusay/scripts/NbeamAnalysis/injection_test/DOT_results/plots_fixed/failed_test/'
 from plot_DOT_hits import plot_beams as pbs
 pbs(beams, f1, f2, drift_rate, SNR, x, path, pdf=True)
 # %%

@@ -37,8 +37,7 @@ def parse_args():
                         help='overwrite files if they already exist')
     parser.add_argument('-pdf', action='store_true',
                         help='plot file format as pdf (default is png)')
-    parser.add_argument('-DR', action='store_true',
-                        help='flag to plot frequency range using drift rate instead of given span')
+    parser.add_argument("-freqs", type=list_parser, nargs="+", help="optional tuple of frequencies")
     args = parser.parse_args()
     odict = vars(args)
     if odict["outdir"]:
@@ -47,6 +46,15 @@ def parse_args():
             outdir += "/"
         odict["outdir"] = outdir  
     return odict
+
+# function to help parse space separated tuple input from command line 
+def list_parser(input_str):
+    try:
+        # Split the input string by spaces and convert each element to a float
+        parsed_list = list(map(float, input_str.split()))
+        return parsed_list[0]
+    except ValueError:
+        raise argparse.ArgumentTypeError("Invalid list format. Use space-separated floating-point numbers.")
 
 # elapsed time function
 def get_elapsed_time(start=0):
@@ -134,7 +142,7 @@ def main():
     value = cmd_args["val"]             # optional, default None
     clobber = cmd_args["clobber"]       # optional, flag on or default off
     pdf = cmd_args["pdf"]               # optional, flag on or default off
-    DR = cmd_args["DR"]                 # optional, flag on or default off
+    freqs = cmd_args["freqs"]           # optional, custom frequency span
     paths_cleared=[]                    # clobber counter
 
     # load the csv into a df and filter based on the input parameters
@@ -175,19 +183,21 @@ def main():
         # determine frequency range for plot
         fstart = row['freq_start']
         fend = row['freq_end']
-        if DR==True:
-            fmid=(fstart+fend)/2
-            searchfile=open(row['dat_name'],'r').readlines()
-            for line in searchfile:
-                if 'obs_length: ' in line:
-                    obs_length=float(line.split('\n')[0].split('obs_length: ')[-1])
-            half_span=row['Drift_Rate']*obs_length
-            if half_span<250:
-                half_span=250
-            fstart=round(fmid+half_span*1e-6,6)
-            fend=round(fmid-half_span*1e-6,6)
+        # determine frequency span over which to plot based on drift rate
+        fmid=row['Corrected_Frequency']
+        fil_meta=bl.Waterfall(beams[0],load_data=False)
+        obs_length=fil_meta.n_ints_in_file * fil_meta.header['tsamp']
+        half_span=abs(row['Drift_Rate'])*obs_length*1.2  # x1.2 for padding
+        if half_span<250:
+            half_span=250
+        fstart=round(fmid+half_span*1e-6,6)
+        fend=round(fmid-half_span*1e-6,6)
+        # circumvent all that in the case of bespoke plotting bounds
+        if freqs:
+            fstart=max(freqs)
+            fend=min(freqs)
         # plot
-        print(f'Plotting {index}/{len(signals_of_interest)} starting at {row["freq_start"]:.6f} MHz, correlation score: {row["x"]:.3f}')
+        print(f'Plotting {index}/{len(signals_of_interest)} starting at {fstart:.6f} MHz, correlation score: {row["x"]:.3f}')
         plot_beams(beams,
                     fstart,
                     fend,
