@@ -12,9 +12,9 @@ from ATATools import ata_control
 from datetime import datetime
 from astropy.time import Time as astropy_Time
 
-from . import snap_hpguppi_defaults as hpguppi_defaults
-from . import auxillary as hpguppi_auxillary
-from . import record_in as hpguppi_record_in
+from SNAPobs.snap_hpguppi import snap_hpguppi_defaults as hpguppi_defaults
+from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
+from SNAPobs.snap_hpguppi import record_in as hpguppi_record_in
 
 from ATATools.ata_rest import ATARestException
 
@@ -129,7 +129,9 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
 									zero_obs_startstop=True,
 									dry_run=False,
                                     default_dir=False,
-                                    dut1=False):
+                                    dut1=False,
+                                    additional_metadata=None
+                                    ):
 
     fengine_meta_keyvalues = hpguppi_defaults.fengine_meta_key_values(n_bits)
 
@@ -275,7 +277,15 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
 
         ant_names_string = ','.join(ant_names)
         # these are instance specific
-        key_val = {
+        
+        key_val = {}
+        if additional_metadata is not None:
+            key_val.update(
+                additional_metadata
+            )
+
+        key_val.update(
+            {
                 'OBSBW'    : obsbw,
                 'SCHAN'    : schan,
                 'SUBBAND'  : 'C{}'.format(str(schan).zfill(4)),
@@ -306,7 +316,8 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
                 'EL'       : el,
                 'ANTNAMES' : ant_names_string[0:71],
                 'XPCTGBPS' : '{:.3f}GBps {:.3f}Gbps'.format(expected_GBps, expected_GBps*8)
-        }
+            }
+        )
         if len(ant_names) > 0:
             key_val["TUNING"] = f"Lo{ant_names[0][-1]}"
 

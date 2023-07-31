@@ -264,6 +264,18 @@ while(True):
     if new_publication:
       print('### Start of updates ###')
       print(datetime.now(timezone.utc))
+
+    # build up LO independent additional meta-data
+    lo_freqs = list(
+        map(
+            str,
+            set(skyfreq_mapping)
+        )
+    )
+    lo_freqs.sort()
+    additional_metadata = {
+      'LO_FREQS': '-'.join(lo_freqs)
+    }
       
     for i in range(len(groups)):
       try:
@@ -329,7 +341,8 @@ while(True):
                   zero_obs_startstop=False,
                   dry_run=False,
                   max_packet_nchan=max_nchan_per_packet,
-                  dut1=True
+                  dut1=True,
+                  additional_metadata=additional_metadata
         )
         
         if new_publication:
