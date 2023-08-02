@@ -32,8 +32,8 @@ def parse_args():
                         help='overwrite files if they already exist')
     parser.add_argument('-tag', '--tag',metavar='tag',type=str,nargs=1,default=None,
                         help='output files label')
-    parser.add_argument('-sf', action='store_true',
-                        help='flag to turn on spatial filtering')
+    parser.add_argument('-sf', type=float, nargs='?', const=2, default=None,
+                        help='flag to turn on spatial filtering with optional attenuation value for filtering')
     parser.add_argument('-store', action='store_true',
                         help='flag to retain pickle files after successful completion')
     args = parser.parse_args()
@@ -140,8 +140,8 @@ def main():
         # make a dataframe containing all the hits from all the .dat files in the tuple and sort them by frequency
         df0 = DOT.load_dat_df(dat,fils)
         df0 = df0.sort_values('Corrected_Frequency').reset_index(drop=True)
-        if sf==True:  # apply spatial filtering if turned on with sf flag (default is off)
-            df = DOT.cross_ref(df0)
+        if sf!=None:  # apply spatial filtering if turned on with sf flag (default is off)
+            df = DOT.cross_ref(df0,sf)
             exact_matches+=len(df0)-len(df)
             hits+=len(df0)
             logging.info(f"{len(df0)-len(df)}/{len(df0)} hits removed as exact frequency matches. "+

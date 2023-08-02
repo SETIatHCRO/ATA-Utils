@@ -1,16 +1,2 @@
 
 Executing program...
-No spatial filtering being applied since sf flag was not toggled on input command.
-	Processed in 1.80 seconds.
-
-Program complete!
-
-	1 dats with 11 total hits cross referenced and 0 hits removed as exact matches.
-		The remaining 11 hits were correlated and processed in 1.81 seconds.
-
-	2/11 hits above an average correlation score of 0.75
-	9/11 hits below an average correlation score of 0.75
-	9/11 hits below an average correlation score of 0.5
-	7/11 hits below an average correlation score of 0.25
-
-The full dataframe was saved to: /home/ntusay/scripts/NbeamAnalysis/injection_test/SNR_ratio/obs_UNKNOWN_DOTnbeam.csv
