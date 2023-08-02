@@ -190,7 +190,7 @@ def get_freq_res(tupl):
     return deltaf[0]
 
 # cross reference hits in the target beam dat with the other beams dats for identical signals
-def cross_ref(input_df):
+def cross_ref(input_df,sf):
     if len(input_df)==0:
         return input_df
     # first, make sure the indices are reset
@@ -223,7 +223,8 @@ def cross_ref(input_df):
             within_tolerance = ((dat_df['Corrected_Frequency'] - row['Corrected_Frequency']).abs() < 2e-6) & \
                                ((dat_df['freq_start'] - row['freq_start']).abs() < 2e-6) & \
                                ((dat_df['freq_end'] - row['freq_end']).abs() < 2e-6) & \
-                               ((dat_df['SNR'] / row['SNR']).abs() >= 0.5)
+                               ((dat_df['SNR'] / row['SNR']).abs() >= 1/sf) & \
+                               ((row['SNR'] / dat_df['SNR']).abs() <= sf)
             if within_tolerance.any():
                 drop_row = True
                 break
