@@ -110,10 +110,14 @@ def load_dat_df(dat_file,filtuple):
 def wf_data(fil,f1,f2):
     return bl.Waterfall(fil,f1,f2).grab_data(f1,f2)
 
+# get the normalization factor of a 2D array
+def ACF(s1):
+    return ((s1*s1).sum(axis=1)).sum()/np.shape(s1)[0]/np.shape(s1)[1]
+
 # correlate two 2D arrays and return the correlation score
 def sig_cor(s1,s2):
-    ACF1=((s1*s1).sum(axis=1)).sum()/np.shape(s1)[0]/np.shape(s1)[1]
-    ACF2=((s2*s2).sum(axis=1)).sum()/np.shape(s2)[0]/np.shape(s2)[1]
+    ACF1=ACF(s1)
+    ACF2=ACF(s2)
     DOT =((s1*s2).sum(axis=1)).sum()/np.shape(s1)[0]/np.shape(s1)[1]
     x=DOT/np.sqrt(ACF1*ACF2)
     return x
@@ -134,7 +138,6 @@ def comb_df(df, outdir='./', obs='UNKNOWN', resume_index=None):
     for r,row in df.iterrows():
         if resume_index is not None and r < resume_index:
             continue  # skip rows before the resume index
-
         # identify the target beam .fil file 
         matching_col = row.filter(like='fil_').apply(lambda x: x == row['dat_name']).idxmax()
         target_fil = row[matching_col]
@@ -149,17 +152,22 @@ def comb_df(df, outdir='./', obs='UNKNOWN', resume_index=None):
         other_cols = row.loc[row.index.str.startswith('fil_') & (row.index != matching_col)]
         # initialize empty correlation score lists for appending
         xs=[]
+        SNR_ratios=[]
         for col_name, other_fil in other_cols.iteritems():
             # grab the data from the non-target fil in the same location
             _,s2=wf_data(other_fil,fstart,fstop)
             # correlate the signal in the target beam with the same location in the non-target beam
             # subtracting off the median of the off-target beam to roughly center the noise around zero.
             xs.append(sig_cor(s1-np.median(s2),s2-np.median(s2))) 
+            SNR_ratios.append(ACF(s1-np.median(s2))/ACF(s2-np.median(s2)))
         # loop over each correlation score in the tuple to add to the dataframe
         for i,x in enumerate(xs):
-            col_name = row["dat_name"].split('beam')[-1].split('.dat')[0]+'_x_'+other_cols[i].split('beam')[-1].split('.')[0]
-            df.loc[r,col_name] = x
+            col_name_SNRr='SNR_ratio_'+other_cols[i].split('beam')[-1].split('.')[0]
+            df.loc[r,col_name_SNRr] = SNR_ratios[i]
+            col_name_x = row["dat_name"].split('beam')[-1].split('.dat')[0]+'_x_'+other_cols[i].split('beam')[-1].split('.')[0]
+            df.loc[r,col_name_x] = x
         if len(xs)>0:   # this conditional makes the code not break if there's only one filterbank file for some reason
+            df.loc[r,'SNR_ratio'] = sum(SNR_ratios)/len(SNR_ratios)     # the average SNR_ratios with the other beams
             df.loc[r,'x'] = sum(xs)/len(xs)           # the average correlation score of the signal with the other beams  
         # pickle the dataframe and row index for resuming
         with open(outdir+f'{obs}_comb_df.pkl', 'wb') as f:
@@ -214,7 +222,8 @@ def cross_ref(input_df):
         for dat_df in dat_dfs:
             within_tolerance = ((dat_df['Corrected_Frequency'] - row['Corrected_Frequency']).abs() < 2e-6) & \
                                ((dat_df['freq_start'] - row['freq_start']).abs() < 2e-6) & \
-                               ((dat_df['freq_end'] - row['freq_end']).abs() < 2e-6)
+                               ((dat_df['freq_end'] - row['freq_end']).abs() < 2e-6) & \
+                               ((dat_df['SNR'] / row['SNR']).abs() >= 0.5)
             if within_tolerance.any():
                 drop_row = True
                 break
@@ -222,6 +231,8 @@ def cross_ref(input_df):
         # Add row to list of rows to drop if within tolerance in any of the dat file dataframes
         if drop_row:
             rows_to_drop.append(idx)
+            # print(f'dropped row: {idx}')
+            # print(f'{row}')
     
     # Drop rows that are within tolerance
     trimmed_df = input_df.drop(rows_to_drop)
