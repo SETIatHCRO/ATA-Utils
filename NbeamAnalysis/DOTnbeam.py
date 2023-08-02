@@ -32,8 +32,8 @@ def parse_args():
                         help='overwrite files if they already exist')
     parser.add_argument('-tag', '--tag',metavar='tag',type=str,nargs=1,default=None,
                         help='output files label')
-    parser.add_argument('-xsf', action='store_true',
-                        help='flag to turn off spatial filtering')
+    parser.add_argument('-sf', action='store_true',
+                        help='flag to turn on spatial filtering')
     parser.add_argument('-store', action='store_true',
                         help='flag to retain pickle files after successful completion')
     args = parser.parse_args()
@@ -75,7 +75,7 @@ def main():
     outdir = cmd_args["outdir"]     # optional (defaults to current directory)
     update = cmd_args["update"]     # optional constant output, flag on or default off
     tag = cmd_args["tag"]           # optional file label, default = None
-    xsf = cmd_args["xsf"]           # optional, flag to turn off spatial filtering
+    sf = cmd_args["sf"]             # optional, flag to turn off spatial filtering
     store = cmd_args["store"]       # optional, flag to retain pickle files
 
     # create the output directory if the specified path does not exist
@@ -140,7 +140,7 @@ def main():
         # make a dataframe containing all the hits from all the .dat files in the tuple and sort them by frequency
         df0 = DOT.load_dat_df(dat,fils)
         df0 = df0.sort_values('Corrected_Frequency').reset_index(drop=True)
-        if xsf==False:  # apply spatial filtering unless turned off with xsf flag (default is to run it)
+        if sf==True:  # apply spatial filtering if turned on with sf flag (default is off)
             df = DOT.cross_ref(df0)
             exact_matches+=len(df0)-len(df)
             hits+=len(df0)
@@ -148,7 +148,8 @@ def main():
                     f"Combing through the remaining {len(df)} hits in dat file {d}/{len(dat_files)}:\n{dat}")
         else:
             df = df0
-            logging.info("No spatial filtering being applied since xsf flag was toggled on input command.")
+            hits+=len(df0)
+            logging.info("No spatial filtering being applied since sf flag was not toggled on input command.")
         # check for checkpoint pickle files to resume from
         resume_index, df = DOT.resume(outdir+f"{obs}_comb_df.pkl",df)
         # comb through the dataframe and cross-correlate each hit to identify any that show up in multiple beams
