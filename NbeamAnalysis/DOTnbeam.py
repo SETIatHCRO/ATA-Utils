@@ -132,7 +132,7 @@ def main():
         fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+'*.fil'))
         if not fils:
             fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+'*.h5'))
-        elif not fils:
+        if not fils:
             print(f'\n\tWARNING! Could not locate filterbank files in:\n\t{fildir+dat.split(datdir)[-1].split(dat.split("/")[-1])[0]}')
             print(f'\tSkipping {dat}\n')
             skipped+=1
