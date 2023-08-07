@@ -132,7 +132,7 @@ def main():
         fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+'*.fil'))
         if not fils:
             fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+'*.h5'))
-        if not fils:
+        elif not fils:
             print(f'\n\tWARNING! Could not locate filterbank files in:\n\t{fildir+dat.split(datdir)[-1].split(dat.split("/")[-1])[0]}')
             print(f'\tSkipping {dat}\n')
             skipped+=1
@@ -190,7 +190,8 @@ def main():
 
     # remove the full dataframe pickle file after all loops complete
     if store==False:
-        os.remove(outdir+f"{obs}_full_df.pkl")
+        if os.path.exists(outdir+f"{obs}_full_df.pkl"):
+            os.remove(outdir+f"{obs}_full_df.pkl")
 
     # This block prints the elapsed time of the entire program.
     if store==False:
