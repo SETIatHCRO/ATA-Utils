@@ -1,0 +1,1368 @@
+
+Executing program...
+
+	3/8 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node3.0/fil_59885_07863_253501831_trappist1_0001-beam0000.dat
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node6.1/fil_59885_07863_253501831_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_07863_253501831_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_07863_253501831_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node6.1/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+
+	6/9 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node3.0/fil_59885_13716_253859069_trappist1_0001-beam0000.dat
+
+	7/9 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node3.0/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node8.0/fil_59885_18189_254132080_trappist1_0001-beam0000.dat
+
+	2/4 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node4.1/fil_59885_18910_254176086_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_18910_254176086_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_18910_254176086_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_14438_253903137_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_14438_253903137_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/5 hits removed as exact frequency matches. Combing through the remaining 4 hits in:
+	seti-node6.1/fil_59885_13716_253859069_trappist1_0001-beam0000.dat
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node8.0/fil_59885_15950_253995422_trappist1_0001-beam0000.dat
+
+	3/3 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node3.1/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node3.1/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	7/7 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.0/fil_59885_18910_254176086_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.0/fil_59885_18910_254176086_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	250/261 hits removed as exact frequency matches. Combing through the remaining 11 hits in:
+	seti-node2.1/fil_59885_15950_253995422_trappist1_0001-beam0000.dat
+
+	328/350 hits removed as exact frequency matches. Combing through the remaining 22 hits in:
+	seti-node2.1/fil_59885_18189_254132080_trappist1_0001-beam0000.dat
+
+	13/146 hits removed as exact frequency matches. Combing through the remaining 133 hits in:
+	seti-node3.1/fil_59885_07863_253501831_trappist1_0001-beam0000.dat
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node3.0/fil_59885_14438_253903137_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_18910_254176086_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_18910_254176086_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	21/192 hits removed as exact frequency matches. Combing through the remaining 171 hits in:
+	seti-node3.1/fil_59885_18910_254176086_trappist1_0001-beam0000.dat
+
+	128/1570 hits removed as exact frequency matches. Combing through the remaining 1442 hits in:
+	seti-node4.1/fil_59885_14438_253903137_trappist1_0001-beam0000.dat
+
+	247/1729 hits removed as exact frequency matches. Combing through the remaining 1482 hits in:
+	seti-node5.0/fil_59885_14438_253903137_trappist1_0001-beam0000.dat
+
+	0/0 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node6.0/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node6.0/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node8.0/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node1.0/fil_59885_18910_254176086_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.0/fil_59885_13716_253859069_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.0/fil_59885_13716_253859069_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_18189_254132080_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_18189_254132080_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/4 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node4.1/fil_59885_18189_254132080_trappist1_0001-beam0000.dat
+
+	4/20 hits removed as exact frequency matches. Combing through the remaining 16 hits in:
+	seti-node6.0/fil_59885_14438_253903137_trappist1_0001-beam0000.dat
+
+	5/99 hits removed as exact frequency matches. Combing through the remaining 94 hits in:
+	seti-node6.0/fil_59885_07863_253501831_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.0/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.0/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	0/43 hits removed as exact frequency matches. Combing through the remaining 43 hits in:
+	seti-node6.0/fil_59885_13716_253859069_trappist1_0001-beam0000.dat
+
+	1082/1224 hits removed as exact frequency matches. Combing through the remaining 142 hits in:
+	seti-node2.1/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.0/fil_59885_07863_253501831_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.0/fil_59885_07863_253501831_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_15950_253995422_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_15950_253995422_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/4 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node4.1/fil_59885_15950_253995422_trappist1_0001-beam0000.dat
+
+	124/133 hits removed as exact frequency matches. Combing through the remaining 9 hits in:
+	seti-node2.1/fil_59885_07863_253501831_trappist1_0001-beam0000.dat
+
+	2/4 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node1.0/fil_59885_18189_254132080_trappist1_0001-beam0000.dat
+
+	5532/7347 hits removed as exact frequency matches. Combing through the remaining 1815 hits in:
+	seti-node2.1/fil_59885_13716_253859069_trappist1_0001-beam0000.dat
+
+	5/10 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node6.1/fil_59885_18910_254176086_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/4 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node1.0/fil_59885_15950_253995422_trappist1_0001-beam0000.dat
+
+	3/4 hits removed as exact frequency matches. Combing through the remaining 1 hits in:
+	seti-node4.1/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node6.1/fil_59885_18189_254132080_trappist1_0001-beam0000.dat
+
+	2/4 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node1.0/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+
+	3/7 hits removed as exact frequency matches. Combing through the remaining 4 hits in:
+	seti-node6.1/fil_59885_15950_253995422_trappist1_0001-beam0000.dat
+
+	3/6 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node7.0/fil_59885_18910_254176086_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_13716_253859069_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_13716_253859069_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	45/98 hits removed as exact frequency matches. Combing through the remaining 53 hits in:
+	seti-node3.1/fil_59885_13716_253859069_trappist1_0001-beam0000.dat
+
+	3/4 hits removed as exact frequency matches. Combing through the remaining 1 hits in:
+	seti-node7.0/fil_59885_18189_254132080_trappist1_0001-beam0000.dat
+
+	150/175 hits removed as exact frequency matches. Combing through the remaining 25 hits in:
+	seti-node2.1/fil_59885_18910_254176086_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.0/fil_59885_15950_253995422_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.0/fil_59885_15950_253995422_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/4 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node4.1/fil_59885_07143_253457885_trappist1_0001-beam0000.dat
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node8.0/fil_59885_14438_253903137_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_07143_253457885_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_07143_253457885_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node5.0/fil_59885_07143_253457885_trappist1_0001-beam0000.dat
+
+	620/689 hits removed as exact frequency matches. Combing through the remaining 69 hits in:
+	seti-node2.0/fil_59885_07863_253501831_trappist1_0001-beam0000.dat
+
+	0/2 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node2.0/fil_59885_15950_253995422_trappist1_0001-beam0000.dat
+
+	2/5 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node1.0/fil_59885_07143_253457885_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_07143_253457885_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_07143_253457885_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	3/3 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node3.1/fil_59885_07143_253457885_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node3.1/fil_59885_07143_253457885_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_15950_253995422_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_15950_253995422_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	79/101 hits removed as exact frequency matches. Combing through the remaining 22 hits in:
+	seti-node3.0/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_14438_253903137_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_14438_253903137_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node5.0/fil_59885_15950_253995422_trappist1_0001-beam0000.dat
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node8.0/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+
+	2/6 hits removed as exact frequency matches. Combing through the remaining 4 hits in:
+	seti-node6.1/fil_59885_07143_253457885_trappist1_0001-beam0000.dat
+
+	3/3 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_15950_253995422_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_15950_253995422_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	4/5 hits removed as exact frequency matches. Combing through the remaining 1 hits in:
+	seti-node3.1/fil_59885_15950_253995422_trappist1_0001-beam0000.dat
+
+	2/5 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node4.1/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+
+	3/6 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node7.0/fil_59885_07143_253457885_trappist1_0001-beam0000.dat
+
+	88/100 hits removed as exact frequency matches. Combing through the remaining 12 hits in:
+	seti-node2.1/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+
+	1/2 hits removed as exact frequency matches. Combing through the remaining 1 hits in:
+	seti-node2.0/fil_59885_18189_254132080_trappist1_0001-beam0000.dat
+
+	162/218 hits removed as exact frequency matches. Combing through the remaining 56 hits in:
+	seti-node1.0/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+
+	583/650 hits removed as exact frequency matches. Combing through the remaining 67 hits in:
+	seti-node2.1/fil_59885_07143_253457885_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_18189_254132080_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_18189_254132080_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node5.0/fil_59885_18189_254132080_trappist1_0001-beam0000.dat
+
+	3/3 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_18189_254132080_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_18189_254132080_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	5/5 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node3.1/fil_59885_18189_254132080_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node3.1/fil_59885_18189_254132080_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node3.0/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node2.0/fil_59885_18910_254176086_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node2.0/fil_59885_18910_254176086_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	4/6 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node6.1/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node8.0/fil_59885_13716_253859069_trappist1_0001-beam0000.dat
+
+	316/352 hits removed as exact frequency matches. Combing through the remaining 36 hits in:
+	seti-node2.0/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+
+	0/0 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node6.0/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node6.0/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node8.0/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.0/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.0/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	204/241 hits removed as exact frequency matches. Combing through the remaining 37 hits in:
+	seti-node2.1/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_13716_253859069_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_13716_253859069_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	261/399 hits removed as exact frequency matches. Combing through the remaining 138 hits in:
+	seti-node4.1/fil_59885_13716_253859069_trappist1_0001-beam0000.dat
+
+	0/0 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node6.0/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node6.0/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	3/3 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node3.1/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node3.1/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node3.0/fil_59885_15162_253947326_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/4 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node4.1/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+
+	0/0 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node6.0/fil_59885_15162_253947326_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node6.0/fil_59885_15162_253947326_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node8.0/fil_59885_15162_253947326_trappist1_0001-beam0000.dat
+
+	4/10 hits removed as exact frequency matches. Combing through the remaining 6 hits in:
+	seti-node3.0/fil_59885_07143_253457885_trappist1_0001-beam0000.dat
+
+	3/6 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node1.0/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_15162_253947326_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_15162_253947326_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	9/28 hits removed as exact frequency matches. Combing through the remaining 19 hits in:
+	seti-node4.1/fil_59885_15162_253947326_trappist1_0001-beam0000.dat
+
+	3/6 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node8.0/fil_59885_07863_253501831_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_15162_253947326_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_15162_253947326_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	31/79 hits removed as exact frequency matches. Combing through the remaining 48 hits in:
+	seti-node5.0/fil_59885_15162_253947326_trappist1_0001-beam0000.dat
+
+	0/0 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node6.0/fil_59885_07143_253457885_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node6.0/fil_59885_07143_253457885_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	4/8 hits removed as exact frequency matches. Combing through the remaining 4 hits in:
+	seti-node8.0/fil_59885_07143_253457885_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_07863_253501831_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_07863_253501831_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/5 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node4.1/fil_59885_07863_253501831_trappist1_0001-beam0000.dat
+
+	2/5 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node1.0/fil_59885_07863_253501831_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_07143_253457885_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_07143_253457885_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node8.0/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+
+	2/8 hits removed as exact frequency matches. Combing through the remaining 6 hits in:
+	seti-node3.0/fil_59885_18910_254176086_trappist1_0001-beam0000.dat
+
+	376/390 hits removed as exact frequency matches. Combing through the remaining 14 hits in:
+	seti-node2.1/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/4 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node4.1/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+
+	20/174 hits removed as exact frequency matches. Combing through the remaining 154 hits in:
+	seti-node6.0/fil_59885_18910_254176086_trappist1_0001-beam0000.dat
+
+	4/5 hits removed as exact frequency matches. Combing through the remaining 1 hits in:
+	seti-node1.0/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node6.1/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+
+	3/6 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node1.0/fil_59885_15162_253947326_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.0/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.0/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	3/9 hits removed as exact frequency matches. Combing through the remaining 6 hits in:
+	seti-node3.0/fil_59885_11552_253726989_trappist1_0001-beam0000.dat
+
+	187/188 hits removed as exact frequency matches. Combing through the remaining 1 hits in:
+	seti-node2.0/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node5.0/fil_59885_08583_253545776_trappist1_0001-beam0000.dat
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node6.1/fil_59885_15162_253947326_trappist1_0001-beam0000.dat
+
+	9/115 hits removed as exact frequency matches. Combing through the remaining 106 hits in:
+	seti-node6.0/fil_59885_11552_253726989_trappist1_0001-beam0000.dat
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node6.1/fil_59885_11552_253726989_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.0/fil_59885_15162_253947326_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.0/fil_59885_15162_253947326_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/9 hits removed as exact frequency matches. Combing through the remaining 7 hits in:
+	seti-node3.0/fil_59885_18189_254132080_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node2.0/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node2.0/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node5.0/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+
+	4030/4982 hits removed as exact frequency matches. Combing through the remaining 952 hits in:
+	seti-node2.1/fil_59885_15162_253947326_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.0/fil_59885_11552_253726989_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.0/fil_59885_11552_253726989_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	50/60 hits removed as exact frequency matches. Combing through the remaining 10 hits in:
+	seti-node2.1/fil_59885_11552_253726989_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	4/4 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node3.1/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node3.1/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_11552_253726989_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_11552_253726989_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	12/114 hits removed as exact frequency matches. Combing through the remaining 102 hits in:
+	seti-node3.1/fil_59885_11552_253726989_trappist1_0001-beam0000.dat
+
+	0/0 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node6.0/fil_59885_18189_254132080_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node6.0/fil_59885_18189_254132080_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/5 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node4.1/fil_59885_04892_253320495_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	3/7 hits removed as exact frequency matches. Combing through the remaining 4 hits in:
+	seti-node5.0/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+
+	124/171 hits removed as exact frequency matches. Combing through the remaining 47 hits in:
+	seti-node1.0/fil_59885_04892_253320495_trappist1_0001-beam0000.dat
+
+	4877/5968 hits removed as exact frequency matches. Combing through the remaining 1091 hits in:
+	seti-node2.0/fil_59885_07143_253457885_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node2.0/fil_59885_11552_253726989_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node2.0/fil_59885_11552_253726989_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_11552_253726989_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_11552_253726989_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node5.0/fil_59885_11552_253726989_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	5/5 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node3.1/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node3.1/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_04892_253320495_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_04892_253320495_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node5.0/fil_59885_04892_253320495_trappist1_0001-beam0000.dat
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node8.0/fil_59885_02566_253178527_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_04892_253320495_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_04892_253320495_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	5/5 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node3.1/fil_59885_04892_253320495_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node3.1/fil_59885_04892_253320495_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_02566_253178527_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_02566_253178527_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node4.1/fil_59885_02566_253178527_trappist1_0001-beam0000.dat
+
+	1577/1644 hits removed as exact frequency matches. Combing through the remaining 67 hits in:
+	seti-node3.0/fil_59885_02566_253178527_trappist1_0001-beam0000.dat
+
+	3/8 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node6.1/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+
+	69/83 hits removed as exact frequency matches. Combing through the remaining 14 hits in:
+	seti-node1.0/fil_59885_02566_253178527_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node2.0/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node2.0/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.0/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.0/fil_59885_04095_253271850_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node5.0/fil_59885_12997_253815185_trappist1_0001-beam0000.dat
+
+	307/430 hits removed as exact frequency matches. Combing through the remaining 123 hits in:
+	seti-node2.1/fil_59885_02566_253178527_trappist1_0001-beam0000.dat
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node8.0/fil_59885_11552_253726989_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_07863_253501831_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_07863_253501831_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node5.0/fil_59885_07863_253501831_trappist1_0001-beam0000.dat
+
+	10/24 hits removed as exact frequency matches. Combing through the remaining 14 hits in:
+	seti-node3.0/fil_59885_04892_253320495_trappist1_0001-beam0000.dat
+
+	5/12 hits removed as exact frequency matches. Combing through the remaining 7 hits in:
+	seti-node3.0/fil_59885_17467_254088012_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_11552_253726989_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_11552_253726989_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/4 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node4.1/fil_59885_11552_253726989_trappist1_0001-beam0000.dat
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node6.1/fil_59885_17467_254088012_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_15162_253947326_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_15162_253947326_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	5/7 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node3.1/fil_59885_15162_253947326_trappist1_0001-beam0000.dat
+
+	3/6 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node1.0/fil_59885_11552_253726989_trappist1_0001-beam0000.dat
+
+	5/9 hits removed as exact frequency matches. Combing through the remaining 4 hits in:
+	seti-node7.0/fil_59885_17467_254088012_trappist1_0001-beam0000.dat
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node3.0/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node8.0/fil_59885_18910_254176086_trappist1_0001-beam0000.dat
+
+	2/3 hits removed as exact frequency matches. Combing through the remaining 1 hits in:
+	seti-node4.0/fil_59885_17467_254088012_trappist1_0001-beam0000.dat
+
+	0/0 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node6.0/fil_59885_17467_254088012_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node6.0/fil_59885_17467_254088012_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/7 hits removed as exact frequency matches. Combing through the remaining 6 hits in:
+	seti-node8.0/fil_59885_17467_254088012_trappist1_0001-beam0000.dat
+
+	4/5 hits removed as exact frequency matches. Combing through the remaining 1 hits in:
+	seti-node3.1/fil_59885_17467_254088012_trappist1_0001-beam0000.dat
+
+	0/0 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node6.0/fil_59885_04892_253320495_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node6.0/fil_59885_04892_253320495_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node8.0/fil_59885_04892_253320495_trappist1_0001-beam0000.dat
+
+	882/970 hits removed as exact frequency matches. Combing through the remaining 88 hits in:
+	seti-node2.1/fil_59885_17467_254088012_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_17467_254088012_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_17467_254088012_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_18910_254176086_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_18910_254176086_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	3/4 hits removed as exact frequency matches. Combing through the remaining 1 hits in:
+	seti-node4.1/fil_59885_17467_254088012_trappist1_0001-beam0000.dat
+
+	5/9 hits removed as exact frequency matches. Combing through the remaining 4 hits in:
+	seti-node4.1/fil_59885_10081_253637207_trappist1_0001-beam0000.dat
+
+	0/0 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node6.0/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node6.0/fil_59885_12275_253771118_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	4/4 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_10081_253637207_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_10081_253637207_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	5/12 hits removed as exact frequency matches. Combing through the remaining 7 hits in:
+	seti-node5.0/fil_59885_10081_253637207_trappist1_0001-beam0000.dat
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node3.0/fil_59885_10081_253637207_trappist1_0001-beam0000.dat
+
+	2/5 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node1.0/fil_59885_17467_254088012_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_04892_253320495_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_04892_253320495_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node8.0/fil_59885_03356_253226745_trappist1_0001-beam0000.dat
+
+	3/8 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node6.1/fil_59885_02566_253178527_trappist1_0001-beam0000.dat
+
+	2/6 hits removed as exact frequency matches. Combing through the remaining 4 hits in:
+	seti-node1.0/fil_59885_10081_253637207_trappist1_0001-beam0000.dat
+
+	726/950 hits removed as exact frequency matches. Combing through the remaining 224 hits in:
+	seti-node2.1/fil_59885_03356_253226745_trappist1_0001-beam0000.dat
+
+	3/9 hits removed as exact frequency matches. Combing through the remaining 6 hits in:
+	seti-node6.0/fil_59885_10081_253637207_trappist1_0001-beam0000.dat
+
+	5/15 hits removed as exact frequency matches. Combing through the remaining 10 hits in:
+	seti-node7.0/fil_59885_02566_253178527_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_03356_253226745_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_03356_253226745_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/5 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node4.1/fil_59885_03356_253226745_trappist1_0001-beam0000.dat
+
+	4/4 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_10081_253637207_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_10081_253637207_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	8/11 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node3.1/fil_59885_10081_253637207_trappist1_0001-beam0000.dat
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node8.0/fil_59885_10081_253637207_trappist1_0001-beam0000.dat
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node6.1/fil_59885_10081_253637207_trappist1_0001-beam0000.dat
+
+	3/9 hits removed as exact frequency matches. Combing through the remaining 6 hits in:
+	seti-node3.0/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+
+	88/115 hits removed as exact frequency matches. Combing through the remaining 27 hits in:
+	seti-node1.0/fil_59885_03356_253226745_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_10081_253637207_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_10081_253637207_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node6.1/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.0/fil_59885_10081_253637207_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.0/fil_59885_10081_253637207_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	6/8 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node2.1/fil_59885_10081_253637207_trappist1_0001-beam0000.dat
+
+	3776/4233 hits removed as exact frequency matches. Combing through the remaining 457 hits in:
+	seti-node3.0/fil_59885_03356_253226745_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.0/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.0/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	143/145 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node2.1/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+
+	0/0 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node6.0/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node6.0/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node8.0/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+
+	51/64 hits removed as exact frequency matches. Combing through the remaining 13 hits in:
+	seti-node2.0/fil_59885_10081_253637207_trappist1_0001-beam0000.dat
+
+	810/854 hits removed as exact frequency matches. Combing through the remaining 44 hits in:
+	seti-node2.0/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/4 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node4.1/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+
+	3/7 hits removed as exact frequency matches. Combing through the remaining 4 hits in:
+	seti-node1.0/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	4/4 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node3.1/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node3.1/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node3.0/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+
+	4/7 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node1.0/fil_59885_13716_253859069_trappist1_0001-beam0000.dat
+
+	0/0 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node6.0/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node6.0/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node8.0/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+
+	2/4 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node4.1/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+
+	4/4 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/8 hits removed as exact frequency matches. Combing through the remaining 6 hits in:
+	seti-node5.0/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+
+	3/8 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node6.1/fil_59885_04892_253320495_trappist1_0001-beam0000.dat
+
+	2/5 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node1.0/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	6/8 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node8.0/fil_59885_05661_253367431_trappist1_0001-beam0000.dat
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node6.1/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+
+	3/6 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node7.0/fil_59885_04892_253320495_trappist1_0001-beam0000.dat
+
+	4/4 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	3/3 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node3.1/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node3.1/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	6/20 hits removed as exact frequency matches. Combing through the remaining 14 hits in:
+	seti-node3.0/fil_59885_05661_253367431_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_05661_253367431_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_05661_253367431_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	8/23 hits removed as exact frequency matches. Combing through the remaining 15 hits in:
+	seti-node4.1/fil_59885_05661_253367431_trappist1_0001-beam0000.dat
+
+	437/575 hits removed as exact frequency matches. Combing through the remaining 138 hits in:
+	seti-node2.1/fil_59885_04892_253320495_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.0/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.0/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	26/29 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node2.1/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+
+	79/81 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node2.0/fil_59885_10800_253681091_trappist1_0001-beam0000.dat
+
+	0/0 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node6.0/fil_59885_05661_253367431_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node6.0/fil_59885_05661_253367431_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	3/8 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node6.1/fil_59885_03356_253226745_trappist1_0001-beam0000.dat
+
+	3395/4006 hits removed as exact frequency matches. Combing through the remaining 611 hits in:
+	seti-node2.1/fil_59885_05661_253367431_trappist1_0001-beam0000.dat
+
+	6/12 hits removed as exact frequency matches. Combing through the remaining 6 hits in:
+	seti-node3.0/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+
+	10/119 hits removed as exact frequency matches. Combing through the remaining 109 hits in:
+	seti-node6.0/fil_59885_02566_253178527_trappist1_0001-beam0000.dat
+
+	4/8 hits removed as exact frequency matches. Combing through the remaining 4 hits in:
+	seti-node7.0/fil_59885_03356_253226745_trappist1_0001-beam0000.dat
+
+	0/0 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node6.0/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node6.0/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node8.0/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node6.1/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+
+	9/14 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node1.0/fil_59885_05661_253367431_trappist1_0001-beam0000.dat
+
+	7/9 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node7.0/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/4 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node4.1/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+
+	147/165 hits removed as exact frequency matches. Combing through the remaining 18 hits in:
+	seti-node2.1/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+
+	2/4 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node1.0/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node6.1/fil_59885_05661_253367431_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	3/3 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node3.1/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node3.1/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	6/19 hits removed as exact frequency matches. Combing through the remaining 13 hits in:
+	seti-node3.0/fil_59885_06381_253411376_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.0/fil_59885_05661_253367431_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.0/fil_59885_05661_253367431_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node5.0/fil_59885_09302_253589660_trappist1_0001-beam0000.dat
+
+	1906/5840 hits removed as exact frequency matches. Combing through the remaining 3934 hits in:
+	seti-node4.1/fil_59885_06381_253411376_trappist1_0001-beam0000.dat
+
+	9/13 hits removed as exact frequency matches. Combing through the remaining 4 hits in:
+	seti-node7.1/fil_59885_06381_253411376_trappist1_0001-beam0000.dat
+
+	28/126 hits removed as exact frequency matches. Combing through the remaining 98 hits in:
+	seti-node6.0/fil_59885_06381_253411376_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node2.0/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node2.0/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node5.0/fil_59885_19632_254220153_trappist1_0001-beam0000.dat
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node8.0/fil_59885_16744_254043884_trappist1_0001-beam0000.dat
+
+	2112/6471 hits removed as exact frequency matches. Combing through the remaining 4359 hits in:
+	seti-node5.0/fil_59885_06381_253411376_trappist1_0001-beam0000.dat
+
+	285/303 hits removed as exact frequency matches. Combing through the remaining 18 hits in:
+	seti-node2.1/fil_59885_16744_254043884_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_16744_254043884_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_16744_254043884_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/4 hits removed as exact frequency matches. Combing through the remaining 2 hits in:
+	seti-node4.1/fil_59885_16744_254043884_trappist1_0001-beam0000.dat
+
+	2/6 hits removed as exact frequency matches. Combing through the remaining 4 hits in:
+	seti-node1.0/fil_59885_16744_254043884_trappist1_0001-beam0000.dat
+
+	423/489 hits removed as exact frequency matches. Combing through the remaining 66 hits in:
+	seti-node2.0/fil_59885_04892_253320495_trappist1_0001-beam0000.dat
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node6.1/fil_59885_16744_254043884_trappist1_0001-beam0000.dat
+
+	3/3 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.0/fil_59885_16744_254043884_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.0/fil_59885_16744_254043884_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	8/120 hits removed as exact frequency matches. Combing through the remaining 112 hits in:
+	seti-node2.0/fil_59885_16744_254043884_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node2.0/fil_59885_17467_254088012_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node2.0/fil_59885_17467_254088012_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_17467_254088012_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_17467_254088012_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	4/7 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node5.0/fil_59885_17467_254088012_trappist1_0001-beam0000.dat
+
+	17/58 hits removed as exact frequency matches. Combing through the remaining 41 hits in:
+	seti-node8.0/fil_59885_06381_253411376_trappist1_0001-beam0000.dat
+
+	1769/1961 hits removed as exact frequency matches. Combing through the remaining 192 hits in:
+	seti-node2.0/fil_59885_02566_253178527_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node5.1/fil_59885_06381_253411376_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node5.1/fil_59885_06381_253411376_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_16744_254043884_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_16744_254043884_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node5.0/fil_59885_16744_254043884_trappist1_0001-beam0000.dat
+
+	3/3 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_16744_254043884_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_16744_254043884_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	14/103 hits removed as exact frequency matches. Combing through the remaining 89 hits in:
+	seti-node3.1/fil_59885_16744_254043884_trappist1_0001-beam0000.dat
+
+	3799/4023 hits removed as exact frequency matches. Combing through the remaining 224 hits in:
+	seti-node2.0/fil_59885_03356_253226745_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_02566_253178527_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_02566_253178527_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	3/8 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node5.0/fil_59885_02566_253178527_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_02566_253178527_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_02566_253178527_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	28/185 hits removed as exact frequency matches. Combing through the remaining 157 hits in:
+	seti-node3.1/fil_59885_02566_253178527_trappist1_0001-beam0000.dat
+
+	3756/5109 hits removed as exact frequency matches. Combing through the remaining 1353 hits in:
+	seti-node2.0/fil_59885_05661_253367431_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_03356_253226745_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_03356_253226745_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	2/7 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node5.0/fil_59885_03356_253226745_trappist1_0001-beam0000.dat
+
+	1/1 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node4.0/fil_59885_03356_253226745_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node4.0/fil_59885_03356_253226745_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	6/6 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node3.1/fil_59885_03356_253226745_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node3.1/fil_59885_03356_253226745_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	0/0 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node6.0/fil_59885_03356_253226745_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node6.0/fil_59885_03356_253226745_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	3/6 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node1.0/fil_59885_14438_253903137_trappist1_0001-beam0000.dat
+
+	1/6 hits removed as exact frequency matches. Combing through the remaining 5 hits in:
+	seti-node6.1/fil_59885_14438_253903137_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.0/fil_59885_14438_253903137_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.0/fil_59885_14438_253903137_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	6527/8104 hits removed as exact frequency matches. Combing through the remaining 1577 hits in:
+	seti-node2.1/fil_59885_14438_253903137_trappist1_0001-beam0000.dat
+
+	9/27 hits removed as exact frequency matches. Combing through the remaining 18 hits in:
+	seti-node4.0/fil_59885_14438_253903137_trappist1_0001-beam0000.dat
+
+	6/16 hits removed as exact frequency matches. Combing through the remaining 10 hits in:
+	seti-node3.1/fil_59885_14438_253903137_trappist1_0001-beam0000.dat
+
+	2/8 hits removed as exact frequency matches. Combing through the remaining 6 hits in:
+	seti-node3.0/fil_59885_15950_253995422_trappist1_0001-beam0000.dat
+
+	0/0 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node6.0/fil_59885_15950_253995422_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node6.0/fil_59885_15950_253995422_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	41/45 hits removed as exact frequency matches. Combing through the remaining 4 hits in:
+	seti-node2.0/fil_59885_15162_253947326_trappist1_0001-beam0000.dat
+
+	7316/8746 hits removed as exact frequency matches. Combing through the remaining 1430 hits in:
+	seti-node2.0/fil_59885_13716_253859069_trappist1_0001-beam0000.dat
+
+	2/2 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node7.1/fil_59885_05661_253367431_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node7.1/fil_59885_05661_253367431_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	281/385 hits removed as exact frequency matches. Combing through the remaining 104 hits in:
+	seti-node5.0/fil_59885_05661_253367431_trappist1_0001-beam0000.dat
+
+	2/5 hits removed as exact frequency matches. Combing through the remaining 3 hits in:
+	seti-node4.0/fil_59885_05661_253367431_trappist1_0001-beam0000.dat
+
+	5/5 hits removed as exact frequency matches. Combing through the remaining 0 hits in:
+	seti-node3.1/fil_59885_05661_253367431_trappist1_0001-beam0000.dat
+	WARNING! Empty dataframe constructed from dat file:
+	seti-node3.1/fil_59885_05661_253367431_trappist1_0001-beam0000.dat
+	Skipping this dat file because there are no hits to comb through...
+
+	1015/1040 hits removed as exact frequency matches. Combing through the remaining 25 hits in:
+	seti-node2.0/fil_59885_14438_253903137_trappist1_0001-beam0000.dat
+
+	284/292 hits removed as exact frequency matches. Combing through the remaining 8 hits in:
+	seti-node1.0/fil_59885_06381_253411376_trappist1_0001-beam0000.dat
+
+	1/5 hits removed as exact frequency matches. Combing through the remaining 4 hits in:
+	seti-node6.1/fil_59885_06381_253411376_trappist1_0001-beam0000.dat
+
+	40/247 hits removed as exact frequency matches. Combing through the remaining 207 hits in:
+	seti-node7.0/fil_59885_06381_253411376_trappist1_0001-beam0000.dat
+
+	14/44 hits removed as exact frequency matches. Combing through the remaining 30 hits in:
+	seti-node4.0/fil_59885_06381_253411376_trappist1_0001-beam0000.dat
+
+	3416/3829 hits removed as exact frequency matches. Combing through the remaining 413 hits in:
+	seti-node2.1/fil_59885_06381_253411376_trappist1_0001-beam0000.dat
+
+	27/78 hits removed as exact frequency matches. Combing through the remaining 51 hits in:
+	seti-node3.1/fil_59885_06381_253411376_trappist1_0001-beam0000.dat
+
+	3/10 hits removed as exact frequency matches. Combing through the remaining 7 hits in:
+	seti-node3.0/fil_59885_16744_254043884_trappist1_0001-beam0000.dat
+
+	4/92 hits removed as exact frequency matches. Combing through the remaining 88 hits in:
+	seti-node6.0/fil_59885_16744_254043884_trappist1_0001-beam0000.dat
+
+	3/17 hits removed as exact frequency matches. Combing through the remaining 14 hits in:
+	seti-node7.1/fil_59885_13716_253859069_trappist1_0001-beam0000.dat
+
+	181/293 hits removed as exact frequency matches. Combing through the remaining 112 hits in:
+	seti-node5.0/fil_59885_13716_253859069_trappist1_0001-beam0000.dat
+
+	6889/9095 hits removed as exact frequency matches. Combing through the remaining 2206 hits in:
+	seti-node2.0/fil_59885_06381_253411376_trappist1_0001-beam0000.dat
+
+	115/336 dat files skipped.
+	Check the log for skipped filenames.
+
+	336 dats with 101213 total hits cross referenced and 73269 hits removed as exact matches.
+		The remaining 27944 hits were correlated and processed in 3.31 hours.
+
+	25463/27944 hits above an average correlation score of 0.75
+	2481/27944 hits below an average correlation score of 0.75
+	697/27944 hits below an average correlation score of 0.5
+	1/27944 hits below an average correlation score of 0.25
+
+The full dataframe was saved to: /home/ntusay/scripts/NbeamAnalysis/TRAPPIST-1/obs_11-02_DOTnbeam.csv

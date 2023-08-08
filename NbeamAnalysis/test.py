@@ -35,32 +35,55 @@ import pandas as pd
 from DOT_utils import check_logs
 from DOT_utils import get_dats
 
-def hits(dirs,beam,csvs):
+def dat_hits(dat_dir,beam):
+    dat_files,errors=get_dats(dat_dir,beam)
+    hits=0
+    for dat in dat_files:
+        hits+=len(open(dat,'r').readlines())-9
+    return hits
+
+def csv_hits(csv_dir):
+    csv_hits=[]
+    csvs=sorted(glob.glob(csv_dir+'*.csv'))
+    for csv in csvs:
+        csv_hits.append(len(pd.read_csv(csv)))
+    return csv_hits
+
+def comp_hits(dat_dirs,beam,csv_dir):
     tot=0
     totf=0
     print("original hits --> spatially filtered hits")
-    for d,dir in enumerate(dirs):
-        dat_files,errors=get_dats(dir,beam)
-        hits=0
-        for dat in dat_files:
-            hits+=len(open(dat,'r').readlines())-9
-        filts=len(pd.read_csv(csvs[d]))
+    csv_hits_list=csv_hits(csv_dir)
+    for d,dir in enumerate(sorted(dat_dirs)):
+        dhits=dat_hits(dir,beam)
+        if len(csv_hits_list)<d+1:
+            print(f"csv list error")
+            continue
+        else:
+            filts=csv_hits_list[d]
         print(f'{"-".join(dir.split("/")[-1].split("-")[1:3])}: ',
-                hits,
+                dhits,
                 f" -->  {filts}",
-                f"  ({(hits-filts)/hits*100:.1f}% reduction)")
-        tot+=hits
+                f"  ({(dhits-filts)/dhits*100:.1f}% reduction)")
+        tot+=dhits
         totf+=filts
     print(f'{tot} total hits found in all target beam dat files')
     print(f'{totf} total hits remaining after spatial filtering')
     print(f"{(tot-totf)/tot*100:.1f}% reduction")
     return None
+# %%
 
-PPO='/mnt/buf0/PPO/'
-dirs=sorted(glob.glob(PPO+'2022*'))
-csvs=sorted(glob.glob('/home/ntusay/scripts/processed2/*.csv'))
+PPO='/mnt/datac-netStorage-40G/projects/p004/PPO/'
+dat_dirs=sorted(glob.glob(PPO+'2022*'))
+csv_dir='/home/ntusay/scripts/NbeamAnalysis/TRAPPIST-1/'
 beam='0000'
-hits(dirs,beam,csvs)
+comp_hits(dat_dirs,beam,csv_dir)
+# %%
+PPO='/mnt/datac-netStorage-40G/projects/p004/PPO/'
+dat_dirs=sorted(glob.glob(PPO+'2022*'))
+for dat_dir in dat_dirs:
+    hits=dat_hits(dat_dir,beam)
+    print(f"{dat_dir.split('/')[-1].split('2022-')[-1].split(':')[0][:-3]}\t{hits:.2e} hits")
 # %%
 import os
 import glob
