@@ -14,7 +14,7 @@ import sys
 
 def setup_logging(log_filename):
     # Import the logging module and configure the root logger
-    logging.basicConfig(level=logging.INFO, format='%(message)s')
+    logging.basicConfig(level=logging.INFO, filemode='w', format='%(message)s')
 
     # Get the root logger instance
     logger = logging.getLogger()
@@ -133,7 +133,7 @@ def resume(pickle_file, df):
     return index, df
 
 # comb through each hit in the dataframe and look for corresponding hits in each of the beams.
-def comb_df(df, outdir='./', obs='UNKNOWN', resume_index=None):
+def comb_df(df, outdir='./', obs='UNKNOWN', resume_index=None, pickle_off=False):
     # loop over every row in the dataframe
     for r,row in df.iterrows():
         if resume_index is not None and r < resume_index:
@@ -170,8 +170,9 @@ def comb_df(df, outdir='./', obs='UNKNOWN', resume_index=None):
             df.loc[r,'SNR_ratio'] = sum(SNR_ratios)/len(SNR_ratios)     # the average SNR_ratios with the other beams
             df.loc[r,'x'] = sum(xs)/len(xs)           # the average correlation score of the signal with the other beams  
         # pickle the dataframe and row index for resuming
-        with open(outdir+f'{obs}_comb_df.pkl', 'wb') as f:
-            pickle.dump((r, df), f) 
+        if pickle_off==False:
+            with open(outdir+f'{obs}_comb_df.pkl', 'wb') as f:
+                pickle.dump((r, df), f) 
     # remove the pickle checkpoint file after all loops complete
     if os.path.exists(outdir+f"{obs}_comb_df.pkl"):
         os.remove(outdir+f"{obs}_comb_df.pkl") 
