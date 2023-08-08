@@ -1,0 +1,14 @@
+
+Executing program...
+
+16 cores requested for parallel processing.
+
+	18/52 hits removed as exact frequency matches.
+	Combing through the remaining 34 hits in:
+	seti-node3.0/fil_59882_12477_237963134_trappist1_0001-beam0000.dat
+
+Processed 1/336 dat files in 1.21 minutes.
+
+	23467/34642 hits removed as exact frequency matches.
+	Combing through the remaining 11175 hits in:
+	seti-node4.0/fil_59882_12477_237963134_trappist1_0001-beam0000.dat
