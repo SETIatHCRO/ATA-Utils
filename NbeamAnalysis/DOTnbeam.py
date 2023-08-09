@@ -176,7 +176,7 @@ def main():
             SNR = full_df.SNR
             fig,ax=plt.subplots(figsize=(12,10))
             plt.scatter(xs,SNR,color='orange',alpha=0.5,edgecolor='k')
-            plt.xlabel('Average Correlation Scores')
+            plt.xlabel('Average X Scores')
             plt.ylabel('SNR')
             plt.yscale('log')
             plt.xlim(-0.01,1.01)

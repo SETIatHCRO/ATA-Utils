@@ -122,6 +122,15 @@ def sig_cor(s1,s2):
     x=DOT/np.sqrt(ACF1*ACF2)
     return x
 
+def noise_median(s1,p=5):
+    return np.median(s1[(s1>np.percentile(s1,p))&(s1<np.percentile(s1,100-p))])
+
+def noise_std(s1,p=5):
+    return np.std(s1[(s1>np.percentile(s1,p))&(s1<np.percentile(s1,100-p))])
+
+def get_SNR_ratio(s0,s1):
+    return (s0.max()-noise_median(s0))/noise_std(s0)/(((s1.max()-noise_median(s1)))/noise_std(s1))
+
 # extract index and dataframe from pickle files to resume from last checkpoint
 def resume(pickle_file, df):
     index = 0 # initialize at 0
@@ -152,23 +161,30 @@ def comb_df(df, outdir='./', obs='UNKNOWN', resume_index=None, pickle_off=False)
         other_cols = row.loc[row.index.str.startswith('fil_') & (row.index != matching_col)]
         # initialize empty correlation score lists for appending
         xs=[]
+        corrs=[]
         SNR_ratios=[]
         for col_name, other_fil in other_cols.iteritems():
             # grab the data from the non-target fil in the same location
             _,s2=wf_data(other_fil,fstart,fstop)
             # correlate the signal in the target beam with the same location in the non-target beam
             # subtracting off the median of the off-target beam to roughly center the noise around zero.
-            xs.append(sig_cor(s1-np.median(s2),s2-np.median(s2))) 
-            SNR_ratios.append(ACF(s1-np.median(s2))/ACF(s2-np.median(s2)))
+            corrs.append(sig_cor(s1-noise_median(s2),s2-noise_median(s2))) 
+            # compare the ratios of the SNR in each beam
+            SNR_ratios.append(get_SNR_ratio(s1,s2))
+            # and divide the correlation score by the SNR ratio to get an x score
+            xs.append(corrs[-1]/SNR_ratios[-1])
         # loop over each correlation score in the tuple to add to the dataframe
         for i,x in enumerate(xs):
+            col_name_corrs='corrs_'+other_cols[i].split('beam')[-1].split('.')[0]
+            df.loc[r,col_name_corrs] = corrs[i]
             col_name_SNRr='SNR_ratio_'+other_cols[i].split('beam')[-1].split('.')[0]
             df.loc[r,col_name_SNRr] = SNR_ratios[i]
-            col_name_x = row["dat_name"].split('beam')[-1].split('.dat')[0]+'_x_'+other_cols[i].split('beam')[-1].split('.')[0]
+            col_name_x = 'x_'+other_cols[i].split('beam')[-1].split('.')[0]
             df.loc[r,col_name_x] = x
         if len(xs)>0:   # this conditional makes the code not break if there's only one filterbank file for some reason
-            df.loc[r,'SNR_ratio'] = sum(SNR_ratios)/len(SNR_ratios)     # the average SNR_ratios with the other beams
-            df.loc[r,'x'] = sum(xs)/len(xs)           # the average correlation score of the signal with the other beams  
+            df.loc[r,'corrs'] = sum(corrs)/len(corrs)     # the average correlation scores
+            df.loc[r,'SNR_ratio'] = sum(SNR_ratios)/len(SNR_ratios)     # the average SNR_ratios
+            df.loc[r,'x'] = sum(xs)/len(xs)                             # the average x scores 
         # pickle the dataframe and row index for resuming
         if pickle_off==False:
             with open(outdir+f'{obs}_comb_df.pkl', 'wb') as f:
