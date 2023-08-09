@@ -72,7 +72,8 @@ def parse_args():
 # perform cross-correlation to pare down the list of hits, 
 # and put the remaining hits into a dataframe.
 def dat_to_dataframe(args):
-    dat, datdir, fildir, outdir, obs, sf, count_lock, proc_count, ndats, start = args
+    dat, datdir, fildir, outdir, obs, sf, count_lock, proc_count, ndats = args
+    start = time.time()
     with count_lock:
         proc_count.value += 1
         dat_name = "/".join(dat.split("/")[-2:])
@@ -189,7 +190,7 @@ def main():
     manager = Manager()
     count_lock = manager.Lock()
     proc_count = manager.Value('i', 0)  # Shared integer to track processed count
-    input_args = [(dat_file, datdir, fildir, outdir, obs, sf, count_lock, proc_count, ndats, start) for dat_file in dat_files]
+    input_args = [(dat_file, datdir, fildir, outdir, obs, sf, count_lock, proc_count, ndats) for dat_file in dat_files]
     with Pool(num_processes) as pool:
         results = pool.map(dat_to_dataframe, input_args)
 
@@ -216,7 +217,7 @@ def main():
         SNR = full_df.SNR
         fig,ax=plt.subplots(figsize=(12,10))
         plt.scatter(xs,SNR,color='orange',alpha=0.5,edgecolor='k')
-        plt.xlabel('Average Correlation Scores')
+        plt.xlabel('Average X Scores')
         plt.ylabel('SNR')
         plt.yscale('log')
         plt.xlim(-0.01,1.01)

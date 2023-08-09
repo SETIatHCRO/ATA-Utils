@@ -76,7 +76,7 @@ def purge(dir, pattern):
         os.remove(f)
 
 # plot the hit using the plotting function from plot_target_utils.py
-def plot_beams(name_array, fstart, fstop, drift_rate, SNR, x, path, pdf=False):
+def plot_beams(name_array, fstart, fstop, drift_rate=None, SNR=None, SNRr=None, x=None, path='./', pdf=False):
     # make waterfall objects for plotting from the filenames
     fil_array = []
     f1 = min(fstart,fstop)
@@ -111,22 +111,41 @@ def plot_beams(name_array, fstart, fstop, drift_rate, SNR, x, path, pdf=False):
     # fix the title
     name_deconstructed = fil.filename.split('/')[-1].split('_')
     MJD = name_deconstructed[1] + '_' + name_deconstructed[2] #+ '_' + name_deconstructed[3]
-    fig.suptitle(f'MJD: {MJD} || '+
-                 f'fmax: {f2:.6f} MHz || '+
-                 f'Drift Rate: {drift_rate:.3f} Hz/s ({drift_rate/f2*1000:.3f} nHz) || '+
-                 f'SNR: {SNR:.3f}'+
-                 f'\nCorrelation Score: {x:.3f}',
-                 size=25)
-    fig.tight_layout(rect=[0, 0, 1, 1.05])
+    filename=ptu.make_title(fig,MJD,f2,drift_rate,SNR,SNRr,x)
     # save the plot
     if pdf==True:
         ext='pdf'
     else:
         ext='png'
-    plt.savefig(f'{path}MJD_{MJD}_X_{x:.3f}_SNR_{SNR:.3f}_fmax_{f2:.6f}.{ext}',
+    plt.savefig(f'{path}{filename}.{ext}',
                 bbox_inches='tight',format=ext,dpi=fig.dpi,facecolor='white', transparent=False)
     plt.close()
     return None
+
+def plot_by_freqs(df0,freqs,path,pdf):
+    df = df0.drop_duplicates(subset="dat_name", keep="first")
+    for index, row in df.reset_index(drop=True).iterrows():
+        beams = [row[i] for i in list(df) if i.startswith('fil_')]
+        fstart=max(freqs)
+        fend=min(freqs)
+        print(f'Plotting {index+1}/{len(df)} from {fend:.6f} MHz to {fstart:.6f} MHz\n{row["dat_name"]}\n')
+        plot_beams(beams,fstart,fend,path=path,pdf=pdf)
+    return len(df)
+
+def filter_df(df,column,operator,value):
+    # Infer the data type of the column from the dataframe
+    column_dtype = df[column].dtype
+    # Convert filter value to the correct data type
+    value = column_dtype.type(value)
+    # Apply the filter based on the operator
+    if operator == 'lt':
+        signals_of_interest = df[df[column] < value]
+    elif operator == 'gt':
+        signals_of_interest = df[df[column] > value]
+    elif operator == 'is':
+        signals_of_interest = df[df[column] == value]
+    signals_of_interest = signals_of_interest.sort_values(by='x').reset_index(drop=True)
+    return signals_of_interest
 
     # Main program execution
 def main():
@@ -145,44 +164,46 @@ def main():
     freqs = cmd_args["freqs"]           # optional, custom frequency span
     paths_cleared=[]                    # clobber counter
 
+    # set the path where the plots will be saved (optionally remove old plots with clobber)
+    if not outdir:
+        path="/".join(csv.split("/")[:-1])+f'/{csv.split("/")[-1].split(".")[0]}_plots/'
+    else:
+        path=outdir
+    if not os.path.exists(path):
+        os.mkdir(path)
+    if clobber and path not in paths_cleared:
+        purge(path,'*.png')
+        paths_cleared.append(path)
+
     # load the csv into a df and filter based on the input parameters
     df = pd.read_csv(csv)
-    if not column or not operator or not value:
+    if freqs: # circumvent regular plotting in the case of bespoke frequency bounds
+        if not column or not operator or not value:
+            num_plots = plot_by_freqs(df,freqs,path,pdf)
+        else:
+            signals_of_interest = filter_df(df,column,operator,value)
+            num_plots = plot_by_freqs(signals_of_interest,freqs,path,pdf)
+        # This block prints the elapsed time of the entire program.
+        end, time_label = get_elapsed_time(start)
+        print(f"\n\t{num_plots} hits plotted in %.2f {time_label}.\n" %end)
+        return None
+    elif not column or not operator or not value:
         print(f"Default filtering: 500 lowest scoring hits.")
         signals_of_interest = df.sort_values(by='x').reset_index(drop=True).iloc[:500]
         print(f"Max score in this set: {signals_of_interest.iloc[-1].x:.3f}")
     else:
-        # Infer the data type of the column from the dataframe
-        column_dtype = df[column].dtype
-        # Convert filter value to the correct data type
-        value = column_dtype.type(value)
-        # Apply the filter based on the operator
-        if operator == 'lt':
-            signals_of_interest = df[df[column] < value]
-        elif operator == 'gt':
-            signals_of_interest = df[df[column] > value]
-        elif operator == 'is':
-            signals_of_interest = df[df[column] == value]
-        signals_of_interest = signals_of_interest.sort_values(by='x').reset_index(drop=True)
+        signals_of_interest = filter_df(df,column,operator,value)
     print(f"{len(signals_of_interest)}/{len(df)} total hits from the input dataframe will be plotted.")
 
     # iterate through the csv of interesting hits and plot row by row
     for index, row in signals_of_interest.reset_index(drop=True).iterrows():
         # make an array of the filenames for each beam based on the column names
         beams = [row[i] for i in list(signals_of_interest) if i.startswith('fil_')]
-        # set the path where the plots will be saved (optionally remove old plots with clobber)
-        if not outdir:
-            path="/".join(csv.split("/")[:-1])+f'/{csv.split("/")[-1].split(".")[0]}_plots/'
-        else:
-            path=outdir
-        if not os.path.exists(path):
-            os.mkdir(path)
-        if clobber and path not in paths_cleared:
-            purge(path,'*.png')
-            paths_cleared.append(path)
+        
         # determine frequency range for plot
         fstart = row['freq_start']
         fend = row['freq_end']
+
         # determine frequency span over which to plot based on drift rate
         fmid=row['Corrected_Frequency']
         fil_meta=bl.Waterfall(beams[0],load_data=False)
@@ -192,17 +213,15 @@ def main():
             half_span=250
         fstart=round(fmid+half_span*1e-6,6)
         fend=round(fmid-half_span*1e-6,6)
-        # circumvent all that in the case of bespoke plotting bounds
-        if freqs:
-            fstart=max(freqs)
-            fend=min(freqs)
+        
         # plot
-        print(f'Plotting {index}/{len(signals_of_interest)} starting at {fstart:.6f} MHz, correlation score: {row["x"]:.3f}')
+        print(f'Plotting {index+1}/{len(signals_of_interest)} starting at {fstart:.6f} MHz, X score: {row["x"]:.3f}')
         plot_beams(beams,
                     fstart,
                     fend,
                     row['Drift_Rate'],
                     row['SNR'],
+                    row['SNR_ratio'],
                     row['x'],
                     path,
                     pdf)

@@ -182,6 +182,24 @@ def plot_waterfall_subplots(wf, wf_name, index, ax, fig, f_start=None, f_stop=No
     
     return None
 
+def make_title(fig,MJD,f2,drift_rate,SNR,SNRr,x):
+    title=f'MJD: {MJD} || fmax: {f2:.6f} MHz'
+    filename=f"MJD_{MJD}"
+    if drift_rate:
+        title+=f' || Drift Rate: {drift_rate:.3f} Hz/s ({drift_rate/f2*1000:.3f} nHz)'
+    if SNR:
+        title+=f' || SNR: {SNR:.3f}'
+        filename+=f"_SNR_{SNR:.3f}"
+    if SNRr:
+        title+=f'\nSNR ratio: {SNRr:.3f}'
+    if x:
+        title+=f' || X score: {x:.3f}'
+        filename+=f"_X_{x:.3f}"
+    filename+=f"_fmax_{f2:.6f}"
+    fig.suptitle(title,size=25)
+    fig.tight_layout(rect=[0, 0, 1, 1.05])
+    return filename
+
 # plots the histograms showing snr, frequency, and drift rates of all the hits
 def diagnostic_plotter(df, tag, saving=False, log=True, outdir='./'):
     # initialize figure with subplots
