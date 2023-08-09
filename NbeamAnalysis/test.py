@@ -238,3 +238,84 @@ beam='0000'
 freq_span(dirs,beam,save=True)
 
 # %%
+import pandas as pd
+import numpy as np
+import blimpy as bl
+
+def median_noise(s1,p=5):
+    return np.median(s1[(s1>np.percentile(s1,p))&(s1<np.percentile(s1,100-p))])
+
+def noise_std(s1,p=5):
+    return np.std(s1[(s1>np.percentile(s1,p))&(s1<np.percentile(s1,100-p))])
+
+def SNR_ratio(s0,s1):
+    return s0.max()/median_noise(s0)/(s1.max()/median_noise(s1))
+
+def SNR_ratio2(s0,s1):
+    return (s0.max()-median_noise(s0))/noise_std(s0)/(((s1.max()-median_noise(s1)))/noise_std(s1))
+
+def get_df(dat_file):
+    df = pd.read_csv(dat_file,delim_whitespace=True,
+                    names=['Top_Hit_#','Drift_Rate','SNR', 'Uncorrected_Frequency','Corrected_Frequency','Index',
+                    'freq_start','freq_end','SEFD','SEFD_freq','Coarse_Channel_Number','Full_number_of_hits'],skiprows=9)
+    return df
+
+def wf_data(fil,f1,f2):
+    return bl.Waterfall(fil,f1,f2).grab_data(f1,f2)
+
+def ACF(s1):
+    return ((s1*s1).sum(axis=1)).sum()/np.shape(s1)[0]/np.shape(s1)[1]
+
+# dat_file0='/home/ntusay/scripts/NbeamAnalysis/injection_SNR_test/fil_59884_17225_248799804_trappist1_0001-beam0000.dat'
+# dat_file1='/home/ntusay/scripts/NbeamAnalysis/injection_SNR_test/fil_59884_17225_248799804_trappist1_0001-beam0001.dat'
+# fil0=dat_file0[:-3]+'h5'
+# fil1=dat_file1[:-3]+'h5'
+
+# df0=get_df(dat_file0)
+# df1=get_df(dat_file1)
+
+csv='/home/ntusay/scripts/NbeamAnalysis/injection_SNR_test/output/obs_UNKNOWN_DOTnbeam.csv'
+df=pd.read_csv(csv)
+
+for r,row in df.iterrows():
+    SNR=row['SNR']
+    cf=row['Corrected_Frequency']
+    f1=min(row['freq_start'],row['freq_end'])
+    f2=max(row['freq_start'],row['freq_end'])
+    fil0=row['fil_0000']
+    fil1=row['fil_0001']
+    _,s0=wf_data(fil0,f1,f2)
+    _,s1=wf_data(fil1,f1,f2)
+    SNR0=(s0.max()-median_noise(s0))/noise_std(s0)
+    SNR1=(s1.max()-median_noise(s1))/noise_std(s1)
+    SNRr2=SNR_ratio2(s0,s1)
+    SNRr3=row['SNR_ratio']
+    x=row['x']
+    print(f"{r} SNR: {SNR:.2f}\tFreq: {cf}  SNRr: {SNRr2:.3f}  SNR0: {SNR0:.2f}\tSNR1: {SNR1:.2f}  new_x2: {x/SNRr2:.3f}")
+    # print(f"{r} SNR: {SNR:.2f}\tFreq: {cf}  SNRr1:{SNRr1:.3f}  SNRr2:{SNRr2:.3f}  SNRr3:{SNRr3:.3f}  x: {x:.3f}")
+# %%
+import matplotlib.pyplot as plt
+%matplotlib inline
+i=5
+row=df.iloc[i]
+DR=row['Drift_Rate']
+fmid=row['Corrected_Frequency']
+fil_meta0=bl.Waterfall(fil0,load_data=False)
+obs_length=fil_meta0.n_ints_in_file * fil_meta0.header['tsamp']
+half_span=abs(row['Drift_Rate'])*obs_length*1.2  # x1.2 for padding
+f2=round(fmid+half_span*1e-6,6)+500*1e-6
+f1=round(fmid-half_span*1e-6,6)-500*1e-6
+_,s0=wf_data(fil0,f1,f2)
+_,s1=wf_data(fil1,f1,f2)
+def normalize(x):
+    return (x-x.min())/(x.max()-x.min())
+s0=10*np.log10(s0)
+s1=10*np.log10(s1)
+s0=normalize(s0)
+s1=normalize(s1)
+fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(20,7))
+ax[0].imshow(s0,aspect='auto',origin='lower',rasterized=True,interpolation='nearest',cmap='viridis')
+ax[1].imshow(s1,aspect='auto',origin='lower',rasterized=True,interpolation='nearest',cmap='viridis')
+fig.tight_layout(rect=[0, 0, 1, 1.05])
+plt.show()
+# %%
