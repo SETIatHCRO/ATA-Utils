@@ -80,10 +80,11 @@ beam='0000'
 comp_hits(dat_dirs,beam,csv_dir)
 # %%
 PPO='/mnt/datac-netStorage-40G/projects/p004/PPO/'
+beam='0000'
 dat_dirs=sorted(glob.glob(PPO+'2022*'))
 for dat_dir in dat_dirs:
     hits=dat_hits(dat_dir,beam)
-    print(f"{dat_dir.split('/')[-1].split('2022-')[-1].split(':')[0][:-3]}\t{hits:.2e} hits")
+    print(f"{dat_dir.split('/')[-1].split('2022-')[-1].split(':')[0][:-3]}\t{hits} hits")
 # %%
 import os
 import glob
@@ -317,5 +318,35 @@ fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(20,7))
 ax[0].imshow(s0,aspect='auto',origin='lower',rasterized=True,interpolation='nearest',cmap='viridis')
 ax[1].imshow(s1,aspect='auto',origin='lower',rasterized=True,interpolation='nearest',cmap='viridis')
 fig.tight_layout(rect=[0, 0, 1, 1.05])
+plt.show()
+# %%
+import pandas as pd
+import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 22})
+csv='/home/ntusay/scripts/parallel_test/obs_11-09_DOTnbeam.csv'
+df=pd.read_csv(csv)
+fig,ax=plt.subplots(figsize=(12,10))
+plt.scatter(df.corrs,df.SNR_ratio,color='orange',alpha=0.5,edgecolor='k')
+sf=4
+plt.xlabel('Average X Scores')
+plt.ylabel('SNR ratio')
+ylims=plt.gca().get_ylim()
+plt.axhspan(sf,ylims[1],color='green',alpha=0.25,label='Attenuated Signals')
+plt.axhspan(1/sf,sf,color='grey',alpha=0.25,label='Similar SNRs')
+plt.axhspan(ylims[0],1/sf,color='brown',alpha=0.25,label='Off-beam Attenuated')
+plt.ylim(ylims[0],ylims[1])
+# plt.hlines(4.5,0,1,color='k',linestyle='--')
+# plt.hlines(1,0,1,color='k',linestyle='--')
+plt.xlim(-0.01,1.01)
+plt.legend().get_frame().set_alpha(0) 
+plt.grid(which='major', axis='both', alpha=0.5,linestyle=':')
+print(len(df[df.SNR_ratio>4.5]))
+plt.show()
+# %%
+sf=4.5
+plt.scatter(df.x,df.SNR_ratio,color='orange',alpha=0.5,edgecolor='k')
+plt.hlines(sf,0,1,color='k',linestyle='--')
+plt.hlines(1/sf,0,1,color='k',linestyle='--')
+# plt.yscale('log')
 plt.show()
 # %%

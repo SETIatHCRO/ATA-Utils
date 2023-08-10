@@ -1,0 +1,19 @@
+
+turbo_seti version 2.3.2
+blimpy version 2.1.4
+h5py version 3.6.0
+hdf5plugin version 3.2.0
+HDF5 library version 1.12.1
+
+
+HDF5 header info: {'DIMENSION_LABELS': array(['time', 'feed_id', 'frequency'], dtype=object), 'az_start': 185.33377075195312, 'data_type': 1, 'fch1': 6865.000000500288, 'foff': -1.0005763319672132e-06, 'ibeam': 1, 'machine_id': 0, 'nbeams': 2, 'nbits': 32, 'nchans': 19988480, 'nifs': 1, 'rawdatafile': '', 'source_name': 'trappist1', 'src_dej': <Angle -4.8914422 deg>, 'src_raj': <Angle 23.10815594 hourangle>, 'telescope_id': 9, 'tsamp': 15.990784, 'tstart': 59884.19936342593, 'za_start': 45.85380935668945}
+
+Starting ET search with parameters: datafile=fil_59884_17225_248799804_trappist1_0001-beam0001.fil, max_drift=10.0, min_drift=1e-05, snr=10.0, out_dir=./, coarse_chans=, flagging=False, n_coarse_chan=64, kernels=None, gpu_id=0, gpu_backend=True, blank_dc=True, precision=1, append_output=False, log_level_int=20, obs_info={'pulsar': 0, 'pulsar_found': 0, 'pulsar_dm': 0.0, 'pulsar_snr': 0.0, 'pulsar_stats': array([0., 0., 0., 0., 0., 0.]), 'RFI_level': 0.0, 'Mean_SEFD': 0.0, 'psrflux_Sens': 0.0, 'SEFDs_val': [0.0], 'SEFDs_freq': [0.0], 'SEFDs_freq_up': [0.0]}
+
+Computed drift rate resolution: 0.0016911368177245994
+
+Top hit found! SNR 21077.695312, Drift Rate 0.070518, index 250653
+Top hit found! SNR 42.045139, Drift Rate 0.070518, index 125725
+
+===== Search time: 3.17 minutes
+===== END OF LOG
