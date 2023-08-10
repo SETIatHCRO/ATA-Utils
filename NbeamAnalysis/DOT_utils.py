@@ -172,7 +172,7 @@ def comb_df(df, outdir='./', obs='UNKNOWN', resume_index=None, pickle_off=False)
             # compare the ratios of the SNR in each beam
             SNR_ratios.append(get_SNR_ratio(s1,s2))
             # and divide the correlation score by the SNR ratio to get an x score
-            xs.append(corrs[-1]/SNR_ratios[-1])
+            xs.append(min(corrs[-1]/SNR_ratios[-1],1.0))
         # loop over each correlation score in the tuple to add to the dataframe
         for i,x in enumerate(xs):
             col_name_corrs='corrs_'+other_cols[i].split('beam')[-1].split('.')[0]
