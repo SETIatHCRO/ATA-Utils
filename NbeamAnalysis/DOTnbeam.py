@@ -32,7 +32,7 @@ def parse_args():
                         help='overwrite files if they already exist')
     parser.add_argument('-tag', '--tag',metavar='tag',type=str,nargs=1,default=None,
                         help='output files label')
-    parser.add_argument('-sf', type=float, nargs='?', const=2, default=None,
+    parser.add_argument('-sf', type=float, nargs='?', const=4, default=None,
                         help='flag to turn on spatial filtering with optional attenuation value for filtering')
     parser.add_argument('-store', action='store_true',
                         help='flag to retain pickle files after successful completion')
@@ -172,14 +172,20 @@ def main():
             diagnostic_plotter(full_df, obs, saving=True, outdir=outdir)
 
             # plot the average correlation scores vs the SNR for each hit in the target beam
-            xs = full_df.x
-            SNR = full_df.SNR
+            corrs = full_df.corrs
+            SNRr = full_df.SNR_ratio
             fig,ax=plt.subplots(figsize=(12,10))
-            plt.scatter(xs,SNR,color='orange',alpha=0.5,edgecolor='k')
+            plt.scatter(corrs,SNRr,color='orange',alpha=0.5,edgecolor='k')
             plt.xlabel('Average X Scores')
-            plt.ylabel('SNR')
-            plt.yscale('log')
+            plt.ylabel('SNR ratio')
+            ylims=plt.gca().get_ylim()
+            plt.axhspan(sf,ylims[1],color='green',alpha=0.25,label='Attenuated Signals')
+            plt.axhspan(1/sf,sf,color='grey',alpha=0.25,label='Similar SNRs')
+            plt.axhspan(ylims[0],1/sf,color='brown',alpha=0.25,label='Off-beam Attenuated')
+            plt.ylim(ylims[0],ylims[1])
             plt.xlim(-0.01,1.01)
+            plt.legend().get_frame().set_alpha(0) 
+            plt.grid(which='major', axis='both', alpha=0.5,linestyle=':')
             plt.savefig(outdir + f'{obs}_SNRx.png',
                         bbox_inches='tight',format='png',dpi=fig.dpi,facecolor='white', transparent=False)
             plt.close()

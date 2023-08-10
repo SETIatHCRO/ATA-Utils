@@ -33,6 +33,8 @@ def parse_args():
     parser.add_argument('-op',metavar="", type=str, choices=['lt', 'gt', 'is'], default=None,
                         help='Operator for filtering: less than (lt), greater than (gt), or equal to (is)')
     parser.add_argument('-val',metavar="", type=str, default=None, help='Filter value')
+    parser.add_argument('-sf', type=float, default=4.0,
+                        help='optional attenuation value for filtering')
     parser.add_argument('-clobber', action='store_true',
                         help='overwrite files if they already exist')
     parser.add_argument('-pdf', action='store_true',
@@ -76,7 +78,7 @@ def purge(dir, pattern):
         os.remove(f)
 
 # plot the hit using the plotting function from plot_target_utils.py
-def plot_beams(name_array, fstart, fstop, drift_rate=None, SNR=None, SNRr=None, x=None, path='./', pdf=False):
+def plot_beams(name_array, fstart, fstop, drift_rate=None, SNR=None, corrs=None, SNRr=None, x=None, path='./', pdf=False):
     # make waterfall objects for plotting from the filenames
     fil_array = []
     f1 = min(fstart,fstop)
@@ -107,11 +109,18 @@ def plot_beams(name_array, fstart, fstop, drift_rate=None, SNR=None, SNRr=None, 
                                         fig, 
                                         f_start=f1, 
                                         f_stop=f2)
+            if SNR and SNRr:
+                if i==0:
+                    ax[i].set_title(f"target beam || SNR: {SNR:.3f}")
+                else:
+                    ax[i].set_title(f"off beam || SNR*: {SNR/SNRr:.3f}")
+            else:
+                ax[i].set_title([f"target beam" if index==0 else "off beam"][0])
             i+=1
     # fix the title
     name_deconstructed = fil.filename.split('/')[-1].split('_')
     MJD = name_deconstructed[1] + '_' + name_deconstructed[2] #+ '_' + name_deconstructed[3]
-    filename=ptu.make_title(fig,MJD,f2,drift_rate,SNR,SNRr,x)
+    filename=ptu.make_title(fig,MJD,f2,drift_rate,SNR,corrs,SNRr,x)
     # save the plot
     if pdf==True:
         ext='pdf'
@@ -159,6 +168,7 @@ def main():
     column = cmd_args["col"]            # optional, default None
     operator = cmd_args["op"]           # optional, default None
     value = cmd_args["val"]             # optional, default None
+    sf = cmd_args["sf"]                 # optional, default = 4.0
     clobber = cmd_args["clobber"]       # optional, flag on or default off
     pdf = cmd_args["pdf"]               # optional, flag on or default off
     freqs = cmd_args["freqs"]           # optional, custom frequency span
@@ -188,12 +198,14 @@ def main():
         print(f"\n\t{num_plots} hits plotted in %.2f {time_label}.\n" %end)
         return None
     elif not column or not operator or not value:
-        print(f"Default filtering: 500 lowest scoring hits.")
-        signals_of_interest = df.sort_values(by='x').reset_index(drop=True).iloc[:500]
-        print(f"Max score in this set: {signals_of_interest.iloc[-1].x:.3f}")
+        print(f"\nDefault filtering:\nUp to the 500 lowest scored hits above and below the attenuation values of {sf:.1f}"+
+                f" and {1/sf:.2f}.\n")
+        dfx=df[(df.SNR_ratio>sf)|(df.SNR_ratio<1/sf)].reset_index(drop=True)
+        signals_of_interest = dfx.sort_values(by='x').reset_index(drop=True).iloc[:500]
+        # print(f"Max score in this set: {signals_of_interest.iloc[-1].x:.3f}")
     else:
         signals_of_interest = filter_df(df,column,operator,value)
-    print(f"{len(signals_of_interest)}/{len(df)} total hits from the input dataframe will be plotted.")
+    print(f"{len(signals_of_interest)} hits will be plotted out of {len(df)} total from the input dataframe.")
 
     # iterate through the csv of interesting hits and plot row by row
     for index, row in signals_of_interest.reset_index(drop=True).iterrows():
@@ -215,12 +227,14 @@ def main():
         fend=round(fmid-half_span*1e-6,6)
         
         # plot
-        print(f'Plotting {index+1}/{len(signals_of_interest)} starting at {fstart:.6f} MHz, X score: {row["x"]:.3f}')
+        print(f'Plotting {index+1}/{len(signals_of_interest)} starting at {fstart:.6f} MHz,'+
+                f' correlation score: {row["corrs"]:.3f}, SNR ratio: {row["SNR_ratio"]:.3f}')
         plot_beams(beams,
                     fstart,
                     fend,
                     row['Drift_Rate'],
                     row['SNR'],
+                    row['corrs'],
                     row['SNR_ratio'],
                     row['x'],
                     path,

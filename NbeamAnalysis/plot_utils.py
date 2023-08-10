@@ -164,7 +164,7 @@ def plot_waterfall_subplots(wf, wf_name, index, ax, fig, f_start=None, f_stop=No
     
     freq_mid = (plot_f[1]+plot_f[-1])/2    
     ax[index].set_xlabel(f"Frequency [{label}]\nCentered at {freq_mid:.6f} MHz")
-    ax[index].set_title(["target" if index==0 else "off"][0])
+    # ax[index].set_title(["target" if index==0 else "off"][0])
     # ax[index].text(0.1,
     #                0.9,
     #                ["target" if index==0 else "off"][0],
@@ -182,16 +182,18 @@ def plot_waterfall_subplots(wf, wf_name, index, ax, fig, f_start=None, f_stop=No
     
     return None
 
-def make_title(fig,MJD,f2,drift_rate,SNR,SNRr,x):
+def make_title(fig,MJD,f2,drift_rate,SNR,corrs,SNRr,x):
     title=f'MJD: {MJD} || fmax: {f2:.6f} MHz'
     filename=f"MJD_{MJD}"
     if drift_rate:
         title+=f' || Drift Rate: {drift_rate:.3f} Hz/s ({drift_rate/f2*1000:.3f} nHz)'
     if SNR:
-        title+=f' || SNR: {SNR:.3f}'
+        title+=f' || SNR: {SNR:.3f}\n'
         filename+=f"_SNR_{SNR:.3f}"
+    if corrs:
+        title+=f'Correlation Score: {corrs:.3f}'
     if SNRr:
-        title+=f'\nSNR ratio: {SNRr:.3f}'
+        title+=f' || SNR ratio: {SNRr:.3f}'
     if x:
         title+=f' || X score: {x:.3f}'
         filename+=f"_X_{x:.3f}"
