@@ -23,6 +23,21 @@ except ConnectionError as e:
 
 
 def set_device_lock(device_hostname,expire=DEFAULT_EXPIRE):
+    
+    ntries = 0
+    lockname = device_hostname + "_lock"
+
+    while ntries < MAX_NTRIES:
+        set_result = REDIS.set(lockname, LOCK_ON, ex = expire, nx = True)
+        if set_result:
+            return 1
+        else:
+            time.sleep(SLEEP_TIME)
+
+    raise LockError("Lock for device '%s' couldn't be obtained "
+                        "after %i tries" %(device_hostname, ntries))
+
+    '''
     lockname = device_hostname+"_lock"
 
     lock = REDIS.get(lockname)
@@ -52,7 +67,7 @@ def set_device_lock(device_hostname,expire=DEFAULT_EXPIRE):
         else:
             raise LockError("Could not set lock %s (was initially unset)"
                     %lockname)
-
+    '''
 
 
 def release_device_lock(device_hostname):
