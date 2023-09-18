@@ -1,9 +1,34 @@
-# This program plots the hits listed in a csv comparing multiple beams 
-# formed in the field of view of a single observation.
-# This will work for any number of beams.
-# The input will take any csv file, but it should be structured with columns:
-# ,drift_rate,SNR,freq_start,freq_end,onfile,offfile,datdir
-# Note that the onfile should be listed first, and all offfiles should come after
+'''
+This program plots hits listed in the csv that is output from DOTnbeam or DOTparallel.
+The output waterfall plots are generated using information in the csv dataframe to access and 
+plot the filterbank data for each beam over the time and frequency of the hit detected in the 
+target beam. The waterfall colormap of each subplot is scaled to the data in the target beam.
+
+Note that although the only input file is a csv file, that csv file should contain filepaths 
+to the filterbank files needed to be accessed in order to generate the plots.
+
+plot_utils.py is required for modularized functions.
+
+Typical basic command line usage looks something like:
+    python NbeamAnalysis/plot_DOT_hits.py <path_to_csv> -o <output_dir>
+
+There are 3 main plotting modes:
+    1.  Default plotting first filters all hits above the nominal cutoff, calculated as
+        SNR-ratios above 0.9*sf*x^2, where sf is the attenuation value (default=4.0),
+        x is the correlation score and 0.9 is included for padding. If there are more than 
+        500 (this number is adjustable with the -cutoff input flag) hits above this cutoff, 
+        the hits are sorted by SNR-ratio. If more than 500 have SNR-ratios above sf, 
+        attenuation value, then they are sorted by correlation score and the 500 lowest 
+        scoring hits are plotted. 
+
+    2.  Custom column sorting and plotting is available through optional input arguments.
+        All hits can be plotted through clever employment of the optional input arguments, if desired.
+
+    3.  Individual plots over specified a frequency range can be made with the "-freqs" flag 
+        by specifying the start and end frequencies. Note that without additional sorting/filtering, 
+        this will produce a plot for each unique dat/fil in the dataframe 
+        that span the specified frequencies.
+'''
 
     # Import packages
 import numpy as np
@@ -16,7 +41,6 @@ import time
 import matplotlib
 import matplotlib.pyplot as plt
 plt.rcParams.update({'font.size': 22})
-
 import plot_utils as ptu
 
     # Define Functions
@@ -35,6 +59,8 @@ def parse_args():
     parser.add_argument('-val',metavar="", type=str, default=None, help='Filter value')
     parser.add_argument('-sf', type=float, default=4.0,
                         help='optional attenuation value for filtering')
+    parser.add_argument('-cutoff', type=int, default=500,
+                        help='optionally set the number of plots above cutoff in default plotting mode')
     parser.add_argument('-clobber', action='store_true',
                         help='overwrite files if they already exist')
     parser.add_argument('-pdf', action='store_true',
@@ -77,70 +103,7 @@ def purge(dir, pattern):
     for f in old_plots:
         os.remove(f)
 
-# plot the hit using the plotting function from plot_target_utils.py
-def plot_beams(name_array, fstart, fstop, drift_rate=None, SNR=None, corrs=None, SNRr=None, x=None, path='./', pdf=False):
-    # make waterfall objects for plotting from the filenames
-    fil_array = []
-    f1 = min(fstart,fstop)
-    f2 = max(fstart,fstop)
-    for beam in name_array:
-        test_wat = bl.Waterfall(beam, 
-                            f_start=f1, 
-                            f_stop=f2)
-        # print(np.shape(test_wat.data))
-        fil_array.append(test_wat)
-    
-    # initialize the plot
-    nsubplots = len(name_array)
-    nrows = int(np.floor(np.sqrt(nsubplots)))
-    ncols = int(np.ceil(nsubplots/nrows))
-    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, figsize=(20,7))
-    
-    # call the plotting function and plot the waterfall objects in fil_array
-    i=0
-    for r in range(nrows):
-        for c in range(ncols):
-            fil = fil_array[i]
-            fil_name = name_array[i]
-            ptu.plot_waterfall_subplots(fil, 
-                                        fil_name, 
-                                        i, 
-                                        ax, 
-                                        fig, 
-                                        f_start=f1, 
-                                        f_stop=f2)
-            if SNR and SNRr:
-                if i==0:
-                    ax[i].set_title(f"target beam || SNR: {SNR:.3f}")
-                else:
-                    ax[i].set_title(f"off beam || SNR*: {SNR/SNRr:.3f}")
-            else:
-                ax[i].set_title([f"target beam" if index==0 else "off beam"][0])
-            i+=1
-    # fix the title
-    name_deconstructed = fil.filename.split('/')[-1].split('_')
-    MJD = name_deconstructed[1] + '_' + name_deconstructed[2] #+ '_' + name_deconstructed[3]
-    filename=ptu.make_title(fig,MJD,f2,drift_rate,SNR,corrs,SNRr,x)
-    # save the plot
-    if pdf==True:
-        ext='pdf'
-    else:
-        ext='png'
-    plt.savefig(f'{path}{filename}.{ext}',
-                bbox_inches='tight',format=ext,dpi=fig.dpi,facecolor='white', transparent=False)
-    plt.close()
-    return None
-
-def plot_by_freqs(df0,freqs,path,pdf):
-    df = df0.drop_duplicates(subset="dat_name", keep="first")
-    for index, row in df.reset_index(drop=True).iterrows():
-        beams = [row[i] for i in list(df) if i.startswith('fil_')]
-        fstart=max(freqs)
-        fend=min(freqs)
-        print(f'Plotting {index+1}/{len(df)} from {fend:.6f} MHz to {fstart:.6f} MHz\n{row["dat_name"]}\n')
-        plot_beams(beams,fstart,fend,path=path,pdf=pdf)
-    return len(df)
-
+# filter dataframe on optional input parameters
 def filter_df(df,column,operator,value):
     # Infer the data type of the column from the dataframe
     column_dtype = df[column].dtype
@@ -153,8 +116,10 @@ def filter_df(df,column,operator,value):
         signals_of_interest = df[df[column] > value]
     elif operator == 'is':
         signals_of_interest = df[df[column] == value]
-    signals_of_interest = signals_of_interest.sort_values(by='x').reset_index(drop=True)
+    # signals_of_interest = signals_of_interest.sort_values(by='x').reset_index(drop=True)
+    signals_of_interest = signals_of_interest.sort_values(by='SNR_ratio',ascending=False).reset_index(drop=True)
     return signals_of_interest
+
 
     # Main program execution
 def main():
@@ -169,6 +134,7 @@ def main():
     operator = cmd_args["op"]           # optional, default None
     value = cmd_args["val"]             # optional, default None
     sf = cmd_args["sf"]                 # optional, default = 4.0
+    cutnum = cmd_args["cutoff"]         # optional, default = 500
     clobber = cmd_args["clobber"]       # optional, flag on or default off
     pdf = cmd_args["pdf"]               # optional, flag on or default off
     freqs = cmd_args["freqs"]           # optional, custom frequency span
@@ -182,29 +148,45 @@ def main():
     if not os.path.exists(path):
         os.mkdir(path)
     if clobber and path not in paths_cleared:
-        purge(path,'*.png')
+        if pdf:
+            ext='*.pdf'
+        else:
+            ext='*.png'
+        purge(path,ext)
         paths_cleared.append(path)
 
-    # load the csv into a df and filter based on the input parameters
+    # load the csv into a dataframe and filter based on the input parameters
     df = pd.read_csv(csv)
-    if freqs: # circumvent regular plotting in the case of bespoke frequency bounds
+
+    # plotting mode 1: circumvent regular plotting in the case of bespoke frequency bounds 
+    if freqs:
         if not column or not operator or not value:
             num_plots = plot_by_freqs(df,freqs,path,pdf)
         else:
             signals_of_interest = filter_df(df,column,operator,value)
-            num_plots = plot_by_freqs(signals_of_interest,freqs,path,pdf)
-        # This block prints the elapsed time of the entire program.
+            num_plots = ptu.plot_by_freqs(signals_of_interest,freqs,path,pdf)
         end, time_label = get_elapsed_time(start)
         print(f"\n\t{num_plots} hits plotted in %.2f {time_label}.\n" %end)
+        # This is where the program ends for this plotting mode.
         return None
+    # plotting mode 2: default plotting
     elif not column or not operator or not value:
-        print(f"\nDefault filtering:\nUp to the 500 lowest scored hits above and below the attenuation values of {sf:.1f}"+
-                f" and {1/sf:.2f}.\n")
-        dfx=df[(df.SNR_ratio>sf)|(df.SNR_ratio<1/sf)].reset_index(drop=True)
-        signals_of_interest = dfx.sort_values(by='x').reset_index(drop=True).iloc[:500]
-        # print(f"Max score in this set: {signals_of_interest.iloc[-1].x:.3f}")
+        print(f"\nDefault filtering:\nUp to the {cutnum} lowest correlation scores with an SNR-ratio above the attenuation value of {sf:.2f}\n")
+        xcutoff=np.linspace(-0.5,1.5,20)
+        ycutoff=0.9*sf*xcutoff**2
+        dfx=df[np.interp(df.corrs,xcutoff,ycutoff)<df.SNR_ratio].reset_index(drop=True)
+        dfx=dfx.sort_values(by='SNR_ratio',ascending=False).reset_index(drop=True)
+        if len(dfx[dfx.SNR_ratio>sf])>cutnum:
+            dfx=dfx[dfx.SNR_ratio>sf].reset_index(drop=True)
+            signals_of_interest = dfx.sort_values(by='corrs',ascending=True).reset_index(drop=True).iloc[:cutnum]
+        else:
+            signals_of_interest = dfx.iloc[:cutnum]
+        print(f"Min score in this set: {signals_of_interest.iloc[0].corrs:.3f}")
+        print(f"Max score in this set: {signals_of_interest.iloc[-1].corrs:.3f}")
+    # plotting mode 3: custom dataframe filtering from input arguments
     else:
         signals_of_interest = filter_df(df,column,operator,value)
+
     print(f"{len(signals_of_interest)} hits will be plotted out of {len(df)} total from the input dataframe.")
 
     # iterate through the csv of interesting hits and plot row by row
@@ -217,30 +199,35 @@ def main():
         fend = row['freq_end']
 
         # determine frequency span over which to plot based on drift rate
-        fmid=row['Corrected_Frequency']
-        fil_meta=bl.Waterfall(beams[0],load_data=False)
-        obs_length=fil_meta.n_ints_in_file * fil_meta.header['tsamp']
-        half_span=abs(row['Drift_Rate'])*obs_length*1.2  # x1.2 for padding
+        fil_meta = bl.Waterfall(beams[0],load_data=False)
+        minimum_frequency = fil_meta.container.f_start
+        maximum_frequency = fil_meta.container.f_stop
+        tsamp = fil_meta.header['tsamp']    # time bin length in seconds
+        obs_length = fil_meta.n_ints_in_file * tsamp # total length of observation in seconds
+        DR = row['Drift_Rate']              # reported drift rate
+        padding=1+np.log10(row['SNR'])/10   # padding based on reported strength of signal
+        # calculate the amount of frequency drift with some padding
+        half_span=abs(DR)*obs_length*padding  
         if half_span<250:
-            half_span=250
-        fstart=round(fmid+half_span*1e-6,6)
-        fend=round(fmid-half_span*1e-6,6)
+            half_span=250 # minimum 500 Hz span window
+        fmid = row['Corrected_Frequency']
+        fstart=round(max(fmid-half_span*1e-6,minimum_frequency),6)
+        fend=round(min(fmid+half_span*1e-6,maximum_frequency),6)
         
         # plot
-        print(f'Plotting {index+1}/{len(signals_of_interest)} starting at {fstart:.6f} MHz,'+
-                f' correlation score: {row["corrs"]:.3f}, SNR ratio: {row["SNR_ratio"]:.3f}')
-        plot_beams(beams,
+        print(f'Plotting {index+1}/{len(signals_of_interest)} with central frequency {fmid:.6f} MHz,'+
+                f' and SNR ratio: {row["SNR_ratio"]:.3f}')
+        ptu.plot_beams(beams,
                     fstart,
                     fend,
                     row['Drift_Rate'],
-                    row['SNR'],
-                    row['corrs'],
-                    row['SNR_ratio'],
-                    row['x'],
-                    path,
-                    pdf)
+                    SNR=row['SNR'],
+                    corrs=row['corrs'],
+                    SNRr=row['SNR_ratio'],
+                    path=path,
+                    pdf=pdf)
 
-    # This block prints the elapsed time of the entire program.
+    # Print the elapsed time of the entire program.
     end, time_label = get_elapsed_time(start)
     print(f"\n\t{len(signals_of_interest)} hits plotted in %.2f {time_label}.\n" %end)
     return None

@@ -1,10 +1,28 @@
-# The program uses a simple correlation to identify if similar signals exist in target and off-target beams
-# DOT_utils.py and plot_target_utils.py required for modularized functions
-# The main outputs of this program are a csv, a diagnostic histogram plot and a plot of SNR vs correlation score.
+'''
+This is the parallelized version of the DOTnbeam code. It does the same thing over multiple cores, 
+but currently lacks the ability to pickle states for resuming an interrupted process.
+
+This program uses a dot product to correlate power in target and off-target beams 
+in an attempt to quantify the localization of identified signals.
+Additionally, the SNR-ratio between the beams is evaluated as well
+for comparison with the expected attenuation value.
+
+DOT_utils.py and plot_target_utils.py are required for modularized functions.
+
+The outputs of this program are:
+    1. csv of the full dataframe of hits, used for plotting with plot_DOT_hits.py
+    2. diagnostic histogram plot
+    3. plot of SNR-ratio vs Correlation Score
+    4. logging output text file
+
+Typical basic command line usage looks something like:
+    python NbeamAnalysis/DOTparallel.py <dat_dir> -f <fil_dir> -sf -o <output_dir>
+
+NOTE: the subdirectory tree structure for the <dat_dir> and <fil_dir> must be identical
+'''
 
     # Import Packages
 import pandas as pd
-import pickle
 import numpy as np
 import time
 import os
@@ -19,13 +37,13 @@ import threading
 from multiprocessing import Pool, Manager, Lock, Process
 from plot_utils import diagnostic_plotter
 
+    # Define Functions
+# monitor and print CPU usage during the parallel execution
 def monitor_cpu_usage(samples):
-    # Monitor and print CPU usage during the parallel execution
     while not exit_flag.is_set():
         cpu_usage = psutil.cpu_percent(interval=1, percpu=True)
         samples.append(cpu_usage)
 
-    # Define Functions
 # parse the input arguments:
 def parse_args():
     parser = argparse.ArgumentParser(description='Process ATA 2beam filterbank data.')
@@ -69,52 +87,61 @@ def parse_args():
     return odict
 
     # dat processing function for parallelization.
-# perform cross-correlation to pare down the list of hits, 
+# perform cross-correlation to pare down the list of hits if flagged with sf, 
 # and put the remaining hits into a dataframe.
 def dat_to_dataframe(args):
     dat, datdir, fildir, outdir, obs, sf, count_lock, proc_count, ndats = args
     start = time.time()
     with count_lock:
-        proc_count.value += 1
         dat_name = "/".join(dat.split("/")[-2:])
+        proc_count.value += 1
+        logging.info(f'\nProcessing dat file {proc_count.value}/{ndats}\n\t{dat_name}')
         hits,skipped,exact_matches=0,0,0
-        # make a tuple with the corresponding .fil files
-        fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+'*.fil'))
+        # make a tuple with the corresponding fil/h5 files
+        fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+dat_name.split('/')[-1][:-8]+'*fil'))
         if not fils:
-            fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+'*.h5'))
+            fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+dat_name.split('/')[-1][:-8]+'*h5'))
         if not fils:
-            logging.info(f'\n\tWARNING! Could not locate filterbank files in:\n\t{fildir+dat.split(datdir)[-1].split(dat.split("/")[-1])[0]}')
-            logging.info(f'\tSkipping {dat_name}\n')
+            logging.info(f'\tWARNING! Could not locate filterbank files in:\n\t{fildir+dat.split(datdir)[-1].split(dat.split("/")[-1])[0]}')
+            logging.info(f'\tSkipping...\n')
             skipped+=1
             mid, time_label = DOT.get_elapsed_time(start)
-            logging.info(f"\nProcessed {proc_count.value}/{ndats} dat files in %.2f {time_label}." %mid)
+            logging.info(f"Finished processing in %.2f {time_label}." %mid)
             return pd.DataFrame(),hits,skipped,exact_matches
-        # make a dataframe containing all the hits from all the .dat files in the tuple and sort them by frequency
+        # make a dataframe containing all the hits from all the dat files in the tuple and sort them by frequency
         df0 = DOT.load_dat_df(dat,fils)
         df0 = df0.sort_values('Corrected_Frequency').reset_index(drop=True)
-        if sf!=None:  # apply spatial filtering if turned on with sf flag (default is off)
+        if df0.empty:
+            logging.info(f'\tWARNING! No hits found in this dat file.')
+            logging.info(f'\tSkipping...')
+            skipped+=1
+            mid, time_label = DOT.get_elapsed_time(start)
+            logging.info(f"Finished processing in %.2f {time_label}." %mid)
+            return pd.DataFrame(),hits,skipped,exact_matches
+        # apply spatial filtering if turned on with sf flag (default is off)
+        if sf!=None:  
             df = DOT.cross_ref(df0,sf)
             exact_matches+=len(df0)-len(df)
             hits+=len(df0)
             mid, time_label = DOT.get_elapsed_time(start)
-            logging.info(f"\n\t{len(df0)-len(df)}/{len(df0)} hits removed as exact frequency matches in %.2f {time_label}." %mid)
+            logging.info(f"\t{len(df0)-len(df)}/{len(df0)} hits removed as exact frequency matches in %.2f {time_label}." %mid)
             start = time.time()
         else:
             df = df0
             hits+=len(df0)
-        # comb through the dataframe and cross-correlate each hit to identify any that show up in multiple beams
+        # comb through the dataframe, correlate beam power for each hit and calculate attenuation with SNR-ratio
         if df.empty:
-            logging.info(f'\tWARNING! Empty dataframe constructed from dat file:\n\t{dat_name}')
-            logging.info(f'\tSkipping this dat file because there are no hits to comb through...')
+            logging.info(f'\tWARNING! Empty dataframe constructed after spatial filtering of dat file.')
+            logging.info(f'\tSkipping this dat file because there are no remaining hits to comb through...')
             skipped+=1
             mid, time_label = DOT.get_elapsed_time(start)
-            logging.info(f"\nProcessed {proc_count.value}/{ndats} dat files in %.2f {time_label}." %mid)
+            logging.info(f"Finished processing in %.2f {time_label}." %mid)
             return pd.DataFrame(),hits,skipped,exact_matches
         else:
-            logging.info(f"\tCombing through the remaining {len(df)} hits in:\n\t{dat_name}")
-            temp_df = DOT.comb_df(df,outdir,obs,pickle_off=True)
+            logging.info(f"\tCombing through the remaining {len(df)} hits.")
+            temp_df = DOT.comb_df(df,outdir,obs,pickle_off=True,sf=sf)
         mid, time_label = DOT.get_elapsed_time(start)
-        logging.info(f"\nProcessed {proc_count.value}/{ndats} dat files in %.2f {time_label}." %mid)
+        logging.info(f"Finished processing in %.2f {time_label}." %mid)
         return temp_df,hits,skipped,exact_matches
 
 
@@ -144,7 +171,7 @@ def main():
     if not os.path.isdir(outdir):
         os.mkdir(outdir)
 
-    # set a unique file identifier based on info in the datdir if available
+    # set a unique file identifier if not defined by input
     if tag == None:
         try:
             obs="obs_"+"-".join([i.split('-')[1:3] for i in datdir.split('/') if ':' in i][0])
@@ -192,6 +219,7 @@ def main():
     manager = Manager()
     count_lock = manager.Lock()
     proc_count = manager.Value('i', 0)  # Shared integer to track processed count
+    # Execute the parallelized function
     input_args = [(dat_file, datdir, fildir, outdir, obs, sf, count_lock, proc_count, ndats) for dat_file in dat_files]
     with Pool(num_processes) as pool:
         results = pool.map(dat_to_dataframe, input_args)
@@ -207,42 +235,53 @@ def main():
     total_skipped = sum(skipped)
     total_exact_matches = sum(exact_matches)
 
-    if 'x' in full_df.columns and full_df['x'].notnull().any():
+    if sf==None:
+        sf=4
+
+    if 'SNR_ratio' in full_df.columns and full_df['SNR_ratio'].notnull().any():
         # plot the histograms for hits within the target beam
         diagnostic_plotter(full_df, obs, saving=True, outdir=outdir)
 
-        # plot the average correlation scores vs the SNR for each hit in the target beam
-        corrs = full_df.corrs
+        # plot the SNR ratios vs the correlation scores for each hit in the target beam
+        x = full_df.corrs
         SNRr = full_df.SNR_ratio
         fig,ax=plt.subplots(figsize=(12,10))
-        plt.scatter(corrs,SNRr,color='orange',alpha=0.5,edgecolor='k')
-        plt.xlabel('Average Correlation Scores')
-        plt.ylabel('SNR ratio')
+        plt.scatter(x,SNRr,color='orange',alpha=0.5,edgecolor='k')
+        plt.xlabel('Correlation Score')
+        plt.ylabel('SNR-ratio')
         ylims=plt.gca().get_ylim()
-        plt.axhspan(sf,ylims[1],color='green',alpha=0.25,label='Attenuated Signals')
+        xlims=plt.gca().get_xlim()
+        xcutoff=np.linspace(xlims[0],xlims[1],20)
+        ycutoff=0.9*sf*xcutoff**2
+        plt.plot(xcutoff,ycutoff,linestyle='--',color='k',alpha=0.5,label='Nominal Cutoff')
+        plt.axhspan(sf,max(ylims[1],6.5),color='green',alpha=0.25,label='Attenuated Signals')
         plt.axhspan(1/sf,sf,color='grey',alpha=0.25,label='Similar SNRs')
-        plt.axhspan(ylims[0],1/sf,color='brown',alpha=0.25,label='Off-beam Attenuated')
-        plt.ylim(ylims[0],ylims[1])
-        plt.xlim(-0.01,1.01)
+        plt.axhspan(min(0.2,ylims[0]),1/sf,color='brown',alpha=0.25,label='Off-beam Attenuated')
+        plt.ylim(min(0.2,ylims[0]),max(ylims[1],6.5))
+        plt.xlim(-0.1,1.1)
         plt.legend().get_frame().set_alpha(0) 
         plt.grid(which='major', axis='both', alpha=0.5,linestyle=':')
         plt.savefig(outdir + f'{obs}_SNRx.png',
                     bbox_inches='tight',format='png',dpi=fig.dpi,facecolor='white', transparent=False)
         plt.close()
+
+        above_cutoff=0
+        for i,score in enumerate(x):
+            if np.interp(score,xcutoff,ycutoff)<SNRr[i]:
+                above_cutoff+=1
+    logging.info(f"\n**Final results:")
     
     # Final print block
     if total_skipped>0:
-        logging.info(f'\n\t{total_skipped}/{ndats} dat files skipped.\n\tCheck the log for skipped filenames.\n')
+        logging.info(f'\n\t{total_skipped}/{ndats} dat files skipped. Check the log for skipped filenames.\n')
     end, time_label = DOT.get_elapsed_time(start)
     logging.info(f"\t{len(dat_files)} dats with {total_hits} total hits cross referenced and {total_exact_matches} hits removed as exact matches.")
-    logging.info(f"\t\tThe remaining {total_hits-total_exact_matches} hits were correlated and processed in %.2f {time_label}.\n" %end)
-    logging.info(f"\t{len(full_df[full_df.x>0.75])}/{len(full_df)} hits above an average correlation score of 0.75")
-    logging.info(f"\t{len(full_df[full_df.x<0.75])}/{len(full_df)} hits below an average correlation score of 0.75")
-    logging.info(f"\t{len(full_df[full_df.x<0.5])}/{len(full_df)} hits below an average correlation score of 0.5")
-    logging.info(f"\t{len(full_df[full_df.x<0.25])}/{len(full_df)} hits below an average correlation score of 0.25")
+    logging.info(f"\tThe remaining {total_hits-total_exact_matches} hits were correlated and processed in \n\n\t\t%.2f {time_label}.\n" %end)
+    logging.info(f"\t{len(full_df[full_df.SNR_ratio>sf])}/{len(full_df)} hits above a SNR-ratio of {sf:.1f}\n")
+    logging.info(f"\t{above_cutoff}/{len(full_df)} hits above the nominal cutoff.")
     
     full_df.to_csv(f"{outdir}{obs}_DOTnbeam.csv")
-    if 'x' not in full_df.columns or full_df['x'].isnull().any():
+    if 'SNR_ratio' not in full_df.columns or full_df['SNR_ratio'].isnull().any():
         # save the broken dataframe to csv
         logging.info(f"\nScores in full dataframe not filled out correctly. Please check it:\n{outdir}{obs}_DOTnbeam.csv")
     else:
