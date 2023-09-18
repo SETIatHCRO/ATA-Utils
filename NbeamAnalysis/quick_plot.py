@@ -54,9 +54,7 @@ def plot_beams(name_array, fstart, fstop, drift_rate, SNR, x, save=False, path='
     for r in range(nrows):
         for c in range(ncols):
             fil = fil_array[i]
-            fil_name = name_array[i]
             ptu.plot_waterfall_subplots(fil, 
-                                        fil_name, 
                                         i, 
                                         ax, 
                                         fig, 
@@ -543,4 +541,36 @@ x=sig_cor(s1-np.median(s2),s2-np.median(s2))
 path='/home/ntusay/scripts/NbeamAnalysis/injection_test/DOT_results/plots_fixed/failed_test/'
 from plot_DOT_hits import plot_beams as pbs
 pbs(beams, f1, f2, drift_rate, SNR, x, path, pdf=True)
+# %%
+csv='/home/ntusay/scripts/mars/output2/obs_UNKNOWN_DOTnbeam.csv'
+df=pd.read_csv(csv)
+df=df.sort_values(by='SNR_ratio',ascending=False).reset_index(drop=True).iloc[:500]
+
+for row in range(10):
+
+    name_array=[df.fil_0000[row],df.fil_0001[row]]
+    fstart=df.freq_start[row]
+    fstop=df.freq_end[row]
+    drift_rate=df.Drift_Rate[row]
+    SNR=df.SNR[row]
+    x=df.x[row]
+
+    plot_beams(name_array, fstart, fstop, drift_rate, SNR, x)
+# %%
+row = 2
+fil=df.fil_0000[row]
+fil1=df.fil_0001[row]
+fstart=df.freq_start[row]
+fstop=df.freq_end[row]
+f1 = min(fstart,fstop)
+f2 = max(fstart,fstop)
+frange,power=bl.Waterfall(fil,f1,f2).grab_data(f1,f2)
+frange1,power1=bl.Waterfall(fil1,f1,f2).grab_data(f1,f2)
+# %%
+plot_data=power
+logged=True
+if logged:
+    if not plot_data.all()<=0.0:
+        plot_data = ptu.db(plot_data)
+        print('did it')
 # %%

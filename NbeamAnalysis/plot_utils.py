@@ -1,3 +1,6 @@
+'''
+plotting utility functions mainly used in plot_DOT_hits.py
+'''
 
     # Import packages
 import numpy as np
@@ -7,7 +10,9 @@ import os
 import math
 import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.ticker import NullFormatter
 plt.rcParams.update({'font.size': 22})
+plt.rcParams['axes.formatter.useoffset'] = False
 
 # Check if $DISPLAY is set (for handling plotting on remote machines with no X-forwarding)
 
@@ -17,10 +22,6 @@ else:
     matplotlib.use('Agg')
     import pylab as plt
 
-from matplotlib.ticker import NullFormatter
-
-plt.rcParams['axes.formatter.useoffset'] = False
-
 MAX_PLT_POINTS      = 65536                  # Max number of points in matplotlib plot
 MAX_IMSHOW_POINTS   = (8192, 4096)           # Max number of points in imshow plot
 
@@ -29,8 +30,12 @@ def db(x, offset=0):
     """ Convert linear to dB """
     return 10 * np.log10(x + offset)
 
-def normalize(x):
-    return (x-x.min())/(x.max()-x.min())
+def normalize(x,xmin=None,xmax=None):
+    if xmin==None:
+        xmin=x.min()
+    if xmax==None:
+        xmax=x.max()
+    return (x-xmin)/(xmax-xmin)
 
 def rebin(d, n_x=None, n_y=None, n_z=None):
     """ Rebin data by averaging bins together
@@ -96,26 +101,16 @@ def calc_extent(plot_f=None, plot_t=None, MJD_time=False):
         extent = (plot_f_begin, plot_f_end, 0.0, (plot_t_end - plot_t_begin) * 24. * 60. * 60)
     return extent
 
-def plot_waterfall_subplots(wf, wf_name, index, ax, fig, f_start=None, f_stop=None, if_id=0, logged=True, cb=True, MJD_time=False, **kwargs):
-    """ Plot waterfall of data
-    Args:
-        f_start (float): start frequency, in MHz
-        f_stop (float): stop frequency, in MHz
-        logged (bool): Plot in linear (False) or dB units (True),
-        cb (bool): for plotting the colorbar
-        kwargs: keyword args to be passed to matplotlib imshow()
-    """
+# subplotting workhorse function. Actually gets the data and adds it to the subplots.
+def plot_waterfall_subplots(wf, index, ax, fig, f_start=None, f_stop=None, xmin=None, xmax=None, 
+                            if_id=0, logged=True, cb=True, MJD_time=False, **kwargs):
     plot_f, plot_data = wf.grab_data(min(f_start, f_stop),max(f_start, f_stop), if_id)
     # imshow does not support int8, so convert to floating point
     plot_data = plot_data.astype('float32')
-    
-    # # Using accending frequency for all plots.
-    # if wf.header['foff'] < 0:
-    #     plot_data = plot_data[..., ::-1]  # Reverse data
-    #     plot_f = plot_f[::-1]
-    
+    # plot the power in logspace unless the data is weird and has zeroes or negatives
     if logged:
-        plot_data = db(plot_data)
+        if not plot_data.all()<=0.0:
+            plot_data = db(plot_data)
     # Make sure waterfall plot is under 4k*4k
     dec_fac_x, dec_fac_y = 1, 1
     if plot_data.shape[0] > MAX_IMSHOW_POINTS[0]:
@@ -123,16 +118,12 @@ def plot_waterfall_subplots(wf, wf_name, index, ax, fig, f_start=None, f_stop=No
     if plot_data.shape[1] > MAX_IMSHOW_POINTS[1]:
         dec_fac_y = int(plot_data.shape[1] / MAX_IMSHOW_POINTS[1])
     plot_data = rebin(plot_data, dec_fac_x, dec_fac_y)
-    plot_data = normalize(plot_data)
-    #plot characteristics begin here
-    
-    #try:
-        #ax[index].set_title(wf.header['source_name'])
-    #except KeyError:
-    #    ax[index].set_title(wf.filename)
-    #if index == 1:
-    #    fig.set_title(wf.filename.split('/')[-1])
-    
+    # normalize the power to the range of the target beam
+    if index==0:
+        xmin=plot_data.min()
+        xmax=plot_data.max()
+    plot_data = normalize(plot_data,xmin,xmax)
+    # calculate the plot extent/axes 
     extent = calc_extent(plot_f=plot_f, plot_t=wf.timestamps, MJD_time=MJD_time)
     im = ax[index].imshow(plot_data,
                aspect='auto',
@@ -141,18 +132,13 @@ def plot_waterfall_subplots(wf, wf_name, index, ax, fig, f_start=None, f_stop=No
                interpolation='nearest',
                extent=extent,
                cmap='viridis',
-               **kwargs
-               )
+               vmin=0, 
+               vmax=1,
+               **kwargs)
+    # add colorbar
     if cb:
         fig.colorbar(im, ax=ax[index])
-    
-    #if str(wf_name.split('/')[4][-3]) == str(node_of_interest):
-    #    ax[index].text(0.85,
-    #           0.85,
-    #           str('*'),
-    #           color='white',
-    #           size=60,
-    #           transform=ax[index].transAxes)
+    # get the x-axis label right for the frequency scale
     if np.abs(plot_f[0]-plot_f[-1]) > 1:   
         label = 'MHz'
     elif np.abs(plot_f[0]-plot_f[-1])*10**3 > 1:
@@ -161,48 +147,120 @@ def plot_waterfall_subplots(wf, wf_name, index, ax, fig, f_start=None, f_stop=No
         label = 'Hz'
     else:
         label = 'GHz?'
-    
     freq_mid = (plot_f[1]+plot_f[-1])/2    
     ax[index].set_xlabel(f"Frequency [{label}]\nCentered at {freq_mid:.6f} MHz")
-    # ax[index].set_title(["target" if index==0 else "off"][0])
-    # ax[index].text(0.1,
-    #                0.9,
-    #                ["target" if index==0 else "off"][0],
-    #                color='white',
-    #                size=30,
-    #                transform=ax[index].transAxes)
-    
     ax[index].tick_params(axis='x', which='major', labelsize=22)
     ax[index].tick_params(axis='x', which='minor', labelsize=14)
-    
+    # set the y-axis label
     if MJD_time:
         ax[index].set_ylabel("Time [MJD]")
     else:
         ax[index].set_ylabel("Time [s]")
-    
-    return None
+    return xmin,xmax
 
-def make_title(fig,MJD,f2,drift_rate,SNR,corrs,SNRr,x):
+# makes both the title of the plot and the filename
+def make_title(fig,MJD,f2,fmid,drift_rate,SNR,corrs,SNRr,x):
     title=f'MJD: {MJD} || fmax: {f2:.6f} MHz'
-    filename=f"MJD_{MJD}"
+    filename=f"MJD_{MJD}_fmid{fmid:.6f}"
     if drift_rate:
         title+=f' || Drift Rate: {drift_rate:.3f} Hz/s ({drift_rate/f2*1000:.3f} nHz)'
+        filename+=f"_DR{drift_rate:.3f}"
     if SNR:
         title+=f' || SNR: {SNR:.3f}\n'
-        filename+=f"_SNR_{SNR:.3f}"
     if corrs:
         title+=f'Correlation Score: {corrs:.3f}'
+        filename+=f"_x{corrs:.3f}"
     if SNRr:
         title+=f' || SNR ratio: {SNRr:.3f}'
+        filename+=f"_SNRr{SNRr:.3f}"
     if x:
         title+=f' || X score: {x:.3f}'
         filename+=f"_X_{x:.3f}"
-    filename+=f"_fmax_{f2:.6f}"
     fig.suptitle(title,size=25)
     fig.tight_layout(rect=[0, 0, 1, 1.05])
     return filename
 
+# first plotting function that sets up the plot, sends info to the subplotter, gets the title and saves the plot.
+def plot_beams(name_array, fstart, fstop, drift_rate=None, SNR=None, corrs=None, SNRr=None, x=None, path='./', pdf=False):
+    # make waterfall objects for plotting from the filenames
+    fil_array = []
+    f1 = min(fstart,fstop)
+    f2 = max(fstart,fstop)
+    fmid=round((f2+f1)/2,6)
+    for beam in name_array:
+        test_wat = bl.Waterfall(beam, 
+                            f_start=f1, 
+                            f_stop=f2)
+        fil_array.append(test_wat)
+    # initialize the plot
+    nsubplots = len(name_array)
+    nrows = int(np.floor(np.sqrt(nsubplots)))
+    ncols = int(np.ceil(nsubplots/nrows))
+    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, figsize=(20,7))
+    # call the plotting function and plot the waterfall objects in fil_array
+    i=0
+    xmin=None
+    xmax=None
+    for r in range(nrows):
+        for c in range(ncols):
+            fil = fil_array[i]
+            xmin,xmax=plot_waterfall_subplots(fil, 
+                                    i, ax, fig, 
+                                    f_start=f1, 
+                                    f_stop=f2,
+                                    xmin=xmin,
+                                    xmax=xmax)
+            # set subplot titles
+            if SNR and SNRr:
+                if i==0:
+                    ax[i].set_title(f"target beam || SNR: {SNR:.3f}")
+                else:
+                    ax[i].set_title(f"off beam || SNR*: {SNR/SNRr:.3f}")
+            else:
+                ax[i].set_title([f"target beam" if index==0 else "off beam"][0])
+            i+=1
+    # set the overall plot title and filename
+    name_deconstructed = fil.filename.split('/')[-1].split('_')
+    MJD = name_deconstructed[1] + '_' + name_deconstructed[2] #+ '_' + name_deconstructed[3]
+    filename=make_title(fig,MJD,f2,fmid,drift_rate,SNR,corrs,SNRr,x)
+    # save the plot
+    if pdf==True:
+        ext='pdf'
+    else:
+        ext='png'
+    plt.savefig(f'{path}{filename}.{ext}',
+                bbox_inches='tight',format=ext,dpi=fig.dpi,facecolor='white', transparent=False)
+    plt.close()
+    return None
+
+# initial function to set up plotting by manually input frequencies
+def plot_by_freqs(df0,freqs,path,pdf):
+    df = df0.drop_duplicates(subset="dat_name", keep="first")
+    for index, row in df.reset_index(drop=True).iterrows():
+        beams = [row[i] for i in list(df) if i.startswith('fil_')]
+        if check_freqs(beams[0],freqs)=='out_of_bounds':
+            print(f"Input frequencies {freqs} not within the frequency span of the data in\n{beams[0]}\nSkipping this file.")
+            continue
+        fstart=max(freqs)
+        fend=min(freqs)
+        print(f'Plotting {index+1}/{len(df)} from {fend:.6f} MHz to {fstart:.6f} MHz\n{row["dat_name"]}\n')
+        plot_beams(beams,fstart,fend,path=path,pdf=pdf)
+    return len(df)
+
+# used in plot_by_freqs() to check if the frequencies are within 
+# the bounds of the filterbank file 
+def check_freqs(fil,freqs):
+    fil_meta = bl.Waterfall(target_fil,load_data=False)
+    minimum_frequency = fil_meta.container.f_start
+    maximum_frequency = fil_meta.container.f_stop
+    for freq in freqs:
+        if freq>maximum_frequency or freq<minimum_frequency:
+            return 'out_of_bounds'
+    return 'within_bounds'
+
+
 # plots the histograms showing snr, frequency, and drift rates of all the hits
+# mainly just used at the end of DOTnbeam or DOTparallel
 def diagnostic_plotter(df, tag, saving=False, log=True, outdir='./'):
     # initialize figure with subplots
     fig, ax = plt.subplots(nrows=1, ncols=3, figsize=((20,5)))
