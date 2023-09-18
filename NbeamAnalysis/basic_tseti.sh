@@ -1,11 +1,15 @@
 #!/bin/bash
 
 # This script takes 2 inputs, .fil file directory and an output directory.
+# Runs turboSETI with command line tools on the .fil files to search for hits.
 # Creates subfolders with .dat files in the output directory.
+
+# Edit the turboSETI command line as necessary.
+# Change fil to h5 for the newer ATA data format.
 
 STARTTIME=$(date +%s)
 echo " "
-echo "running turboSETI bash script with fscrunch..." 
+echo "running turboSETI bash script..." 
 echo " "
 echo $(date)
 echo " "
@@ -23,7 +27,7 @@ outdir=${!#}
 
 if [[ ${outdir} != */ ]];then
     outdir=$outdir/
-    echo $outdir
+    # echo $outdir
 fi
 
 # Check if the input directory exists

@@ -1,5 +1,6 @@
 # This file holds functions utilized primarily in DOTnbeam.py
 
+# all imports
 import pandas as pd
 import numpy as np
 import logging
@@ -12,6 +13,7 @@ import blimpy as bl
 import logging
 import sys
 
+# logging function
 def setup_logging(log_filename):
     # Import the logging module and configure the root logger
     logging.basicConfig(level=logging.INFO, filemode='w', format='%(message)s')
@@ -106,7 +108,7 @@ def load_dat_df(dat_file,filtuple):
     full_dat_df['normalized_dr'] = full_dat_df['Drift_Rate'] / (full_dat_df[['freq_start','freq_end']].max(axis=1) / 10**3)
     return full_dat_df
 
-# use blimpy to grab the data slice from the filterbank file over the frequency range in this row
+# use blimpy to grab the data slice from the filterbank file over the frequency range provided
 def wf_data(fil,f1,f2):
     return bl.Waterfall(fil,f1,f2).grab_data(f1,f2)
 
@@ -114,7 +116,7 @@ def wf_data(fil,f1,f2):
 def ACF(s1):
     return ((s1*s1).sum(axis=1)).sum()/np.shape(s1)[0]/np.shape(s1)[1]
 
-# correlate two 2D arrays and return the correlation score
+# correlate two 2D arrays with a dot product and return the correlation score
 def sig_cor(s1,s2):
     ACF1=ACF(s1)
     ACF2=ACF(s2)
@@ -122,14 +124,41 @@ def sig_cor(s1,s2):
     x=DOT/np.sqrt(ACF1*ACF2)
     return x
 
-def noise_median(s1,p=5):
-    return np.median(s1[(s1>np.percentile(s1,p))&(s1<np.percentile(s1,100-p))])
+# get the median of the "noise" after removing the bottom and top 5th percentile of data
+def noise_median(data_array,p=5):
+    return np.median(mid_90(data_array,p))
 
-def noise_std(s1,p=5):
-    return np.std(s1[(s1>np.percentile(s1,p))&(s1<np.percentile(s1,100-p))])
+# get the standard deviation of the "noise" after removing the bottom and top 5th percentile of data
+def noise_std(data_array,p=5):
+    return np.std(mid_90(data_array,p))
 
-def get_SNR_ratio(s0,s1):
-    return (s0.max()-noise_median(s0))/noise_std(s0)/(((s1.max()-noise_median(s1)))/noise_std(s1))
+# remove the bottom and top 5th percentile from a data array
+def mid_90(da,p=5):
+    return da[(da>np.percentile(da,p))&(da<np.percentile(da,100-p))]
+
+# My method for calculating SNR
+def mySNR(power):
+    # get the median of the noise
+    median_noise=noise_median(power)
+    # assume the middle 90 percent of the array represent the noise
+    noise_els=mid_90(power)             
+    # zero out the noise by subtracting off the median
+    zeroed_noise=noise_els-median_noise     
+    # get the standard deviation of the noise using median instead of mean
+    std_noise=np.sqrt(np.median((zeroed_noise)**2))
+    # identify signals significantly above the "noise" in the data
+    signal_els=power[(power>10*std_noise)&(power>np.percentile(power,95))] 
+    if not bool(signal_els.size):
+        # if there are no "signals" popping out above the noise
+        # this will result in an SNR of 1
+        signal=std_noise
+    else:
+        # the signal is calculated as the median of the highest N elements in the signal candidates
+        # where N is the number of time bins or rows in the data matrix
+        signal=np.median(sorted(signal_els)[-np.shape(power)[0]:])-median_noise 
+    # subtract off the median (previous step) and divide by the standard deviation to get the SNR
+    SNR=signal/std_noise
+    return SNR
 
 # extract index and dataframe from pickle files to resume from last checkpoint
 def resume(pickle_file, df):
@@ -142,7 +171,9 @@ def resume(pickle_file, df):
     return index, df
 
 # comb through each hit in the dataframe and look for corresponding hits in each of the beams.
-def comb_df(df, outdir='./', obs='UNKNOWN', resume_index=None, pickle_off=False):
+def comb_df(df, outdir='./', obs='UNKNOWN', resume_index=None, pickle_off=False, sf=4):
+    if sf==None:
+        sf=4
     # loop over every row in the dataframe
     for r,row in df.iterrows():
         if resume_index is not None and r < resume_index:
@@ -150,41 +181,63 @@ def comb_df(df, outdir='./', obs='UNKNOWN', resume_index=None, pickle_off=False)
         # identify the target beam .fil file 
         matching_col = row.filter(like='fil_').apply(lambda x: x == row['dat_name']).idxmax()
         target_fil = row[matching_col]
-        # identify the frequency range of the signal in this row of the dataframe
-        f1=row['freq_start']
-        f2 = row['freq_end']
-        fstart= min(f1,f2)
-        fstop = max(f1,f2)
+        # get the filterbank metadata
+        fil_meta = bl.Waterfall(target_fil,load_data=False)
+        # determine the frequency boundaries in the .fil file
+        minimum_frequency = fil_meta.container.f_start
+        maximum_frequency = fil_meta.container.f_stop
+        # calculate the narrow signal window using the reported drift rate and metadata
+        tsamp = fil_meta.header['tsamp']    # time bin length in seconds
+        obs_length=fil_meta.n_ints_in_file * tsamp # total length of observation in seconds
+        DR = row['Drift_Rate']              # reported drift rate
+        padding=1+np.log10(row['SNR'])/10   # padding based on reported strength of signal
+        # calculate the amount of frequency drift with some padding
+        half_span=abs(DR)*obs_length*padding  
+        if half_span<250:
+            half_span=250 # minimum 500 Hz span window
+        fmid = row['Corrected_Frequency']
+        # signal may not be centered, could drift up or down in frequency space
+        # so the frequency drift is added to both sides of the central frequency
+        # to ensure it is contained within the window
+        f1=round(max(fmid-half_span*1e-6,minimum_frequency),6)
+        f2=round(min(fmid+half_span*1e-6,maximum_frequency),6)
         # grab the signal data in the target beam fil file
-        frange,s1=wf_data(target_fil,fstart,fstop)
+        frange,s0=wf_data(target_fil,f1,f2)
+        # calculate the SNR
+        SNR0 = mySNR(s0)
         # get a list of all the other fil files for all the other beams
         other_cols = row.loc[row.index.str.startswith('fil_') & (row.index != matching_col)]
-        # initialize empty correlation score lists for appending
-        xs=[]
+        # initialize empty lists for appending
+        # xs=[] # no longer used
         corrs=[]
+        mySNRs=[SNR0]
         SNR_ratios=[]
         for col_name, other_fil in other_cols.iteritems():
-            # grab the data from the non-target fil in the same location
-            _,s2=wf_data(other_fil,fstart,fstop)
-            # correlate the signal in the target beam with the same location in the non-target beam
-            # subtracting off the median of the off-target beam to roughly center the noise around zero.
-            corrs.append(sig_cor(s1-noise_median(s2),s2-noise_median(s2))) 
-            # compare the ratios of the SNR in each beam
-            SNR_ratios.append(get_SNR_ratio(s1,s2))
-            # and divide the correlation score by the SNR ratio to get an x score
-            xs.append(min(corrs[-1]/SNR_ratios[-1],1.0))
-        # loop over each correlation score in the tuple to add to the dataframe
-        for i,x in enumerate(xs):
+            # grab the signal data from the non-target fil in the same location
+            _,s1=wf_data(other_fil,f1,f2)
+            # calculate and append the SNR for the same location in the other beam
+            off_SNR = mySNR(s1)
+            mySNRs.append(off_SNR)
+            # calculate and append the SNR ratio
+            SNR_ratios.append(SNR0/off_SNR)
+            # calculate and append the correlation score
+            corrs.append(sig_cor(s0-noise_median(s0),s1-noise_median(s1)))
+            # x scores no longer used
+            # xs.append(min(corrs[-1]/(SNR_ratios[-1]/sf),1.0)) 
+        # add the correlation scores, SNRs and SNR-ratios to the dataframe
+        for i,x in enumerate(SNR_ratios):
             col_name_corrs='corrs_'+other_cols[i].split('beam')[-1].split('.')[0]
             df.loc[r,col_name_corrs] = corrs[i]
             col_name_SNRr='SNR_ratio_'+other_cols[i].split('beam')[-1].split('.')[0]
             df.loc[r,col_name_SNRr] = SNR_ratios[i]
-            col_name_x = 'x_'+other_cols[i].split('beam')[-1].split('.')[0]
-            df.loc[r,col_name_x] = x
-        if len(xs)>0:   # this conditional makes the code not break if there's only one filterbank file for some reason
-            df.loc[r,'corrs'] = sum(corrs)/len(corrs)     # the average correlation scores
-            df.loc[r,'SNR_ratio'] = sum(SNR_ratios)/len(SNR_ratios)     # the average SNR_ratios
-            df.loc[r,'x'] = sum(xs)/len(xs)                             # the average x scores 
+            # col_name_x = 'x_'+other_cols[i].split('beam')[-1].split('.')[0]
+            # df.loc[r,col_name_x] = x
+        df.loc[r,'mySNRs'] = str(mySNRs)
+        # calculate and add average values to the dataframe (useful for N>2 beams)
+        if len(SNR_ratios)>0:
+            df.loc[r,'corrs'] = sum(corrs)/len(corrs) 
+            df.loc[r,'SNR_ratio'] = sum(SNR_ratios)/len(SNR_ratios)  
+            # df.loc[r,'x'] = sum(xs)/len(xs)                          
         # pickle the dataframe and row index for resuming
         if pickle_off==False:
             with open(outdir+f'{obs}_comb_df.pkl', 'wb') as f:
@@ -194,31 +247,18 @@ def comb_df(df, outdir='./', obs='UNKNOWN', resume_index=None, pickle_off=False)
         os.remove(outdir+f"{obs}_comb_df.pkl") 
     return df
 
-# retrieve the frequency resolution of the dat files from their headers (should all be the same)
-def get_freq_res(tupl):
-    deltaf=[]
-    for dat in tupl:
-        searchfile = open(dat,'r').readlines()
-        for line in searchfile:
-            if "DELTAF(Hz):  " in line:
-                deltaf.append(float(line.split("DELTAF(Hz):  ")[-1].split("	")[0]))
-    if deltaf[0]!=deltaf[1]:
-        logging.info(f"ERROR: DELTAF(Hz) values do not match for this tuple:\n{tupl}\nProceeding with first DELTAF(Hz) value anyway.")
-    return deltaf[0]
-
 # cross reference hits in the target beam dat with the other beams dats for identical signals
 def cross_ref(input_df,sf):
     if len(input_df)==0:
+        logging.info("\tNo hits in the input dataframe to cross reference.")
         return input_df
     # first, make sure the indices are reset
     input_df=input_df.reset_index(drop=True)
     # Extract directory path from the first row of the dat_name column
     dat_path = os.path.dirname(input_df['dat_name'].iloc[0])
-    
     # Find all dat files in the directory
     dat_files = [f for f in os.listdir(dat_path) if f.endswith('.dat')]
-    
-    # Load each dat file into a separate dataframe and store in a list
+    # Load the hits from the other dat files into a separate dataframe and store in a list
     dat_dfs = []
     for dat_file in dat_files:
         if dat_file == os.path.basename(input_df['dat_name'].iloc[0]):
@@ -229,31 +269,71 @@ def cross_ref(input_df,sf):
                                     'SEFD','SEFD_freq','Coarse_Channel_Number',
                                     'Full_number_of_hits'], skiprows=9)
         dat_dfs.append(dat_df)
-    
-    # Iterate through rows in input dataframe and prune if necessary
+    # Iterate through the rows in the input dataframe and prune matching hits
     rows_to_drop = []
     for idx, row in input_df.iterrows():
-        drop_row = False
-        
+        drop_row = False # don't drop it unless there's a match
         # Check if values are within tolerance in any of the dat file dataframes
         for dat_df in dat_dfs:
+            # check if frequencies match and if reported SNRs are similar within a factor of the expected attenuation
             within_tolerance = ((dat_df['Corrected_Frequency'] - row['Corrected_Frequency']).abs() < 2e-6) & \
-                               ((dat_df['freq_start'] - row['freq_start']).abs() < 2e-6) & \
-                               ((dat_df['freq_end'] - row['freq_end']).abs() < 2e-6) & \
+                               ((((dat_df['freq_start'] - row['freq_start']).abs() < 2e-6) & \
+                               ((dat_df['freq_end'] - row['freq_end']).abs() < 2e-6)) | \
+                               ((dat_df['Drift_Rate'] - row['Drift_Rate']).abs() < 1/16)) & \
                                ((dat_df['SNR'] / row['SNR']).abs() >= 1/sf) & \
                                ((row['SNR'] / dat_df['SNR']).abs() <= sf)
             if within_tolerance.any():
-                drop_row = True
+                drop_row = True # drop it like it's hot
                 break
-        
-        # Add row to list of rows to drop if within tolerance in any of the dat file dataframes
+        # Add the row index to the list of rows that should be dropped
         if drop_row:
             rows_to_drop.append(idx)
-            # print(f'dropped row: {idx}')
-            # print(f'{row}')
-    
-    # Drop rows that are within tolerance
+    # Drop the rows that were identified as within matching tolerance
     trimmed_df = input_df.drop(rows_to_drop)
-    
-    # Reset index and return trimmed dataframe
+    # Return the trimmed dataframe with a reset index
+    return trimmed_df.reset_index(drop=True)
+
+# a weak attempt at filtering out duplicate hits due to fscrunching
+# not complete or implemented anywhere
+def drop_fscrunch_duplicates(input_df,frez=1,time_rez=16):
+    if len(input_df)==0:
+        logging.info("\tNo hits in the input dataframe to cross reference.")
+        return input_df
+    # first, make sure the indices are reset
+    input_df=input_df.reset_index(drop=True)
+    # Extract directory path from the first row of the dat_name column
+    dat_path = os.path.dirname(input_df['dat_name'].iloc[0])
+    # Find all dat files in the directory
+    dat_files = [f for f in os.listdir(dat_path) if f.endswith('.dat')]
+    # Load the hits from the other dat files into a separate dataframe and store in a list
+    dat_dfs = []
+    for dat_file in dat_files:
+        if dat_file == os.path.basename(input_df['dat_name'].iloc[0]):
+            continue  # Skip the dat file corresponding to the dat_name column
+        dat_df = pd.read_csv(os.path.join(dat_path, dat_file), delim_whitespace=True,
+                             names=['Top_Hit_#','Drift_Rate','SNR','Uncorrected_Frequency',
+                                    'Corrected_Frequency','Index','freq_start','freq_end',
+                                    'SEFD','SEFD_freq','Coarse_Channel_Number',
+                                    'Full_number_of_hits'], skiprows=9)
+        dat_dfs.append(dat_df)
+    # Iterate through the rows in the input dataframe and prune matching hits
+    rows_to_drop = []
+    for idx, row in input_df.iterrows():
+        drop_row = False # don't drop it unless there's a match
+        # Check if values are within tolerance in any of the dat file dataframes
+        for dat_df in dat_dfs:
+            # check if frequencies match and if reported SNRs are similar within a factor of the expected attenuation
+            within_tolerance = ((dat_df['Corrected_Frequency'] - row['Corrected_Frequency']).abs() < 10e-6) & \
+                               ((dat_df['Drift_Rate'] - row['Drift_Rate']).abs() < frez/time_rez) & \
+                               ((dat_df['SNR'] / row['SNR']).abs() >= 1/sf) & \
+                               ((row['SNR'] / dat_df['SNR']).abs() <= sf)
+            if within_tolerance.any():
+                drop_row = True # drop it like it's hot
+                break
+        # Add the row index to the list of rows that should be dropped
+        if drop_row:
+            rows_to_drop.append(idx)
+    # Drop the rows that were identified as within matching tolerance
+    trimmed_df = input_df.drop(rows_to_drop)
+    # Return the trimmed dataframe with a reset index
     return trimmed_df.reset_index(drop=True)

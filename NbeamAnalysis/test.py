@@ -79,6 +79,7 @@ csv_dir='/home/ntusay/scripts/NbeamAnalysis/TRAPPIST-1/'
 beam='0000'
 comp_hits(dat_dirs,beam,csv_dir)
 # %%
+# PRINT OUT THE TOTAL NUMBER OF HITS FOR EACH OBSERVATION
 PPO='/mnt/datac-netStorage-40G/projects/p004/PPO/'
 beam='0000'
 dat_dirs=sorted(glob.glob(PPO+'2022*'))
@@ -236,12 +237,15 @@ def freq_span(dirs,beam,save=False):
 PPO='/mnt/datac-netStorage-40G/projects/p004/'
 dirs=sorted(glob.glob(PPO+'2022*'))
 beam='0000'
-freq_span(dirs,beam,save=True)
+freq_span(dirs,beam,save=False)
 
 # %%
 import pandas as pd
 import numpy as np
 import blimpy as bl
+
+def mean_noise(s1,p=5):
+    return np.mean(s1[(s1>np.percentile(s1,p))&(s1<np.percentile(s1,100-p))])
 
 def median_noise(s1,p=5):
     return np.median(s1[(s1>np.percentile(s1,p))&(s1<np.percentile(s1,100-p))])
@@ -255,6 +259,13 @@ def SNR_ratio(s0,s1):
 def SNR_ratio2(s0,s1):
     return (s0.max()-median_noise(s0))/noise_std(s0)/(((s1.max()-median_noise(s1)))/noise_std(s1))
 
+def SNR_ratio3(s0,s1):
+    time_bins0=np.shape(s0)[0]
+    signal0 = np.median(sorted(s0.flatten())[-time_bins0:])
+    time_bins1=np.shape(s1)[0]
+    signal1 = np.median(sorted(s1.flatten())[-time_bins1:])
+    return (signal0-median_noise(s0))/noise_std(s0)/(((signal1-median_noise(s1)))/noise_std(s1))
+
 def get_df(dat_file):
     df = pd.read_csv(dat_file,delim_whitespace=True,
                     names=['Top_Hit_#','Drift_Rate','SNR', 'Uncorrected_Frequency','Corrected_Frequency','Index',
@@ -266,6 +277,8 @@ def wf_data(fil,f1,f2):
 
 def ACF(s1):
     return ((s1*s1).sum(axis=1)).sum()/np.shape(s1)[0]/np.shape(s1)[1]
+
+# %%
 
 # dat_file0='/home/ntusay/scripts/NbeamAnalysis/injection_SNR_test/fil_59884_17225_248799804_trappist1_0001-beam0000.dat'
 # dat_file1='/home/ntusay/scripts/NbeamAnalysis/injection_SNR_test/fil_59884_17225_248799804_trappist1_0001-beam0001.dat'
@@ -290,9 +303,11 @@ for r,row in df.iterrows():
     SNR0=(s0.max()-median_noise(s0))/noise_std(s0)
     SNR1=(s1.max()-median_noise(s1))/noise_std(s1)
     SNRr2=SNR_ratio2(s0,s1)
-    SNRr3=row['SNR_ratio']
+    SNRr3=SNR_ratio3(s0,s1)
+    SNRr4=row['SNR_ratio']
     x=row['x']
-    print(f"{r} SNR: {SNR:.2f}\tFreq: {cf}  SNRr: {SNRr2:.3f}  SNR0: {SNR0:.2f}\tSNR1: {SNR1:.2f}  new_x2: {x/SNRr2:.3f}")
+    print(f"{r} SNR: {SNR:.2f}\tFreq: {cf}  SNRr_old: {SNRr2:.3f}  SNRr_new: {SNRr3:.3f}") 
+    # print(f"{r} SNR: {SNR:.2f}\tFreq: {cf}  SNRr: {SNRr2:.3f}  SNR0: {SNR0:.2f}\tSNR1: {SNR1:.2f}  new_x2: {x/SNRr2:.3f}")
     # print(f"{r} SNR: {SNR:.2f}\tFreq: {cf}  SNRr1:{SNRr1:.3f}  SNRr2:{SNRr2:.3f}  SNRr3:{SNRr3:.3f}  x: {x:.3f}")
 # %%
 import matplotlib.pyplot as plt
@@ -323,13 +338,15 @@ plt.show()
 import pandas as pd
 import matplotlib.pyplot as plt
 plt.rcParams.update({'font.size': 22})
-csv='/home/ntusay/scripts/parallel_test/obs_11-09_DOTnbeam.csv'
+csv='/home/ntusay/scripts/TRAPPIST-1/obs_11-05_DOTnbeam.csv'
+csv='/home/ntusay/scripts/parallel_test/obs_11-01_DOTnbeam.csv'
 df=pd.read_csv(csv)
 fig,ax=plt.subplots(figsize=(12,10))
-plt.scatter(df.corrs,df.SNR_ratio,color='orange',alpha=0.5,edgecolor='k')
+plt.scatter(df.SNR_ratio,df.SNR,color='orange',alpha=0.5,edgecolor='k')
 sf=4
-plt.xlabel('Average X Scores')
-plt.ylabel('SNR ratio')
+plt.xlabel('SNR ratio')
+plt.ylabel('SNR')
+plt.yscale('log')
 ylims=plt.gca().get_ylim()
 plt.axhspan(sf,ylims[1],color='green',alpha=0.25,label='Attenuated Signals')
 plt.axhspan(1/sf,sf,color='grey',alpha=0.25,label='Similar SNRs')
@@ -337,16 +354,354 @@ plt.axhspan(ylims[0],1/sf,color='brown',alpha=0.25,label='Off-beam Attenuated')
 plt.ylim(ylims[0],ylims[1])
 # plt.hlines(4.5,0,1,color='k',linestyle='--')
 # plt.hlines(1,0,1,color='k',linestyle='--')
-plt.xlim(-0.01,1.01)
+# plt.xlim(-0.01,1.01)
 plt.legend().get_frame().set_alpha(0) 
 plt.grid(which='major', axis='both', alpha=0.5,linestyle=':')
 print(len(df[df.SNR_ratio>4.5]))
 plt.show()
 # %%
+df.SNR_ratio_0001.max()
+# %%
+# %%
+import pandas as pd
+import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 22})
+%matplotlib inline
+csv='/home/ntusay/scripts/parallel_test/obs_11-01_DOTnbeam.csv'
+# csv='/home/ntusay/scripts/parallel_test/obs_10-27_DOTnbeam.csv'
+# csv='/home/ntusay/scripts/parallel_test/obs_11-02_DOTnbeam.csv'
+# csv='/home/ntusay/scripts/mars/output/obs_UNKNOWN_DOTnbeam.csv'
+df=pd.read_csv(csv)
 sf=4.5
-plt.scatter(df.x,df.SNR_ratio,color='orange',alpha=0.5,edgecolor='k')
-plt.hlines(sf,0,1,color='k',linestyle='--')
-plt.hlines(1/sf,0,1,color='k',linestyle='--')
-# plt.yscale('log')
+fig,ax=plt.subplots(figsize=(12,10))
+plt.scatter(df.SNR,df.SNR_ratio,color='orange',alpha=0.5,edgecolor='k')
+xlims=plt.gca().get_xlim()
+plt.axhspan(sf,ylims[1],color='green',alpha=0.25,label='Attenuated Signals')
+plt.axhspan(1/sf,sf,color='grey',alpha=0.25,label='Similar SNRs')
+plt.axhspan(ylims[0],1/sf,color='brown',alpha=0.25,label='Off-beam Attenuated')
+# plt.hlines(sf,0.1*xlims[0],1.1*xlims[1],color='k',linestyle='--')
+# plt.hlines(1/sf,0.1*xlims[0],1.1*xlims[1],color='k',linestyle='--')
+plt.xscale('log')
+ylims=plt.gca().get_ylim()
+plt.ylim(ylims[0],ylims[1])
+# plt.xlim(-0.01,1.01)
+plt.ylabel('SNR-ratio')
+plt.xlabel('SNR')
+plt.grid(which='major', axis='both', alpha=0.5,linestyle=':')
 plt.show()
+# %%
+# %%
+sf=4.5
+fig,ax=plt.subplots(figsize=(12,10))
+plt.hist(df.SNR_ratio,bins=100)
+ylims=plt.gca().get_ylim()
+plt.vlines(sf,-0.1,ylims[1]*1.1,color='k',linestyle='--')
+# plt.hlines(1/sf,-0.1,1.1,color='k',linestyle='--')
+plt.ylim(1,ylims[1]*1.05)
+plt.xlabel('SNR-ratio')
+plt.ylabel('Count')
+plt.yscale('log')
+plt.grid(which='major', axis='both', alpha=0.5,linestyle=':')
+plt.show()
+
+# %%
+dat_file='/mnt/datac-netStorage-40G/projects/p004/PPO/2022-11-01-04:44:33/fil_59884_17225_248799804_trappist1_0001/seti-node4.1/fil_59884_17225_248799804_trappist1_0001-beam0000.dat'
+dat_df = pd.read_csv(dat_file,delim_whitespace=True, 
+                names=['Top_Hit_#','Drift_Rate','SNR', 'Uncorrected_Frequency','Corrected_Frequency','Index',
+                        'freq_start','freq_end','SEFD','SEFD_freq','Coarse_Channel_Number','Full_number_of_hits'],
+                skiprows=9)
+fil='/mnt/datac-netStorage-40G/projects/p004/2022-11-01-04:44:33/fil_59884_17225_248799804_trappist1_0001/seti-node4.1/fil_59884_17225_248799804_trappist1_0001-beam0000.fil'
+fil_meta=bl.Waterfall(fil,load_data=False)
+obs_length=fil_meta.n_ints_in_file * fil_meta.header['tsamp']
+for r,row in dat_df.iterrows():
+    tSETI_SNR=row['SNR']
+    DR=row['Drift_Rate']
+    half_span=abs(DR)*obs_length*1.2  # x1.2 for padding
+    if half_span<100:
+        half_span=5
+    cf=row['Corrected_Frequency']
+    f1=min(row['freq_start'],row['freq_end'])
+    f2=max(row['freq_start'],row['freq_end'])
+    f1=cf-0.025
+    f2=cf+0.025
+    big_diff=f2-f1
+    _,s0=wf_data(fil,f1,f2)
+    # SNR0=(s0-np.median(s0))/np.std(s0)
+    fstart=round(cf+half_span*1e-6,6)
+    fend=round(cf-half_span*1e-6,6)
+    small_diff=fstart-fend
+    _,s1=wf_data(fil,fend,fstart)
+    s1=shift_array_with_drift(s1, DR*1e-6, fil_meta.header['tsamp'], fil_meta.header['foff'])
+    peaks=[]
+    for row in s1:
+        peaks.append(max(row)**2)
+    np.sqrt(np.mean(peaks))
+    SNR0=(np.sqrt(np.mean(peaks))/np.sqrt(mean_noise(s0**2)))#/noise_std(s0)
+    SNR1=(np.sqrt(np.mean(s1[(s1>np.percentile(s1,95))]**2))/np.sqrt(mean_noise(s0**2)))#/noise_std(s0)
+    print(f"tSETI SNR: {tSETI_SNR:.2f}\ts0: {big_diff:.6f}\ts1: {small_diff:.6f}")
+    print(f"My SNR: {SNR0:.2f}\t{SNR1:.2f}\n")
+# %%
+def shift_array_with_drift(array, drift_rate, time_interval=16, freq_interval=1):
+    # Calculate the number of elements to shift for each row
+    num_elements_to_shift = int(drift_rate * time_interval / abs(freq_interval))
+    # Make sure the shift is within the array's bounds
+    num_columns = array.shape[1]
+    num_rows = array.shape[0]
+    # Create a new shifted array
+    array1=array[::-1]
+    shifted_array = np.zeros_like(array1)
+    shifted_array[0] = array1[0]
+    # Shift each row
+    for r, row in enumerate(array1):
+        row_shift = r * num_elements_to_shift
+        # Calculate the index to start copying from
+        shifted_array[r] = np.append(array1[r][row_shift:],array1[r][:row_shift])
+    return shifted_array[::-1]
+# %%
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 22})
+%matplotlib inline
+
+csv='/home/ntusay/scripts/parallel_test/obs_11-01_DOTnbeam.csv'
+csv='/home/ntusay/scripts/parallel_test/obs_11-09_DOTnbeam.csv'
+sf=4
+
+full_df=pd.read_csv(csv)
+x = full_df.corrs
+SNRr = full_df.SNR_ratio
+fig,ax=plt.subplots(figsize=(9,7))
+xcutoff=np.linspace(0,1,10)
+ycutoff=0.9*sf*xcutoff**2
+plt.plot(xcutoff,ycutoff,linestyle='--',color='k',alpha=0.5,label='cutoff?')
+plt.scatter(x,SNRr,color='orange',alpha=0.5,edgecolor='k')
+plt.xlabel('Correlation Score')
+plt.ylabel('SNR-ratio')
+# plt.xscale('log')
+ylims=plt.gca().get_ylim()
+xlims=plt.gca().get_xlim()
+plt.axhspan(sf,max(ylims[1],6.5),color='green',alpha=0.25,label='Attenuated Signals')
+plt.axhspan(1/sf,sf,color='grey',alpha=0.25,label='Similar SNRs')
+plt.axhspan(min(0.2,ylims[0]),1/sf,color='brown',alpha=0.25,label='Off-beam Attenuated')
+plt.ylim(min(0.2,ylims[0]),max(ylims[1],6.5))
+plt.xlim(-0.1,1.1)
+plt.legend().get_frame().set_alpha(0) 
+plt.grid(which='major', axis='both', alpha=0.5,linestyle=':')
+plt.show()
+counter=0
+for i,score in enumerate(x):
+    if np.interp(score,xcutoff,ycutoff)<SNRr[i]:
+        counter+=1
+print(f"{counter} signals above cutoff")
+# %%
+# %%
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 22})
+%matplotlib inline
+
+answers='/home/ntusay/scripts/mars/output/spacecraft_08-03-2023_no_pickle.csv'
+csv='/home/ntusay/scripts/mars/output2/obs_UNKNOWN_DOTnbeam.csv'
+csv='/home/ntusay/scripts/mars/output3/obs_UNKNOWN_DOTnbeam.csv'
+df_ans=pd.read_csv(answers)
+df_out=pd.read_csv(csv)
+sf=4
+
+counter=0
+cutoff_tp=0
+cutoff_fp=0
+cutoff_rfi=0
+redx=0
+rfi=0
+fig,ax=plt.subplots(figsize=(6,5))
+xcutoff=np.linspace(0,1,10)
+ycutoff=0.9*sf*xcutoff**2
+plt.plot(xcutoff,ycutoff,linestyle='--',color='k',alpha=0.5,label='cutoff')
+for r,row in df_out.iterrows():
+    x=row['corrs']
+    y=row['SNR_ratio']
+    test=False
+    for r1,row1 in df_ans.iterrows():
+        if row['Corrected_Frequency']==row1['frequency_on'] and row1['beam_centered']==1:
+            if counter==0:
+                plt.scatter(x,y,marker='x',color='g',s=200,label='True Positive')
+            else:
+                plt.scatter(x,y,marker='x',color='g',s=200)
+            counter+=1
+            test=True
+            if np.interp(x,xcutoff,ycutoff)<y:
+                cutoff_tp+=1
+        elif row['Corrected_Frequency']==row1['frequency_on'] and row1['beam_centered']==0:
+            if redx==0:
+                plt.scatter(x,y,marker='x',color='r',s=200,label='False Positive??')
+            else:
+                plt.scatter(x,y,marker='x',color='r',s=200)
+            redx+=1
+            test=True
+            if np.interp(x,xcutoff,ycutoff)<y:
+                cutoff_fp+=1
+    if test==False:
+        if rfi==0:
+            plt.scatter(x,y,facecolors='k',edgecolors='r',s=100,alpha=0.5,label='Unidentified Signals')      
+        else:
+            plt.scatter(x,y,facecolors='k',edgecolors='r',s=100,alpha=0.5)      
+        rfi+=1
+        if np.interp(x,xcutoff,ycutoff)<y:
+            cutoff_rfi+=1
+print(f"Correctly Identified Spacecraft Signals: {counter}")
+xlims=plt.gca().get_xlim()
+ylims=plt.gca().get_ylim()
+plt.axhspan(sf,max(ylims[1],6.5),color='green',alpha=0.25,label='Attenuated Signals')
+plt.axhspan(1/sf,sf,color='grey',alpha=0.25,label='Similar SNRs')
+plt.axhspan(min(0.2,ylims[0]),1/sf,color='brown',alpha=0.25,label='Off-beam Attenuated')
+if ylims[1]>1000:
+    plt.yscale('log')
+    # plt.ylim(8,ylims[1])
+plt.xlim(xlims[0],xlims[1])
+plt.ylim(ylims[0],ylims[1])
+plt.xlabel('correlation scores')
+plt.ylabel('SNR_ratio')
+plt.legend(bbox_to_anchor=(1, 1)).get_frame().set_alpha(0) 
+plt.grid(which='major', axis='both', alpha=0.5,linestyle=':')
+plt.show()
+print(f"{cutoff_tp} true signals above cutoff")
+print(f"{cutoff_fp} false positive signals above cutoff")
+print(f"{cutoff_rfi} rfi signals above cutoff")
+# %%
+for r,row in df_out.iterrows():
+    x=row['corrs']
+    y=row['SNR_ratio']
+    test=False
+    for r1,row1 in df_ans.iterrows():
+        SNR0=row1['snr_on']
+        SNR1=row1['snr_off']
+        if row['Corrected_Frequency']==row1['frequency_on'] and row1['beam_centered']==1:
+            print(f"{r1}\tSNR0: {SNR0:.3f}\tSNR1: {SNR1:.3f}\tSNRr: {SNR0/SNR1:.3f}\tmySNRr: {row['SNR_ratio']:.3f}")
+        elif row['Corrected_Frequency']==row1['frequency_on'] and row1['beam_centered']==0:
+            print(f"{r1}\tSNR0: {SNR0:.3f}\tSNR1: {SNR1:.3f}\tSNRr: {SNR0/SNR1:.3f}\tmySNRr: {row['SNR_ratio']:.3f}")
+# %%
+import blimpy as bl
+from bisect import bisect
+import scipy.interpolate as inter
+
+def noise_median(s1,p=5):
+    return np.median(s1[(s1>np.percentile(s1,p))&(s1<np.percentile(s1,100-p))])
+
+def noise_std(s1,p=5):
+    return np.std(s1[(s1>np.percentile(s1,p))&(s1<np.percentile(s1,100-p))])
+
+def mid_90(s1,p=5):
+    return s1[(s1>np.percentile(s1,p))&(s1<np.percentile(s1,100-p))]
+
+def mySNR(power):
+    median_noise=noise_median(power)
+    noise_els=mid_90(power)
+    zeroed_noise=noise_els-median_noise
+    std_noise=np.sqrt(np.median((zeroed_noise)**2))
+    # std_noise=noise_std(power)
+    signal_els=power[(power>10*std_noise)&(power>np.percentile(power,95))]
+    signal=np.median(sorted(signal_els)[-np.shape(power)[0]:])-median_noise
+    # signal=np.max(signal_els)-median_noise
+    SNR=signal/std_noise
+    return SNR
+
+def fit_noise(fil,fmid,coarse_channel_size=0.5): # MHz
+    waterfall_data = bl.Waterfall(fil,load_data=False)
+    fch1 = waterfall_data.header['fch1']
+    fstart = fch1 + waterfall_data.header['foff'] * waterfall_data.header['nchans']
+    num_coarse_channels = int((fch1-fstart)/coarse_channel_size)
+    slice_freq_span = 5000*1e-6 # 5 kHz
+    nslices = int(coarse_channel_size/slice_freq_span)
+    coarse_channels=np.linspace(fstart,fch1,num_coarse_channels+1)
+    coarse_channel_start_index=bisect(coarse_channels,fmid)-1
+    fstart=coarse_channels[coarse_channel_start_index]
+    freq_mids=np.zeros(nslices)
+    power_medians=np.zeros(nslices)
+    for fslice in range(nslices):
+        f1 = fstart+fslice*slice_freq_span
+        f2 = f1 + slice_freq_span
+        frange,s0=bl.Waterfall(fil,f1,f2).grab_data(f1,f2)
+        power_medians[fslice]=noise_median(s0)
+        freq_mids[fslice]=np.median(frange)
+    power_fit = inter.UnivariateSpline(freq_mids, power_medians, s=0.1)
+    return freq_mids,power_fit(freq_mids)
+
+def fitted_noise_median(fil,frange):
+    fmid=np.median(frange)
+    freqs,power=fit_noise(fil,fmid)
+    return np.interp(frange,freqs,power)
+
+def betterSNR(fil,f1,f2):
+    frange,power=bl.Waterfall(fil,f1,f2).grab_data(f1,f2)
+    noise_profile = fitted_noise_median(fil,frange)
+    zeroed_power = power-noise_profile
+    zeroed_noise=mid_90(zeroed_power)
+    std_noise=np.sqrt(np.median((zeroed_noise)**2))
+    # std_noise=noise_std(power)
+    signal_els=zeroed_power[(zeroed_power>10*std_noise)&(zeroed_power>np.percentile(power,95))]
+    signal=np.median(sorted(signal_els)[-np.shape(zeroed_power)[0]:])
+    # signal=np.max(signal_els)-median_noise
+    SNR=signal/std_noise
+    return SNR
+#%%
+fmid=8430.747957
+df=df_out[df_out.Corrected_Frequency==fmid].reset_index(drop=True)
+fil0=df.fil_0000[0]
+fil1=df.fil_0001[0]
+fil_meta = bl.Waterfall(fil0,load_data=False)
+minimum_frequency = fil_meta.container.f_start
+maximum_frequency = fil_meta.container.f_stop
+tsamp = fil_meta.header['tsamp']
+frez = fil_meta.header['foff']
+obs_length=fil_meta.n_ints_in_file * tsamp
+DR = df.Drift_Rate[0]
+half_span=abs(DR)*obs_length*1.1  # x1.1 for padding
+if half_span<250:
+    half_span=250
+f2=round(min(fmid+half_span*1e-6,maximum_frequency),6)
+f1=round(max(fmid-half_span*1e-6,minimum_frequency),6)
+
+# frange,power0=bl.Waterfall(fil0,f1,f2).grab_data(f1,f2)
+# frange,power1=bl.Waterfall(fil1,f1,f2).grab_data(f1,f2)
+# SNR0=mySNR(power0)
+# SNR1=mySNR(power1)
+# SNR0,SNR1,SNR0/SNR1
+SNR0=betterSNR(fil0,f1,f2)
+SNR1=betterSNR(fil1,f1,f2)
+SNR0,SNR1,SNR0/SNR1
+# %%
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Generate two sample data arrays
+x1 = np.random.rand(10, 10)  # First data array
+x2 = x1*0.5  # Second data array
+
+# Calculate the minimum and maximum values across both data arrays
+global_min = min(x1.min(), x1.min())
+global_max = max(x1.max(), x1.max())
+
+# Create a figure with two subplots
+fig, ax = plt.subplots(1, 2, figsize=(10, 4))
+
+# Plot the first subplot with the colormap 'viridis' and normalization to the global range
+im1 = ax[0].imshow(x1, aspect='auto', origin='lower', cmap='viridis', vmin=global_min, vmax=global_max)
+ax[0].set_title('Plot 1')
+
+# Plot the second subplot with the same colormap and normalization as the first subplot
+im2 = ax[1].imshow(x2, aspect='auto', origin='lower', cmap='viridis', vmin=global_min, vmax=global_max)
+ax[1].set_title('Plot 2')
+
+# Create a colorbar for one of the subplots (they will share the same colormap)
+cbar1 = fig.colorbar(im1, ax=ax[0])
+cbar1.set_label('Colorbar Label')
+cbar2 = fig.colorbar(im2, ax=ax[1])
+cbar2.set_label('Colorbar Label')
+# Show the plots
+plt.show()
+
+
+
 # %%
