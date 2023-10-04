@@ -6,4 +6,4 @@ There are a few lines that should be edited by the user. Firstly `mymstransform_
 
 # fix_scans.py
 
-This is a very simple script to fix the fact that when combining measurement sets created from uvh5 files, scan boundaries are not incremented correctly. This script iterates over the data and increments the scan counter each time a new field is visited. This is important for calibration routines which rely on breaking at scan boundaries. 
+This is a very simple script to fix the fact that when combining measurement sets created from uvh5 files, scan boundaries are not incremented correctly. This script iterates over the data and increments the scan counter each time a new field is visited. This is important for calibration routines which rely on breaking at scan boundaries. This script needs to be edited with the name of the measurement set which is a concatenation of all of the scans and LOs. 
