@@ -1,0 +1,5 @@
+## copy_compress_new_p002.py
+
+This script is run in your home directory on the PI machines to create a local averaged copy of your observing project (in this example p002) from the network storage. This script will copy the relevant data over to your home area, convert them from uvh5 to the measurement set format, perform flagging at full resolution, and then averaging them in frequeny and time.
+
+There are a few lines that should be edited by the user. Firstly `mymstransform_script = '/home/jbright/scripts/p002_mstransform.py'` should point to a python script in your user area that will be run by casa and should contain an mstransform task. An example can be found in ATA-Utils/ImagingScripts/. Next the `project_directory = '/mnt/dataz-netStorage-40G/projects/p002'` line should be pointed to the project directory on the network storage where your uvh5 data lives. Finally `runs = glob.glob(project_directory + '/' + '2023-10-*')` allows the user to select subsets of their project data if required, e.g. in this case I only want to copy data from Oct. 2023. 
