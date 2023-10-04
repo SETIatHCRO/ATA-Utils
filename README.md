@@ -34,3 +34,7 @@ Python script to control generator used as a LO
 
 Script to calculate a polynomial for Pax Box Measurements
 
+## ImagingScripts
+
+Scripts for data calibration and imaging of ATA correlator data
+
