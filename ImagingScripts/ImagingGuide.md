@@ -29,3 +29,9 @@ This script will produce various auxilliary products that will be of interest. F
 Note that if the two LOs you have used are tuned to very disparate frequencies each LO should be calibrated independently. 
 
 ## Next steps
+- Automated imaging of the target field using smart masking with the https://github.com/ratt-ru/breizorro package.
+- Atomated self calibration.
+- Better determination of cell sizes.
+- Source catalogues using source finding.
+- Exploring structure in the calibrator bandpass at the 10% level.
+- Further user information, including uv-coverage, source elevations, etc. presented in a friendly way.
