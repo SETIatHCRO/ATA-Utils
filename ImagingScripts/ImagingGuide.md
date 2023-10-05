@@ -4,6 +4,7 @@ The general strategy for reducing ATA imaging data is the following.
 - Combine all of the scans within your observation, and both LOs.
 - Run the calibration and basic imaging script, which will probide calibrated data producs, initial images, and flux estimates for calibrators.
 - Manuall clean target field.
+- NOTE: These routines currently only opperate on a final measurement set consisting of a single flux calibrator, phase calibrator, and target field. 
 
 ## copy_compress_new_p002.py
 
@@ -19,6 +20,12 @@ Combining the individual measurement sets within each observing directory (those
 
 This is a very simple script to fix the fact that when combining measurement sets created from uvh5 files, scan boundaries are not incremented correctly. This script iterates over the data and increments the scan counter each time a new field is visited. This is important for calibration routines which rely on breaking at scan boundaries. This script needs to be edited with the name of the measurement set which is a concatenation of all of the scans and LOs. 
 
-## 
+## phase_reference_calibration_imaging.py
+
+The bulk of the work is done by the `phase_reference_calibration_imaging.py` script, which performs first generation calibration and then imaging of target data. This requires some minor modification, e.g. `bpcal = '<NAME OF FLUXCAL>'`, `pcal = '<NAME OF PHASE CAL>'`, `target = '<NAME OF TARGET>'`. The user will also have to set the reference antenna (`myrefant = 'MY REFERENCE ANTENNA'`) and the name of the concatenated measurement set (`myvis = '<NAME OF MEASUREMENT SET>'`). Note that in the current iteration, the initial flagging step is not performed as the data were flagged before averaging. 
+
+This script will produce various auxilliary products that will be of interest. Firstly a series of calibration tables with the format e.g. <`NAME OF FLUXCAL`>.B0, which contains the bandpass solutions. Secondly, calibrated measurement sets for each taget field are split out like `<TARGET NAME>_noauto_1GC.ms`. Finally, image products and flux estimates for the calibrators are stored in the `IMAGES/<TARGET NAME>` directories. Multiple clean iterations for the calibrators are performed to account for a lowering noise floor, and the `<PREFIX>_iter2.image.tt0` file is the best image. A file called `fitting_results.txt` contains an estimated flux for the calibrator and a (statistical) error. The real error will be dominated by systematics at the 5% to 10% level. The target directory just contains a dirty image.
+
+Note that if the two LOs you have used are tuned to very disparate frequencies each LO should be calibrated independently. 
 
 ## Next steps
