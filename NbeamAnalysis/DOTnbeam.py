@@ -227,7 +227,7 @@ def main():
             plt.axhspan(sf_nom,max(ylims[1],6.5),color='green',alpha=0.25,label='Attenuated Signals')
             plt.axhspan(1/sf_nom,sf_nom,color='grey',alpha=0.25,label='Similar SNRs')
             plt.axhspan(min(0.2,ylims[0]),1/sf_nom,color='brown',alpha=0.25,label='Off-beam Attenuated')
-            plt.ylim(min(0.2,ylims[0]),max(ylims[1],6.5))
+            plt.ylim(min(-0.2,ylims[0]),max(ylims[1],6.5))
             plt.xlim(-0.1,1.1)
             plt.legend().get_frame().set_alpha(0) 
             plt.grid(which='major', axis='both', alpha=0.5,linestyle=':')

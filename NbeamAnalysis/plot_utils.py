@@ -217,7 +217,7 @@ def plot_beams(name_array, fstart, fstop, drift_rate=None, SNR=None, corrs=None,
                 else:
                     ax[i].set_title(f"off beam || SNR*: {SNR/SNRr:.3f}")
             else:
-                ax[i].set_title([f"target beam" if index==0 else "off beam"][0])
+                ax[i].set_title([f"target beam" if i==0 else "off beam"][0])
             i+=1
     # set the overall plot title and filename
     name_deconstructed = fil.filename.split('/')[-1].split('_')
