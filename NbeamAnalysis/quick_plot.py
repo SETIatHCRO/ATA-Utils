@@ -31,56 +31,65 @@ def wf_data(fil,f1,f2):
     return bl.Waterfall(fil,f1,f2).grab_data(f1,f2)
 
 # define main plotting function
-def plot_beams(name_array, fstart, fstop, drift_rate, SNR, x, save=False, path='/home/ntusay/scripts/temp/',ext='png'):
+def plot_beams(name_array, fstart, fstop, drift_rate=None, SNR=None, corrs=None, SNRr=None, x=None, save=False, path='./', pdf=False):
     # make waterfall objects for plotting from the filenames
     fil_array = []
     f1 = min(fstart,fstop)
     f2 = max(fstart,fstop)
+    fmid=round((f2+f1)/2,6)
     for beam in name_array:
         test_wat = bl.Waterfall(beam, 
                             f_start=f1, 
                             f_stop=f2)
-        # print(np.shape(test_wat.data))
         fil_array.append(test_wat)
-    
     # initialize the plot
     nsubplots = len(name_array)
     nrows = int(np.floor(np.sqrt(nsubplots)))
     ncols = int(np.ceil(nsubplots/nrows))
     fig, ax = plt.subplots(nrows=nrows, ncols=ncols, figsize=(20,7))
-    
     # call the plotting function and plot the waterfall objects in fil_array
     i=0
+    xmin=None
+    xmax=None
     for r in range(nrows):
         for c in range(ncols):
             fil = fil_array[i]
-            ptu.plot_waterfall_subplots(fil, 
-                                        i, 
-                                        ax, 
-                                        fig, 
-                                        f_start=f1, 
-                                        f_stop=f2)
+            xmin,xmax=ptu.plot_waterfall_subplots(fil, 
+                                    i, ax, fig, 
+                                    f_start=f1, 
+                                    f_stop=f2,
+                                    xmin=xmin,
+                                    xmax=xmax)
+            # set subplot titles
+            if SNR and SNRr:
+                if i==0:
+                    ax[i].set_title(f"target beam || SNR: {SNR:.3f}")
+                else:
+                    ax[i].set_title(f"off beam || SNR*: {SNR/SNRr:.3f}")
+            else:
+                ax[i].set_title([f"target beam" if i==0 else "off beam"][0])
             i+=1
-    # fix the title
+    # set the overall plot title and filename
     name_deconstructed = fil.filename.split('/')[-1].split('_')
     MJD = name_deconstructed[1] + '_' + name_deconstructed[2] #+ '_' + name_deconstructed[3]
-    fig.suptitle(f'MJD: {MJD} || '+
-                 f'fmax: {f2:.6f} MHz || '+
-                 f'Drift Rate: {drift_rate:.3f} Hz/s ({drift_rate/f2*1000:.3f} nHz) || '+
-                 f'SNR: {SNR:.3f}'+
-                 f'\nCorrelation Score: {x:.3f}',
-                 size=25)
-    fig.tight_layout(rect=[0, 0, 1, 1.05])
-    # show the plot
-    if save==True:
-        path=path
-        plt.savefig(f'{path}MJD_{MJD}_SNR_{SNR:.3f}_DR_{drift_rate:.3f}_fstart_{fstart:.6f}.{ext}',
-                    bbox_inches='tight',format=f'{ext}',dpi=fig.dpi,facecolor='white', transparent=False)
-        plt.show()
-        plt.close()
+    filename=ptu.make_title(fig,MJD,f2,fmid,drift_rate,SNR,corrs,SNRr,x)
+    # save the plot
+    fig.tight_layout()
+    if pdf==True:
+        ext='pdf'
     else:
-        plt.show()
+        ext='png'
+    if save==True:
+        plt.savefig(f'{path}{filename}.{ext}',
+                    bbox_inches='tight',format=ext,dpi=fig.dpi,facecolor='white', transparent=False)
+    plt.show()
     return None
+
+fil0='/mnt/datac-netStorage-40G/projects/p004/2022-11-01-04:44:33/fil_59884_17225_248799804_trappist1_0001/seti-node4.1/fil_59884_17225_248799804_trappist1_0001-beam0000.fil'
+fil1='/mnt/datac-netStorage-40G/projects/p004/2022-11-01-04:44:33/fil_59884_17225_248799804_trappist1_0001/seti-node4.1/fil_59884_17225_248799804_trappist1_0001-beam0001.fil'
+f2 = 6881.280127
+f1 = 6881.279876
+plot_beams([fil0,fil1],f1,f2)
 
 # %%
 '''
@@ -338,7 +347,9 @@ def mkplt(x, fig, ax, c=(0, 0), numx=500, obs='All'):
     ax.set_ylabel('Number per Bin')
     ax.set_xlabel('Beam Correlation Scores')
     ax.legend(loc='upper left',title=f"Observations: {obs}")
-    ax.set_xlim(-0.05,1.05)
+    xlims=ax.get_xlim()
+    # ax.set_yscale('log')
+    ax.set_xlim(min(-0.05,xlims[0]),max(1.05,xlims[1]))
     print(rf'Cutoff value: {cutoff_mad:.4f} at {k:.1f} MADs')
     print(f'Number of values below MAD cutoff: {len(x[x < cutoff_mad])}/{len(x)}')
     print(f'Percent of values above MAD cutoff: {(len(x) - len(x[x < cutoff_mad])) / len(x) * 100:.3f}%')
@@ -347,8 +358,10 @@ def mkplt(x, fig, ax, c=(0, 0), numx=500, obs='All'):
 
 # input and output params
 path='/home/ntusay/scripts/processed2/'
+path='/home/ntusay/scripts/TRAPPIST-1/'
 outdir=path
 save=True
+save=False
 plot_hits=False
 
 # get input data csvs
@@ -361,9 +374,12 @@ fig, ax = plt.subplots(nrows=4, ncols=2, figsize=(12,16))
 # loop over each csv to make subplots
 for c,csv in enumerate(csvs):
     temp_df = pd.read_csv(csv)
-    temp_df = temp_df.sort_values(by='x').reset_index(drop=True)
-    temp_x = temp_df['x']
+    # temp_df = temp_df.sort_values(by='x').reset_index(drop=True)
+    temp_df = temp_df.sort_values(by='corrs').reset_index(drop=True)
+    # temp_x = temp_df['x']
+    temp_x = temp_df['corrs']
     obs=csv.split('obs_')[-1].split('_CCF')[0]+'-2022'
+    obs=csv.split('obs_')[-1].split('_DOT')[0]+'-2022'
     print(obs)
     cutoff_mad = mkplt(temp_x,fig,ax,c,obs=obs)
     outliers+=len(temp_x[temp_x<cutoff_mad])
@@ -384,9 +400,12 @@ plt.show()
 plt.close()
 
 # sort and prep the combined data
-full_df = full_df.sort_values(by='x').reset_index(drop=True)
+# full_df = full_df.sort_values(by='x').reset_index(drop=True)
+full_df = full_df.sort_values(by='corrs').reset_index(drop=True)
 obs = 'All'
-x = full_df['x']
+# x = full_df['x']
+x = full_df['corrs']
+# x = full_df['SNR_ratio']
 print(obs)
 fig,ax=plt.subplots(1,1,figsize=(10,6))
 mkplt(x,fig,ax,numx=4000)#,save=True,outdir=path)
@@ -399,7 +418,7 @@ if save==True:
 plt.show()
 plt.close()
 # print(f'Total individual values below cutoffs: {outliers}')
-
+# %%
 # %%
 '''
 Re-plot interesting beam plots to zoom out/get pdf version.
@@ -409,6 +428,9 @@ Note that the first cell must be run to define the plot_beams function
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+%matplotlib inline
+import plot_utils as ptu
+import DOT_utils as DOT
 plt.style.use('/home/ntusay/scripts/NbeamAnalysis/plt_format.mplstyle')
 import glob
 import os
@@ -416,90 +438,96 @@ import os
 # input and output params
 # 10-27
 png='/home/ntusay/scripts/processed2/obs_10-27-2022_plots/MJD_59879_18519_X_0.483_SNR_11.703_fmax_8647.378070.png'
+png='/home/ntusay/scripts/TRAPPIST-1/obs_10-27_plots/MJD_59879_18519_fmid8647.377944_DR0.061_x0.495_SNRr6.791.png'
 padding=50000 # Hz
-png='/home/ntusay/scripts/processed2/obs_10-27-2022_plots/MJD_59879_20811_X_0.260_SNR_10.115_fmax_8243.525317.png'
-padding=500000 # Hz
-png='/home/ntusay/scripts/processed2/obs_10-27-2022_plots/MJD_59879_22298_X_0.532_SNR_992.480_fmax_6666.750284.png'
-padding=50000 # Hz
-png='/home/ntusay/scripts/processed2/obs_10-27-2022_plots/MJD_59879_29275_X_0.485_SNR_10.801_fmax_8654.361263.png'
-padding=200000 # Hz
-png='/home/ntusay/scripts/processed2/obs_10-27-2022_plots/MJD_59879_29275_X_0.503_SNR_10.445_fmax_8654.451684.png'
-padding=50000 # Hz
-# # 10-28
-png='/home/ntusay/scripts/processed2/obs_10-28-2022_plots/MJD_59880_03124_X_0.085_SNR_13.402_fmax_1679.878538.png'
-padding=5000 # Hz
-png='/home/ntusay/scripts/processed2/obs_10-28-2022_plots/MJD_59880_04559_X_0.083_SNR_17.167_fmax_1989.579324.png'
-padding=5000 # Hz
-png='/home/ntusay/scripts/processed2/obs_10-28-2022_plots/MJD_59880_07504_X_0.004_SNR_167.142_fmax_1777.805030.png'
-padding=2000 # Hz
-# # 10-29
-png='/home/ntusay/scripts/processed2/obs_10-29-2022_plots/MJD_59881_05127_X_0.207_SNR_16.948_fmax_2340.171170.png'
-padding=5000 # Hz
-# # 10-30
-png='/home/ntusay/scripts/processed2/obs_10-30-2022_plots/MJD_59882_05307_X_0.088_SNR_37.716_fmax_4000.057944.png'
-padding=20000 # Hz
-# # 11-01
-png='/home/ntusay/scripts/processed2/obs_11-01-2022_plots/MJD_59884_18785_X_0.896_SNR_192.699_fmax_8656.000274.png'
-padding=700 # Hz
-png='/home/ntusay/scripts/processed2/obs_11-01-2022_plots/MJD_59884_18785_X_0.815_SNR_10.947_fmax_8646.465056.png'
-padding=300000 # Hz
-png='/home/ntusay/scripts/processed2/obs_11-01-2022_plots/MJD_59884_19546_X_0.904_SNR_10.253_fmax_8646.486039.png'
-padding=300000 # Hz
-# # 11-02
-png='/home/ntusay/scripts/processed2/obs_11-02-2022_plots/MJD_59885_13716_X_0.382_SNR_11.212_fmax_5333.403154.png'
-padding=30000 # Hz
-# # 11-05
-png='/home/ntusay/scripts/processed2/obs_11-05-2022_plots/MJD_59888_07902_X_0.430_SNR_145.228_fmax_5777.858606.png'
-padding=30000 # Hz
-png='/home/ntusay/scripts/processed2/obs_11-05-2022_plots/MJD_59888_14276_X_0.314_SNR_12.313_fmax_7504.042134.png'
-padding=2000 # Hz
-# # 11-09
-png='/home/ntusay/scripts/processed2/obs_11-09-2022_plots/MJD_59892_04666_X_0.622_SNR_23.137_fmax_7514.946641.png'
-padding=2000 # Hz
-png='/home/ntusay/scripts/processed2/obs_11-09-2022_plots/MJD_59892_10137_X_0.561_SNR_12.011_fmax_7499.998463.png'
-padding=3500 # Hz
-png='/home/ntusay/scripts/processed2/obs_11-09-2022_plots/MJD_59892_19322_X_0.425_SNR_17.969_fmax_8000.113800.png'
-padding=20000 # Hz
+# png='/home/ntusay/scripts/processed2/obs_10-27-2022_plots/MJD_59879_20811_X_0.260_SNR_10.115_fmax_8243.525317.png'
+# padding=500000 # Hz
+# png='/home/ntusay/scripts/processed2/obs_10-27-2022_plots/MJD_59879_22298_X_0.532_SNR_992.480_fmax_6666.750284.png'
+# padding=50000 # Hz
+# png='/home/ntusay/scripts/processed2/obs_10-27-2022_plots/MJD_59879_29275_X_0.485_SNR_10.801_fmax_8654.361263.png'
+# padding=200000 # Hz
+# png='/home/ntusay/scripts/processed2/obs_10-27-2022_plots/MJD_59879_29275_X_0.503_SNR_10.445_fmax_8654.451684.png'
+# padding=50000 # Hz
+# # # 10-28
+# png='/home/ntusay/scripts/processed2/obs_10-28-2022_plots/MJD_59880_03124_X_0.085_SNR_13.402_fmax_1679.878538.png'
+# padding=5000 # Hz
+# png='/home/ntusay/scripts/processed2/obs_10-28-2022_plots/MJD_59880_04559_X_0.083_SNR_17.167_fmax_1989.579324.png'
+# padding=5000 # Hz
+# png='/home/ntusay/scripts/processed2/obs_10-28-2022_plots/MJD_59880_07504_X_0.004_SNR_167.142_fmax_1777.805030.png'
+# padding=2000 # Hz
+# # # 10-29
+# png='/home/ntusay/scripts/processed2/obs_10-29-2022_plots/MJD_59881_05127_X_0.207_SNR_16.948_fmax_2340.171170.png'
+# padding=5000 # Hz
+# # # 10-30
+# png='/home/ntusay/scripts/processed2/obs_10-30-2022_plots/MJD_59882_05307_X_0.088_SNR_37.716_fmax_4000.057944.png'
+# padding=20000 # Hz
+# # # 11-01
+# png='/home/ntusay/scripts/processed2/obs_11-01-2022_plots/MJD_59884_18785_X_0.896_SNR_192.699_fmax_8656.000274.png'
+# padding=700 # Hz
+# png='/home/ntusay/scripts/processed2/obs_11-01-2022_plots/MJD_59884_18785_X_0.815_SNR_10.947_fmax_8646.465056.png'
+# padding=300000 # Hz
+# png='/home/ntusay/scripts/processed2/obs_11-01-2022_plots/MJD_59884_19546_X_0.904_SNR_10.253_fmax_8646.486039.png'
+# padding=300000 # Hz
+# # # 11-02
+# png='/home/ntusay/scripts/processed2/obs_11-02-2022_plots/MJD_59885_13716_X_0.382_SNR_11.212_fmax_5333.403154.png'
+# padding=30000 # Hz
+# # # 11-05
+# png='/home/ntusay/scripts/processed2/obs_11-05-2022_plots/MJD_59888_07902_X_0.430_SNR_145.228_fmax_5777.858606.png'
+# padding=30000 # Hz
+# png='/home/ntusay/scripts/processed2/obs_11-05-2022_plots/MJD_59888_14276_X_0.314_SNR_12.313_fmax_7504.042134.png'
+# padding=2000 # Hz
+# # # 11-09
+# png='/home/ntusay/scripts/processed2/obs_11-09-2022_plots/MJD_59892_04666_X_0.622_SNR_23.137_fmax_7514.946641.png'
+# padding=2000 # Hz
+# png='/home/ntusay/scripts/processed2/obs_11-09-2022_plots/MJD_59892_10137_X_0.561_SNR_12.011_fmax_7499.998463.png'
+# padding=3500 # Hz
+# png='/home/ntusay/scripts/processed2/obs_11-09-2022_plots/MJD_59892_19322_X_0.425_SNR_17.969_fmax_8000.113800.png'
+# padding=20000 # Hz
 
 save=True
-save=False
+# save=False
+pdf=False
 
 # The rest will run automatically
 png_dir=png.split('MJD_')[0]
 pngs=sorted(glob.glob(png_dir+'*.png'))
 csv = png.split('-2022_plots')[0]+'_CCFnbeam.csv'
+csv = png.split('_plots')[0]+'_DOTnbeam.csv'
 outdir=f'{png_dir.split("-2022_plots")[0]}_interesting/'
-if not os.path.exists(outdir):
+outdir=f'{png_dir}interesting/'
+if not os.path.exists(outdir) and save==True:
     os.mkdir(outdir)
 
 df=pd.read_csv(csv)
-df=df.sort_values(by='x').reset_index(drop=True).iloc[:500]
-pngMJD=png.split('/')[-1].split('MJD_')[-1].split('_X_')[0]
-pngX=float(png.split('/')[-1].split('_X_')[-1].split('_SNR_')[0])
-pngSNR=float(png.split('/')[-1].split('SNR_')[-1].split('_fmax_')[0])
-pngfmax=float(png.split('/')[-1].split('fmax_')[-1].split('.png')[0])
+df=df.sort_values(by='corrs').reset_index(drop=True)#.iloc[:500]
+pngMJD=png.split('/')[-1].split('MJD_')[-1].split('_fmid')[0]
+pngX=float(png.split('/')[-1].split('_x')[-1].split('_SNR')[0])
+pngSNRr=float(png.split('/')[-1].split('SNRr')[-1].split('.png')[0])
+pngfmid=float(png.split('fmid')[-1].split('_DR')[0])
 
 for r,row in df.iterrows():
     MJD="_".join(row.dat_name.split('/')[-1].split("_")[1:3])
-    fmax=max(row['freq_end'],row['freq_start'])
-    if MJD==pngMJD and round(row['x'],3)==pngX and round(row['SNR'],3)==pngSNR and pngfmax==fmax:
-        print(f'{csv.split("/")[-1].split("_CCF")[0]}\t\tIndex: {r}')
-        print(f'MJD: {MJD}\tfmax: {row.freq_start}')
-        print(f'SNR: {row.SNR:.3f}\t\tx: {row.x:.3f}')
+    fmid=row['Corrected_Frequency']
+    if MJD==pngMJD and round(row['corrs'],3)==pngX and round(row['SNR_ratio'],3)==pngSNRr and pngfmid==fmid:
+        print(f'{csv.split("/")[-1].split("_DOT")[0]}\t\tIndex: {r}')
+        print(f'MJD: {MJD}\tfmid: {row.Corrected_Frequency}')
+        print(f'SNRr: {row.SNR_ratio:.3f}\t\tx: {row.corrs:.3f}')
         f1=row['freq_start']
         f2=row['freq_end']
         beams = list(row.filter(regex=r'fil_00..$'))
-        plot_beams(beams,f1,f2,row['Drift_Rate'],row['SNR'],row['x'],save=save,path=outdir,ext='pdf')
+        plot_beams(beams,f1,f2,row['Drift_Rate'],row['SNR'],row['corrs'],row['SNR_ratio'],save=save,path=outdir,pdf=pdf)
 
         f1+=padding*1e-6
         f2-=padding*1e-6
 
         _,s1=wf_data(beams[0],f2,f1)
         _,s2=wf_data(beams[1],f2,f1)
-        x=sig_cor(s1-np.median(s2),s2-np.median(s2))
+        x=DOT.sig_cor(s1-DOT.noise_median(s1),s2-DOT.noise_median(s2))
+        SNRr=DOT.mySNR(s1)/DOT.mySNR(s2)
         print(f'Correlation score over wider ({((f1-f2)*1e3):.3f} kHz) bandwidth: {x:.3f}')
 
-        plot_beams(beams,f1,f2,row['Drift_Rate'],row['SNR'],x,save=save,path=outdir,ext='pdf')
+        plot_beams(beams,f1,f2,row['Drift_Rate'],row['SNR'],corrs=x,SNRr=SNRr,save=save,path=outdir,pdf=pdf)
+# %%
 # %%
 # for r,row in df.iterrows():
 #     MJD="_".join(row.dat_name.split('/')[-1].split("_")[1:3])
@@ -573,4 +601,27 @@ if logged:
     if not plot_data.all()<=0.0:
         plot_data = ptu.db(plot_data)
         print('did it')
+# %%
+import blimpy as bl
+import DOT_utils as DOT
+padding=5000
+save=True
+# save=False
+pdf=False
+outdir='/home/ntusay/scripts/SNR_ratio_test/'
+fil0='/mnt/datac-netStorage-40G/projects/p004/2022-10-28-00:36:08/fil_59880_03124_226845397_trappist1_0001/seti-node6.0/fil_59880_03124_226845397_trappist1_0001-beam0000.fil'
+fil1='/mnt/datac-netStorage-40G/projects/p004/2022-10-28-00:36:08/fil_59880_03124_226845397_trappist1_0001/seti-node6.0/fil_59880_03124_226845397_trappist1_0001-beam0001.fil'
+beams=[fil0,fil1]
+DR=-0.234
+SNR=13.402
+fmid=1679.878036
+for i in range(2):
+    f1=fmid-0.0005-i*padding*1e-6
+    f2=fmid+0.0005+i*padding*1e-6
+    freqs,s0=DOT.wf_data(fil0,f1,f2)
+    freqs,s1=DOT.wf_data(fil1,f1,f2)
+    corrs=DOT.sig_cor(s0-DOT.noise_median(s0),s1-DOT.noise_median(s1))
+    SNRr=DOT.mySNR(s0)/DOT.mySNR(s1)
+    plot_beams(beams,f1,f2,DR,SNR,corrs,SNRr,save=save,path=outdir,pdf=pdf)
+
 # %%

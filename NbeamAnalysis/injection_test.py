@@ -38,14 +38,14 @@ f2=max(fch1,fch2)
 
 '''
 Note: The injection test filterbank file comes from this filepath:
-/mnt/datac-netStorage-40G/projects/p004/2022-11-01-04:44:33/fil_59884_17225_248799804_trappist1_0001/seti-node4.1/fil_59884_17225_248799804_trappist1_0001-beam0000.fil
 '''
+fil0='/mnt/datac-netStorage-40G/projects/p004/2022-11-01-04:44:33/fil_59884_17225_248799804_trappist1_0001/seti-node4.1/fil_59884_17225_248799804_trappist1_0001-beam0000.fil'
 
 ### Signal 1
 '''The first signal is a very strong signal added to a 
     blank slice where no other signals are present, only noise.'''
 
-fil0 = '/home/ntusay/scripts/NbeamAnalysis/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000.fil'
+# fil0 = '/home/ntusay/scripts/NbeamAnalysis/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000.fil'
 frame0 = stg.Frame(fil0, f_start=f1, f_stop=f2)
 end, time_label = get_elapsed_time(start)
 print(f'\nFull filterbank file loaded in %.2f {time_label}.\n' %end)
