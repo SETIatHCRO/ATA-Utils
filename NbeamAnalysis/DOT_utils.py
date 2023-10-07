@@ -99,10 +99,8 @@ def load_dat_df(dat_file,filtuple):
     full_dat_df = full_dat_df.assign(dat_name = dat_file)
     # loop over each .fil file in the tuple to add to the dataframe
     for i,fil in enumerate(filtuple):
-        if filtuple[0].split('.')[-1]=='fil':
-            col_name = 'fil_'+fil.split('beam')[-1].split('.fil')[0]
-        elif filtuple[0].split('.')[-1]=='h5':
-            col_name = 'fil_'+fil.split('beam')[-1].split('.h5')[0]
+        ext = os.path.splitext(fil)[1]
+        col_name = 'fil_'+fil.split('beam')[-1].split(ext)[0]
         full_dat_df[col_name] = fil
     # calculate the drift rate in nHz for each hit and add it to the dataframe
     full_dat_df['normalized_dr'] = full_dat_df['Drift_Rate'] / (full_dat_df[['freq_start','freq_end']].max(axis=1) / 10**3)

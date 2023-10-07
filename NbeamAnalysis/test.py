@@ -496,6 +496,8 @@ for i,score in enumerate(x):
 print(f"{counter} signals above cutoff")
 # %%
 # %%
+# PLOT MARS DATA
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -504,7 +506,7 @@ plt.rcParams.update({'font.size': 22})
 
 answers='/home/ntusay/scripts/mars/output/spacecraft_08-03-2023_no_pickle.csv'
 csv='/home/ntusay/scripts/mars/output2/obs_UNKNOWN_DOTnbeam.csv'
-csv='/home/ntusay/scripts/mars/output3/obs_UNKNOWN_DOTnbeam.csv'
+csv='/home/ntusay/scripts/mars/output4/obs_UNKNOWN_DOTnbeam.csv'
 df_ans=pd.read_csv(answers)
 df_out=pd.read_csv(csv)
 sf=4
@@ -515,7 +517,7 @@ cutoff_fp=0
 cutoff_rfi=0
 redx=0
 rfi=0
-fig,ax=plt.subplots(figsize=(6,5))
+fig,ax=plt.subplots(figsize=(8,6))
 xcutoff=np.linspace(0,1,10)
 ycutoff=0.9*sf*xcutoff**2
 plt.plot(xcutoff,ycutoff,linestyle='--',color='k',alpha=0.5,label='cutoff')
@@ -526,18 +528,18 @@ for r,row in df_out.iterrows():
     for r1,row1 in df_ans.iterrows():
         if row['Corrected_Frequency']==row1['frequency_on'] and row1['beam_centered']==1:
             if counter==0:
-                plt.scatter(x,y,marker='x',color='g',s=200,label='True Positive')
+                plt.scatter(x,y,marker='o',color='g',s=100,alpha=0.75,edgecolors='k',label='True Positive')
             else:
-                plt.scatter(x,y,marker='x',color='g',s=200)
+                plt.scatter(x,y,marker='o',color='g',s=100,alpha=0.75,edgecolors='k')
             counter+=1
             test=True
             if np.interp(x,xcutoff,ycutoff)<y:
                 cutoff_tp+=1
         elif row['Corrected_Frequency']==row1['frequency_on'] and row1['beam_centered']==0:
             if redx==0:
-                plt.scatter(x,y,marker='x',color='r',s=200,label='False Positive??')
+                plt.scatter(x,y,marker='x',color='r',s=75,label='False Positive??')
             else:
-                plt.scatter(x,y,marker='x',color='r',s=200)
+                plt.scatter(x,y,marker='x',color='r',s=75)
             redx+=1
             test=True
             if np.interp(x,xcutoff,ycutoff)<y:
@@ -561,8 +563,8 @@ if ylims[1]>1000:
     # plt.ylim(8,ylims[1])
 plt.xlim(xlims[0],xlims[1])
 plt.ylim(ylims[0],ylims[1])
-plt.xlabel('correlation scores')
-plt.ylabel('SNR_ratio')
+plt.xlabel('DOT Scores')
+plt.ylabel('SNR-ratio')
 plt.legend(bbox_to_anchor=(1, 1)).get_frame().set_alpha(0) 
 plt.grid(which='major', axis='both', alpha=0.5,linestyle=':')
 plt.show()
@@ -704,4 +706,120 @@ plt.show()
 
 
 
+# %%
+# SHOW MULTIPLE FREQUENCY SPANS DUE TO FSCRUNCH
+import blimpy as bl
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+plt.style.use('/home/ntusay/scripts/NbeamAnalysis/plt_format.mplstyle')
+plt.rcParams.update({'font.size': 22})
+plt.rcParams.update({'ytick.minor.visible': False})
+plt.rcParams.update({'axes.labelsize': 18})
+plt.rcParams.update({'xtick.labelsize': 14})
+plt.rcParams.update({'ytick.labelsize': 14})
+%matplotlib inline
+
+csv='/home/ntusay/scripts/TRAPPIST-1/obs_10-29_DOTnbeam.csv'
+csv='/home/ntusay/scripts/TRAPPIST-1/obs_11-02_DOTnbeam.csv'
+
+df=pd.read_csv(csv)
+# plt.scatter(df.Corrected_Frequency,df.corrs,s=1,color='k')
+
+# # Calculate actual frequency span based on drift rate
+# target_fil = df.fil_0000
+# fil_meta = [bl.Waterfall(fil,load_data=False) for fil in target_fil]
+# obs_length=[meta.n_ints_in_file * meta.header['tsamp'] for meta in fil_meta] # total length of observation in seconds
+# DR = df['Drift_Rate']              # reported drift rate
+# padding=[1+np.log10(SNR)/10 for SNR in df.SNR]   # padding based on reported strength of signal
+# half_span=[max(abs(drift)*obs_length[j]*padding[j],250) for j,drift in enumerate(DR)]
+# fmid = df['Corrected_Frequency']*1e6
+# f1=fmid-half_span
+# f2=fmid+half_span
+# f_span=f2-f1
+
+# Just grab reported frequency span from dat files
+f_span=(df.freq_start-df.freq_end)*1e6
+# %%
+fig, ax = plt.subplots(1,1,figsize=(10,6))
+plt.scatter(df.Corrected_Frequency,f_span,s=1,color='k')
+plt.yscale('log')
+plt.ylabel('Frequency Span (Hz)')
+plt.xlabel('Frequency (MHz)')
+# plt.xlim(4870,4910)
+plt.show()
+# %%
+# Plot Frequency and SNR for each beam to see need for spatial filtering
+import DOT_utils as DOT
+import pandas as pd
+import matplotlib.pyplot as plt
+plt.style.use('/home/ntusay/scripts/NbeamAnalysis/plt_format.mplstyle')
+plt.rcParams.update({'font.size': 22})
+plt.rcParams.update({'ytick.minor.visible': False})
+plt.rcParams.update({'axes.labelsize': 18})
+plt.rcParams.update({'xtick.labelsize': 14})
+plt.rcParams.update({'ytick.labelsize': 14})
+%matplotlib inline
+
+fig, ax = plt.subplots(1,1,figsize=(10,6))
+datdir='/mnt/datac-netStorage-40G/projects/p004/PPO/2022-11-02-00:38:44'
+dat_files,errors=DOT.get_dats(datdir,'0000')
+for dat_file in dat_files:
+    dat_df0 = pd.read_csv(dat_file, 
+                delim_whitespace=True, 
+                names=['Top_Hit_#','Drift_Rate','SNR', 'Uncorrected_Frequency','Corrected_Frequency','Index',
+                        'freq_start','freq_end','SEFD','SEFD_freq','Coarse_Channel_Number','Full_number_of_hits'],
+                skiprows=9)
+    dat_df1 = pd.read_csv(dat_file.replace('0000.dat','0001.dat'), 
+                delim_whitespace=True, 
+                names=['Top_Hit_#','Drift_Rate','SNR', 'Uncorrected_Frequency','Corrected_Frequency','Index',
+                        'freq_start','freq_end','SEFD','SEFD_freq','Coarse_Channel_Number','Full_number_of_hits'],
+                skiprows=9)
+    dx0=dat_df0.Corrected_Frequency
+    dy0=(dat_df0.freq_start-dat_df0.freq_end)*1e3
+    # dy0=dat_df0.SNR
+    dx1=dat_df1.Corrected_Frequency
+    dy1=(dat_df1.freq_start-dat_df1.freq_end)*1e3
+    # dy1=dat_df1.SNR
+    plt.scatter(dx0,dy0,color='g',alpha=0.75,s=20,zorder=-20)
+    plt.scatter(dx1,dy1,color='r',alpha=0.25,s=5,marker='x',zorder=20)
+plt.scatter(dx0[0],dy0[0],color='g',alpha=0.75,s=20,label='target beam',zorder=-20)
+plt.scatter(dx1[0],dy1[0],color='r',alpha=0.25,s=5,marker='x',zorder=20,label='off-target beam')
+plt.legend()
+plt.ylabel('Frequency Span (kHz)')
+# plt.ylabel('SNR')
+plt.xlabel('Frequency (MHz)')
+plt.yscale('log')
+plt.grid(which='both',axis='x',alpha=0.25)
+plt.xlim(4860,4920)
+# plt.xlim(5075,5125)
+plt.title(datdir.split('/')[-1].split(':')[0][:-3])
+plt.show()
+# %%
+import os
+import glob
+path='/mnt/datac-netStorage-40G/projects/p004/PPO/2022-10-28-00:36:08/'
+def add_time(line):
+    if 'hour' in line:
+        inc='hour'
+        return float(line.split(f' {inc}')[0].split(': ')[-1])*3600
+    elif 'minute' in line:
+        inc='minute'
+        return float(line.split(f' {inc}')[0].split(': ')[-1])*60
+    elif 'second' in line:
+        inc='second'
+        return float(line.split(f' {inc}')[0].split(': ')[-1])
+    else:
+        print('\n\tERROR in getting times\n')
+        return 0
+secs=0
+log_num=0
+logs=sorted(glob.glob(path+'fil_*/seti-node*/fil*.log'))
+for log in logs:
+    lines=open(log,'r').readlines()
+    for line in lines:
+        if '===== Search time:' in line:
+            secs+=add_time(line)
+    log_num+=1
+print(secs,log_num)
 # %%
