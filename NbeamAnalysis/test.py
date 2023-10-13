@@ -520,7 +520,7 @@ rfi=0
 fig,ax=plt.subplots(figsize=(8,6))
 xcutoff=np.linspace(0,1,10)
 ycutoff=0.9*sf*xcutoff**2
-plt.plot(xcutoff,ycutoff,linestyle='--',color='k',alpha=0.5,label='cutoff')
+plt.plot(xcutoff,ycutoff,linestyle='--',color='k',alpha=0.5,label='Nominal Cutoff')
 for r,row in df_out.iterrows():
     x=row['corrs']
     y=row['SNR_ratio']
@@ -528,7 +528,7 @@ for r,row in df_out.iterrows():
     for r1,row1 in df_ans.iterrows():
         if row['Corrected_Frequency']==row1['frequency_on'] and row1['beam_centered']==1:
             if counter==0:
-                plt.scatter(x,y,marker='o',color='g',s=100,alpha=0.75,edgecolors='k',label='True Positive')
+                plt.scatter(x,y,marker='o',color='g',s=100,alpha=0.75,edgecolors='k',label='Mars Probes')
             else:
                 plt.scatter(x,y,marker='o',color='g',s=100,alpha=0.75,edgecolors='k')
             counter+=1
@@ -537,7 +537,7 @@ for r,row in df_out.iterrows():
                 cutoff_tp+=1
         elif row['Corrected_Frequency']==row1['frequency_on'] and row1['beam_centered']==0:
             if redx==0:
-                plt.scatter(x,y,marker='x',color='r',s=75,label='False Positive??')
+                plt.scatter(x,y,marker='x',color='r',s=75,label='False Positive')
             else:
                 plt.scatter(x,y,marker='x',color='r',s=75)
             redx+=1
@@ -546,7 +546,7 @@ for r,row in df_out.iterrows():
                 cutoff_fp+=1
     if test==False:
         if rfi==0:
-            plt.scatter(x,y,facecolors='k',edgecolors='r',s=100,alpha=0.5,label='Unidentified Signals')      
+            plt.scatter(x,y,facecolors='k',edgecolors='r',s=100,alpha=0.5,label='Unidentified RFI')      
         else:
             plt.scatter(x,y,facecolors='k',edgecolors='r',s=100,alpha=0.5)      
         rfi+=1
@@ -555,9 +555,9 @@ for r,row in df_out.iterrows():
 print(f"Correctly Identified Spacecraft Signals: {counter}")
 xlims=plt.gca().get_xlim()
 ylims=plt.gca().get_ylim()
-plt.axhspan(sf,max(ylims[1],6.5),color='green',alpha=0.25,label='Attenuated Signals')
+plt.axhspan(sf,max(ylims[1],6.5),color='green',alpha=0.25,label='Attenuated\nSignals')
 plt.axhspan(1/sf,sf,color='grey',alpha=0.25,label='Similar SNRs')
-plt.axhspan(min(0.2,ylims[0]),1/sf,color='brown',alpha=0.25,label='Off-beam Attenuated')
+plt.axhspan(min(0.2,ylims[0]),1/sf,color='brown',alpha=0.25,label='Off-beam\nAttenuated')
 if ylims[1]>1000:
     plt.yscale('log')
     # plt.ylim(8,ylims[1])
@@ -567,6 +567,11 @@ plt.xlabel('DOT Scores')
 plt.ylabel('SNR-ratio')
 plt.legend(bbox_to_anchor=(1, 1)).get_frame().set_alpha(0) 
 plt.grid(which='major', axis='both', alpha=0.5,linestyle=':')
+save=True
+save=False
+if save==True:
+    plt.savefig(f"{csv.split('.csv')[0]}.pdf",
+                    bbox_inches='tight',format='pdf',dpi=fig.dpi,facecolor='white', transparent=False)
 plt.show()
 print(f"{cutoff_tp} true signals above cutoff")
 print(f"{cutoff_fp} false positive signals above cutoff")
@@ -822,4 +827,14 @@ for log in logs:
             secs+=add_time(line)
     log_num+=1
 print(secs,log_num)
+# %%
+csv='/home/ntusay/scripts/TRAPPIST-1/obs_10-29_DOTnbeam.csv'
+df=pd.read_csv(csv)
+# plt.scatter(df.Corrected_Frequency,df.SNR_ratio)
+# plt.scatter(df.Corrected_Frequency,df.corrs)
+# plt.scatter(df.Corrected_Frequency,df.Drift_Rate)
+plt.hist(df.SNR_ratio,bins=40)
+plt.yscale('log')
+# plt.ylim(-.5,.5)
+plt.show()
 # %%
