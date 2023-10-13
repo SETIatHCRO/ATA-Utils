@@ -205,7 +205,7 @@ def main():
         else:
             sf_nom=sf
 
-        if (update or i==ndats-1) and 'x' in full_df.columns and full_df['x'].notnull().any():
+        if (update or i==ndats-1) and 'SNR_ratio' in full_df.columns and full_df['SNR_ratio'].notnull().any():
             # save the full dataframe to csv
             full_df.to_csv(f"{outdir}{obs}_DOTnbeam.csv")
 
