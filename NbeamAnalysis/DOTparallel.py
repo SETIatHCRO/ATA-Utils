@@ -98,9 +98,9 @@ def dat_to_dataframe(args):
         logging.info(f'\nProcessing dat file {proc_count.value}/{ndats}\n\t{dat_name}')
         hits,skipped,exact_matches=0,0,0
         # make a tuple with the corresponding fil/h5 files
-        fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+dat_name.split('/')[-1][:-8]+'*fil'))
+        fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+'*fil'))
         if not fils:
-            fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+dat_name.split('/')[-1][:-8]+'*h5'))
+            fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+'*h5'))
         if not fils:
             logging.info(f'\tWARNING! Could not locate filterbank files in:\n\t{fildir+dat.split(datdir)[-1].split(dat.split("/")[-1])[0]}')
             logging.info(f'\tSkipping...\n')
@@ -108,6 +108,9 @@ def dat_to_dataframe(args):
             mid, time_label = DOT.get_elapsed_time(start)
             logging.info(f"Finished processing in %.2f {time_label}." %mid)
             return pd.DataFrame(),hits,skipped,exact_matches
+        elif len(fils)==1:
+            logging.info(f'\tWARNING! Could only locate 1 filterbank file in:\n\t{fildir+dat.split(datdir)[-1].split(dat.split("/")[-1])[0]}')
+            logging.info(f'\tProceeding with caution...')
         # make a dataframe containing all the hits from all the dat files in the tuple and sort them by frequency
         df0 = DOT.load_dat_df(dat,fils)
         df0 = df0.sort_values('Corrected_Frequency').reset_index(drop=True)
@@ -229,6 +232,7 @@ def main():
 
     # Concatenate the dataframes into a single dataframe
     full_df = pd.concat(result_dataframes, ignore_index=True)
+    full_df.to_csv(f"{outdir}{obs}_DOTnbeam.csv")
 
     # Do something with the counters if needed
     total_hits = sum(hits)
@@ -277,10 +281,14 @@ def main():
     end, time_label = DOT.get_elapsed_time(start)
     logging.info(f"\t{len(dat_files)} dats with {total_hits} total hits cross referenced and {total_exact_matches} hits removed as exact matches.")
     logging.info(f"\tThe remaining {total_hits-total_exact_matches} hits were correlated and processed in \n\n\t\t%.2f {time_label}.\n" %end)
-    logging.info(f"\t{len(full_df[full_df.SNR_ratio>sf])}/{len(full_df)} hits above a SNR-ratio of {sf:.1f}\n")
-    logging.info(f"\t{above_cutoff}/{len(full_df)} hits above the nominal cutoff.")
+    if 'SNR_ratio' in full_df.columns and full_df['SNR_ratio'].notnull().any():
+        logging.info(f"\t{len(full_df[full_df.SNR_ratio>sf])}/{len(full_df)} hits above a SNR-ratio of {sf:.1f}\n")
+        logging.info(f"\t{above_cutoff}/{len(full_df)} hits above the nominal cutoff.")
+    elif 'SNR_ratio' in full_df.columns:
+        logging.info(f"\n\tSNR_ratios missing for some hits, possibly due to missing filterbank files. Please check the log.")
+    elif 'mySNRs'==full_df.columns[-1]:
+        logging.info(f"\n\tSingle SNR calculated, possibly due to only one filterbank file being found. Please check the log.")
     
-    full_df.to_csv(f"{outdir}{obs}_DOTnbeam.csv")
     if 'SNR_ratio' not in full_df.columns or full_df['SNR_ratio'].isnull().any():
         # save the broken dataframe to csv
         logging.info(f"\nScores in full dataframe not filled out correctly. Please check it:\n{outdir}{obs}_DOTnbeam.csv")
