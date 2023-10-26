@@ -98,9 +98,9 @@ def dat_to_dataframe(args):
         logging.info(f'\nProcessing dat file {proc_count.value}/{ndats}\n\t{dat_name}')
         hits,skipped,exact_matches=0,0,0
         # make a tuple with the corresponding fil/h5 files
-        fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+dat_name.split('/')[-1][:-8]+'*fil'))
+        fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+'*fil'))
         if not fils:
-            fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+dat_name.split('/')[-1][:-8]+'*h5'))
+            fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+'*h5'))
         if not fils:
             logging.info(f'\tWARNING! Could not locate filterbank files in:\n\t{fildir+dat.split(datdir)[-1].split(dat.split("/")[-1])[0]}')
             logging.info(f'\tSkipping...\n')
