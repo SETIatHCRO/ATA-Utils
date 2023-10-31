@@ -181,6 +181,9 @@ def main():
             signals_of_interest = dfx.sort_values(by='corrs',ascending=True).reset_index(drop=True).iloc[:cutnum]
         else:
             signals_of_interest = dfx.iloc[:cutnum]
+        if signals_of_interest.empty==True:
+            print(f"Warning: Default filtering produced an empty dataset. Reverting to lowest socres of the original dataset.\n")
+            signals_of_interest=df
         print(f"Min score in this set: {signals_of_interest.iloc[0].corrs:.3f}")
         print(f"Max score in this set: {signals_of_interest.iloc[-1].corrs:.3f}")
     # plotting mode 3: custom dataframe filtering from input arguments
