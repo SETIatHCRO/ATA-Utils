@@ -172,8 +172,8 @@ def main():
     # plotting mode 2: default plotting
     elif not column or not operator or not value:
         print(f"\nDefault filtering:\nUp to the {cutnum} lowest correlation scores with an SNR-ratio above the attenuation value of {sf:.2f}\n")
-        xcutoff=np.linspace(-0.5,1.5,20)
-        ycutoff=0.9*sf*xcutoff**2
+        xcutoff=np.linspace(-0.05,1.05,1000)
+        ycutoff=np.array([0.9*sf*max(j-0.05,0)**(1/3) for j in xcutoff])
         dfx=df[np.interp(df.corrs,xcutoff,ycutoff)<df.SNR_ratio].reset_index(drop=True)
         dfx=dfx.sort_values(by='SNR_ratio',ascending=False).reset_index(drop=True)
         if len(dfx[dfx.SNR_ratio>sf])>cutnum:
