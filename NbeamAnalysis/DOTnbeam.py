@@ -148,12 +148,15 @@ def main():
     # perform cross-correlation to pare down the list of hits, and put the remaining hits into a dataframe.
     for i, dat in enumerate(dat_files[d:]):
         dat_name = "/".join(dat.split("/")[-2:])
+        # get the common subdirectories with trailing "/"
+        subdirectories="/".join(dat.replace(datdir,"").split("/")[:-1])+"/"
+        fil_MJD="_".join(dat.split('/')[-1].split("_")[:3])
         logging.info(f'Processing dat file {i+1}/{ndats}:\n\t{dat_name}')
         mid=time.time()
         # make a tuple with the corresponding .fil files
-        fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+'*fil'))
+        fils=sorted(glob.glob(fildir+subdirectories+fil_MJD+'*fil'))
         if not fils:
-            fils=sorted(glob.glob(fildir+dat.split(datdir)[-1].split(dat.split('/')[-1])[0]+'*h5'))
+            fils=sorted(glob.glob(fildir+subdirectories+fil_MJD+'*h5'))
         if not fils:
             logging.info(f'\tWARNING! Could not locate filterbank files in:\n\t{fildir+dat.split(datdir)[-1].split(dat.split("/")[-1])[0]}')
             logging.info(f'\tSkipping this dat file...')
@@ -230,7 +233,8 @@ def main():
             plt.axhspan(sf_nom,max(ylims[1],6.5),color='green',alpha=0.25,label='Attenuated Signals')
             plt.axhspan(1/sf_nom,sf_nom,color='grey',alpha=0.25,label='Similar SNRs')
             plt.axhspan(min(0.2,ylims[0]),1/sf_nom,color='brown',alpha=0.25,label='Off-beam Attenuated')
-            plt.ylim(min(-0.2,ylims[0]),max(ylims[1],6.5))
+            plt.ylim(1/max(ylims[1],10),max(ylims[1],10))
+            plt.yscale('log')
             plt.xlim(-0.1,1.1)
             plt.legend().get_frame().set_alpha(0) 
             plt.grid(which='major', axis='both', alpha=0.5,linestyle=':')
