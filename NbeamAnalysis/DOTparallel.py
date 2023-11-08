@@ -255,8 +255,8 @@ def main():
         plt.ylabel('SNR-ratio')
         ylims=plt.gca().get_ylim()
         xlims=plt.gca().get_xlim()
-        xcutoff=np.linspace(xlims[0],xlims[1],20)
-        ycutoff=0.9*sf*xcutoff**2
+        xcutoff=np.linspace(-0.05,1.05,1000)
+        ycutoff=np.array([0.9*sf*max(j-0.05,0)**(1/3) for j in xcutoff])
         plt.plot(xcutoff,ycutoff,linestyle='--',color='k',alpha=0.5,label='Nominal Cutoff')
         plt.axhspan(sf,max(ylims[1],6.5),color='green',alpha=0.25,label='Attenuated Signals')
         plt.axhspan(1/sf,sf,color='grey',alpha=0.25,label='Similar SNRs')
