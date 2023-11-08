@@ -75,7 +75,7 @@ def comp_hits(dat_dirs,beam,csv_dir):
 
 PPO='/mnt/datac-netStorage-40G/projects/p004/PPO/'
 dat_dirs=sorted(glob.glob(PPO+'2022*'))
-csv_dir='/home/ntusay/scripts/NbeamAnalysis/TRAPPIST-1/'
+csv_dir='/home/ntusay/scripts/TRAPPIST-1/'
 beam='0000'
 comp_hits(dat_dirs,beam,csv_dir)
 # %%
