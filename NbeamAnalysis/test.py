@@ -4,6 +4,7 @@ import os
 import glob
 from DOT_utils import check_logs
 from DOT_utils import get_dats
+import DOT_utils as DOT
 
 # %%
 df0=pd.read_csv('/home/ntusay/scripts/NbeamAnalysis/injection_test/fil_59884_17225_248799804_trappist1_0001-beam0000.dat',
@@ -505,8 +506,8 @@ plt.rcParams.update({'font.size': 22})
 %matplotlib inline
 
 answers='/home/ntusay/scripts/mars/output/spacecraft_08-03-2023_no_pickle.csv'
-csv='/home/ntusay/scripts/mars/output2/obs_UNKNOWN_DOTnbeam.csv'
 csv='/home/ntusay/scripts/mars/output4/obs_UNKNOWN_DOTnbeam.csv'
+csv='/home/ntusay/scripts/mars/output5/obs_UNKNOWN_DOTnbeam.csv'
 df_ans=pd.read_csv(answers)
 df_out=pd.read_csv(csv)
 sf=4
@@ -518,8 +519,8 @@ cutoff_rfi=0
 redx=0
 rfi=0
 fig,ax=plt.subplots(figsize=(8,6))
-xcutoff=np.linspace(0,1,10)
-ycutoff=0.9*sf*xcutoff**2
+xcutoff=np.linspace(-0.05,1.05,1000)
+ycutoff=np.array([0.9*sf*max(j-0.05,0)**(1/3) for j in xcutoff])
 plt.plot(xcutoff,ycutoff,linestyle='--',color='k',alpha=0.5,label='Nominal Cutoff')
 for r,row in df_out.iterrows():
     x=row['corrs']
@@ -558,11 +559,11 @@ ylims=plt.gca().get_ylim()
 plt.axhspan(sf,max(ylims[1],6.5),color='green',alpha=0.25,label='Attenuated\nSignals')
 plt.axhspan(1/sf,sf,color='grey',alpha=0.25,label='Similar SNRs')
 plt.axhspan(min(0.2,ylims[0]),1/sf,color='brown',alpha=0.25,label='Off-beam\nAttenuated')
-if ylims[1]>1000:
-    plt.yscale('log')
+# if ylims[1]>1000:
+plt.yscale('log')
     # plt.ylim(8,ylims[1])
 plt.xlim(xlims[0],xlims[1])
-plt.ylim(ylims[0],ylims[1])
+plt.ylim(1/ylims[1],ylims[1])
 plt.xlabel('DOT Scores')
 plt.ylabel('SNR-ratio')
 plt.legend(bbox_to_anchor=(1, 1)).get_frame().set_alpha(0) 
@@ -670,13 +671,14 @@ if half_span<250:
 f2=round(min(fmid+half_span*1e-6,maximum_frequency),6)
 f1=round(max(fmid-half_span*1e-6,minimum_frequency),6)
 
-# frange,power0=bl.Waterfall(fil0,f1,f2).grab_data(f1,f2)
-# frange,power1=bl.Waterfall(fil1,f1,f2).grab_data(f1,f2)
-# SNR0=mySNR(power0)
-# SNR1=mySNR(power1)
+frange,power0=bl.Waterfall(fil0,f1,f2).grab_data(f1,f2)
+frange,power1=bl.Waterfall(fil1,f1,f2).grab_data(f1,f2)
+SNR0=mySNR(power0)
+SNR1=mySNR(power1)
 # SNR0,SNR1,SNR0/SNR1
-SNR0=betterSNR(fil0,f1,f2)
-SNR1=betterSNR(fil1,f1,f2)
+# SNR0=betterSNR(fil0,f1,f2)
+# SNR1=betterSNR(fil1,f1,f2)
+print(fil0.split('/')[-1])
 SNR0,SNR1,SNR0/SNR1
 # %%
 import matplotlib.pyplot as plt
