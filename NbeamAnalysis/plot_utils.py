@@ -6,10 +6,12 @@ plotting utility functions mainly used in plot_DOT_hits.py
 import numpy as np
 import pandas as pd
 import blimpy as bl
-import os
+import os, sys
 import math
+from functools import reduce
 import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FixedLocator
 from matplotlib.ticker import NullFormatter
 plt.rcParams.update({'font.size': 22})
 plt.rcParams['axes.formatter.useoffset'] = False
@@ -102,7 +104,7 @@ def calc_extent(plot_f=None, plot_t=None, MJD_time=False):
     return extent
 
 # subplotting workhorse function. Actually gets the data and adds it to the subplots.
-def plot_waterfall_subplots(wf, index, ax, fig, f_start=None, f_stop=None, xmin=None, xmax=None, 
+def plot_waterfall_subplots(wf, i, ax, fig, axes, f_start=None, f_stop=None, xmin=None, xmax=None, 
                             if_id=0, logged=True, cb=True, MJD_time=False, **kwargs):
     plot_f, plot_data = wf.grab_data(min(f_start, f_stop),max(f_start, f_stop), if_id)
     # imshow does not support int8, so convert to floating point
@@ -119,13 +121,13 @@ def plot_waterfall_subplots(wf, index, ax, fig, f_start=None, f_stop=None, xmin=
         dec_fac_y = int(plot_data.shape[1] / MAX_IMSHOW_POINTS[1])
     plot_data = rebin(plot_data, dec_fac_x, dec_fac_y)
     # normalize the power to the range of the target beam
-    if index==0:
+    if xmin==None or xmax==None:
         xmin=plot_data.min()
         xmax=plot_data.max()
     plot_data = normalize(plot_data,xmin,xmax)
     # calculate the plot extent/axes 
     extent = calc_extent(plot_f=plot_f, plot_t=wf.timestamps, MJD_time=MJD_time)
-    im = ax[index].imshow(plot_data,
+    im = ax.imshow(plot_data,
                aspect='auto',
                origin='lower',
                rasterized=True,
@@ -135,9 +137,15 @@ def plot_waterfall_subplots(wf, index, ax, fig, f_start=None, f_stop=None, xmin=
                vmin=0, 
                vmax=1,
                **kwargs)
+    if np.shape(np.shape(axes))[0]>1:
+        nrows=np.shape(axes)[0]
+        ncols=np.shape(axes)[1]
+    else:
+        nrows=1
+        ncols=len(axes)
     # add colorbar
-    if cb:
-        fig.colorbar(im, ax=ax[index])
+    if cb and i%ncols==ncols-1:
+        fig.colorbar(im, ax=ax, shrink=0.9, pad=0.01)
     # get the x-axis label right for the frequency scale
     if np.abs(plot_f[0]-plot_f[-1]) > 1:   
         label = 'MHz'
@@ -147,15 +155,24 @@ def plot_waterfall_subplots(wf, index, ax, fig, f_start=None, f_stop=None, xmin=
         label = 'Hz'
     else:
         label = 'GHz?'
-    freq_mid = (plot_f[1]+plot_f[-1])/2    
-    ax[index].set_xlabel(f"Frequency [{label}]\nCentered at {freq_mid:.6f} MHz")
-    ax[index].tick_params(axis='x', which='major', labelsize=22)
-    ax[index].tick_params(axis='x', which='minor', labelsize=14)
-    # set the y-axis label
-    if MJD_time:
-        ax[index].set_ylabel("Time [MJD]")
+    freq_mid = (plot_f[1]+plot_f[-1])/2   
+    if i//ncols==nrows-1: 
+        ax.set_xlabel(f"Frequency [{label}]\nCentered at {freq_mid:.6f} MHz")
+        ax.tick_params(axis='x', which='major', labelsize=22)
+        ax.tick_params(axis='x', which='minor', labelsize=14)
     else:
-        ax[index].set_ylabel("Time [s]")
+        ax.set_xticklabels([])
+    # set the y-axis label
+    if MJD_time and i%ncols==0:
+        ax.set_ylabel("Time [MJD]")
+    elif i%ncols==0:
+        ax.set_ylabel("Time [s]")
+    else:
+        ax.set_yticklabels([])
+    # if i//ncols>0 and i%ncols==0:  # Hiding the last tick for the first subplot
+    #     ticks = ax.get_yticks()[:-1]
+    #     ax.set_yticks(ticks)
+    #     ax.set_yticklabels([f"{label:.2f}" for label in ticks])
     return xmin,xmax
 
 # makes both the title of the plot and the filename
@@ -177,58 +194,87 @@ def make_title(fig,MJD,f2,fmid,drift_rate,SNR,corrs,SNRr,x):
         title+=f' || X score: {x:.3f}'
         filename+=f"_X_{x:.3f}"
     fig.suptitle(title,size=25)
-    fig.tight_layout(rect=[0, 0, 1, 1.05])
     return filename
 
-# first plotting function that sets up the plot, sends info to the subplotter, gets the title and saves the plot.
-def plot_beams(name_array, fstart, fstop, drift_rate=None, SNR=None, corrs=None, SNRr=None, x=None, path='./', pdf=False):
+def customize_subplot_frame(ax, linewidth=8, color='r'):
+    ax.spines['top'].set_linewidth(linewidth)
+    ax.spines['bottom'].set_linewidth(linewidth)
+    ax.spines['left'].set_linewidth(linewidth)
+    ax.spines['right'].set_linewidth(linewidth)
+    ax.spines['top'].set_color(color)
+    ax.spines['bottom'].set_color(color)
+    ax.spines['left'].set_color(color)
+    ax.spines['right'].set_color(color)
+    return None
+
+# first plotting function that sets up the plot, 
+# sends info to the subplotter, gets the title and saves the plot.
+def plot_beams(name_array, fstart, fstop, drift_rate=None, nstacks=1, nbeams=2, MJD=None, 
+                target=0, SNR=None, corrs=None, SNRr=None, x=None, path='./', pdf=False):
     # make waterfall objects for plotting from the filenames
-    fil_array = []
+    wf_obj_array = []
     f1 = min(fstart,fstop)
     f2 = max(fstart,fstop)
     fmid=round((f2+f1)/2,6)
-    for beam in name_array:
-        test_wat = bl.Waterfall(beam, 
+    for fil in name_array:
+        wf_obj = bl.Waterfall(fil, 
                             f_start=f1, 
                             f_stop=f2)
-        fil_array.append(test_wat)
+        wf_obj_array.append(wf_obj)
     # initialize the plot
     nsubplots = len(name_array)
-    nrows = int(np.floor(np.sqrt(nsubplots)))
-    ncols = int(np.ceil(nsubplots/nrows))
-    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, figsize=(20,7))
-    # call the plotting function and plot the waterfall objects in fil_array
-    i=0
-    xmin=None
-    xmax=None
-    for r in range(nrows):
-        for c in range(ncols):
-            fil = fil_array[i]
-            xmin,xmax=plot_waterfall_subplots(fil, 
-                                    i, ax, fig, 
-                                    f_start=f1, 
-                                    f_stop=f2,
-                                    xmin=xmin,
-                                    xmax=xmax)
-            # set subplot titles
-            if SNR and SNRr:
-                if i==0:
-                    ax[i].set_title(f"target beam || SNR: {SNR:.3f}")
-                else:
-                    ax[i].set_title(f"off beam || SNR*: {SNR/SNRr:.3f}")
-            else:
-                ax[i].set_title([f"target beam" if i==0 else "off beam"][0])
-            i+=1
+    nrows = nstacks
+    ncols = nbeams
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, 
+                            figsize=(11*ncols,7*nrows), 
+                            gridspec_kw={'width_ratios': [1, 1.2]})
+    fig.subplots_adjust(hspace=0.1, wspace=0.04)
+    # collect target data for min/max normalizing
+    target_f, target_data = wf_obj_array[target].grab_data(min(f1, f2),max(f1, f2), 0)
+    if not target_data.all()<=0.0:
+        xmin=db(target_data).min()
+        xmax=db(target_data).max()
+    else:
+        xmin=target_data.min()
+        xmax=target_data.max()
+    # call the plotting function and plot the waterfall objects in wf_obj_array
+    for i in range(nsubplots):
+        if nstacks>1:
+            ax = axes[i//ncols,i%ncols]
+        else:
+            ax = axes[i]
+        wf_obj = wf_obj_array[i] # i starts at 0 and increases by 1 after every loop
+        xmin,xmax=plot_waterfall_subplots(wf_obj, 
+                                i, ax, fig, axes,
+                                f_start=f1, 
+                                f_stop=f2,
+                                xmin=xmin,
+                                xmax=xmax)
+        # set subplot titles
+        if SNR and SNRr:
+            if i==target:
+                ax.set_title(f"target beam || SNR: {SNR:.3f}")
+            elif i//ncols==target//ncols:
+                ax.set_title(f"off beam || SNR*: {SNR/SNRr:.3f}")
+        elif i//ncols==target//ncols:
+            ax.set_title([f"target beam" if i==target else "off beam"][0])
+        if i//ncols!=target//ncols:
+            sub_MJD="_".join(os.path.basename(name_array[i]).split("_")[1:3])
+            ax.set_title(f"Stack MJD: {sub_MJD}") # MJD in number of secs (i.e. out of 86400)
+        if target//ncols == i//ncols and nstacks>1:
+            customize_subplot_frame(ax)
     # set the overall plot title and filename
-    name_deconstructed = fil.filename.split('/')[-1].split('_')
-    MJD = name_deconstructed[1] + '_' + name_deconstructed[2] #+ '_' + name_deconstructed[3]
     filename=make_title(fig,MJD,f2,fmid,drift_rate,SNR,corrs,SNRr,x)
+    if nstacks>1:
+        fig.subplots_adjust(top=0.93, left=0.1, right=0.95, bottom=0.1)
+    else:
+        fig.tight_layout(rect=[0, 0, 1, 1.05])
     # save the plot
     if pdf==True:
         ext='pdf'
     else:
         ext='png'
-    plt.savefig(f'{path}{filename}.{ext}',
+    plt.savefig(f'{path}{filename}{["_stacked" if nstacks>1 else ""][0]}.{ext}',
                 bbox_inches='tight',format=ext,dpi=fig.dpi,facecolor='white', transparent=False)
     plt.close()
     return None
@@ -258,6 +304,69 @@ def check_freqs(fil,freqs):
             return 'out_of_bounds'
     return 'within_bounds'
 
+# for a given observation with multiple integrations, stacking of plots is available.
+# this function finds the other fils associated with the other integrations to stack.
+def get_stacks(fil_names,obs_dir,nbeams):
+    # get the subdirectory tree structure including file in the input observation directory
+    subdir_filepath=fil_names[0].split(obs_dir)[-1]
+    file_depth=subdir_filepath.count("/")
+    # get the MJD from the filename to mask it from the search
+    fil_MJD="_".join(fil_names[0].split('/')[-1].split("_")[1:3])
+    if len(fil_MJD)!=11:
+        print(f"\n\tERROR: MJD not recovered correctly from filename. Cannot stack plots.")
+        sys.exit()
+    # determine unique subdirectories in the filepath, typically indicating a specific frequency range
+    unique_subs=[i for i in subdir_filepath.split("/") if fil_MJD not in i]
+    # get the file extension, whether fil or h5 or whatever
+    ext=os.path.splitext(fil_names[0])[-1]
+    # walk through all subdirectories and search for similar files at
+    # the same depth, within similar unique subfolders if any, and with different MJDs
+    for dirpath, dirnames, filenames in os.walk(obs_dir):
+        current_depth=(dirpath+["" if dirpath==obs_dir else "/"][0]).count("/")-obs_dir.count("/")
+        subpath=dirpath.split(obs_dir)[-1]
+        if all(sub in subpath for sub in unique_subs) and current_depth==file_depth:
+            for f in filenames:
+                if fil_MJD not in f and f.endswith(ext):
+                    # if get_frange(dirpath+["" if dirpath==obs_dir else "/"][0]+f) == [round(f1,6),round(f2,6)]:
+                    fil_names.append(dirpath+["" if dirpath==obs_dir else "/"][0]+f)
+    fil_names = eject_isolates(fil_names,nbeams)
+    return sorted(fil_names,reverse=True)
+
+# helper function to eliminate errant single files without companion beams
+def eject_isolates(fil_names,nbeams):
+    for f in fil_names:
+        beam=f.split("beam")[-1].split(".")[0]
+        for b in range(nbeams):
+            if beam==str(b).zfill(4):
+                continue
+            elif f.replace("beam"+beam,"beam"+str(b).zfill(4)) not in fil_names:
+                fil_names.remove(f)
+    return fil_names
+            
+# helper function to return min/max frequency range of a filterbank file from metadata
+def get_frange(f):
+    fil_meta = bl.Waterfall(f,load_data=False)
+    f1 = fil_meta.container.f_start
+    f2 = fil_meta.container.f_stop
+    return [round(f1,6),round(f2,6)]
+
+# helper function for determining commonality in a list of strings
+def longest_common_substring(str1, str2):
+    m, n = len(str1), len(str2)
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
+    max_length, end_index = 0, 0
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            dp[i][j] = dp[i - 1][j - 1] + 1 if str1[i - 1] == str2[j - 1] else 0
+            if dp[i][j] > max_length:
+                max_length, end_index = dp[i][j], i - 1
+    return str1[end_index - max_length + 1:end_index + 1]
+
+# determine the observation directory from the commonality in the filepath strings
+def get_obs_dir(fils_list):
+    lcs = reduce(longest_common_substring, fils_list)
+    return ["/".join(lcs.split("/")[:-1])+"/" if "/"!=lcs[-1] else lcs][0]
+    
 
 # plots the histograms showing snr, frequency, and drift rates of all the hits
 # mainly just used at the end of DOTnbeam or DOTparallel
