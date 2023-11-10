@@ -12,7 +12,7 @@ plot_utils.py is required for modularized functions.
 Typical basic command line usage looks something like:
     python NbeamAnalysis/plot_DOT_hits.py <path_to_csv> -o <output_dir>
 
-There are 3 main plotting modes:
+There are 4 main plotting modes:
     1.  Default plotting first filters all hits above the nominal cutoff, calculated as
         SNR-ratios above 0.9*sf*x^2, where sf is the attenuation value (default=4.0),
         x is the correlation score and 0.9 is included for padding. If there are more than 
@@ -28,13 +28,19 @@ There are 3 main plotting modes:
         by specifying the start and end frequencies. Note that without additional sorting/filtering, 
         this will produce a plot for each unique dat/fil in the dataframe 
         that span the specified frequencies.
+    
+    4.  A stack of subplots can be plotted up using other integrations in the same observation.
+        By simply flagging "-stack" the program will use all the filepath information in the csv
+        to determine the common observation path and add subplots for other integrations before and
+        after the target observation, with a red frame around the target observation. Doing this
+        adds a significant amount of time to plotting. 
 '''
 
     # Import packages
 import numpy as np
 import pandas as pd
 import blimpy as bl
-import os, glob
+import os, glob, sys
 import math
 import argparse
 import time
@@ -53,10 +59,14 @@ def parse_args():
     parser.add_argument('-o', '--outdir',metavar="", type=str, nargs=1,
                         help='output target directory')
     parser.add_argument('-col',metavar="", type=str, default=None,
-                        help='Name of the column in the csv to filter on')
+                        help='name of the column in the csv to filter on')
     parser.add_argument('-op',metavar="", type=str, choices=['lt', 'gt', 'is'], default=None,
-                        help='Operator for filtering: less than (lt), greater than (gt), or equal to (is)')
+                        help='operator for filtering: less than (lt), greater than (gt), or equal to (is)')
     parser.add_argument('-val',metavar="", type=str, default=None, help='Filter value')
+    parser.add_argument('-nbeams', type=int, default=2,
+                        help='optional number of beams, default = 2')
+    parser.add_argument('-stack', action='store_true',
+                        help='optional flag to plot other integrations in observation as subplots')
     parser.add_argument('-sf', type=float, default=4.0,
                         help='optional attenuation value for filtering')
     parser.add_argument('-cutoff', type=int, default=500,
@@ -133,10 +143,12 @@ def main():
     column = cmd_args["col"]            # optional, default None
     operator = cmd_args["op"]           # optional, default None
     value = cmd_args["val"]             # optional, default None
+    nbeams = cmd_args["nbeams"]         # optional, default = 2
     sf = cmd_args["sf"]                 # optional, default = 4.0
     cutnum = cmd_args["cutoff"]         # optional, default = 500
     clobber = cmd_args["clobber"]       # optional, flag on or default off
     pdf = cmd_args["pdf"]               # optional, flag on or default off
+    stack = cmd_args["stack"]           # optional, flag on or default off
     freqs = cmd_args["freqs"]           # optional, custom frequency span
     paths_cleared=[]                    # clobber counter
 
@@ -189,26 +201,34 @@ def main():
     # plotting mode 3: custom dataframe filtering from input arguments
     else:
         signals_of_interest = filter_df(df,column,operator,value)
+    
+    # if stack flagged, determine the common observing directory for additional integrations.
+    # computed outside of loop to save time
+    if stack:
+        obs_dir=ptu.get_obs_dir(sorted(set(signals_of_interest.fil_0000)))
 
     print(f"{len(signals_of_interest)} hits will be plotted out of {len(df)} total from the input dataframe.")
 
     # iterate through the csv of interesting hits and plot row by row
     for index, row in signals_of_interest.reset_index(drop=True).iterrows():
         # make an array of the filenames for each beam based on the column names
-        beams = [row[i] for i in list(signals_of_interest) if i.startswith('fil_')]
+        fil_names = [row[i] for i in list(signals_of_interest) if i.startswith('fil_')]
         
         # determine frequency range for plot
         fstart = row['freq_start']
         fend = row['freq_end']
 
         # determine frequency span over which to plot based on drift rate
-        fil_meta = bl.Waterfall(beams[0],load_data=False)
+        target_fil=fil_names[0]
+        fil_meta = bl.Waterfall(target_fil,load_data=False)
         minimum_frequency = fil_meta.container.f_start
         maximum_frequency = fil_meta.container.f_stop
         tsamp = fil_meta.header['tsamp']    # time bin length in seconds
         obs_length = fil_meta.n_ints_in_file * tsamp # total length of observation in seconds
         DR = row['Drift_Rate']              # reported drift rate
         padding=1+np.log10(row['SNR'])/10   # padding based on reported strength of signal
+        MJD_dec=fil_meta.header['tstart']   # MJD in decimal form
+        MJD_nums="_".join(os.path.basename(target_fil).split("_")[1:3]) # MJD in number of secs
         # calculate the amount of frequency drift with some padding
         half_span=abs(DR)*obs_length*padding  
         if half_span<250:
@@ -217,13 +237,33 @@ def main():
         fstart=round(max(fmid-half_span*1e-6,minimum_frequency),6)
         fend=round(min(fmid+half_span*1e-6,maximum_frequency),6)
         
+        # grab the other integrations to stack as subplots, if stack flagged on
+        if stack:
+            # add the relevant fil files to the array from the other integrations
+            fil_names = ptu.get_stacks(fil_names,obs_dir,nbeams) 
+            if len(fil_names)/nbeams%1==0:
+                nstacks=int(len(fil_names)/nbeams) # get number of subplot rows
+            else: # assert a subplot for every row and column
+                print("\n\tERROR: Number of subplots not evenly divisible by number of beams.")
+                print("\tPlease check inputs and retry.\n")
+                sys.exit()
+            # the fil array is sorted in chronological order from get_stacks so...
+            target=fil_names.index(target_fil) # identify which fil contains the target signal in the array
+        else:
+            nstacks=1   # one row of plots if not stacking
+            target=0
+
         # plot
         print(f'Plotting {index+1}/{len(signals_of_interest)} with central frequency {fmid:.6f} MHz,'+
-                f' and SNR ratio: {row["SNR_ratio"]:.3f}')
-        ptu.plot_beams(beams,
+                f' and SNR ratio: {row["SNR_ratio"]:.3f}{[f", in {nstacks} stacks" if nstacks>1 else ""][0]}')
+        ptu.plot_beams(fil_names,
                     fstart,
                     fend,
-                    row['Drift_Rate'],
+                    drift_rate=row['Drift_Rate'],
+                    nstacks=nstacks,
+                    nbeams=nbeams,
+                    MJD=MJD_nums,
+                    target=target,
                     SNR=row['SNR'],
                     corrs=row['corrs'],
                     SNRr=row['SNR_ratio'],
