@@ -30,10 +30,11 @@ There are 4 main plotting modes:
         that span the specified frequencies.
     
     4.  A stack of subplots can be plotted up using other integrations in the same observation.
-        By simply flagging "-stack" the program will use all the filepath information in the csv
-        to determine the common observation path and add subplots for other integrations before and
-        after the target observation, with a red frame around the target observation. Doing this
-        adds a significant amount of time to plotting. 
+        With the "-stack" argument flag plus the number of adjacent integrations to plot, 
+        the program will use all the filepath information in the csv to determine the common 
+        observation path and add subplots for other integrations before and after the target 
+        observation, with a red frame around the target observation. 
+        Note: this significantly increases plotting time. 
 '''
 
     # Import packages
@@ -65,7 +66,7 @@ def parse_args():
     parser.add_argument('-val',metavar="", type=str, default=None, help='Filter value')
     parser.add_argument('-nbeams', type=int, default=2,
                         help='optional number of beams, default = 2')
-    parser.add_argument('-stack', action='store_true',
+    parser.add_argument('-stack', type=int, default=None,
                         help='optional flag to plot other integrations in observation as subplots')
     parser.add_argument('-sf', type=float, default=4.0,
                         help='optional attenuation value for filtering')
@@ -127,7 +128,7 @@ def filter_df(df,column,operator,value):
     elif operator == 'is':
         signals_of_interest = df[df[column] == value]
     # signals_of_interest = signals_of_interest.sort_values(by='x').reset_index(drop=True)
-    signals_of_interest = signals_of_interest.sort_values(by='SNR_ratio',ascending=False).reset_index(drop=True)
+    signals_of_interest = signals_of_interest.sort_values(by=column,ascending=False).reset_index(drop=True)
     return signals_of_interest
 
 
@@ -143,12 +144,12 @@ def main():
     column = cmd_args["col"]            # optional, default None
     operator = cmd_args["op"]           # optional, default None
     value = cmd_args["val"]             # optional, default None
+    stack = cmd_args["stack"]           # optional, default None
     nbeams = cmd_args["nbeams"]         # optional, default = 2
     sf = cmd_args["sf"]                 # optional, default = 4.0
     cutnum = cmd_args["cutoff"]         # optional, default = 500
     clobber = cmd_args["clobber"]       # optional, flag on or default off
     pdf = cmd_args["pdf"]               # optional, flag on or default off
-    stack = cmd_args["stack"]           # optional, flag on or default off
     freqs = cmd_args["freqs"]           # optional, custom frequency span
     paths_cleared=[]                    # clobber counter
 
@@ -207,6 +208,7 @@ def main():
     if stack:
         obs_dir=ptu.get_obs_dir(sorted(set(signals_of_interest.fil_0000)))
 
+    signals_of_interest=signals_of_interest.sort_values(by=['dat_name','Corrected_Frequency'])
     print(f"{len(signals_of_interest)} hits will be plotted out of {len(df)} total from the input dataframe.")
 
     # iterate through the csv of interesting hits and plot row by row
@@ -240,7 +242,7 @@ def main():
         # grab the other integrations to stack as subplots, if stack flagged on
         if stack:
             # add the relevant fil files to the array from the other integrations
-            fil_names = ptu.get_stacks(fil_names,obs_dir,nbeams) 
+            fil_names = ptu.get_stacks(fil_names,obs_dir,nbeams,stack) 
             if len(fil_names)/nbeams%1==0:
                 nstacks=int(len(fil_names)/nbeams) # get number of subplot rows
             else: # assert a subplot for every row and column
@@ -255,7 +257,7 @@ def main():
 
         # plot
         print(f'Plotting {index+1}/{len(signals_of_interest)} with central frequency {fmid:.6f} MHz,'+
-                f' and SNR ratio: {row["SNR_ratio"]:.3f}{[f", in {nstacks} stacks" if nstacks>1 else ""][0]}')
+                f' and SNR ratio: {row["SNR_ratio"]:.3f}{[f", in {nstacks} rows of subplots" if nstacks>1 else ""][0]}')
         ptu.plot_beams(fil_names,
                     fstart,
                     fend,

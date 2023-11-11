@@ -183,7 +183,7 @@ def make_title(fig,MJD,f2,fmid,drift_rate,SNR,corrs,SNRr,x):
         title+=f' || Drift Rate: {drift_rate:.3f} Hz/s ({drift_rate/f2*1000:.3f} nHz)'
         filename+=f"_DR{drift_rate:.3f}"
     if SNR:
-        title+=f' || SNR: {SNR:.3f}\n'
+        title+=f' || SNR: {SNR:.2f}\n'
     if corrs:
         title+=f'Correlation Score: {corrs:.3f}'
         filename+=f"_x{corrs:.3f}"
@@ -228,7 +228,7 @@ def plot_beams(name_array, fstart, fstop, drift_rate=None, nstacks=1, nbeams=2, 
     fig, axes = plt.subplots(nrows=nrows, ncols=ncols, 
                             figsize=(11*ncols,7*nrows), 
                             gridspec_kw={'width_ratios': [1, 1.2]})
-    fig.subplots_adjust(hspace=0.1, wspace=0.04)
+    fig.subplots_adjust(hspace=0.07, wspace=0.04)
     # collect target data for min/max normalizing
     target_f, target_data = wf_obj_array[target].grab_data(min(f1, f2),max(f1, f2), 0)
     if not target_data.all()<=0.0:
@@ -253,20 +253,25 @@ def plot_beams(name_array, fstart, fstop, drift_rate=None, nstacks=1, nbeams=2, 
         # set subplot titles
         if SNR and SNRr:
             if i==target:
-                ax.set_title(f"target beam || SNR: {SNR:.3f}")
+                subplot_title=f"target beam || SNR: {SNR:.2f}"
             elif i//ncols==target//ncols:
-                ax.set_title(f"off beam || SNR*: {SNR/SNRr:.3f}")
+                subplot_title=f"off beam || SNR*: {SNR/SNRr:.2f}"
         elif i//ncols==target//ncols:
-            ax.set_title([f"target beam" if i==target else "off beam"][0])
+            subplot_title=[f"target beam" if i==target else "off beam"][0]
+        # MJD in number of secs (i.e. out of 86400)
+        sub_MJD="_".join(os.path.basename(name_array[i]).split("_")[1:3])
         if i//ncols!=target//ncols:
-            sub_MJD="_".join(os.path.basename(name_array[i]).split("_")[1:3])
-            ax.set_title(f"Stack MJD: {sub_MJD}") # MJD in number of secs (i.e. out of 86400)
+            subplot_title=f"stacked MJD: {sub_MJD}"
+        elif nstacks>1:
+            subplot_title+=f" || MJD: {sub_MJD}"
+        ax.set_title(subplot_title,pad=10)
         if target//ncols == i//ncols and nstacks>1:
             customize_subplot_frame(ax)
     # set the overall plot title and filename
     filename=make_title(fig,MJD,f2,fmid,drift_rate,SNR,corrs,SNRr,x)
     if nstacks>1:
-        fig.subplots_adjust(top=0.93, left=0.1, right=0.95, bottom=0.1)
+        fig.tight_layout(rect=[0, 0, 1.0, 1.0])
+        fig.subplots_adjust(hspace=0.11, wspace=0.02)
     else:
         fig.tight_layout(rect=[0, 0, 1, 1.05])
     # save the plot
@@ -306,19 +311,20 @@ def check_freqs(fil,freqs):
 
 # for a given observation with multiple integrations, stacking of plots is available.
 # this function finds the other fils associated with the other integrations to stack.
-def get_stacks(fil_names,obs_dir,nbeams):
+def get_stacks(target_fils,obs_dir,nbeams,stack):
+    fil_names=target_fils.copy()
     # get the subdirectory tree structure including file in the input observation directory
-    subdir_filepath=fil_names[0].split(obs_dir)[-1]
+    subdir_filepath=target_fils[0].split(obs_dir)[-1]
     file_depth=subdir_filepath.count("/")
     # get the MJD from the filename to mask it from the search
-    fil_MJD="_".join(fil_names[0].split('/')[-1].split("_")[1:3])
+    fil_MJD="_".join(target_fils[0].split('/')[-1].split("_")[1:3])
     if len(fil_MJD)!=11:
         print(f"\n\tERROR: MJD not recovered correctly from filename. Cannot stack plots.")
         sys.exit()
     # determine unique subdirectories in the filepath, typically indicating a specific frequency range
     unique_subs=[i for i in subdir_filepath.split("/") if fil_MJD not in i]
     # get the file extension, whether fil or h5 or whatever
-    ext=os.path.splitext(fil_names[0])[-1]
+    ext=os.path.splitext(target_fils[0])[-1]
     # walk through all subdirectories and search for similar files at
     # the same depth, within similar unique subfolders if any, and with different MJDs
     for dirpath, dirnames, filenames in os.walk(obs_dir):
@@ -329,8 +335,13 @@ def get_stacks(fil_names,obs_dir,nbeams):
                 if fil_MJD not in f and f.endswith(ext):
                     # if get_frange(dirpath+["" if dirpath==obs_dir else "/"][0]+f) == [round(f1,6),round(f2,6)]:
                     fil_names.append(dirpath+["" if dirpath==obs_dir else "/"][0]+f)
-    fil_names = eject_isolates(fil_names,nbeams)
-    return sorted(fil_names,reverse=True)
+    fil_names = sorted(eject_isolates(fil_names,nbeams),reverse=True)
+    targets=[fil_names.index(i) for i in target_fils]
+    fils_per_layer=stack*nbeams
+    stack_start=max(0,min(targets)-fils_per_layer)
+    stack_end=min(max(targets)+fils_per_layer+1,len(fil_names))
+    stacked=fil_names[stack_start:stack_end]
+    return [x for sublist in (reversed(stacked[i:i+nbeams]) for i in range(0, len(stacked), nbeams)) for x in sublist]
 
 # helper function to eliminate errant single files without companion beams
 def eject_isolates(fil_names,nbeams):
