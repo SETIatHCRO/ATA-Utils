@@ -13,6 +13,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FixedLocator
 from matplotlib.ticker import NullFormatter
+import DOT_utils as DOT
 plt.rcParams.update({'font.size': 22})
 plt.rcParams['axes.formatter.useoffset'] = False
 
@@ -104,9 +105,8 @@ def calc_extent(plot_f=None, plot_t=None, MJD_time=False):
     return extent
 
 # subplotting workhorse function. Actually gets the data and adds it to the subplots.
-def plot_waterfall_subplots(wf, i, ax, fig, axes, f_start=None, f_stop=None, xmin=None, xmax=None, 
-                            if_id=0, logged=True, cb=True, MJD_time=False, **kwargs):
-    plot_f, plot_data = wf.grab_data(min(f_start, f_stop),max(f_start, f_stop), if_id)
+def plot_waterfall_subplots(plot_f, plot_data, plot_t, i, ax, fig, axes, f_start=None, f_stop=None, 
+                            xmin=None, xmax=None, logged=True, cb=True, MJD_time=False, **kwargs):
     # imshow does not support int8, so convert to floating point
     plot_data = plot_data.astype('float32')
     # plot the power in logspace unless the data is weird and has zeroes or negatives
@@ -126,7 +126,7 @@ def plot_waterfall_subplots(wf, i, ax, fig, axes, f_start=None, f_stop=None, xmi
         xmax=plot_data.max()
     plot_data = normalize(plot_data,xmin,xmax)
     # calculate the plot extent/axes 
-    extent = calc_extent(plot_f=plot_f, plot_t=wf.timestamps, MJD_time=MJD_time)
+    extent = calc_extent(plot_f=plot_f, plot_t=plot_t, MJD_time=MJD_time)
     im = ax.imshow(plot_data,
                aspect='auto',
                origin='lower',
@@ -169,11 +169,7 @@ def plot_waterfall_subplots(wf, i, ax, fig, axes, f_start=None, f_stop=None, xmi
         ax.set_ylabel("Time [s]")
     else:
         ax.set_yticklabels([])
-    # if i//ncols>0 and i%ncols==0:  # Hiding the last tick for the first subplot
-    #     ticks = ax.get_yticks()[:-1]
-    #     ax.set_yticks(ticks)
-    #     ax.set_yticklabels([f"{label:.2f}" for label in ticks])
-    return xmin,xmax
+    return 
 
 # makes both the title of the plot and the filename
 def make_title(fig,MJD,f2,fmid,drift_rate,SNR,corrs,SNRr,x):
@@ -239,31 +235,38 @@ def plot_beams(name_array, fstart, fstop, drift_rate=None, nstacks=1, nbeams=2, 
         xmax=target_data.max()
     # call the plotting function and plot the waterfall objects in wf_obj_array
     for i in range(nsubplots):
+        plot_f, plot_data = wf_obj_array[i].grab_data(min(f1, f2),max(f1, f2))
+        plot_t = wf_obj_array[i].timestamps
+        if i==target:
+            if not target_data.all()<=0.0:
+                xmin=db(target_data).min()
+                xmax=db(target_data).max()
+            else:
+                xmin=target_data.min()
+                xmax=target_data.max()
         if nstacks>1:
             ax = axes[i//ncols,i%ncols]
         else:
             ax = axes[i]
-        wf_obj = wf_obj_array[i] # i starts at 0 and increases by 1 after every loop
-        xmin,xmax=plot_waterfall_subplots(wf_obj, 
-                                i, ax, fig, axes,
-                                f_start=f1, 
-                                f_stop=f2,
-                                xmin=xmin,
-                                xmax=xmax)
+        plot_waterfall_subplots(plot_f, plot_data, plot_t, i, ax, fig, axes,
+                                f_start=f1, f_stop=f2, xmin=xmin, xmax=xmax)
         # set subplot titles
-        if SNR and SNRr:
-            if i==target:
-                subplot_title=f"target beam || SNR: {SNR:.2f}"
-            elif i//ncols==target//ncols:
-                subplot_title=f"off beam || SNR*: {SNR/SNRr:.2f}"
-        elif i//ncols==target//ncols:
-            subplot_title=[f"target beam" if i==target else "off beam"][0]
-        # MJD in number of secs (i.e. out of 86400)
+        if i%ncols==target%ncols:
+            subplot_title=f"target beam"
+        else:
+            subplot_title=f"off beam"
+        # mySNR=DOT.mySNR(plot_data)
+        # MJD in number of secs (i.e. out of 86400, not out of 100000)
         sub_MJD="_".join(os.path.basename(name_array[i]).split("_")[1:3])
-        if i//ncols!=target//ncols:
-            subplot_title=f"stacked MJD: {sub_MJD}"
-        elif nstacks>1:
+        if nstacks>1:
             subplot_title+=f" || MJD: {sub_MJD}"
+        if SNR and SNRr and i//ncols==target//ncols:
+            if i==target:
+                subplot_title+=f" || SNR*: {SNR:.2f}"
+            else:#if i//ncols==target//ncols: # index row == target row
+                subplot_title+=f" || SNR: {SNR/SNRr:.2f}"
+        # elif SNR:
+        #     subplot_title+=f" || SNR: {mySNR/SNR:.2f}"
         ax.set_title(subplot_title,pad=10)
         if target//ncols == i//ncols and nstacks>1:
             customize_subplot_frame(ax)
