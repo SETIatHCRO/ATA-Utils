@@ -66,7 +66,7 @@ def parse_args():
     parser.add_argument('-val',metavar="", type=str, default=None, help='Filter value')
     parser.add_argument('-nbeams', type=int, default=2,
                         help='optional number of beams, default = 2')
-    parser.add_argument('-stack', type=int, default=None,
+    parser.add_argument('-stack', nargs='?', const=1, type=int,
                         help='optional flag to plot other integrations in observation as subplots')
     parser.add_argument('-sf', type=float, default=4.0,
                         help='optional attenuation value for filtering')
