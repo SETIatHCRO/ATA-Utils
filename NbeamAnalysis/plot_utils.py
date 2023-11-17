@@ -125,7 +125,7 @@ def plot_waterfall_subplots(plot_f, plot_data, plot_t, i, ax, fig, axes, f_start
         xmin=plot_data.min()
         xmax=plot_data.max()
     plot_data = normalize(plot_data,xmin,xmax)
-    # calculate the plot extent/axes 
+    # calculate the plot extent/axes and make the subplot
     extent = calc_extent(plot_f=plot_f, plot_t=plot_t, MJD_time=MJD_time)
     im = ax.imshow(plot_data,
                aspect='auto',
@@ -172,23 +172,23 @@ def plot_waterfall_subplots(plot_f, plot_data, plot_t, i, ax, fig, axes, f_start
     return 
 
 # makes both the title of the plot and the filename
-def make_title(fig,MJD,f2,fmid,drift_rate,SNR,corrs,SNRr,x):
+def make_title(fig,MJD,f2,fmid,drift_rate,SNR,corrs,SNRr,x=None):
     title=f'MJD: {MJD} || fmax: {f2:.6f} MHz'
     filename=f"MJD_{MJD}_fmid{fmid:.6f}"
     if drift_rate:
         title+=f' || Drift Rate: {drift_rate:.3f} Hz/s ({drift_rate/f2*1000:.3f} nHz)'
         filename+=f"_DR{drift_rate:.3f}"
     if SNR:
-        title+=f' || SNR: {SNR:.2f}\n'
+        title+=f'\nturboSETI SNR: {SNR:.2f}'
     if corrs:
-        title+=f'Correlation Score: {corrs:.3f}'
-        filename+=f"_x{corrs:.3f}"
+        title+=f' || DOT Score: {corrs:.2f}'
+        filename+=f"_x{corrs:.2f}"
     if SNRr:
-        title+=f' || SNR ratio: {SNRr:.3f}'
-        filename+=f"_SNRr{SNRr:.3f}"
-    if x:
-        title+=f' || X score: {x:.3f}'
-        filename+=f"_X_{x:.3f}"
+        title+=f' || SNR ratio: {SNRr:.2f}'
+        filename+=f"_SNRr{SNRr:.2f}"
+    # if x:
+    #     title+=f' || X score: {x:.3f}'
+    #     filename+=f"_X_{x:.3f}"
     fig.suptitle(title,size=25)
     return filename
 
@@ -206,7 +206,7 @@ def customize_subplot_frame(ax, linewidth=8, color='r'):
 # first plotting function that sets up the plot, 
 # sends info to the subplotter, gets the title and saves the plot.
 def plot_beams(name_array, fstart, fstop, drift_rate=None, nstacks=1, nbeams=2, MJD=None, 
-                target=0, SNR=None, corrs=None, SNRr=None, x=None, path='./', pdf=False):
+                target=0, SNR=None, corrs=None, SNRr=None, path='./', pdf=False):
     # make waterfall objects for plotting from the filenames
     wf_obj_array = []
     f1 = min(fstart,fstop)
@@ -219,10 +219,8 @@ def plot_beams(name_array, fstart, fstop, drift_rate=None, nstacks=1, nbeams=2, 
         wf_obj_array.append(wf_obj)
     # initialize the plot
     nsubplots = len(name_array)
-    nrows = nstacks
-    ncols = nbeams
-    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, 
-                            figsize=(11*ncols,7*nrows), 
+    fig, axes = plt.subplots(nrows=nstacks, ncols=nbeams, 
+                            figsize=(11*nbeams,7*nstacks), 
                             gridspec_kw={'width_ratios': [1, 1.2]})
     fig.subplots_adjust(hspace=0.07, wspace=0.04)
     # collect target data for min/max normalizing
@@ -233,45 +231,50 @@ def plot_beams(name_array, fstart, fstop, drift_rate=None, nstacks=1, nbeams=2, 
     else:
         xmin=target_data.min()
         xmax=target_data.max()
+    rowSNRs=[]
+    target_col=target%nbeams
+    target_row=target//nbeams
     # call the plotting function and plot the waterfall objects in wf_obj_array
     for i in range(nsubplots):
+        # get plot data
         plot_f, plot_data = wf_obj_array[i].grab_data(min(f1, f2),max(f1, f2))
         plot_t = wf_obj_array[i].timestamps
-        if i==target:
-            if not target_data.all()<=0.0:
-                xmin=db(target_data).min()
-                xmax=db(target_data).max()
-            else:
-                xmin=target_data.min()
-                xmax=target_data.max()
-        if nstacks>1:
-            ax = axes[i//ncols,i%ncols]
-        else:
-            ax = axes[i]
+        # calculate SNR for this data
+        rowSNRs.append(DOT.mySNR(plot_data))
+        # initialize the subplot axis and feed it to the plotting function
+        ax = [axes[i//nbeams,i%nbeams] if nstacks>1 else axes[i]][0]
         plot_waterfall_subplots(plot_f, plot_data, plot_t, i, ax, fig, axes,
                                 f_start=f1, f_stop=f2, xmin=xmin, xmax=xmax)
-        # set subplot titles
-        if i%ncols==target%ncols:
-            subplot_title=f"target beam"
+        # set subplot titles for target and off-target beams
+        if i%nbeams==target_col:
+            subplot_title=f"target beam "
         else:
-            subplot_title=f"off beam"
-        # mySNR=DOT.mySNR(plot_data)
+            subplot_title=f"off beam "
         # MJD in number of secs (i.e. out of 86400, not out of 100000)
         sub_MJD="_".join(os.path.basename(name_array[i]).split("_")[1:3])
-        if nstacks>1:
-            subplot_title+=f" || MJD: {sub_MJD}"
-        if SNR and SNRr and i//ncols==target//ncols:
-            if i==target:
-                subplot_title+=f" || SNR*: {SNR:.2f}"
-            else:#if i//ncols==target//ncols: # index row == target row
-                subplot_title+=f" || SNR: {SNR/SNRr:.2f}"
-        # elif SNR:
-        #     subplot_title+=f" || SNR: {mySNR/SNR:.2f}"
+        if not MJD and i==target:
+            MJD=sub_MJD
+        # MJD only necessary for subplot titles when stacking
+        if nstacks>1: 
+            subplot_title+=f"MJD: {sub_MJD} || "
+        # target beam gets my SNR label
+        if i%nbeams==target_col: 
+            subplot_title+=f"SNR: {rowSNRs[i%nbeams]:.2f}"
+        # off-target beam gets SNRr relative to target beam
+        if i%nbeams!=target_col and target_col==0: 
+            subplot_title+=f"SNR ratio: {rowSNRs[target_col]/rowSNRs[i%nbeams]:.2f}"
+        elif nstacks>1 and target_col!=0: # this will probably break if the target beam isn't 0
+            print(f"\tTarget beam: {target_col} not first column of subplots. Cannot report SNRr.")
+        elif SNRr and target_col!=0:
+            subplot_title+=f"SNR ratio: {SNRr:.2f}"
+        if i%nbeams==nbeams-1 and nstacks>1:
+            rowSNRs=[]  # reset SNR array at the end of each row of subplots
         ax.set_title(subplot_title,pad=10)
-        if target//ncols == i//ncols and nstacks>1:
-            customize_subplot_frame(ax)
+        if target//nbeams == i//nbeams and nstacks>1:
+            customize_subplot_frame(ax) # add bold colored frame to identify target when stacking
     # set the overall plot title and filename
-    filename=make_title(fig,MJD,f2,fmid,drift_rate,SNR,corrs,SNRr,x)
+    filename=make_title(fig,MJD,f2,fmid,drift_rate,SNR,corrs,SNRr)
+    # tighten up the plots and adjust the spacing
     if nstacks>1:
         fig.tight_layout(rect=[0, 0, 1.0, 1.0])
         fig.subplots_adjust(hspace=0.11, wspace=0.02)
@@ -288,23 +291,43 @@ def plot_beams(name_array, fstart, fstop, drift_rate=None, nstacks=1, nbeams=2, 
     return None
 
 # initial function to set up plotting by manually input frequencies
-def plot_by_freqs(df0,freqs,path,pdf):
-    df = df0.drop_duplicates(subset="dat_name", keep="first")
+def plot_by_freqs(df0,obs_dir,freqs,stack=None,nbeams=2,tbeam=0,drift_rate=None,
+                    MJD=None,SNR=None,corrs=None,SNRr=None,path="./",pdf=None):
+    df = df0.drop_duplicates(subset="dat_name", keep="first").reset_index(drop=True)
+    fstart=max(freqs)
+    fend=min(freqs)
+    for index, row in df.iterrows():
+        fil_names = [row[i] for i in list(df) if i.startswith('fil_')]
+        target_fil=fil_names[tbeam]
+        if check_freqs(target_fil,freqs)=='out_of_bounds':
+            # print(f"Input frequencies {freqs} not within the frequency span of the data in",
+            #         f"\n{target_fil.split(obs_dir)[-1]}\nSkipping this file.")
+            df.drop(index, inplace=True)
     for index, row in df.reset_index(drop=True).iterrows():
-        beams = [row[i] for i in list(df) if i.startswith('fil_')]
-        if check_freqs(beams[0],freqs)=='out_of_bounds':
-            print(f"Input frequencies {freqs} not within the frequency span of the data in\n{beams[0]}\nSkipping this file.")
-            continue
-        fstart=max(freqs)
-        fend=min(freqs)
+        fil_names = [row[i] for i in list(df) if i.startswith('fil_')]
+        target_fil=fil_names[tbeam]
+        if stack>=1:
+            fil_names=get_stacks(fil_names,obs_dir,nbeams,stack)
+            nstacks=int(len(fil_names)/nbeams)
+            target_idx=fil_names.index(target_fil)
+        else:
+            target_idx=tbeam
+            nstacks=1
+        MJD="_".join(os.path.basename(target_fil).split("_")[1:3]) # MJD in number of secs
         print(f'Plotting {index+1}/{len(df)} from {fend:.6f} MHz to {fstart:.6f} MHz\n{row["dat_name"]}\n')
-        plot_beams(beams,fstart,fend,path=path,pdf=pdf)
+        if len(df)==1:
+            drift_rate=row['Drift_Rate']
+            SNR=row['SNR']
+            corrs=row['corrs']
+            SNRr=row['SNR_ratio']
+        plot_beams(fil_names, fstart, fend, drift_rate, nstacks, nbeams, 
+                    MJD, target_idx, SNR, corrs, SNRr, path, pdf)
     return len(df)
 
 # used in plot_by_freqs() to check if the frequencies are within 
 # the bounds of the filterbank file 
 def check_freqs(fil,freqs):
-    fil_meta = bl.Waterfall(target_fil,load_data=False)
+    fil_meta = bl.Waterfall(fil,load_data=False)
     minimum_frequency = fil_meta.container.f_start
     maximum_frequency = fil_meta.container.f_stop
     for freq in freqs:
