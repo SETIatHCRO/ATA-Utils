@@ -7,33 +7,34 @@ target beam. The waterfall colormap of each subplot is scaled to the data in the
 Note that although the only input file is a csv file, that csv file should contain filepaths 
 to the filterbank files needed to be accessed in order to generate the plots.
 
-plot_utils.py is required for modularized functions.
+plot_utils.py is required for modularized functions. Various extra argument flags can be used
+through terminal commands and are interpreted with the argparse package.
 
 Typical basic command line usage looks something like:
     python NbeamAnalysis/plot_DOT_hits.py <path_to_csv> -o <output_dir>
 
 There are 4 main plotting modes:
-    1.  Default plotting first filters all hits above the nominal cutoff, calculated as
-        SNR-ratios above 0.9*sf*x^2, where sf is the attenuation value (default=4.0),
-        x is the correlation score and 0.9 is included for padding. If there are more than 
-        500 (this number is adjustable with the -cutoff input flag) hits above this cutoff, 
-        the hits are sorted by SNR-ratio. If more than 500 have SNR-ratios above sf, 
-        attenuation value, then they are sorted by correlation score and the 500 lowest 
-        scoring hits are plotted. 
+    1.  Default plotting first filters all hits above the nominal cutoff, calculated as 
+        SNR-ratios above 0.9*sf*max(x-0.05,0)^(1/3), where sf (default=4.0) is the attenuation value, 
+        x is the correlation score and 0.9 and 0.05 are included for padding. If there are more 
+        than 500 (this number is adjustable with the -cutoff input flag) hits above this cutoff, 
+        the hits are sorted by SNR-ratio. If more than 500 have SNR-ratios above the attenuation value, 
+        sf, then they are sorted by correlation score and the 500 lowest scoring hits are plotted. 
 
     2.  Custom column sorting and plotting is available through optional input arguments.
         All hits can be plotted through clever employment of the optional input arguments, if desired.
+        See the parse_args() function for details.
 
     3.  Individual plots over specified a frequency range can be made with the "-freqs" flag 
         by specifying the start and end frequencies. Note that without additional sorting/filtering, 
-        this will produce a plot for each unique dat/fil in the dataframe 
-        that span the specified frequencies.
+        this will produce a plot for each unique dat/fil in the dataframe that span the specified frequencies.
     
     4.  A stack of subplots can be plotted up using other integrations in the same observation.
         With the "-stack" argument flag plus the number of adjacent integrations to plot, 
         the program will use all the filepath information in the csv to determine the common 
         observation path and add subplots for other integrations before and after the target 
-        observation, with a red frame around the target observation. 
+        observation, with a red frame around the target observation. The default value is 1
+        when using the stack flag without an integer.
         Note: this significantly increases plotting time. 
 '''
 
@@ -66,6 +67,8 @@ def parse_args():
     parser.add_argument('-val',metavar="", type=str, default=None, help='Filter value')
     parser.add_argument('-nbeams', type=int, default=2,
                         help='optional number of beams, default = 2')
+    parser.add_argument('-tbeam', type=int, default=0,
+                        help='optional set target beam number, default = 0')
     parser.add_argument('-stack', nargs='?', const=1, type=int,
                         help='optional flag to plot other integrations in observation as subplots')
     parser.add_argument('-sf', type=float, default=4.0,
@@ -146,6 +149,7 @@ def main():
     value = cmd_args["val"]             # optional, default None
     stack = cmd_args["stack"]           # optional, default None
     nbeams = cmd_args["nbeams"]         # optional, default = 2
+    tbeam = cmd_args["tbeam"]           # optional, default = 0
     sf = cmd_args["sf"]                 # optional, default = 4.0
     cutnum = cmd_args["cutoff"]         # optional, default = 500
     clobber = cmd_args["clobber"]       # optional, flag on or default off
@@ -173,11 +177,12 @@ def main():
 
     # plotting mode 1: circumvent regular plotting in the case of bespoke frequency bounds 
     if freqs:
+        obs_dir=ptu.get_obs_dir(sorted(set(df.fil_0000)))
         if not column or not operator or not value:
-            num_plots = plot_by_freqs(df,freqs,path,pdf)
+            num_plots = ptu.plot_by_freqs(df,obs_dir,freqs,stack,nbeams,tbeam,path=path,pdf=pdf)
         else:
             signals_of_interest = filter_df(df,column,operator,value)
-            num_plots = ptu.plot_by_freqs(signals_of_interest,freqs,path,pdf)
+            num_plots = ptu.plot_by_freqs(signals_of_interest,obs_dir,freqs,stack,nbeams,tbeam,path=path,pdf=pdf)
         end, time_label = get_elapsed_time(start)
         print(f"\n\t{num_plots} hits plotted in %.2f {time_label}.\n" %end)
         # This is where the program ends for this plotting mode.
@@ -221,7 +226,7 @@ def main():
         fend = row['freq_end']
 
         # determine frequency span over which to plot based on drift rate
-        target_fil=fil_names[0]
+        target_fil=fil_names[tbeam]
         fil_meta = bl.Waterfall(target_fil,load_data=False)
         minimum_frequency = fil_meta.container.f_start
         maximum_frequency = fil_meta.container.f_stop
