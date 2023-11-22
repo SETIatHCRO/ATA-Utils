@@ -61,6 +61,10 @@ def parse_args():
                         help='number of cpu cores to use in parallel')
     parser.add_argument('-sf', type=float, nargs='?', const=4, default=None,
                         help='flag to turn on spatial filtering with optional attenuation value for filtering')
+    parser.add_argument('-before', '--before', type=str,nargs=1,default=None,
+                        help='MJD before which observations should be processed')
+    parser.add_argument('-after', '--after', type=str,nargs=1,default=None,
+                        help='MJD after which observations should be processed')
     args = parser.parse_args()
     # Check for trailing slash in the directory path and add it if absent
     odict = vars(args)
@@ -90,7 +94,7 @@ def parse_args():
 # perform cross-correlation to pare down the list of hits if flagged with sf, 
 # and put the remaining hits into a dataframe.
 def dat_to_dataframe(args):
-    dat, datdir, fildir, outdir, obs, sf, count_lock, proc_count, ndats = args
+    dat, datdir, fildir, outdir, obs, sf, count_lock, proc_count, ndats, before, after = args
     start = time.time()
     with count_lock:
         dat_name = "/".join(dat.split("/")[-2:])
@@ -98,12 +102,20 @@ def dat_to_dataframe(args):
         subdirectories="/".join(dat.replace(datdir,"").split("/")[:-1])+"/"
         fil_MJD="_".join(dat.split('/')[-1].split("_")[:3])
         proc_count.value += 1
+        # optionally skip if outside input MJD bounds
+        if before and float(".".join(fil_MJD[4:].split("_"))[:len(before[0])]) >= float(".".join(before[0].split("_"))):
+            logging.info(f'Skipping dat file {proc_count.value}/{ndats} occurring after input MJD ({before[0]}):\n\t{dat_name}')
+            return pd.DataFrame(),0,1,0
+        if after and float(".".join(fil_MJD[4:].split("_"))[:len(after[0])]) <= float(".".join(after[0].split("_"))):
+            logging.info(f'Skipping dat file {proc_count.value}/{ndats} occurring before input MJD ({after[0]}):\n\t{dat_name}')
+            return pd.DataFrame(),0,1,0
         logging.info(f'\nProcessing dat file {proc_count.value}/{ndats}\n\t{dat_name}')
         hits,skipped,exact_matches=0,0,0
         # make a tuple with the corresponding fil/h5 files
-        fils=sorted(glob.glob(fildir+subdirectories+fil_MJD+'*fil'))
+        # fils=sorted(glob.glob(fildir+subdirectories+fil_MJD+'*fil'))
+        fils=sorted(glob.glob(fildir+subdirectories+os.path.basename(os.path.splitext(dat)[0])[:-4]+'????*fil'))
         if not fils:
-            fils=sorted(glob.glob(fildir+subdirectories+fil_MJD+'*h5'))
+            fils=sorted(glob.glob(fildir+subdirectories+os.path.basename(os.path.splitext(dat)[0])[:-4]+'????*h5'))
         if not fils:
             logging.info(f'\tWARNING! Could not locate filterbank files in:\n\t{fildir+dat.split(datdir)[-1].split(dat.split("/")[-1])[0]}')
             logging.info(f'\tSkipping...\n')
@@ -172,6 +184,8 @@ def main():
     tag = cmd_args["tag"]           # optional file label, default = None
     ncore = cmd_args["ncore"]       # optional, set number of cores to use, default = all
     sf = cmd_args["sf"]             # optional, flag to turn off spatial filtering
+    before = cmd_args["before"]     # optional, MJD to limit observations
+    after = cmd_args["after"]       # optional, MJD to limit observations
 
     # create the output directory if the specified path does not exist
     if not os.path.isdir(outdir):
@@ -226,7 +240,7 @@ def main():
     count_lock = manager.Lock()
     proc_count = manager.Value('i', 0)  # Shared integer to track processed count
     # Execute the parallelized function
-    input_args = [(dat_file, datdir, fildir, outdir, obs, sf, count_lock, proc_count, ndats) for dat_file in dat_files]
+    input_args = [(dat_file, datdir, fildir, outdir, obs, sf, count_lock, proc_count, ndats, before, after) for dat_file in dat_files]
     with Pool(num_processes) as pool:
         results = pool.map(dat_to_dataframe, input_args)
 
@@ -261,9 +275,9 @@ def main():
         xcutoff=np.linspace(-0.05,1.05,1000)
         ycutoff=np.array([0.9*sf*max(j-0.05,0)**(1/3) for j in xcutoff])
         plt.plot(xcutoff,ycutoff,linestyle='--',color='k',alpha=0.5,label='Nominal Cutoff')
-        plt.axhspan(sf,max(ylims[1],6.5),color='green',alpha=0.25,label='Attenuated Signals')
+        plt.axhspan(sf,max(ylims[1],10),color='green',alpha=0.25,label='Attenuated Signals')
         plt.axhspan(1/sf,sf,color='grey',alpha=0.25,label='Similar SNRs')
-        plt.axhspan(min(0.2,ylims[0]),1/sf,color='brown',alpha=0.25,label='Off-beam Attenuated')
+        plt.axhspan(1/max(ylims[1],10),1/sf,color='brown',alpha=0.25,label='Off-beam Attenuated')
         plt.ylim(1/max(ylims[1],10),max(ylims[1],10))
         plt.yscale('log')
         plt.xlim(-0.1,1.1)
