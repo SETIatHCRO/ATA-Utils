@@ -55,6 +55,10 @@ def parse_args():
                         help='flag to turn on spatial filtering with optional attenuation value for filtering')
     parser.add_argument('-store', action='store_true',
                         help='flag to retain pickle files after successful completion')
+    parser.add_argument('-before', '--before', type=str,nargs=1,default=None,
+                        help='MJD before which observations should be processed')
+    parser.add_argument('-after', '--after', type=str,nargs=1,default=None,
+                        help='MJD after which observations should be processed')
     args = parser.parse_args()
     # Check for trailing slash in the directory path and add it if absent
     odict = vars(args)
@@ -96,6 +100,8 @@ def main():
     tag = cmd_args["tag"]           # optional file label, default = None
     sf = cmd_args["sf"]             # optional, flag to turn off spatial filtering
     store = cmd_args["store"]       # optional, flag to retain pickle files
+    before = cmd_args["before"]     # optional, MJD to limit observations
+    after = cmd_args["after"]       # optional, MJD to limit observations
 
     # create the output directory if the specified path does not exist
     if not os.path.isdir(outdir):
@@ -151,12 +157,22 @@ def main():
         # get the common subdirectories with trailing "/"
         subdirectories="/".join(dat.replace(datdir,"").split("/")[:-1])+"/"
         fil_MJD="_".join(dat.split('/')[-1].split("_")[:3])
+        # optionally skip if outside input MJD bounds
+        if before and float(".".join(fil_MJD[4:].split("_"))[:len(before[0])]) >= float(".".join(before[0].split("_"))):
+            logging.info(f'Skipping dat file {i+1}/{ndats} occurring after input MJD ({before[0]}):\n\t{dat_name}')
+            skipped+=1
+            continue
+        if after and float(".".join(fil_MJD[4:].split("_"))[:len(after[0])]) <= float(".".join(after[0].split("_"))):
+            logging.info(f'Skipping dat file {i+1}/{ndats} occurring before input MJD ({after[0]}):\n\t{dat_name}')
+            skipped+=1
+            continue
         logging.info(f'Processing dat file {i+1}/{ndats}:\n\t{dat_name}')
         mid=time.time()
         # make a tuple with the corresponding .fil files
-        fils=sorted(glob.glob(fildir+subdirectories+fil_MJD+'*fil'))
+        # fils=sorted(glob.glob(fildir+subdirectories+fil_MJD+'*fil'))
+        fils=sorted(glob.glob(fildir+subdirectories+os.path.basename(os.path.splitext(dat)[0])[:-4]+'????*fil'))
         if not fils:
-            fils=sorted(glob.glob(fildir+subdirectories+fil_MJD+'*h5'))
+            fils=sorted(glob.glob(fildir+subdirectories+os.path.basename(os.path.splitext(dat)[0])[:-4]+'????*h5'))
         if not fils:
             logging.info(f'\tWARNING! Could not locate filterbank files in:\n\t{fildir+dat.split(datdir)[-1].split(dat.split("/")[-1])[0]}')
             logging.info(f'\tSkipping this dat file...')
@@ -230,9 +246,9 @@ def main():
             xcutoff=np.linspace(-0.05,1.05,1000)
             ycutoff=np.array([0.9*sf_nom*max(j-0.05,0)**(1/3) for j in xcutoff])
             plt.plot(xcutoff,ycutoff,linestyle='--',color='k',alpha=0.5,label='Nominal Cutoff')
-            plt.axhspan(sf_nom,max(ylims[1],6.5),color='green',alpha=0.25,label='Attenuated Signals')
+            plt.axhspan(sf_nom,max(ylims[1],10),color='green',alpha=0.25,label='Attenuated Signals')
             plt.axhspan(1/sf_nom,sf_nom,color='grey',alpha=0.25,label='Similar SNRs')
-            plt.axhspan(min(0.2,ylims[0]),1/sf_nom,color='brown',alpha=0.25,label='Off-beam Attenuated')
+            plt.axhspan(1/max(ylims[1],10),1/sf_nom,color='brown',alpha=0.25,label='Off-beam Attenuated')
             plt.ylim(1/max(ylims[1],10),max(ylims[1],10))
             plt.yscale('log')
             plt.xlim(-0.1,1.1)
