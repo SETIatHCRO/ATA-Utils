@@ -79,6 +79,10 @@ def parse_args():
                         help='overwrite files if they already exist')
     parser.add_argument('-pdf', action='store_true',
                         help='plot file format as pdf (default is png)')
+    parser.add_argument('-before', '--before', type=str,nargs=1,default=None,
+                        help='MJD before which observations should be plotted')
+    parser.add_argument('-after', '--after', type=str,nargs=1,default=None,
+                        help='MJD after which observations should be plotted')
     parser.add_argument("-freqs", type=list_parser, nargs="+", help="optional tuple of frequencies")
     args = parser.parse_args()
     odict = vars(args)
@@ -155,6 +159,8 @@ def main():
     clobber = cmd_args["clobber"]       # optional, flag on or default off
     pdf = cmd_args["pdf"]               # optional, flag on or default off
     freqs = cmd_args["freqs"]           # optional, custom frequency span
+    before = cmd_args["before"]         # optional, MJD to limit observation plots
+    after = cmd_args["after"]           # optional, MJD to limit observation plots
     paths_cleared=[]                    # clobber counter
 
     # set the path where the plots will be saved (optionally remove old plots with clobber)
@@ -202,8 +208,8 @@ def main():
         if signals_of_interest.empty==True:
             print(f"Warning: Default filtering produced an empty dataset. Reverting to lowest socres of the original dataset.\n")
             signals_of_interest=df
-        print(f"Min score in this set: {signals_of_interest.iloc[0].corrs:.3f}")
-        print(f"Max score in this set: {signals_of_interest.iloc[-1].corrs:.3f}")
+        # print(f"Min score in this set: {signals_of_interest.iloc[0].corrs:.3f}")
+        # print(f"Max score in this set: {signals_of_interest.iloc[-1].corrs:.3f}")
     # plotting mode 3: custom dataframe filtering from input arguments
     else:
         signals_of_interest = filter_df(df,column,operator,value)
@@ -214,7 +220,27 @@ def main():
         obs_dir=ptu.get_obs_dir(sorted(set(signals_of_interest.fil_0000)))
 
     signals_of_interest=signals_of_interest.sort_values(by=['dat_name','Corrected_Frequency'])
-    print(f"{len(signals_of_interest)} hits will be plotted out of {len(df)} total from the input dataframe.")
+    print(f"{len(signals_of_interest)} hits selected out of {len(df)} total from the input dataframe.")
+
+    skipped=0
+    # optionally skip if outside input MJD bounds
+    if before or after:
+        num_plots=len(signals_of_interest)
+        for index, row in signals_of_interest.reset_index(drop=True).iterrows():
+            MJD_nums="_".join(os.path.basename(row["dat_name"]).split("_")[1:3]) # MJD in number of secs
+            if before and float(".".join(MJD_nums.split("_"))[:len(before[0])]) >= float(".".join(before[0].split("_"))):
+                skipped+=1
+                signals_of_interest=signals_of_interest.drop(index=index)
+                continue
+            if after and float(".".join(MJD_nums.split("_"))[:len(after[0])]) <= float(".".join(after[0].split("_"))):
+                skipped+=1
+                signals_of_interest=signals_of_interest.drop(index=index)
+        print(f'{skipped}/{num_plots} potential plots skipped outside input before/after MJD.')
+        if len(signals_of_interest)==0:
+            print(f'\t0 hits remaining in the specified window.\n')
+        else:
+            print(f'\tThe remaining {len(signals_of_interest)} will be plotted.\n')
+        signals_of_interest=signals_of_interest.reset_index(drop=True)
 
     # iterate through the csv of interesting hits and plot row by row
     for index, row in signals_of_interest.reset_index(drop=True).iterrows():
