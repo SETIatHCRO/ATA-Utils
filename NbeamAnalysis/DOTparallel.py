@@ -30,6 +30,7 @@ import sys
 import glob
 import argparse
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import DOT_utils as DOT
 import logging
 import psutil
@@ -280,6 +281,7 @@ def main():
         plt.axhspan(1/max(ylims[1],10),1/sf,color='brown',alpha=0.25,label='Off-beam Attenuated')
         plt.ylim(1/max(ylims[1],10),max(ylims[1],10))
         plt.yscale('log')
+        ax.yaxis.set_major_formatter(ScalarFormatter())
         plt.xlim(-0.1,1.1)
         plt.legend().get_frame().set_alpha(0) 
         plt.grid(which='major', axis='both', alpha=0.5,linestyle=':')
