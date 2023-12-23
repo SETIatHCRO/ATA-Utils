@@ -225,12 +225,6 @@ def plot_beams(name_array, fstart, fstop, drift_rate=None, nstacks=1, nbeams=2, 
     fig.subplots_adjust(hspace=0.07, wspace=0.04)
     # collect target data for min/max normalizing
     target_f, target_data = wf_obj_array[target].grab_data(min(f1, f2),max(f1, f2), 0)
-    if not target_data.all()<=0.0:
-        xmin=db(target_data).min()
-        xmax=db(target_data).max()
-    else:
-        xmin=target_data.min()
-        xmax=target_data.max()
     rowSNRs=[]
     target_col=target%nbeams
     target_row=target//nbeams
@@ -239,6 +233,20 @@ def plot_beams(name_array, fstart, fstop, drift_rate=None, nstacks=1, nbeams=2, 
         # get plot data
         plot_f, plot_data = wf_obj_array[i].grab_data(min(f1, f2),max(f1, f2))
         plot_t = wf_obj_array[i].timestamps
+        if i%nbeams==target_col:
+            if not target_data.all()<=0.0:
+                xmin=db(plot_data).min()
+                xmax=db(plot_data).max()
+            else:
+                xmin=plot_data.min()
+                xmax=plot_data.max()
+        else:
+            if not target_data.all()<=0.0:
+                xmin=db(target_data).min()
+                xmax=db(target_data).max()
+            else:
+                xmin=target_data.min()
+                xmax=target_data.max()
         # calculate SNR for this data
         rowSNRs.append(DOT.mySNR(plot_data))
         # initialize the subplot axis and feed it to the plotting function
@@ -296,6 +304,8 @@ def plot_by_freqs(df0,obs_dir,freqs,stack=None,nbeams=2,tbeam=0,drift_rate=None,
     df = df0.drop_duplicates(subset="dat_name", keep="first").reset_index(drop=True)
     fstart=max(freqs)
     fend=min(freqs)
+    if stack==None:
+        stack=0
     for index, row in df.iterrows():
         fil_names = [row[i] for i in list(df) if i.startswith('fil_')]
         target_fil=fil_names[tbeam]

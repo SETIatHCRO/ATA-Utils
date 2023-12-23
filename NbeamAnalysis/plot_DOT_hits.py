@@ -138,6 +138,49 @@ def filter_df(df,column,operator,value):
     signals_of_interest = signals_of_interest.sort_values(by=column,ascending=False).reset_index(drop=True)
     return signals_of_interest
 
+# default filtering
+def default_filter(df,sf,cutnum):
+    print(f"\nDefault filtering:")
+    print(f"Up to the {cutnum} lowest correlation scores with an SNR-ratio above the attenuation value of {sf:.2f}\n")
+    xcutoff=np.linspace(-0.05,1.05,1000)
+    ycutoff=np.array([0.9*sf*max(j-0.05,0)**(1/3) for j in xcutoff])
+    dfx=df[np.interp(df.corrs,xcutoff,ycutoff)<df.SNR_ratio].reset_index(drop=True)
+    dfx=dfx.sort_values(by='SNR_ratio',ascending=False).reset_index(drop=True)
+    if len(dfx[dfx.SNR_ratio>sf])>cutnum:
+        dfx=dfx[dfx.SNR_ratio>sf].reset_index(drop=True)
+        signals_of_interest = dfx.sort_values(by='corrs',ascending=True).reset_index(drop=True).iloc[:cutnum]
+    else:
+        signals_of_interest = dfx.iloc[:cutnum]
+    if signals_of_interest.empty==True:
+        print(f"Warning: Default filtering produced an empty dataset. Reverting to lowest socres of the original dataset.\n")
+        signals_of_interest=df
+    return signals_of_interest
+
+# optional, skip hits that are outside input MJD bounds
+def limit_by_MJD(df,before,after):
+    # tot_hits=len(df)
+    for index, row in df.iterrows():
+        # print(f"{index}/{tot_hits}")
+        MJD_nums="_".join((row["dat_name"].split("/")[-1]).split("_")[1:3]) # MJD in number of secs
+        if before: 
+            before_float=float(".".join(before[0].split("_")))
+            MJD_float=float(".".join(MJD_nums.split("_"))[:len(before[0])])
+            if MJD_float >= before_float:
+                df=df.drop(index=index)
+                continue
+        if after:
+            after_float=float(".".join(after[0].split("_")))
+            MJD_float=float(".".join(MJD_nums.split("_"))[:len(after[0])])
+            if MJD_float <= after_float:
+                df=df.drop(index=index)
+                continue
+        # print(after_float,MJD_float,before_float)
+    df=df.reset_index(drop=True)
+    if len(df)==0:
+        print(f"\n\tNo hits found within specified window.")
+        sys.exit()
+    return df
+
 
     # Main program execution
 def main():
@@ -177,17 +220,26 @@ def main():
             ext='*.png'
         purge(path,ext)
         paths_cleared.append(path)
-
+        
     # load the csv into a dataframe and filter based on the input parameters
     df = pd.read_csv(csv)
-
+    
+    # if stack flagged, determine the common observing directory for additional integrations.
+    # computed outside of loop to save time
+    if stack:
+        obs_dir=ptu.get_obs_dir(sorted(set(df.fil_0000)))
+    
     # plotting mode 1: circumvent regular plotting in the case of bespoke frequency bounds 
     if freqs:
         obs_dir=ptu.get_obs_dir(sorted(set(df.fil_0000)))
         if not column or not operator or not value:
+            if before or after: # optional, limit hits within MJD range
+                df=limit_by_MJD(df,before,after)
             num_plots = ptu.plot_by_freqs(df,obs_dir,freqs,stack,nbeams,tbeam,path=path,pdf=pdf)
         else:
             signals_of_interest = filter_df(df,column,operator,value)
+            if before or after: # optional, limit hits within MJD range
+                df=limit_by_MJD(df,before,after)
             num_plots = ptu.plot_by_freqs(signals_of_interest,obs_dir,freqs,stack,nbeams,tbeam,path=path,pdf=pdf)
         end, time_label = get_elapsed_time(start)
         print(f"\n\t{num_plots} hits plotted in %.2f {time_label}.\n" %end)
@@ -195,52 +247,16 @@ def main():
         return None
     # plotting mode 2: default plotting
     elif not column or not operator or not value:
-        print(f"\nDefault filtering:\nUp to the {cutnum} lowest correlation scores with an SNR-ratio above the attenuation value of {sf:.2f}\n")
-        xcutoff=np.linspace(-0.05,1.05,1000)
-        ycutoff=np.array([0.9*sf*max(j-0.05,0)**(1/3) for j in xcutoff])
-        dfx=df[np.interp(df.corrs,xcutoff,ycutoff)<df.SNR_ratio].reset_index(drop=True)
-        dfx=dfx.sort_values(by='SNR_ratio',ascending=False).reset_index(drop=True)
-        if len(dfx[dfx.SNR_ratio>sf])>cutnum:
-            dfx=dfx[dfx.SNR_ratio>sf].reset_index(drop=True)
-            signals_of_interest = dfx.sort_values(by='corrs',ascending=True).reset_index(drop=True).iloc[:cutnum]
-        else:
-            signals_of_interest = dfx.iloc[:cutnum]
-        if signals_of_interest.empty==True:
-            print(f"Warning: Default filtering produced an empty dataset. Reverting to lowest socres of the original dataset.\n")
-            signals_of_interest=df
-        # print(f"Min score in this set: {signals_of_interest.iloc[0].corrs:.3f}")
-        # print(f"Max score in this set: {signals_of_interest.iloc[-1].corrs:.3f}")
+        signals_of_interest = default_filter(df,sf,cutnum)
     # plotting mode 3: custom dataframe filtering from input arguments
     else:
         signals_of_interest = filter_df(df,column,operator,value)
-    
-    # if stack flagged, determine the common observing directory for additional integrations.
-    # computed outside of loop to save time
-    if stack:
-        obs_dir=ptu.get_obs_dir(sorted(set(signals_of_interest.fil_0000)))
+
+    if before or after: # optional, limit hits within MJD range
+        signals_of_interest=limit_by_MJD(signals_of_interest,before,after)
 
     signals_of_interest=signals_of_interest.sort_values(by=['dat_name','Corrected_Frequency'])
     print(f"{len(signals_of_interest)} hits selected out of {len(df)} total from the input dataframe.")
-
-    skipped=0
-    # optionally skip if outside input MJD bounds
-    if before or after:
-        num_plots=len(signals_of_interest)
-        for index, row in signals_of_interest.reset_index(drop=True).iterrows():
-            MJD_nums="_".join(os.path.basename(row["dat_name"]).split("_")[1:3]) # MJD in number of secs
-            if before and float(".".join(MJD_nums.split("_"))[:len(before[0])]) >= float(".".join(before[0].split("_"))):
-                skipped+=1
-                signals_of_interest=signals_of_interest.drop(index=index)
-                continue
-            if after and float(".".join(MJD_nums.split("_"))[:len(after[0])]) <= float(".".join(after[0].split("_"))):
-                skipped+=1
-                signals_of_interest=signals_of_interest.drop(index=index)
-        print(f'{skipped}/{num_plots} potential plots skipped outside input before/after MJD.')
-        if len(signals_of_interest)==0:
-            print(f'\t0 hits remaining in the specified window.\n')
-        else:
-            print(f'\tThe remaining {len(signals_of_interest)} will be plotted.\n')
-        signals_of_interest=signals_of_interest.reset_index(drop=True)
 
     # iterate through the csv of interesting hits and plot row by row
     for index, row in signals_of_interest.reset_index(drop=True).iterrows():
