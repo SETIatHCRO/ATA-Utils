@@ -30,6 +30,7 @@ def sig_cor(s1,s2):
 def wf_data(fil,f1,f2):
     return bl.Waterfall(fil,f1,f2).grab_data(f1,f2)
 
+# %%
 # define main plotting function
 def plot_beams(name_array, fstart, fstop, drift_rate=None, SNR=None, corrs=None, SNRr=None, x=None, save=False, path='./', pdf=False):
     # make waterfall objects for plotting from the filenames
@@ -624,4 +625,108 @@ for i in range(2):
     SNRr=DOT.mySNR(s0)/DOT.mySNR(s1)
     plot_beams(beams,f1,f2,DR,SNR,corrs,SNRr,save=save,path=outdir,pdf=pdf)
 
+# %%
+plt.rcParams.update({'font.size': 22})
+csv='/home/ntusay/scripts/TRAPPIST-1/obs_11-05_DOTnbeam.csv'
+csv='/home/ntusay/scripts/TRAPPIST-1/obs_10-27_DOTnbeam.csv'
+df=pd.read_csv(csv)
+obs_dir=ptu.get_obs_dir(sorted(set(df.fil_0000)))
+after=['59879_28287'] # 10-27
+# after=['59888_17980'] # 11-05
+# after=['59880_13432']
+before=['59879_29842'] # 10-27
+# before=['59888_18758'] # 11-05
+# before=['59880_18357']
+stack=1
+nbeams=2
+cutnum=7000
+sf=4
+xcutoff=np.linspace(-0.05,1.05,1000)
+ycutoff=np.array([0.9*sf*max(j-0.05,0)**(1/3) for j in xcutoff])
+dfx=df[np.interp(df.corrs,xcutoff,ycutoff)<df.SNR_ratio].reset_index(drop=True)
+dfx=dfx.sort_values(by='SNR_ratio',ascending=False).reset_index(drop=True)
+if len(dfx[dfx.SNR_ratio>sf])>cutnum:
+    dfx=dfx[dfx.SNR_ratio>sf].reset_index(drop=True)
+    signals_of_interest = dfx.sort_values(by='corrs',ascending=True).reset_index(drop=True).iloc[:cutnum]
+else:
+    signals_of_interest = dfx.iloc[:cutnum]
+skipped=0
+num_plots=len(signals_of_interest)
+for index, row in signals_of_interest.reset_index(drop=True).iterrows():
+    MJD_nums="_".join(os.path.basename(row["dat_name"]).split("_")[1:3]) # MJD in number of secs
+    MJD_float=float(".".join(MJD_nums.split("_"))[:len(before[0])])
+    before_float=float(".".join(before[0].split("_")))
+    after_float=float(".".join(after[0].split("_")))
+    if before and MJD_float >= before_float:
+        signals_of_interest=signals_of_interest.drop(index=index)
+        skipped+=1
+        continue
+    if after and MJD_float <= after_float:
+        signals_of_interest=signals_of_interest.drop(index=index)
+        skipped+=1
+        continue
+    print(after_float,MJD_float,before_float)
+# %%
+print(f'{skipped}/{num_plots} potential plots skipped outside input before/after MJD.')
+if len(signals_of_interest)==0:
+    print(f'\t0 hits remaining in the specified window.\n')
+else:
+    print(f'\tThe remaining {len(signals_of_interest)} will be plotted.\n')
+signals_of_interest=signals_of_interest.reset_index(drop=True)
+for index, row in signals_of_interest.reset_index(drop=True).iterrows():
+    # make an array of the filenames for each beam based on the column names
+    fil_names = [row[i] for i in list(signals_of_interest) if i.startswith('fil_')]
+    
+    # determine frequency range for plot
+    fstart = row['freq_start']
+    fend = row['freq_end']
+
+    # determine frequency span over which to plot based on drift rate
+    target_fil=fil_names[0]
+    fil_meta = bl.Waterfall(target_fil,load_data=False)
+    minimum_frequency = fil_meta.container.f_start
+    maximum_frequency = fil_meta.container.f_stop
+    tsamp = fil_meta.header['tsamp']    # time bin length in seconds
+    obs_length = fil_meta.n_ints_in_file * tsamp # total length of observation in seconds
+    DR = row['Drift_Rate']              # reported drift rate
+    padding=1+np.log10(row['SNR'])/10   # padding based on reported strength of signal
+    MJD_dec=fil_meta.header['tstart']   # MJD in decimal form
+    MJD_nums="_".join(os.path.basename(target_fil).split("_")[1:3]) # MJD in number of secs
+    # calculate the amount of frequency drift with some padding
+    half_span=abs(DR)*obs_length*padding  
+    if half_span<250:
+        half_span=250 # minimum 500 Hz span window
+    fmid = row['Corrected_Frequency']
+    fstart=round(max(fmid-half_span*1e-6,minimum_frequency),6)
+    fend=round(min(fmid+half_span*1e-6,maximum_frequency),6)
+    
+    # grab the other integrations to stack as subplots, if stack flagged on
+    if stack:
+        # add the relevant fil files to the array from the other integrations
+        fil_names = ptu.get_stacks(fil_names,obs_dir,nbeams,stack) 
+        if len(fil_names)/nbeams%1==0:
+            nstacks=int(len(fil_names)/nbeams) # get number of subplot rows
+        # the fil array is sorted in chronological order from get_stacks so...
+        target=fil_names.index(target_fil) # identify which fil contains the target signal in the array
+    else:
+        nstacks=1   # one row of plots if not stacking
+        target=0
+
+    # plot
+    print(f'Plotting {index+1}/{len(signals_of_interest)} with central frequency {fmid:.6f} MHz,'+
+            f' and SNR ratio: {row["SNR_ratio"]:.3f}{[f", in {nstacks} rows of subplots" if nstacks>1 else ""][0]}')
+    path='/home/ntusay/scripts/test4/plots/'
+    ptu.plot_beams(fil_names,
+                fstart,
+                fend,
+                drift_rate=row['Drift_Rate'],
+                nstacks=nstacks,
+                nbeams=nbeams,
+                MJD=MJD_nums,
+                target=target,
+                SNR=row['SNR'],
+                corrs=row['corrs'],
+                SNRr=row['SNR_ratio'],
+                path=path,
+                pdf=True)
 # %%
