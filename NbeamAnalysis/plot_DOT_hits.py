@@ -71,6 +71,8 @@ def parse_args():
                         help='optional set target beam number, default = 0')
     parser.add_argument('-stack', nargs='?', const=1, type=int,
                         help='optional flag to plot other integrations in observation as subplots')
+    parser.add_argument('-zoom', nargs='?', const=10, type=float,
+                        help='optional flag to zoom in/out plot in frequency space')
     parser.add_argument('-sf', type=float, default=4.0,
                         help='optional attenuation value for filtering')
     parser.add_argument('-cutoff', type=int, default=500,
@@ -83,6 +85,10 @@ def parse_args():
                         help='MJD before which observations should be plotted')
     parser.add_argument('-after', '--after', type=str,nargs=1,default=None,
                         help='MJD after which observations should be plotted')
+    parser.add_argument('-fbelow', '--fbelow', type=float,nargs=1,default=None,
+                        help='frequency below which hits should be plotted')
+    parser.add_argument('-fabove', '--fabove', type=float,nargs=1,default=None,
+                        help='frequency above which hits should be plotted')
     parser.add_argument("-freqs", type=list_parser, nargs="+", help="optional tuple of frequencies")
     args = parser.parse_args()
     odict = vars(args)
@@ -158,9 +164,10 @@ def default_filter(df,sf,cutnum):
 
 # optional, skip hits that are outside input MJD bounds
 def limit_by_MJD(df,before,after):
-    # tot_hits=len(df)
+    # print(before,after)
+    # tot=len(df)
     for index, row in df.iterrows():
-        # print(f"{index}/{tot_hits}")
+        # print(index,tot)
         MJD_nums="_".join((row["dat_name"].split("/")[-1]).split("_")[1:3]) # MJD in number of secs
         if before: 
             before_float=float(".".join(before[0].split("_")))
@@ -174,10 +181,28 @@ def limit_by_MJD(df,before,after):
             if MJD_float <= after_float:
                 df=df.drop(index=index)
                 continue
-        # print(after_float,MJD_float,before_float)
     df=df.reset_index(drop=True)
     if len(df)==0:
-        print(f"\n\tNo hits found within specified window.")
+        print(f"\n\tNo hits found within specified time window.")
+        sys.exit()
+    return df
+
+# optional, skip hits that are outside input frequency bounds
+def limit_by_frange(df,fbelow,fabove):
+    # print(fbelow,fabove)
+    print(f"{len(df)} hits between {min(df.Corrected_Frequency)} and {max(df.Corrected_Frequency)} MHz.")
+    for index, row in df.iterrows():
+        if fbelow: 
+            if row['Corrected_Frequency'] >= fbelow[0]:
+                df=df.drop(index=index)
+                continue
+        if fabove:
+            if row['Corrected_Frequency'] <= fabove[0]:
+                df=df.drop(index=index)
+                continue
+    df=df.reset_index(drop=True)
+    if len(df)==0:
+        print(f"\n\tNo hits found within specified frequency window.")
         sys.exit()
     return df
 
@@ -195,6 +220,7 @@ def main():
     operator = cmd_args["op"]           # optional, default None
     value = cmd_args["val"]             # optional, default None
     stack = cmd_args["stack"]           # optional, default None
+    zoom = cmd_args["zoom"]             # optional, default None
     nbeams = cmd_args["nbeams"]         # optional, default = 2
     tbeam = cmd_args["tbeam"]           # optional, default = 0
     sf = cmd_args["sf"]                 # optional, default = 4.0
@@ -204,6 +230,8 @@ def main():
     freqs = cmd_args["freqs"]           # optional, custom frequency span
     before = cmd_args["before"]         # optional, MJD to limit observation plots
     after = cmd_args["after"]           # optional, MJD to limit observation plots
+    fbelow = cmd_args["fbelow"]         # optional, MJD to limit observation plots
+    fabove = cmd_args["fabove"]           # optional, MJD to limit observation plots
     paths_cleared=[]                    # clobber counter
 
     # set the path where the plots will be saved (optionally remove old plots with clobber)
@@ -232,6 +260,10 @@ def main():
     # plotting mode 1: circumvent regular plotting in the case of bespoke frequency bounds 
     if freqs:
         obs_dir=ptu.get_obs_dir(sorted(set(df.fil_0000)))
+        if zoom:
+            fmid=(max(freqs)+min(freqs))/2
+            fspan=(max(freqs)-min(freqs))*zoom
+            freqs=[round(fmid+fpsan,6),round(fmid-fspan,6)]
         if not column or not operator or not value:
             if before or after: # optional, limit hits within MJD range
                 df=limit_by_MJD(df,before,after)
@@ -254,6 +286,9 @@ def main():
 
     if before or after: # optional, limit hits within MJD range
         signals_of_interest=limit_by_MJD(signals_of_interest,before,after)
+
+    if fbelow or fabove: # optional, limit hits within frequency range
+        signals_of_interest=limit_by_frange(signals_of_interest,fbelow,fabove)
 
     signals_of_interest=signals_of_interest.sort_values(by=['dat_name','Corrected_Frequency'])
     print(f"{len(signals_of_interest)} hits selected out of {len(df)} total from the input dataframe.")
@@ -280,11 +315,13 @@ def main():
         MJD_nums="_".join(os.path.basename(target_fil).split("_")[1:3]) # MJD in number of secs
         # calculate the amount of frequency drift with some padding
         half_span=abs(DR)*obs_length*padding  
+        if zoom:
+            half_span*=zoom
         if half_span<250:
             half_span=250 # minimum 500 Hz span window
         fmid = row['Corrected_Frequency']
-        fstart=round(max(fmid-half_span*1e-6,minimum_frequency),6)
-        fend=round(min(fmid+half_span*1e-6,maximum_frequency),6)
+        # fstart=round(max(fmid-half_span*1e-6,minimum_frequency),6)
+        # fend=round(min(fmid+half_span*1e-6,maximum_frequency),6)
         
         # grab the other integrations to stack as subplots, if stack flagged on
         if stack:
@@ -301,6 +338,8 @@ def main():
         else:
             nstacks=1   # one row of plots if not stacking
             target=0
+        fstart=round(max(fmid-half_span*1e-6*nstacks,minimum_frequency),6)
+        fend=round(min(fmid+half_span*1e-6*nstacks,maximum_frequency),6)
 
         # plot
         print(f'Plotting {index+1}/{len(signals_of_interest)} with central frequency {fmid:.6f} MHz,'+
