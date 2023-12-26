@@ -264,17 +264,17 @@ def plot_beams(name_array, fstart, fstop, drift_rate=None, nstacks=1, nbeams=2, 
             MJD=sub_MJD
         # MJD only necessary for subplot titles when stacking
         if nstacks>1: 
-            subplot_title+=f"MJD: {sub_MJD} || "
+            subplot_title+=f"MJD: {sub_MJD}"
         # target beam gets my SNR label
-        if i%nbeams==target_col: 
-            subplot_title+=f"SNR: {rowSNRs[i%nbeams]:.2f}"
+        # if i%nbeams==target_col: 
+        #     subplot_title+=f" || SNR: {rowSNRs[i%nbeams]:.2f}"
         # off-target beam gets SNRr relative to target beam
         if i%nbeams!=target_col and target_col==0: 
-            subplot_title+=f"SNR ratio: {rowSNRs[target_col]/rowSNRs[i%nbeams]:.2f}"
+            subplot_title+=f" || SNR ratio: {rowSNRs[target_col]/rowSNRs[i%nbeams]:.2f}"
         elif nstacks>1 and target_col!=0: # this will probably break if the target beam isn't 0
             print(f"\tTarget beam: {target_col} not first column of subplots. Cannot report SNRr.")
         elif SNRr and target_col!=0:
-            subplot_title+=f"SNR ratio: {SNRr:.2f}"
+            subplot_title+=f" || SNR ratio: {SNRr:.2f}"
         if i%nbeams==nbeams-1 and nstacks>1:
             rowSNRs=[]  # reset SNR array at the end of each row of subplots
         ax.set_title(subplot_title,pad=10)
@@ -302,8 +302,8 @@ def plot_beams(name_array, fstart, fstop, drift_rate=None, nstacks=1, nbeams=2, 
 def plot_by_freqs(df0,obs_dir,freqs,stack=None,nbeams=2,tbeam=0,drift_rate=None,
                     MJD=None,SNR=None,corrs=None,SNRr=None,path="./",pdf=None):
     df = df0.drop_duplicates(subset="dat_name", keep="first").reset_index(drop=True)
-    fstart=max(freqs)
-    fend=min(freqs)
+    # fstart=max(freqs)
+    # fend=min(freqs)
     if stack==None:
         stack=0
     for index, row in df.iterrows():
@@ -324,12 +324,14 @@ def plot_by_freqs(df0,obs_dir,freqs,stack=None,nbeams=2,tbeam=0,drift_rate=None,
             target_idx=tbeam
             nstacks=1
         MJD="_".join(os.path.basename(target_fil).split("_")[1:3]) # MJD in number of secs
-        print(f'Plotting {index+1}/{len(df)} from {fend:.6f} MHz to {fstart:.6f} MHz\n{row["dat_name"]}\n')
         if len(df)==1:
             drift_rate=row['Drift_Rate']
             SNR=row['SNR']
             corrs=row['corrs']
             SNRr=row['SNR_ratio']
+        fstart=max(freqs)+(max(freqs)-min(freqs))*nstacks
+        fend=min(freqs)-(max(freqs)-min(freqs))*nstacks
+        print(f'Plotting {index+1}/{len(df)} from {fend:.6f} MHz to {fstart:.6f} MHz\n{row["dat_name"]}\n')
         plot_beams(fil_names, fstart, fend, drift_rate, nstacks, nbeams, 
                     MJD, target_idx, SNR, corrs, SNRr, path, pdf)
     return len(df)
