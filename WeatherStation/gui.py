@@ -7,7 +7,7 @@ update_loop function uses updateData.py
 
 import tkinter as tk
 from update_data import TelnetLink
-
+from tkinter import ttk
 
 # Global GUI variables
 FONT = 'Arial'
@@ -16,7 +16,7 @@ REDHEX = '#ff0000'
 GREENHEX = '#006400'
 BLUEHEX = '#0000ff'
 WINDOW_WIDTH = 440 # To fit RPI screen
-WINDOW_HEIGHT = 280 
+WINDOW_HEIGHT = 280
 
 HOSTNAME1 = 'weatherport-primary.hcro.org'
 PORT1 = 4001
@@ -105,14 +105,18 @@ class Summary(tk.Frame):
 
     def __init__(self, parent, interface):
         self.frame = tk.Frame(parent)
-        self.frame.rowconfigure(3, weight=1) # Configure tk grid layout
+        self.frame.rowconfigure(5, weight=1) # Configure tk grid layout
         self.frame.columnconfigure(3, weight=1)
         self.interface = interface
+
+        # Add horizontal spaces in the GUI
+        for row_idx in range(self.frame.grid_size()[1]):
+            self.frame.grid_rowconfigure(row_idx, minsize=30)
 
         add_menu_buttons(
             interface=interface,
             button_frame=self.frame,
-            button_row=4)
+            button_row=6)
 
 
     def updtate_frame_values(self):
@@ -129,68 +133,89 @@ class Summary(tk.Frame):
             self.frame,
             font=(FONT, FONTSIZE),
             text="WS1:")
-        tmp_label.grid(row=0, column=0, sticky="nsew")
+        tmp_label.grid(row=0, column=0, sticky='w')
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg = REDHEX,
             text=f"T: {values_dict['WS1_AirTemp']} {DEGREESIGN}C")
-        tmp_label.grid(row=0, column=1, sticky="nsew")
+        tmp_label.grid(row=0, column=1, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg = BLUEHEX,
             text=f"H: {values_dict['WS1_RelHumidity']} %")
-        tmp_label.grid(row=0, column=2, sticky="nsew")
+        tmp_label.grid(row=0, column=2, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg=GREENHEX,
             text=f"W:{values_dict['WS1_WindSpeedAvg']} km/h")
-        tmp_label.grid(row=1, column=1, sticky="nsew")
+        tmp_label.grid(row=1, column=1, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg=GREENHEX,
             text=f"Dir: {values_dict['WS1_WindDirAvg']} {DEGREESIGN}")
-        tmp_label.grid(row=1, column=2, sticky="nsew")
+        tmp_label.grid(row=1, column=2, sticky='w')
 
         # WS2:
         tmp_label = tk.Label(
                     self.frame,
                     font=(FONT, FONTSIZE),
                     text="WS2:")
-        tmp_label.grid(row=2, column=0, sticky="nsew")
+        tmp_label.grid(row=3, column=0, sticky='w')
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg=REDHEX,
             text=f"T: {values_dict['WS2_AirTemp']} {DEGREESIGN}C")
-        tmp_label.grid(row=2, column=1, sticky="nsew")
+        tmp_label.grid(row=3, column=1, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg=BLUEHEX,
             text=f"H:{values_dict['WS2_RelHumidity']} %")
-        tmp_label.grid(row=2, column=2, sticky="nsew")
+        tmp_label.grid(row=3, column=2, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg=GREENHEX,
             text=f"W:{values_dict['WS2_WindSpeedAvg']} km/h")
-        tmp_label.grid(row=3, column=1, sticky="nsew")
+        tmp_label.grid(row=4, column=1, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg=GREENHEX,
             text=f"Dir:{values_dict['WS2_WindDirAvg']} {DEGREESIGN}")
-        tmp_label.grid(row=3, column=2, sticky="nsew")
+        tmp_label.grid(row=4, column=2, sticky='w')
+
+        # Horizontal line between WS data
+        tmp_separator = ttk.Separator(
+            self.frame,
+            orient='horizontal')
+        tmp_separator.grid(
+            row=2,
+            column=0,
+            columnspan=3,
+            ipadx=100,
+            sticky='ew')
+
+        tmp_separator = ttk.Separator(
+            self.frame,
+            orient='horizontal')
+        tmp_separator.grid(
+            row=5,
+            column=0,
+            columnspan=3,
+            ipadx=100,
+            sticky='ew')
 
 
 class WS1(tk.Frame):
@@ -219,37 +244,37 @@ class WS1(tk.Frame):
             self.frame,
             font=(FONT, FONTSIZE),
             text="WS1 Station monitoring:")
-        tmp_label.grid(row=0, column=0, sticky="nsew")
+        tmp_label.grid(row=0, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             text=f"Heating T:{values_dict['WS1_HeatingTemp']} {DEGREESIGN}C")
-        tmp_label.grid(row=1, column=0, sticky="nsew")
+        tmp_label.grid(row=1, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             text=f"Supply V:{values_dict['WS1_SupplyVoltage']} unit")
-        tmp_label.grid(row=1, column=1, sticky="nsew")
+        tmp_label.grid(row=1, column=1, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             text="Rain:")
-        tmp_label.grid(row=2, column=0, sticky="nsew")
+        tmp_label.grid(row=2, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             text=f"Accumulation:{values_dict['WS1_RainAccu']} unit")
-        tmp_label.grid(row=3, column=0, sticky="nsew")
+        tmp_label.grid(row=3, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             text=f"Intensity:{values_dict['WS1_RainIntens']} unit")
-        tmp_label.grid(row=3, column=1, sticky="nsew")
+        tmp_label.grid(row=3, column=1, sticky='w')
 
 class WS2(tk.Frame):
     ''' Detailled info about the second weather station WS2.'''
