@@ -65,11 +65,11 @@ class TelnetLink():
             'Ta': 'AirTemp', # Air temperature [C]
             'Ua': 'RelHumidity', # Relative humidity [%]
             'Pa': 'AirPressure', # Air pressure [hPa]
-            'Th': 'HeatingTemp', # [C]
+            'Th': 'HeatingTemp', # [C] 
             'Vh': 'HeatingVoltage', # (N = heating is off) TODO: handle this case
             'Vs': 'SupplyVoltage', # [V]
             'Vr': 'refVoltage', # 3.5V reference voltage
-            'Id': 'info', # information field TODO: handle full message
+            'Id': 'id', # information field, 'Primary' or 'Secondary'
             'Rc': 'RainAccu', # Rain accumulation [mm]
             'Rd': 'RainDur', # Rain duration [s]
             'Ri': 'RainIntens', # Rain intensity [mm/h]

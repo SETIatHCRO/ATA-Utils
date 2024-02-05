@@ -6,8 +6,9 @@ update_loop function uses updateData.py
 '''
 
 import tkinter as tk
-from update_data import TelnetLink
 from tkinter import ttk
+from update_data import TelnetLink
+
 
 # Global GUI variables
 FONT = 'Arial'
@@ -25,8 +26,8 @@ PORT2 = 4001
 DEGREESIGN = '\N{DEGREE SIGN}'
 
 
-class WeatherInterface(tk.Tk):
-    """ Controll the 3 weather frames. """
+class WeatherInterface():
+    ''' Controll the 3 weather frames. '''
 
     def __init__(self):
         # GUI window (root) setup
@@ -34,7 +35,6 @@ class WeatherInterface(tk.Tk):
         self.root.title("HCRO Weather")
         self.root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
         self.root.resizable(False, False)
-
         self.sensor_values = {} # Will be filled with telnet data
 
         # Open both telnet connections, ready to read weather station's data
@@ -53,30 +53,32 @@ class WeatherInterface(tk.Tk):
 
 
     def show_frame(self, frame_name):
-        """ Display the tk frame 'frame_name' by putting it on top of the others. """
+        ''' Display the tk frame 'frame_name' by putting it on top of the others. '''
 
         frame = self.frame_objects[frame_name].frame
         frame.tkraise()
 
 
     def updatevalues(self):
-        """ Update the frames with info from the weather stations. """
+        ''' Update the frames with info from the weather stations. '''
 
         dict_ws1 = self.telnet_link_1.read_values()
         dict_ws2 = self.telnet_link_2.read_values()
         self.sensor_values = dict_ws1 | dict_ws2 # Merge the 2 dicts
-        for frame_name in self.frame_objects:
-            self.frame_objects[frame_name].updtate_frame_values()
+
+        for frame_object in self.frame_objects.items():
+            # frame_object[1] is the object, [0] is the dict key
+            frame_object[1].updtate_frame_values()
 
 
 def add_menu_buttons(interface, button_frame, button_row = 5):
-    """
+    '''
     Buttons to select frame aligned with a grid, always there.
     
     interface: the weather interface object (used to switch frames)
     frame: the frame to display the buttons on
     button_row: Which grig row to display
-    """
+    '''
 
     summary_button = tk.Button(
         button_frame,
@@ -100,7 +102,7 @@ def add_menu_buttons(interface, button_frame, button_row = 5):
     ws2_button.grid(row=button_row, column=2, padx=20, sticky='EW')
 
 
-class Summary(tk.Frame):
+class Summary():
     ''' Most important info from WS1 and WS2.'''
 
     def __init__(self, parent, interface):
@@ -218,7 +220,7 @@ class Summary(tk.Frame):
             sticky='ew')
 
 
-class WS1(tk.Frame):
+class WS1():
     ''' Detailled info about the first weather station WS1.'''
 
     def __init__(self, parent, interface):
@@ -230,7 +232,7 @@ class WS1(tk.Frame):
         add_menu_buttons(
             interface=interface,
             button_frame=self.frame,
-            button_row=4)
+            button_row=5)
 
     def updtate_frame_values(self):
         ''' 
@@ -240,10 +242,11 @@ class WS1(tk.Frame):
         '''
 
         values_dict = self.interface.sensor_values
+
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text="WS1 Station monitoring:")
+            text=f"Id: {values_dict['WS1_id']}")
         tmp_label.grid(row=0, column=0, sticky='w')
 
         tmp_label = tk.Label(
@@ -255,28 +258,23 @@ class WS1(tk.Frame):
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Supply V:{values_dict['WS1_SupplyVoltage']} unit")
-        tmp_label.grid(row=1, column=1, sticky='w')
-
-        tmp_label = tk.Label(
-            self.frame,
-            font=(FONT, FONTSIZE),
-            text="Rain:")
+            text=f"Heating Volt:{values_dict['WS1_HeatingVoltage']} V")
         tmp_label.grid(row=2, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Accumulation:{values_dict['WS1_RainAccu']} unit")
+            text=f"Supply V:{values_dict['WS1_SupplyVoltage']} V")
         tmp_label.grid(row=3, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Intensity:{values_dict['WS1_RainIntens']} unit")
-        tmp_label.grid(row=3, column=1, sticky='w')
+            text=f"Reference V:{values_dict['WS1_refVoltage']} V")
+        tmp_label.grid(row=4, column=0, sticky='w')
 
-class WS2(tk.Frame):
+
+class WS2():
     ''' Detailled info about the second weather station WS2.'''
 
     def __init__(self, parent, interface):
@@ -288,7 +286,7 @@ class WS2(tk.Frame):
         add_menu_buttons(
             interface=interface,
              button_frame=self.frame,
-             button_row=4)
+             button_row=5)
 
     def updtate_frame_values(self):
         ''' 
@@ -298,41 +296,36 @@ class WS2(tk.Frame):
         '''
 
         values_dict = self.interface.sensor_values
+
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text="WS2 Station monitoring:")
-        tmp_label.grid(row=0, column=0, sticky="nsew")
+            text=f"Id: {values_dict['WS2_id']}")
+        tmp_label.grid(row=0, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             text=f"Heating T:{values_dict['WS2_HeatingTemp']} {DEGREESIGN}C")
-        tmp_label.grid(row=1, column=0, sticky="nsew")
+        tmp_label.grid(row=1, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Supply V:{values_dict['WS2_SupplyVoltage']} unit")
-        tmp_label.grid(row=1, column=1, sticky="nsew")
+            text=f"Heating Volt:{values_dict['WS2_HeatingVoltage']} V")
+        tmp_label.grid(row=2, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text="Rain:")
-        tmp_label.grid(row=2, column=0, sticky="nsew")
+            text=f"Supply V:{values_dict['WS2_SupplyVoltage']} V")
+        tmp_label.grid(row=3, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Accumulation:{values_dict['WS2_RainAccu']} unit")
-        tmp_label.grid(row=3, column=0, sticky="nsew")
-
-        tmp_label = tk.Label(
-            self.frame,
-            font=(FONT, FONTSIZE),
-            text=f"Intensity:{values_dict['WS2_RainIntens']} unit")
-        tmp_label.grid(row=3, column=1, sticky="nsew")
+            text=f"Reference V:{values_dict['WS2_refVoltage']} V")
+        tmp_label.grid(row=4, column=0, sticky='w')
 
 
 def update_loop(weather_interface):
