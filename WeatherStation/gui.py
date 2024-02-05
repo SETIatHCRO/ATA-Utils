@@ -6,15 +6,17 @@ update_loop function uses updateData.py
 '''
 
 import tkinter as tk
-from tkinter import ttk
 from update_data import TelnetLink
 
 
 # Global GUI variables
 FONT = 'Arial'
-FONTSIZE = 16
-WINDOW_WIDTH = 440
-WINDOW_HEIGHT = 280
+FONTSIZE = 17
+REDHEX = '#ff0000'
+GREENHEX = '#006400'
+BLUEHEX = '#0000ff'
+WINDOW_WIDTH = 440 # To fit RPI screen
+WINDOW_HEIGHT = 280 
 
 HOSTNAME1 = 'weatherport-primary.hcro.org'
 PORT1 = 4001
@@ -30,8 +32,8 @@ class WeatherInterface(tk.Tk):
         # GUI window (root) setup
         self.root = tk.Tk()
         self.root.title("HCRO Weather")
-        #self.root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
-        #self.root.resizable(False, False)
+        self.root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
+        self.root.resizable(False, False)
 
         self.sensor_values = {} # Will be filled with telnet data
 
@@ -78,7 +80,7 @@ def add_menu_buttons(interface, button_frame, button_row = 5):
 
     summary_button = tk.Button(
         button_frame,
-        text = 'Summary',
+        text = 'Main',
         font = (FONT,FONTSIZE),
         command = lambda: interface.show_frame("Summary"))
     summary_button.grid(row=button_row, column=0, padx=20, sticky='EW')
@@ -102,16 +104,15 @@ class Summary(tk.Frame):
     ''' Most important info from WS1 and WS2.'''
 
     def __init__(self, parent, interface):
-        self.frame = ttk.Frame(parent)
+        self.frame = tk.Frame(parent)
         self.frame.rowconfigure(3, weight=1) # Configure tk grid layout
         self.frame.columnconfigure(3, weight=1)
         self.interface = interface
-        label = ttk.Label(self.frame, text="Summary page")
-        label.grid(row=0, column=1, sticky="nsew")
+
         add_menu_buttons(
             interface=interface,
             button_frame=self.frame,
-            button_row=3)
+            button_row=4)
 
 
     def updtate_frame_values(self):
@@ -122,44 +123,74 @@ class Summary(tk.Frame):
         '''
 
         values_dict = self.interface.sensor_values
-        tmp_label = ttk.Label(
-            self.frame,
-            text=f"T:{values_dict['WS1_AirTemp']} {DEGREESIGN}C")
-        tmp_label.grid(row=1, column=0, sticky="nsew")
 
-        tmp_label = ttk.Label(
+        # WS1:
+        tmp_label = tk.Label(
             self.frame,
-            text=f"Hum:{values_dict['WS1_RelHumidity']} %")
+            font=(FONT, FONTSIZE),
+            text="WS1:")
+        tmp_label.grid(row=0, column=0, sticky="nsew")
+        tmp_label = tk.Label(
+            self.frame,
+            font=(FONT, FONTSIZE),
+            fg = REDHEX,
+            text=f"T: {values_dict['WS1_AirTemp']} {DEGREESIGN}C")
+        tmp_label.grid(row=0, column=1, sticky="nsew")
+
+        tmp_label = tk.Label(
+            self.frame,
+            font=(FONT, FONTSIZE),
+            fg = BLUEHEX,
+            text=f"H: {values_dict['WS1_RelHumidity']} %")
+        tmp_label.grid(row=0, column=2, sticky="nsew")
+
+        tmp_label = tk.Label(
+            self.frame,
+            font=(FONT, FONTSIZE),
+            fg=GREENHEX,
+            text=f"W:{values_dict['WS1_WindSpeedAvg']} km/h")
         tmp_label.grid(row=1, column=1, sticky="nsew")
 
-        tmp_label = ttk.Label(
+        tmp_label = tk.Label(
             self.frame,
-            text=f"Wind:{values_dict['WS1_WindSpeedAvg']} km/h")
-        tmp_label.grid(row=2, column=0, sticky="nsew")
-
-        tmp_label = ttk.Label(self.frame,
-            text=f"Wind dir:{values_dict['WS1_WindDirAvg']} {DEGREESIGN}")
-        tmp_label.grid(row=2, column=1, sticky="nsew")
-
-        tmp_label = ttk.Label(
-            self.frame,
-            text=f"T:{values_dict['WS2_AirTemp']} {DEGREESIGN}C")
+            font=(FONT, FONTSIZE),
+            fg=GREENHEX,
+            text=f"Dir: {values_dict['WS1_WindDirAvg']} {DEGREESIGN}")
         tmp_label.grid(row=1, column=2, sticky="nsew")
 
-        tmp_label = ttk.Label(
+        # WS2:
+        tmp_label = tk.Label(
+                    self.frame,
+                    font=(FONT, FONTSIZE),
+                    text="WS2:")
+        tmp_label.grid(row=2, column=0, sticky="nsew")
+        tmp_label = tk.Label(
             self.frame,
-            text=f"Hum:{values_dict['WS2_RelHumidity']} %")
-        tmp_label.grid(row=1, column=3, sticky="nsew")
+            font=(FONT, FONTSIZE),
+            fg=REDHEX,
+            text=f"T: {values_dict['WS2_AirTemp']} {DEGREESIGN}C")
+        tmp_label.grid(row=2, column=1, sticky="nsew")
 
-        tmp_label = ttk.Label(
+        tmp_label = tk.Label(
             self.frame,
-            text=f"Wind:{values_dict['WS2_WindSpeedAvg']} km/h")
+            font=(FONT, FONTSIZE),
+            fg=BLUEHEX,
+            text=f"H:{values_dict['WS2_RelHumidity']} %")
         tmp_label.grid(row=2, column=2, sticky="nsew")
 
-        tmp_label = ttk.Label(
+        tmp_label = tk.Label(
             self.frame,
-            text=f"Wind dir:{values_dict['WS2_WindDirAvg']} {DEGREESIGN}")
-        tmp_label.grid(row=2, column=3, sticky="nsew")
+            font=(FONT, FONTSIZE),
+            fg=GREENHEX,
+            text=f"W:{values_dict['WS2_WindSpeedAvg']} km/h")
+        tmp_label.grid(row=3, column=1, sticky="nsew")
+
+        tmp_label = tk.Label(
+            self.frame,
+            font=(FONT, FONTSIZE),
+            fg=GREENHEX,
+            text=f"Dir:{values_dict['WS2_WindDirAvg']} {DEGREESIGN}")
+        tmp_label.grid(row=3, column=2, sticky="nsew")
 
 
 class WS1(tk.Frame):
@@ -167,7 +198,7 @@ class WS1(tk.Frame):
 
     def __init__(self, parent, interface):
         #super(WS1, self).__init__() # initialize parent (tk.Frame)
-        self.frame = ttk.Frame(parent)
+        self.frame = tk.Frame(parent)
         self.frame.rowconfigure(3, weight=1)
         self.frame.columnconfigure(2, weight=1)
         self.interface = interface
@@ -184,33 +215,39 @@ class WS1(tk.Frame):
         '''
 
         values_dict = self.interface.sensor_values
-        tmp_label = ttk.Label(
+        tmp_label = tk.Label(
             self.frame,
+            font=(FONT, FONTSIZE),
             text="WS1 Station monitoring:")
         tmp_label.grid(row=0, column=0, sticky="nsew")
 
-        tmp_label = ttk.Label(
+        tmp_label = tk.Label(
             self.frame,
+            font=(FONT, FONTSIZE),
             text=f"Heating T:{values_dict['WS1_HeatingTemp']} {DEGREESIGN}C")
         tmp_label.grid(row=1, column=0, sticky="nsew")
 
-        tmp_label = ttk.Label(
+        tmp_label = tk.Label(
             self.frame,
+            font=(FONT, FONTSIZE),
             text=f"Supply V:{values_dict['WS1_SupplyVoltage']} unit")
         tmp_label.grid(row=1, column=1, sticky="nsew")
 
-        tmp_label = ttk.Label(
+        tmp_label = tk.Label(
             self.frame,
+            font=(FONT, FONTSIZE),
             text="Rain:")
         tmp_label.grid(row=2, column=0, sticky="nsew")
 
-        tmp_label = ttk.Label(
+        tmp_label = tk.Label(
             self.frame,
+            font=(FONT, FONTSIZE),
             text=f"Accumulation:{values_dict['WS1_RainAccu']} unit")
         tmp_label.grid(row=3, column=0, sticky="nsew")
 
-        tmp_label = ttk.Label(
+        tmp_label = tk.Label(
             self.frame,
+            font=(FONT, FONTSIZE),
             text=f"Intensity:{values_dict['WS1_RainIntens']} unit")
         tmp_label.grid(row=3, column=1, sticky="nsew")
 
@@ -219,7 +256,7 @@ class WS2(tk.Frame):
 
     def __init__(self, parent, interface):
         #super(WS2, self).__init__() # initialize parent (tk.Frame)
-        self.frame = ttk.Frame(parent)
+        self.frame = tk.Frame(parent)
         self.frame.rowconfigure(3, weight=1)
         self.frame.columnconfigure(2, weight=1)
         self.interface = interface
@@ -236,33 +273,39 @@ class WS2(tk.Frame):
         '''
 
         values_dict = self.interface.sensor_values
-        tmp_label = ttk.Label(
+        tmp_label = tk.Label(
             self.frame,
+            font=(FONT, FONTSIZE),
             text="WS2 Station monitoring:")
         tmp_label.grid(row=0, column=0, sticky="nsew")
 
-        tmp_label = ttk.Label(
+        tmp_label = tk.Label(
             self.frame,
+            font=(FONT, FONTSIZE),
             text=f"Heating T:{values_dict['WS2_HeatingTemp']} {DEGREESIGN}C")
         tmp_label.grid(row=1, column=0, sticky="nsew")
 
-        tmp_label = ttk.Label(
+        tmp_label = tk.Label(
             self.frame,
+            font=(FONT, FONTSIZE),
             text=f"Supply V:{values_dict['WS2_SupplyVoltage']} unit")
         tmp_label.grid(row=1, column=1, sticky="nsew")
 
-        tmp_label = ttk.Label(
+        tmp_label = tk.Label(
             self.frame,
+            font=(FONT, FONTSIZE),
             text="Rain:")
         tmp_label.grid(row=2, column=0, sticky="nsew")
 
-        tmp_label = ttk.Label(
+        tmp_label = tk.Label(
             self.frame,
+            font=(FONT, FONTSIZE),
             text=f"Accumulation:{values_dict['WS2_RainAccu']} unit")
         tmp_label.grid(row=3, column=0, sticky="nsew")
 
-        tmp_label = ttk.Label(
+        tmp_label = tk.Label(
             self.frame,
+            font=(FONT, FONTSIZE),
             text=f"Intensity:{values_dict['WS2_RainIntens']} unit")
         tmp_label.grid(row=3, column=1, sticky="nsew")
 
