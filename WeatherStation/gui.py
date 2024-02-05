@@ -140,28 +140,28 @@ class Summary():
             self.frame,
             font=(FONT, FONTSIZE),
             fg = REDHEX,
-            text=f"T: {values_dict['WS1_AirTemp']} {DEGREESIGN}C")
+            text=f"T: {values_dict['WS1_AirTemp']}{DEGREESIGN}C")
         tmp_label.grid(row=0, column=1, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg = BLUEHEX,
-            text=f"H: {values_dict['WS1_RelHumidity']} %")
+            text=f"H: {values_dict['WS1_RelHumidity']}%")
         tmp_label.grid(row=0, column=2, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg=GREENHEX,
-            text=f"W:{values_dict['WS1_WindSpeedAvg']} km/h")
+            text=f"W: {values_dict['WS1_WindSpeedAvg']}km/h")
         tmp_label.grid(row=1, column=1, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg=GREENHEX,
-            text=f"Dir: {values_dict['WS1_WindDirAvg']} {DEGREESIGN}")
+            text=f"Dir: {values_dict['WS1_WindDirAvg']}{DEGREESIGN}")
         tmp_label.grid(row=1, column=2, sticky='w')
 
         # WS2:
@@ -174,28 +174,28 @@ class Summary():
             self.frame,
             font=(FONT, FONTSIZE),
             fg=REDHEX,
-            text=f"T: {values_dict['WS2_AirTemp']} {DEGREESIGN}C")
+            text=f"T: {values_dict['WS2_AirTemp']}{DEGREESIGN}C")
         tmp_label.grid(row=3, column=1, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg=BLUEHEX,
-            text=f"H:{values_dict['WS2_RelHumidity']} %")
+            text=f"H:{values_dict['WS2_RelHumidity']}%")
         tmp_label.grid(row=3, column=2, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg=GREENHEX,
-            text=f"W:{values_dict['WS2_WindSpeedAvg']} km/h")
+            text=f"W: {values_dict['WS2_WindSpeedAvg']}km/h")
         tmp_label.grid(row=4, column=1, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg=GREENHEX,
-            text=f"Dir:{values_dict['WS2_WindDirAvg']} {DEGREESIGN}")
+            text=f"Dir: {values_dict['WS2_WindDirAvg']}{DEGREESIGN}")
         tmp_label.grid(row=4, column=2, sticky='w')
 
         # Horizontal line between WS data
@@ -252,25 +252,25 @@ class WS1():
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Heating T:{values_dict['WS1_HeatingTemp']} {DEGREESIGN}C")
+            text=f"Heating T:{values_dict['WS1_HeatingTemp']}{DEGREESIGN}C")
         tmp_label.grid(row=1, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Heating Volt:{values_dict['WS1_HeatingVoltage']} V")
+            text=f"Heating Volt:{values_dict['WS1_HeatingVoltage']}V")
         tmp_label.grid(row=2, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Supply V:{values_dict['WS1_SupplyVoltage']} V")
+            text=f"Supply V:{values_dict['WS1_SupplyVoltage']}V")
         tmp_label.grid(row=3, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Reference V:{values_dict['WS1_refVoltage']} V")
+            text=f"Reference V:{values_dict['WS1_refVoltage']}V")
         tmp_label.grid(row=4, column=0, sticky='w')
 
 
@@ -306,25 +306,25 @@ class WS2():
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Heating T:{values_dict['WS2_HeatingTemp']} {DEGREESIGN}C")
+            text=f"Heating T:{values_dict['WS2_HeatingTemp']}{DEGREESIGN}C")
         tmp_label.grid(row=1, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Heating Volt:{values_dict['WS2_HeatingVoltage']} V")
+            text=f"Heating Volt:{values_dict['WS2_HeatingVoltage']}V")
         tmp_label.grid(row=2, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Supply V:{values_dict['WS2_SupplyVoltage']} V")
+            text=f"Supply V:{values_dict['WS2_SupplyVoltage']}V")
         tmp_label.grid(row=3, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Reference V:{values_dict['WS2_refVoltage']} V")
+            text=f"Reference V:{values_dict['WS2_refVoltage']}V")
         tmp_label.grid(row=4, column=0, sticky='w')
 
 
