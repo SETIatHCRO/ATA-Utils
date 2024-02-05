@@ -4,6 +4,7 @@ Get the WS sensor data from telnet connections.
 
 from telnetlib import Telnet
 import atexit
+import warnings
 
 
 class TelnetLink():
@@ -17,6 +18,7 @@ class TelnetLink():
         self.link_name = link_name # WS1 or WS2 to add prefix to parsed variables
         self.tn = Telnet()
         self.tn.open(self.host, self.port) # Open telnet connection
+        self.tries_before_restart = 3 # 1 minute of parsing errors will trigger first telent restart
         atexit.register(self.tn.close) # Be sure to close telnet connection if the program exits
 
 
@@ -59,7 +61,7 @@ class TelnetLink():
             ('Ri=', 1),
             ('Hc=', 1),
             ('Hd=', 1),
-            ('Hi=', 0),
+            ('Hi=', 0)
         )
 
         # Transform to human readable variable names, def in Vaisala WXT530 user guide
@@ -90,24 +92,39 @@ class TelnetLink():
         couldnt_parse = '' # To display variables that failed to parse
 
         for idx, var_to_parse in enumerate(vars_to_parse_tab):
+
+            # Construct readable variable name
+            translated_name = var_name_dict[var_to_parse[0][:-1]]
+            var_name = f"{self.link_name}_{translated_name}"
+
             # Look if we find matching variable to extract
             if raw_values[idx][:len(var_to_parse[0])] == var_to_parse[0]:
-                translated_name = var_name_dict[var_to_parse[0][:-1]]
-                var_name = f"{self.link_name}_{translated_name}"
                 # Create result directory entery
                 parsed_values[var_name] = raw_values[idx][len(var_to_parse[0]):-var_to_parse[1]]
 
-            else: # Couldn't find the WS variable in the table
+            # Couldn't find the variable in the table
+            else:
                 couldnt_parse += f'{var_to_parse[0][:-1]}, '
+                parsed_values[var_name] = 'n/a'
 
         if couldnt_parse != '': # Parsing of at least one WS value failed
-            # TODO: Handle the error? (e.g.: reset_connection?)
-            print(f"Parsing failed for vaules: {couldnt_parse}")
+            warnings.warn(f"Warning: Parsing failed for vaules: {couldnt_parse}")
+            self.tries_before_restart -= 1
+            print(self.tries_before_restart)
+            if self.tries_before_restart <= 0:
+                warnings.warn(f"Warning: Restarting {self.host}:{self.port} telnet connection.")
+                self.tries_before_restart = 15 # Wait 5 minutes before next restart
+                self.restart_connection()
+
+        elif self.tries_before_restart > 3:
+            # Connection reset happened but works fine now
+            # We want to slowly go back to 1 minute restart buffer
+            self.tries_before_restart -=1
 
         return parsed_values
 
 
-    def reset_connection(self):
+    def restart_connection(self):
         ''' Close and re-open telnet link. '''
 
         self.tn.close()
