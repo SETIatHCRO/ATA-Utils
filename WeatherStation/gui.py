@@ -12,12 +12,13 @@ from update_data import TelnetLink
 
 # Global GUI variables
 FONT = 'Arial'
-FONTSIZE = 17
+FONTSIZE = 30
 REDHEX = '#ff0000'
 GREENHEX = '#006400'
 BLUEHEX = '#0000ff'
-WINDOW_WIDTH = 440 # To fit RPI screen
-WINDOW_HEIGHT = 280
+
+WINDOW_WIDTH = 720
+WINDOW_HEIGHT = 480
 
 HOSTNAME1 = 'weatherport-primary.hcro.org'
 PORT1 = 4001
@@ -32,6 +33,10 @@ class WeatherInterface():
     def __init__(self):
         # GUI window (root) setup
         self.root = tk.Tk()
+        #self.root.state('zoomed')
+
+
+        self.root.winfo_width()
         self.root.title("HCRO Weather")
         self.root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
         self.root.resizable(False, False)
@@ -145,7 +150,7 @@ class Summary():
             self.frame,
             font=(FONT, FONTSIZE),
             text="WS1:")
-        tmp_label.grid(row=0, column=0, sticky='w',padx=(int(WINDOW_WIDTH/10), 10))
+        tmp_label.grid(row=0, column=0, sticky='w',padx=(int(WINDOW_WIDTH/10), 10), pady =(50,0))
 
         tmp_label = tk.Label(
             self.frame,
@@ -256,7 +261,7 @@ class WS1():
             self.frame,
             font=(FONT, FONTSIZE),
             text=f"Vaisala WXT530 Id: {values_dict['WS1_id']}")
-        tmp_label.grid(row=0, column=0, sticky='w')
+        tmp_label.grid(row=0, column=0, sticky='w', pady =(50,0))
 
         tmp_label = tk.Label(
             self.frame,
@@ -307,7 +312,7 @@ class WS2():
             self.frame,
             font=(FONT, FONTSIZE),
             text=f"Vaisala WXT530 Id: {values_dict['WS2_id']}")
-        tmp_label.grid(row=0, column=0, sticky='w')
+        tmp_label.grid(row=0, column=0, sticky='w', pady =(50,0))
 
         tmp_label = tk.Label(
             self.frame,
