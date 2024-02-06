@@ -79,7 +79,7 @@ class WeatherInterface():
 
         dict_ws1 = self.telnet_link_1.read_values()
         dict_ws2 = self.telnet_link_2.read_values()
-        self.sensor_values = dict_ws1 | dict_ws2 # Merge the 2 dicts
+        self.sensor_values = {**dict_ws1, **dict_ws2} # Merge the 2 dicts
 
         for frame_object in self.frame_objects.items():
             # frame_object[1] is the object, [0] is the dict key
