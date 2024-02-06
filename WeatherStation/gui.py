@@ -37,6 +37,14 @@ class WeatherInterface():
         self.root.resizable(False, False)
         self.sensor_values = {} # Will be filled with telnet data
 
+        self.button_frame = tk.Frame()
+        self.button_frame.rowconfigure(1, weight=1)
+        self.button_frame.columnconfigure(3, weight=1)
+
+        add_menu_buttons(
+            interface=self,
+            button_frame=self.button_frame)
+
         # Open both telnet connections, ready to read weather station's data
         self.telnet_link_1 = TelnetLink(host = HOSTNAME1, port = PORT1, link_name = 'WS1')
         self.telnet_link_2 = TelnetLink(host = HOSTNAME2, port = PORT2, link_name = 'WS2')
@@ -54,9 +62,16 @@ class WeatherInterface():
 
     def show_frame(self, frame_name):
         ''' Display the tk frame 'frame_name' by putting it on top of the others. '''
+        #master_grid = tk.Frame()
+        #master_grid.rowconfigure(1, weight=1)
+        #master_grid.columnconfigure(2, weight=1)
 
         frame = self.frame_objects[frame_name].frame
+        frame.grid(row=0, column=0, sticky='nsew')
         frame.tkraise()
+
+        self.button_frame.tkraise()
+        self.button_frame.grid(row=1, column=0, sticky='ew')
 
 
     def updatevalues(self):
@@ -71,7 +86,7 @@ class WeatherInterface():
             frame_object[1].updtate_frame_values()
 
 
-def add_menu_buttons(interface, button_frame, button_row = 5):
+def add_menu_buttons(interface, button_frame):
     '''
     Buttons to select frame aligned with a grid, always there.
     
@@ -85,21 +100,21 @@ def add_menu_buttons(interface, button_frame, button_row = 5):
         text = 'Main',
         font = (FONT,FONTSIZE),
         command = lambda: interface.show_frame("Summary"))
-    summary_button.grid(row=button_row, column=0, padx=20, sticky='EW')
+    summary_button.grid(row=0, column=0, sticky='ew', padx=(int(WINDOW_WIDTH/10), 20))
 
     ws1_button = tk.Button(
         button_frame,
         text = 'WS1',
         font = (FONT,FONTSIZE),
         command = lambda: interface.show_frame("WS1"))
-    ws1_button.grid(row=button_row, column=1, padx=20, sticky='EW')
+    ws1_button.grid(row=0, column=1, padx=20, sticky='ew')
 
     ws2_button = tk.Button(
         button_frame,
         font = (FONT,FONTSIZE),
         text = 'WS2',
         command = lambda: interface.show_frame("WS2"))
-    ws2_button.grid(row=button_row, column=2, padx=20, sticky='EW')
+    ws2_button.grid(row=0, column=2, padx=20, sticky='ew')
 
 
 class Summary():
@@ -114,11 +129,6 @@ class Summary():
         # Add horizontal spaces in the GUI
         for row_idx in range(self.frame.grid_size()[1]):
             self.frame.grid_rowconfigure(row_idx, minsize=30)
-
-        add_menu_buttons(
-            interface=interface,
-            button_frame=self.frame,
-            button_row=6)
 
 
     def updtate_frame_values(self):
@@ -135,7 +145,8 @@ class Summary():
             self.frame,
             font=(FONT, FONTSIZE),
             text="WS1:")
-        tmp_label.grid(row=0, column=0, sticky='w')
+        tmp_label.grid(row=0, column=0, sticky='w',padx=(int(WINDOW_WIDTH/10), 10))
+
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
@@ -148,7 +159,7 @@ class Summary():
             font=(FONT, FONTSIZE),
             fg = BLUEHEX,
             text=f"H: {values_dict['WS1_RelHumidity']}%")
-        tmp_label.grid(row=0, column=2, sticky='w')
+        tmp_label.grid(row=0, column=2, sticky='w', padx=(0, 50))
 
         tmp_label = tk.Label(
             self.frame,
@@ -169,7 +180,8 @@ class Summary():
                     self.frame,
                     font=(FONT, FONTSIZE),
                     text="WS2:")
-        tmp_label.grid(row=3, column=0, sticky='w')
+        tmp_label.grid(row=3, column=0, sticky='w',padx=(int(WINDOW_WIDTH/10), 5))
+
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
@@ -229,10 +241,7 @@ class WS1():
         self.frame.rowconfigure(3, weight=1)
         self.frame.columnconfigure(2, weight=1)
         self.interface = interface
-        add_menu_buttons(
-            interface=interface,
-            button_frame=self.frame,
-            button_row=5)
+
 
     def updtate_frame_values(self):
         ''' 
@@ -246,31 +255,31 @@ class WS1():
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Id: {values_dict['WS1_id']}")
+            text=f"Vaisala WXT530 Id: {values_dict['WS1_id']}")
         tmp_label.grid(row=0, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Heating T:{values_dict['WS1_HeatingTemp']}{DEGREESIGN}C")
+            text=f"Heating Temperature: {values_dict['WS1_HeatingTemp']}{DEGREESIGN}C")
         tmp_label.grid(row=1, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Heating Volt:{values_dict['WS1_HeatingVoltage']}V")
+            text=f"Heating Voltage: {values_dict['WS1_HeatingVoltage']}V")
         tmp_label.grid(row=2, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Supply V:{values_dict['WS1_SupplyVoltage']}V")
+            text=f"Supply Voltage: {values_dict['WS1_SupplyVoltage']}V")
         tmp_label.grid(row=3, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Reference V:{values_dict['WS1_refVoltage']}V")
+            text=f"Reference Voltage: {values_dict['WS1_refVoltage']}V")
         tmp_label.grid(row=4, column=0, sticky='w')
 
 
@@ -283,10 +292,7 @@ class WS2():
         self.frame.rowconfigure(3, weight=1)
         self.frame.columnconfigure(2, weight=1)
         self.interface = interface
-        add_menu_buttons(
-            interface=interface,
-             button_frame=self.frame,
-             button_row=5)
+
 
     def updtate_frame_values(self):
         ''' 
@@ -300,31 +306,31 @@ class WS2():
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Id: {values_dict['WS2_id']}")
+            text=f"Vaisala WXT530 Id: {values_dict['WS2_id']}")
         tmp_label.grid(row=0, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Heating T:{values_dict['WS2_HeatingTemp']}{DEGREESIGN}C")
+            text=f"Heating Temperature: {values_dict['WS2_HeatingTemp']}{DEGREESIGN}C")
         tmp_label.grid(row=1, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Heating Volt:{values_dict['WS2_HeatingVoltage']}V")
+            text=f"Heating Voltage: {values_dict['WS2_HeatingVoltage']}V")
         tmp_label.grid(row=2, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Supply V:{values_dict['WS2_SupplyVoltage']}V")
+            text=f"Supply Voltage: {values_dict['WS2_SupplyVoltage']}V")
         tmp_label.grid(row=3, column=0, sticky='w')
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Reference V:{values_dict['WS2_refVoltage']}V")
+            text=f"Reference Voltage: {values_dict['WS2_refVoltage']}V")
         tmp_label.grid(row=4, column=0, sticky='w')
 
 
