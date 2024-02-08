@@ -37,7 +37,7 @@ class TelnetLink():
 
         # Transform the telnet byte string to a python list
         raw_values = telnet_data.decode().split(',')
-
+        
         # Data to extract and length of WS data unit to remove.
         # Format: (Name in telnet, charcter length of unit)
         # See variable definition below in 'var_name_dict'
@@ -97,10 +97,17 @@ class TelnetLink():
             translated_name = var_name_dict[var_to_parse[0][:-1]]
             var_name = f"{self.link_name}_{translated_name}"
 
-            # Look if we find matching variable to extract
-            if raw_values[idx][:len(var_to_parse[0])] == var_to_parse[0]:
+            # Look if we find matching variable to extract, independent of telnet receiving order
+            raw_data = [x for x in raw_values if x.startswith(var_to_parse[0])]
+
+            # We found exactly variable match in our telnet data
+            if len(raw_data) == 1: 
                 # Create result directory entery
-                parsed_values[var_name] = raw_values[idx][len(var_to_parse[0]):-var_to_parse[1]]
+                raw_data_str = raw_data[0]
+                # Removing variable name and unit from raw string
+                rdata_value = raw_data_str[len(var_to_parse[0]):-var_to_parse[1]]
+                # Add parsed value to dictionary
+                parsed_values[var_name] = rdata_value
 
             # Couldn't find the variable in the table
             else:
