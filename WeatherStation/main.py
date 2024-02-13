@@ -3,20 +3,22 @@
 Main code to read and display the weather stations' data.
 '''
 
+import os
+import sys
+
 from gui import WeatherInterface, update_loop
-import time, os
 
 dir_name = os.path.dirname(__file__)
 error_log_file = f"{dir_name}/launch_error.log"
 
 try:
-	# Create the object controlling the GUI
-	interface = WeatherInterface()
+    # Create the object controlling the GUI
+    interface = WeatherInterface()
 except Exception as exception:
-	with open(error_log_file, "a+") as log_file:
-		log_file.write(str(exception)+'\n') 
+    with open(error_log_file, "a+", encoding="utf-8") as log_file:
+        log_file.write(str(exception)+'\n')
 
-	quit()
+    sys.exit()
 # update the WS values periodically using telnet
 update_loop(weather_interface=interface)
 
