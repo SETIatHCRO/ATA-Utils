@@ -17,6 +17,7 @@ REDHEX = '#ff0000'
 GREENHEX = '#006400'
 BLUEHEX = '#0000ff'
 
+
 WINDOW_WIDTH = 720
 WINDOW_HEIGHT = 480
 
@@ -46,6 +47,8 @@ class WeatherInterface():
         self.button_frame.rowconfigure(1, weight=1)
         self.button_frame.columnconfigure(3, weight=1)
 
+        # self.background = tk.PhotoImage(file = "background.png")
+
         add_menu_buttons(
             interface=self,
             button_frame=self.button_frame)
@@ -67,9 +70,6 @@ class WeatherInterface():
 
     def show_frame(self, frame_name):
         ''' Display the tk frame 'frame_name' by putting it on top of the others. '''
-        #master_grid = tk.Frame()
-        #master_grid.rowconfigure(1, weight=1)
-        #master_grid.columnconfigure(2, weight=1)
 
         frame = self.frame_objects[frame_name].frame
         frame.grid(row=0, column=0, sticky='nsew')
@@ -88,7 +88,21 @@ class WeatherInterface():
 
         for frame_object in self.frame_objects.items():
             # frame_object[1] is the object, [0] is the dict key
-            frame_object[1].updtate_frame_values()
+            current_frame_object = frame_object[1]
+            self.clear_widgets(frame=current_frame_object.frame)
+            #background_image = tk.Label(current_frame_object.frame, image=self.background)
+            #background_image.place(x=0, y=0, relwidth=1, relheight=1)
+            current_frame_object.updtate_frame_values()
+
+
+    def clear_widgets(self,frame):
+        ''' 
+        Destroy all widgets from tk frame to prevent number from growing
+        when updating the frame with new telnet values.
+        '''
+
+        for widget in frame.winfo_children():
+            widget.destroy()
 
 
 def add_menu_buttons(interface, button_frame):
@@ -97,7 +111,6 @@ def add_menu_buttons(interface, button_frame):
     
     interface: the weather interface object (used to switch frames)
     frame: the frame to display the buttons on
-    button_row: Which grig row to display
     '''
 
     summary_button = tk.Button(
@@ -120,6 +133,7 @@ def add_menu_buttons(interface, button_frame):
         text = 'WS2',
         command = lambda: interface.show_frame("WS2"))
     ws2_button.grid(row=0, column=2, padx=20, sticky='ew')
+
 
 
 class Summary():
@@ -150,7 +164,7 @@ class Summary():
             self.frame,
             font=(FONT, FONTSIZE),
             text="WS1:")
-        tmp_label.grid(row=0, column=0, sticky='w',padx=(int(WINDOW_WIDTH/10), 10), pady =(50,0))
+        tmp_label.grid(row=0, column=0, sticky='w',padx=(int(WINDOW_WIDTH/10), 10))
 
         tmp_label = tk.Label(
             self.frame,
@@ -241,7 +255,6 @@ class WS1():
     ''' Detailled info about the first weather station WS1.'''
 
     def __init__(self, parent, interface):
-        #super(WS1, self).__init__() # initialize parent (tk.Frame)
         self.frame = tk.Frame(parent)
         self.frame.rowconfigure(3, weight=1)
         self.frame.columnconfigure(2, weight=1)
@@ -292,7 +305,6 @@ class WS2():
     ''' Detailled info about the second weather station WS2.'''
 
     def __init__(self, parent, interface):
-        #super(WS2, self).__init__() # initialize parent (tk.Frame)
         self.frame = tk.Frame(parent)
         self.frame.rowconfigure(3, weight=1)
         self.frame.columnconfigure(2, weight=1)

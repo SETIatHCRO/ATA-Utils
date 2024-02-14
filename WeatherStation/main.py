@@ -17,8 +17,8 @@ try:
 except Exception as exception:
     with open(error_log_file, "a+", encoding="utf-8") as log_file:
         log_file.write(str(exception)+'\n')
-
     sys.exit()
+
 # update the WS values periodically using telnet
 update_loop(weather_interface=interface)
 
