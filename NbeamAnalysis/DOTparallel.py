@@ -31,6 +31,7 @@ import glob
 import argparse
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+from matplotlib.ticker import ScalarFormatter
 import DOT_utils as DOT
 import logging
 import psutil
