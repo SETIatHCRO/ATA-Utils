@@ -184,7 +184,7 @@ class Summary():
             self.frame,
             font=(FONT, FONTSIZE),
             fg=GREENHEX,
-            text=f"W: {values_dict['WS1_WindSpeedAvg']}km/h")
+            text=f"W: {'{:.1f}'.format(float(values_dict['WS1_WindSpeedAvg'])*3.6)}km/h")
         tmp_label.grid(row=1, column=1, sticky='w')
 
         tmp_label = tk.Label(
@@ -219,7 +219,7 @@ class Summary():
             self.frame,
             font=(FONT, FONTSIZE),
             fg=GREENHEX,
-            text=f"W: {values_dict['WS2_WindSpeedAvg']}km/h")
+            text=f"W: {'{:.1f}'.format(float(values_dict['WS2_WindSpeedAvg'])*3.6)}km/h")
         tmp_label.grid(row=4, column=1, sticky='w')
 
         tmp_label = tk.Label(
