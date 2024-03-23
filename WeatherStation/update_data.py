@@ -5,7 +5,7 @@ Get the WS sensor data from telnet connections.
 from telnetlib import Telnet
 import atexit
 import warnings
-
+from time import gmtime, strftime
 
 class TelnetLink():
     ''' Telnet link to one weather station.'''
@@ -37,7 +37,7 @@ class TelnetLink():
 
         # Transform the telnet byte string to a python list
         raw_values = telnet_data.decode().split(',')
-        
+
         # Data to extract and length of WS data unit to remove.
         # Format: (Name in telnet, charcter length of unit)
         # See variable definition below in 'var_name_dict'
@@ -101,7 +101,7 @@ class TelnetLink():
             raw_data = [x for x in raw_values if x.startswith(var_to_parse[0])]
 
             # We found exactly variable match in our telnet data
-            if len(raw_data) == 1: 
+            if len(raw_data) == 1:
                 # Create result directory entery
                 raw_data_str = raw_data[0]
                 # Removing variable name and unit from raw string
@@ -117,9 +117,14 @@ class TelnetLink():
         if couldnt_parse != '': # Parsing of at least one WS value failed
             warnings.warn(f"Warning: Parsing failed for vaules: {couldnt_parse}")
             self.tries_before_restart -= 1
-            print(self.tries_before_restart)
+            current_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+            parse_warning = f"{current_time} Warning: Couldn't get weather station data. \n \
+                Restarting Telnet connection in {int(self.tries_before_restart) * 20}s \
+                if problem isn't solved."
+            warnings.warn(parse_warning)
             if self.tries_before_restart <= 0:
-                warnings.warn(f"Warning: Restarting {self.host}:{self.port} telnet connection.")
+                warnings.warn(f"{current_time} Warning: \
+                    Restarting {self.host}:{self.port} telnet connection.")
                 self.tries_before_restart = 15 # Wait 5 minutes before next restart
                 self.restart_connection()
 
