@@ -112,8 +112,8 @@ for stream_id, stream_str in enumerate(args.groupings):
 	print('Sub-array #{}: {}\t configured with {}'.format(stream_id, stream_subs[-1], stream_cfgs[-1]))
 
 stream_antlo_names = list(itertools.chain(*stream_subs)) # should be a list of antlo
-stream_hostnames = hpguppi_auxillary.get_stream_hostname_per_antenna_names(stream_antlo_names)
-stream_antlo_hostname_dict = hpguppi_auxillary.get_stream_hostname_dict_for_antenna_names(stream_antlo_names)
+stream_hostnames = hpguppi_auxillary.get_stream_hostname_per_antennalo_names(stream_antlo_names)
+stream_antlo_hostname_dict = hpguppi_auxillary.get_stream_hostname_dict_for_antennalo_names(stream_antlo_names)
 
 # Collect the redis channels of the hpguppi_daq instances that are
 # being streamed to by the antennae to be configured, as well as the
@@ -166,7 +166,7 @@ for ip_ifname, ip in ifnames_ip_dict.items():
 
 
 if args.stop_all_eth_first:
-	antstream_hostname_list_to_silence = hpguppi_auxillary.get_stream_hostname_per_antenna_names(antlo_names)
+	antstream_hostname_list_to_silence = hpguppi_auxillary.get_stream_hostname_per_antennalo_names(antlo_names)
 	print('antstream_hostname to silence', antstream_hostname_list_to_silence)
 	if not args.dry_run:
 		fengs = snap_control.init_snaps(antstream_hostname_list_to_silence)

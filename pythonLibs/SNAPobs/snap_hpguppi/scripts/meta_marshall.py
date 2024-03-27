@@ -2,6 +2,7 @@
 from SNAPobs.snap_hpguppi import populate_meta as hpguppi_populate_meta
 import socket
 import time
+import traceback
 from datetime import datetime, timezone
 from string import Template
 
@@ -25,7 +26,7 @@ def generate_stream_antnames_to_marshall():
   streams_to_marshall = [i.snap_hostname for i in snap_config.get_ata_snap_tab().itertuples() if i.snap_hostname.startswith('rfsoc')]
 
   # Gather antenna-configuration for the listed snaps
-  stream_ant_name_dict = hpguppi_auxillary.get_antenna_name_dict_for_stream_hostnames(streams_to_marshall)
+  stream_ant_name_dict = hpguppi_auxillary.get_antennalo_name_dict_for_stream_hostnames(streams_to_marshall)
   antenna_names = [ant_name for stream_name, ant_name in stream_ant_name_dict.items()]
   return streams_to_marshall, antenna_names
 
@@ -252,9 +253,9 @@ while(True):
   try:
     with open("/opt/mnt/share/telinfo_ata.toml", "rb") as f:
       toml_dict = tomllib.load(f)
-      reference_antenna_name = toml_dict['reference_antenna_name']
+      reference_antenna_name = toml_dict.get('reference_antenna_name', None)
   except BaseException as err:
-    print(f"Exception: {err}")
+    print(f"Exception reading telinfo_ata.toml: {err}")
 
   same = [
     groups == last_groups,
@@ -333,7 +334,7 @@ while(True):
 
           meta_args = '-s {} -a {} -C {} -c {} -d {} --silent'.format(
             ' '.join(stream_hostnames), 
-            ' '.join(hpguppi_auxillary.get_antenna_name_per_stream_hostnames(stream_hostnames)),
+            ' '.join(hpguppi_auxillary.get_antennalo_name_per_stream_hostnames(stream_hostnames)),
             start_chan,
             n_chan,
             ' '.join(destIps),
@@ -343,7 +344,7 @@ while(True):
         
         hpguppi_populate_meta.populate_meta(
                   stream_hostnames,
-                  hpguppi_auxillary.get_antenna_name_per_stream_hostnames(stream_hostnames),
+                  hpguppi_auxillary.get_antennalo_name_per_stream_hostnames(stream_hostnames),
                   None,
                   n_chans=n_chan,
                   n_bits=8 if stream_is_8bit else 4,
@@ -362,7 +363,7 @@ while(True):
           print()
         exceptions_caught = 0
       except (RuntimeError, Exception) as e:
-        print("Exception: ", e)
+        print("Exception: ", e, traceback.format_exc())
         exceptions_caught += 1
         if exceptions_caught > exception_limit:
           print('Too many exceptions (%d)'%exception_limit)
