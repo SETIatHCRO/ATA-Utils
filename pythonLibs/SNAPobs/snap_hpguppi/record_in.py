@@ -46,7 +46,7 @@ def _get_sync_time_for_streams(stream_hostnames):
     return sync_times
 
 def _get_uniform_source_name_for_streams(streams):
-    ant_names = [ant_name[0:-1] for ant_name in hpguppi_auxillary.get_antenna_name_per_stream_hostnames(streams)]
+    ant_names = hpguppi_auxillary.get_antenna_name_per_stream_hostnames(streams)
     source_dict = ata_control.get_eph_source(ant_names[0:1])
     return source_dict[ant_names[0]].replace(' ', '_')
 
