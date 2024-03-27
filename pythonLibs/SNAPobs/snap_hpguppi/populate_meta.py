@@ -130,7 +130,8 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
 									dry_run=False,
                                     default_dir=False,
                                     dut1=False,
-                                    additional_metadata=None
+                                    additional_metadata=None,
+                                    reference_antenna_name=None
                                     ):
 
     fengine_meta_keyvalues = hpguppi_defaults.fengine_meta_key_values(n_bits)
@@ -169,6 +170,7 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
     if ant_names is not None and stream_hostnames is None:
         print('stream_hostname_dict', stream_hostname_dict)
         stream_hostnames = [stream_hostname_dict[ant] for ant in ant_names]
+    ant_name_dict = hpguppi_auxillary.get_antenna_name_dict_for_stream_hostnames(stream_hostnames)
 
     nants      = len(stream_hostnames)
     n_dests    = len(dests)
@@ -195,7 +197,16 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
         sys.stderr.write("WARNING: antennas do not have the same source")
 
     assert len(set(list(skyfreq_mapping.values()))) != 0, "subbarray antennas must have the same frequencies"
-    lo_obsfreq = skyfreq_mapping[stream_hostnames[0]]
+
+    reference_stream_hostname = stream_hostnames[0]
+    if reference_antenna_name is not None:
+        if reference_antenna_name in stream_hostname_dict and stream_hostname_dict[reference_antenna_name] in skyfreq_mapping:
+            reference_stream_hostname = stream_hostname_dict[reference_antenna_name]
+        else:
+            sys.stderr.write(f"WARNING: specified reference antenna {reference_antenna_name} is not active, using the first antenna as reference: {ant_name_dict[reference_stream_hostname]}")
+    reference_antenna_name = ant_name_dict[reference_stream_hostname]
+
+    lo_obsfreq = skyfreq_mapping[reference_stream_hostname]
     centre_channel = fengine_meta_keyvalues['FENCHAN']/2
     source     = ant0_obs_params['SOURCE']
     ra_hrs  = ant0_obs_params['RA'][0] # hours
@@ -315,7 +326,8 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
                 'AZ'       : az,
                 'EL'       : el,
                 'ANTNAMES' : ant_names_string[0:71],
-                'XPCTGBPS' : '{:.3f}GBps {:.3f}Gbps'.format(expected_GBps, expected_GBps*8)
+                'XPCTGBPS' : '{:.3f}GBps {:.3f}Gbps'.format(expected_GBps, expected_GBps*8),
+                'REFANTNM' : reference_antenna_name
             }
         )
         if len(ant_names) > 0:

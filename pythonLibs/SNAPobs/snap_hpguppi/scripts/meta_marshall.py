@@ -18,6 +18,8 @@ from SNAPobs import snap_defaults, snap_config
 
 from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
 
+import tomli as tomllib # from python 3.11 tomllib is a standard package
+
 # Collate the snap hostnames
 def generate_stream_antnames_to_marshall():
   streams_to_marshall = [i.snap_hostname for i in snap_config.get_ata_snap_tab().itertuples() if i.snap_hostname.startswith('rfsoc')]
@@ -205,6 +207,8 @@ last_az_el, failed_antname_nolo_list = ata_control_get_safe(antname_nolo_list, a
 safe_antname_nolo_list = list(last_az_el.keys())
 last_eph_source = ata_control.get_eph_source(safe_antname_nolo_list)
 
+last_reference_antenna_name = None
+
 exceptions_caught = 0
 exception_limit = 5
 
@@ -243,6 +247,14 @@ while(True):
       groups.append([streamname])
     else:
       groups[destinations.index(dest_details)].append(streamname)
+
+  reference_antenna_name = last_reference_antenna_name
+  try:
+    with open("/opt/mnt/share/telinfo_ata.toml", "rb") as f:
+      toml_dict = tomllib.load(f)
+      reference_antenna_name = toml_dict['reference_antenna_name']
+  except BaseException as err:
+    print(f"Exception: {err}")
 
   same = [
     groups == last_groups,
@@ -342,7 +354,8 @@ while(True):
                   dry_run=False,
                   max_packet_nchan=max_nchan_per_packet,
                   dut1=True,
-                  additional_metadata=additional_metadata
+                  additional_metadata=additional_metadata,
+                  reference_antenna_name=reference_antenna_name
         )
         
         if new_publication:
@@ -380,3 +393,4 @@ while(True):
   last_skyfreq_mapping = skyfreq_mapping
   last_az_el = az_el
   last_eph_source = eph_source
+  last_reference_antenna_name = reference_antenna_name
