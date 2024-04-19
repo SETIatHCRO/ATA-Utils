@@ -1,5 +1,4 @@
 [global_config]
-  dbus = False
   window_state = maximize
   close_button_on_tab = False
   title_transmit_bg_color = "#406ba3"
@@ -84,8 +83,7 @@
     
     # 1 terminal for the Calibration tab:
     [[[Calibration]]]
-      command = echo "Calibration" ; bash
-      # directory = ~/hcro/terminator/scripts/
+      command = cd ~/Desktop; clear ; bash
       order = 2
       parent = TabWindow
       profile = HCRO
@@ -96,8 +94,7 @@
     
     # 4 terminals in Obseration tab:
     [[[Checks]]]
-      command = echo "Checks" ; bash
-      # directory = ~/hcro/terminator/scripts/
+      command = cd ~/Desktop; clear ; bash
       order = 1
       parent = CentralVerticalDivider
       profile = HCRO
@@ -106,8 +103,7 @@
       uuid = 00000000-0000-0000-0000-000000000010
     
     [[[ObservationMain]]]
-      command = echo "ObservationMain" ; bash
-      # directory = ~/hcro/terminator/scripts/
+      command = cd ~/rfsoc_obs_scripts; clear ; bash
       order = 1
       parent = CentralHorizontalDivider
       profile = HCRO
@@ -116,8 +112,8 @@
       uuid = 00000000-0000-0000-0000-000000000011
     
     [[[LOB]]]
-      command = echo "LOB" ; bash
-      # directory = ~/hcro/terminator/scripts/
+      command = ~/hcro/terminator/scripts/LOb.exp ; bash
+      directory = ~/hcro/terminator/scripts/
       order = 0
       parent = LOFreqDivider
       profile = HCRO
@@ -126,8 +122,8 @@
       uuid = 00000000-0000-0000-0000-000000000012
     
     [[[LOC]]]
-      command = echo LOC ; bash
-      # directory = ~/hcro/terminator/scripts/
+      command = ~/hcro/terminator/scripts/LOc.exp ; bash
+      directory = ~/hcro/terminator/scripts/
       order = 1
       parent = LOFreqDivider
       profile = HCRO
