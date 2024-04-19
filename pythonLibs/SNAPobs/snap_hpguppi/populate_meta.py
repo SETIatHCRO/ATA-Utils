@@ -116,7 +116,7 @@ def _get_obs_params(antlo_list):
 
 
 StringList = List[str]# Deprecated in 3.9, can rather use list[str]
-def populate_meta(stream_hostnames: StringList, ant_names: StringList, 
+def populate_meta(stream_hostnames: StringList, antlo_names: StringList, 
 									configfile: str=None,
 									ignore_control=False,
 									hpguppi_daq_instance=-1,
@@ -130,7 +130,8 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
 									dry_run=False,
                                     default_dir=False,
                                     dut1=False,
-                                    additional_metadata=None
+                                    additional_metadata=None,
+                                    reference_antenna_name=None
                                     ):
 
     fengine_meta_keyvalues = hpguppi_defaults.fengine_meta_key_values(n_bits)
@@ -160,15 +161,15 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
         print()
         return
 
-    if ant_names is None and stream_hostnames is not None:
-        ant_name_dict = hpguppi_auxillary.get_antenna_name_dict_for_stream_hostnames(stream_hostnames)
-        print('ant_name_dict', ant_name_dict)
-        ant_names = [ant_name_dict[snap] for snap in stream_hostnames]
+    if antlo_names is None and stream_hostnames is not None:
+        antlo_name_dict = hpguppi_auxillary.get_antennalo_name_dict_for_stream_hostnames(stream_hostnames)
+        print('antlo_name_dict', antlo_name_dict)
+        antlo_names = [antlo_name_dict[snap] for snap in stream_hostnames]
     
-    stream_hostname_dict = hpguppi_auxillary.get_stream_hostname_dict_for_antenna_names(ant_names)
-    if ant_names is not None and stream_hostnames is None:
+    stream_hostname_dict = hpguppi_auxillary.get_stream_hostname_dict_for_antennalo_names(antlo_names)
+    if antlo_names is not None and stream_hostnames is None:
         print('stream_hostname_dict', stream_hostname_dict)
-        stream_hostnames = [stream_hostname_dict[ant] for ant in ant_names]
+        stream_hostnames = [stream_hostname_dict[ant] for ant in antlo_names]
 
     nants      = len(stream_hostnames)
     n_dests    = len(dests)
@@ -183,9 +184,9 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
 
     skyfreq_mapping, antname_mapping = _get_stream_mapping(stream_hostnames,
             ignore_control)
-    ants_obs_params = _get_obs_params(ant_names)
+    ants_obs_params = _get_obs_params(antlo_names)
     source_list = [aop['SOURCE'] for antname, aop in ants_obs_params.items()]
-    ant0_obs_params = ants_obs_params[ant_names[0]]
+    ant0_obs_params = ants_obs_params[antlo_names[0]]
 
     if len(set(skyfreq_mapping.values())) != 1:
         sys.stderr.write("WARNING: antennas are tuned to different freqs, "
@@ -195,7 +196,26 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
         sys.stderr.write("WARNING: antennas do not have the same source")
 
     assert len(set(list(skyfreq_mapping.values()))) != 0, "subbarray antennas must have the same frequencies"
-    lo_obsfreq = skyfreq_mapping[stream_hostnames[0]]
+
+    reference_stream_hostname = stream_hostnames[0]
+    reference_antenna_name_default = hpguppi_auxillary.get_antenna_name_per_stream_hostnames([reference_stream_hostname])[0]
+    if reference_antenna_name is not None:
+        reference_stream_hostnames = hpguppi_auxillary.get_stream_hostname_per_antenna_names([reference_antenna_name])
+        active_reference_stream_hostnames = [
+            reference_stream_hostname
+            for reference_stream_hostname in reference_stream_hostnames
+            if reference_stream_hostname in skyfreq_mapping
+        ]
+        if len(reference_stream_hostnames) == 0:
+            sys.stderr.write(f"WARNING: no stream-hostnames for specified reference antenna {reference_antenna_name}, using the first antenna as reference: {reference_antenna_name_default}\n\t{reference_stream_hostnames}\n\t{stream_hostnames}\n")
+        elif len(active_reference_stream_hostnames) == 0:
+            sys.stderr.write(f"WARNING: no active stream-hostnames for specified reference antenna {reference_antenna_name}, using the first antenna as reference: {reference_antenna_name_default}\n\t{reference_stream_hostnames}\n\t{stream_hostnames}\n")
+        else:
+            reference_stream_hostname = active_reference_stream_hostnames[0]
+    else:
+        reference_antenna_name = reference_antenna_name_default
+
+    lo_obsfreq = skyfreq_mapping[reference_stream_hostname]
     centre_channel = fengine_meta_keyvalues['FENCHAN']/2
     source     = ant0_obs_params['SOURCE']
     ra_hrs  = ant0_obs_params['RA'][0] # hours
@@ -232,7 +252,7 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
         'dests'     : [],
         'dut1'      : dut1,
     }
-    for antname in ant_names:
+    for antname in antlo_names:
         report_dict['antennae'].append({antname:stream_hostname_dict[antname]})
 
     for ip_enumer, ip_ifname in enumerate(ifnames_sorted):
@@ -275,7 +295,7 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
         else:
             channel_name = hpguppi_defaults.REDISSETGW.substitute(host=host, inst=inst)
 
-        ant_names_string = ','.join(ant_names)
+        antlo_names_string = ','.join(antlo_names)
         # these are instance specific
         
         key_val = {}
@@ -314,29 +334,30 @@ def populate_meta(stream_hostnames: StringList, ant_names: StringList,
                 'DEC_STR'  : dec,       # Rawspec expects these keys (rawspec_rawutils.c#L155-L186)
                 'AZ'       : az,
                 'EL'       : el,
-                'ANTNAMES' : ant_names_string[0:71],
-                'XPCTGBPS' : '{:.3f}GBps {:.3f}Gbps'.format(expected_GBps, expected_GBps*8)
+                'ANTNAMES' : antlo_names_string[0:71],
+                'XPCTGBPS' : '{:.3f}GBps {:.3f}Gbps'.format(expected_GBps, expected_GBps*8),
+                'REFANTNM' : reference_antenna_name
             }
         )
-        if len(ant_names) > 0:
-            key_val["TUNING"] = f"Lo{ant_names[0][-1]}"
+        if len(antlo_names) > 0:
+            key_val["TUNING"] = f"Lo{antlo_names[0][-1]}"
 
         # manage limited entry length
-        if(len(ant_names_string) >= 71): #79 - len('ANTNMS##')
+        if(len(antlo_names_string) >= 71): #79 - len('ANTNMS##')
             key_enum = 0
-            ant_names_left = ant_names.copy()
-            while(len(ant_names_left) > 0):
-                num_antnames = len(ant_names_left)
-                ant_names_left_string = ','.join(ant_names_left[0:num_antnames])
-                while(len(ant_names_left_string) >= 71): #79 - len('ANTNMS##')
+            antlo_names_left = antlo_names.copy()
+            while(len(antlo_names_left) > 0):
+                num_antnames = len(antlo_names_left)
+                antlo_names_left_string = ','.join(antlo_names_left[0:num_antnames])
+                while(len(antlo_names_left_string) >= 71): #79 - len('ANTNMS##')
                     num_antnames -= 1
-                    ant_names_left_string = ','.join(ant_names_left[0:num_antnames])
+                    antlo_names_left_string = ','.join(antlo_names_left[0:num_antnames])
 
                 if key_enum == 0:
-                    key_val['ANTNAMES'] = ant_names_left_string
+                    key_val['ANTNAMES'] = antlo_names_left_string
 
-                key_val['ANTNMS%02d' % key_enum] = ant_names_left_string
-                ant_names_left = ant_names_left[num_antnames:]
+                key_val['ANTNMS%02d' % key_enum] = antlo_names_left_string
+                antlo_names_left = antlo_names_left[num_antnames:]
                 key_enum += 1
 
         if zero_obs_startstop:

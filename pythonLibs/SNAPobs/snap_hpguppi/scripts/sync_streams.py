@@ -63,7 +63,7 @@ if __name__ == '__main__':
                 args.stream_list += [row['antlo'] for idx,row in ATA_SNAP_TAB.iterrows() if hostname_pattern.match(row['snap_hostname'])]
     
     if args.stream_list is not None and len(args.stream_list) > 0:
-        sync(hpguppi_auxillary.get_stream_hostname_per_antenna_names(args.stream_list), publish_global_key=args.publish)
+        sync(hpguppi_auxillary.get_stream_hostname_per_antennalo_names(args.stream_list), publish_global_key=args.publish)
     elif args.all:
         sync(None, args.all, True, publish_global_key=args.publish)
     else:

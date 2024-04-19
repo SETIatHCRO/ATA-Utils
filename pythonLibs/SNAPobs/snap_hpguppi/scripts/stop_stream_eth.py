@@ -20,8 +20,8 @@ def collect_feng_obj(antlo_stream_list=None, all_streams=False, check_stop_all=T
                 print('Aborting...')
                 return None
     elif antlo_stream_list is not None and len(antlo_stream_list) > 0:
-        print(hpguppi_auxillary.get_stream_hostname_dict_for_antenna_names(antlo_stream_list))
-        antstream_hostname_list_to_silence = hpguppi_auxillary.get_stream_hostname_per_antenna_names(antlo_stream_list)
+        print(hpguppi_auxillary.get_stream_hostname_dict_for_antennalo_names(antlo_stream_list))
+        antstream_hostname_list_to_silence = hpguppi_auxillary.get_stream_hostname_per_antennalo_names(antlo_stream_list)
 
     return hpguppi_auxillary.filter_unique_fengines(snap_control.init_snaps(antstream_hostname_list_to_silence))
 
