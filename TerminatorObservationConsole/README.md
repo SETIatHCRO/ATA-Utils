@@ -50,8 +50,8 @@ HCRO_observation
 ```
 
 ## Files description:
-*`terminator_HCRO_launch.sh`: Bash script launching automatically terminator window  
-*`terminator_config_HCRO` contains the terminator config that can be run on obs-node1  
-*`.sonata.password.gpg` contains the gpg-encrypted sonata password *Note:* Not on Github for security reasons, has to be generated at installation step 3.  
-*`scripts` folder contains the scripts that terminator uses to automatically ssh to the right places.  
+- `terminator_HCRO_launch.sh`: Bash script launching automatically terminator window  
+- `terminator_config_HCRO` contains the terminator config that can be run on obs-node1  
+- `.sonata.password.gpg` contains the gpg-encrypted sonata password *Note:* Not on Github for security reasons, has to be generated at installation step 3.  
+- `scripts` folder contains the scripts that terminator uses to automatically ssh to the right places.  
 
