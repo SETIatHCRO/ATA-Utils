@@ -7,15 +7,8 @@ expect "password"
 send "$sonata_password\r";
 
 expect "sonata@dsp-control"
-send "cd ~/dev/delay_engine/"
-send "echo \"Start delay engine here\""
-send "echo \" Source ephemeris: 3c147\""
-send "echo \" New iteration for LO b\""
-send "echo \" Source ephemeris: 3c147\""
-send "echo \" New iteration for LO b\""
-send "echo \" Source ephemeris: 3c147\""
-send "echo \" New iteration for LO b\""
-#"Send" this command once in production: "python delay_engine.py -telinfo /opt/mnt/share/telinfo_ata.toml -lo b -fixed /opt/mnt/share/delays_b.txt -phases /opt/mnt/share/phases_b.txt"
+send -- "cd ~/dev/delay_engine/\r";
+send -- "clear; echo \"Start the LOb delay engine here: 'python delay_engine.py -telinfo /opt/mnt/share/telinfo_ata.toml -lo b -fixed /opt/mnt/share/delays_b.txt -phases /opt/mnt/share/phases_b.txt'\"\r"
 
 interact
 

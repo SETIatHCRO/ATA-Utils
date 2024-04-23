@@ -5,7 +5,6 @@
   title_inactive_bg_color = "#dfdfdf"
   smart_copy = False
 [keybindings]
-[plugins]
 [profiles]
   [[default]]
     background_darkness = 0.8
@@ -69,28 +68,6 @@
       ratio = 0.5
       type = HPaned
     
-    # 1 terminal for the Back-end tab:
-    [[[BackEnd]]]
-      command = echo "BackEnd" ; bash
-      # directory = ~/hcro/terminator/scripts/
-      order = 1
-      parent = TabWindow
-      profile = HCRO
-      title = sonata@obs-node1
-      type = Terminal
-      uuid = 00000000-0000-0000-0000-000000000020
-    
-    
-    # 1 terminal for the Calibration tab:
-    [[[Calibration]]]
-      command = cd ~/Desktop; clear ; bash
-      order = 2
-      parent = TabWindow
-      profile = HCRO
-      title = sonata@obs-node1
-      type = Terminal
-      uuid = 00000000-0000-0000-0000-000000000030
-    
     
     # 4 terminals in Obseration tab:
     [[[Checks]]]
@@ -112,8 +89,8 @@
       uuid = 00000000-0000-0000-0000-000000000011
     
     [[[LOB]]]
-      command = ~/hcro/terminator/scripts/LOb.exp ; bash
-      directory = ~/hcro/terminator/scripts/
+      command = ~/TerminatorObservationConsole/scripts/LOb.exp ; bash
+      directory = ~/TerminatorObservationConsole/scripts/
       order = 0
       parent = LOFreqDivider
       profile = HCRO
@@ -122,12 +99,33 @@
       uuid = 00000000-0000-0000-0000-000000000012
     
     [[[LOC]]]
-      command = ~/hcro/terminator/scripts/LOc.exp ; bash
-      directory = ~/hcro/terminator/scripts/
+      command = ~/TerminatorObservationConsole/scripts/LOc.exp ; bash
+      directory = ~/TerminatorObservationConsole/scripts/
       order = 1
       parent = LOFreqDivider
       profile = HCRO
       title = LO c - sonata@dsp-control
       type = Terminal
       uuid = 00000000-0000-0000-0000-000000000013
-
+    
+    # 1 terminal for the Back-end tab:
+    [[[BackEnd]]]
+      command = cd ~/Desktop; clear ; bash
+      order = 1
+      parent = TabWindow
+      profile = HCRO
+      title = sonata@obs-node1
+      type = Terminal
+      uuid = 00000000-0000-0000-0000-000000000020
+    
+    
+    # 1 terminal for the Calibration tab:
+    [[[Calibration]]]
+      command = cd ~/Desktop; clear ; bash
+      order = 2
+      parent = TabWindow
+      profile = HCRO
+      title = sonata@obs-node1
+      type = Terminal
+      uuid = 00000000-0000-0000-0000-000000000030
+[plugins]
