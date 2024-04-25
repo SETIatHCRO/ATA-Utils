@@ -1,6 +1,6 @@
 #!/bin/bash
 
-/usr/bin/firefox pipeline-monitor.hcro.org:8081 &
+/snap/bin/firefox pipeline-monitor.hcro.org:8081 &
 
 sleep 1
 
@@ -12,5 +12,5 @@ URLS=(
 
 for url in ${URLS[@]}
 do
-	/usr/bin/firefox -new-tab $url
+	/snap/bin/firefox -new-tab $url
 done
