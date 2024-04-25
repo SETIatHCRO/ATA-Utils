@@ -7,3 +7,6 @@ nohup terminator --config ~/TerminatorObservationConsole/terminator_config_HCRO 
 
 # Automatically open webpages relevant to HCRO observation
 nohup ~/TerminatorObservationConsole/scripts/webpages.sh
+
+# Open atastatus page
+nohup ~/TerminatorObservationConsole/scripts/atastatus.exp

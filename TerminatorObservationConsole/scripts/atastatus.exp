@@ -1,0 +1,10 @@
+#!/usr/bin/expect
+
+spawn ssh obs@control.hcro.org
+
+expect "obs@control"
+send -- "atastatus\r";
+
+interact
+
+#EOF
