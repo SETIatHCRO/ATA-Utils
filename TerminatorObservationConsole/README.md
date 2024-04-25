@@ -35,11 +35,10 @@ alias HCRO_observation='~/TerminatorObservationConsole/HCRO_OBS_launch.sh'
 
 
 ### 5: Edit file permission:
-Run the following to have the permission
+Add the execute permission to the following files:
 ```
 chmod +x ~/TerminatorObservationConsole/HCRO_OBS_launch.sh
-chmod +x ~/TerminatorObservationConsole/scripts/LOb.exp
-chmod +x ~/TerminatorObservationConsole/scripts/LOc.exp
+chmod +x ~/TerminatorObservationConsole/scripts/*
 ```
 
 
