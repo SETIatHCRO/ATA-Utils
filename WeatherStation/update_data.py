@@ -140,4 +140,5 @@ class TelnetLink():
         ''' Close and re-open telnet link. '''
 
         self.tn.close()
-        self.tn = Telnet(self.host, self.port)
+        self.tn = Telnet()
+        self.tn.open(self.host, self.port)
