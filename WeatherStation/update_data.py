@@ -5,7 +5,7 @@ Get the WS sensor data from telnet connections.
 from telnetlib import Telnet
 import atexit
 import warnings
-from time import gmtime, strftime
+from time import localtime, strftime, time
 
 class TelnetLink():
     ''' Telnet link to one weather station.'''
@@ -18,7 +18,10 @@ class TelnetLink():
         self.link_name = link_name # WS1 or WS2 to add prefix to parsed variables
         self.tn = Telnet()
         self.tn.open(self.host, self.port) # Open telnet connection
-        self.tries_before_restart = 3 # 1 minute of parsing errors will trigger first telent restart
+        self.tries_before_restart = 3 # 1 minute of parsing errors triggers first telent restart
+        self.last_weather_update_display_time = 'n/a'
+        self.last_weather_update_unix_time = 0 # Number of seconds since 1970
+                                               # time set at first weather data successful parsing
         atexit.register(self.tn.close) # Be sure to close telnet connection if the program exits
 
 
@@ -114,25 +117,30 @@ class TelnetLink():
                 couldnt_parse += f'{var_to_parse[0][:-1]}, '
                 parsed_values[var_name] = 'n/a'
 
+        current_display_time = strftime("%m-%d %H:%M", localtime())
         if couldnt_parse != '': # Parsing of at least one WS value failed
             warnings.warn(f"Warning: Parsing failed for vaules: {couldnt_parse}")
             self.tries_before_restart -= 1
-            current_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
-            parse_warning = f"{current_time} Warning: Couldn't get weather station data. \n \
+            parse_warning = f"{current_display_time} Warning: No weather station data. \n \
                 Restarting Telnet connection in {int(self.tries_before_restart) * 20}s \
                 if problem isn't solved."
             warnings.warn(parse_warning)
             if self.tries_before_restart <= 0:
-                warnings.warn(f"{current_time} Warning: \
+                warnings.warn(f"{current_display_time} Warning: \
                     Restarting {self.host}:{self.port} telnet connection.")
                 self.tries_before_restart = 15 # Wait 5 minutes before next restart
                 self.restart_connection()
+        else: # Parsing successful
+            self.last_weather_update_display_time = current_display_time
+            current_unix_time = time()
+            self.last_weather_update_unix_time = current_unix_time
 
-        elif self.tries_before_restart > 3:
-            # Connection reset happened but works fine now
-            # We want to slowly go back to 1 minute restart buffer
-            self.tries_before_restart -=1
-
+            if self.tries_before_restart > 3:
+                # Connection reset happened but works fine now
+                # We want to slowly go back to 1 minute restart buffer
+                self.tries_before_restart -=1
+        parsed_values[f'{self.link_name}_update_display_time'] = self.last_weather_update_display_time
+        parsed_values[f'{self.link_name}_update_unix_time'] = self.last_weather_update_unix_time
         return parsed_values
 
 

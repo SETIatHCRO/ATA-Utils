@@ -8,7 +8,7 @@ update_loop function uses updateData.py
 import tkinter as tk
 from tkinter import ttk
 from update_data import TelnetLink
-
+from time import time
 
 # Global GUI variables
 FONT = 'Arial'
@@ -85,6 +85,25 @@ class WeatherInterface():
         dict_ws1 = self.telnet_link_1.read_values()
         dict_ws2 = self.telnet_link_2.read_values()
         self.sensor_values = {**dict_ws1, **dict_ws2} # Merge the 2 dicts
+
+        # Update title bar with last updated time:
+        current_unix_time = time()
+        t_disp_WS1 = self.sensor_values['WS1_update_display_time']
+        t_disp_WS2 = self.sensor_values['WS2_update_display_time']
+        t_unix_WS1 = self.sensor_values['WS1_update_unix_time']
+        t_unix_WS2 = self.sensor_values['WS2_update_unix_time']
+        # Use the oldest of the two WS time to be conservative:
+        if t_unix_WS1 < t_unix_WS2:
+            t_disp = t_disp_WS1
+            t_unix = t_unix_WS1
+        else:
+            t_disp = t_disp_WS2
+            t_unix = t_unix_WS2
+
+        if current_unix_time - t_unix < 120: # Good: has updated < 2min ago
+            self.root.title(f"HCRO Weather - Last Update: {t_disp}")
+        else: # There is a problem, not updated since 2 minutes
+            self.root.title(f"HCRO Weather - [WARNING] Last Update: {t_disp}")
 
         for frame_object in self.frame_objects.items():
             # frame_object[1] is the object, [0] is the dict key
