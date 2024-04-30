@@ -117,7 +117,7 @@ class TelnetLink():
                 couldnt_parse += f'{var_to_parse[0][:-1]}, '
                 parsed_values[var_name] = 'n/a'
 
-        current_display_time = strftime("%m-%d %H:%M", localtime())
+        current_display_time = strftime("%m/%d %H:%M", localtime())
         if couldnt_parse != '': # Parsing of at least one WS value failed
             warnings.warn(f"Warning: Parsing failed for vaules: {couldnt_parse}")
             self.tries_before_restart -= 1
