@@ -8,7 +8,7 @@ update_loop function uses updateData.py
 import tkinter as tk
 from tkinter import ttk
 from update_data import TelnetLink
-from time import time
+from time import time, localtime
 
 # Global GUI variables
 FONT = 'Arial'
@@ -86,6 +86,13 @@ class WeatherInterface():
         dict_ws2 = self.telnet_link_2.read_values()
         self.sensor_values = {**dict_ws1, **dict_ws2} # Merge the 2 dicts
 
+        #Print the dict for troubleshooting tkinter window not updating
+        print(f"\n ----------- {strftime('%m/%d %H:%M', localtime())} --------")
+        print(self.sensor_values)
+
+        print(" -------------------------------- \n")
+        
+        
         # Update title bar with last updated time:
         current_unix_time = time()
         t_disp_WS1 = self.sensor_values['WS1_update_display_time']
