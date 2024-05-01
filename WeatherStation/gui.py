@@ -8,7 +8,7 @@ update_loop function uses updateData.py
 import tkinter as tk
 from tkinter import ttk
 from update_data import TelnetLink
-from time import time, localtime
+from time import time, strftime, localtime
 
 # Global GUI variables
 FONT = 'Arial'
