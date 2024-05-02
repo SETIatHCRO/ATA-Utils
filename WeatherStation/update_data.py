@@ -33,8 +33,8 @@ class TelnetLink():
         Output:
         parsed_values: python dictionnary with parsed values
         '''
-
-        self.tn.read_until(b"0r1,") # Remove what's before
+        self.tn.read_eager() # Remove any old unread data values
+        self.tn.read_until(b"0r1,") # Wait for the next block of data
         telnet_data = self.tn.read_until(b"0r1,") # Read one block of telnet data
 
 
@@ -138,7 +138,11 @@ class TelnetLink():
             if self.tries_before_restart > 3:
                 # Connection reset happened but works fine now
                 # We want to slowly go back to 1 minute restart buffer
-                self.tries_before_restart -=1
+                self.tries_before_restart -= 1
+
+            elif self.tries_before_restart < 3:
+                # Recovering without restart needed
+                self.tries_before_restart += 1
         parsed_values[f'{self.link_name}_update_display_time'] = self.last_weather_update_display_time
         parsed_values[f'{self.link_name}_update_unix_time'] = self.last_weather_update_unix_time
         return parsed_values
