@@ -33,7 +33,7 @@ class TelnetLink():
         Output:
         parsed_values: python dictionnary with parsed values
         '''
-        self.tn.read_eager() # Remove any old unread data values
+        self.tn.read_very_eager() # Remove any old unread data values
         self.tn.read_until(b"0r1,") # Wait for the next block of data
         telnet_data = self.tn.read_until(b"0r1,") # Read one block of telnet data
 
