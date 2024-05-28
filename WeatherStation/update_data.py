@@ -42,7 +42,8 @@ class TelnetLink():
         raw_values = telnet_data.decode().split(',')
 
         # Data to extract and length of WS data unit to remove.
-        # Format: (Name in telnet, charcter length of unit)
+        # Format: (Name in telnet, charcter length of "unit" string
+        # to remove from the end of the telnet data)
         # See variable definition below in 'var_name_dict'
         vars_to_parse_tab = (
             ('Dn=', 1),

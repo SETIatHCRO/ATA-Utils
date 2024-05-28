@@ -84,14 +84,7 @@ class WeatherInterface():
 
         dict_ws1 = self.telnet_link_1.read_values()
         dict_ws2 = self.telnet_link_2.read_values()
-        self.sensor_values = {**dict_ws1, **dict_ws2} # Merge the 2 dicts
-
-        #Print the dict for troubleshooting tkinter window not updating
-        print(f"\n ----------- {strftime('%m/%d %H:%M', localtime())} --------")
-        print(self.sensor_values)
-
-        print(" -------------------------------- \n")
-        
+        self.sensor_values = {**dict_ws1, **dict_ws2} # Merge the 2 dicts        
         
         # Update title bar with last updated time:
         current_unix_time = time()
@@ -111,6 +104,10 @@ class WeatherInterface():
             self.root.title(f"HCRO Weather - Last Update: {t_disp}")
         else: # There is a problem, not updated since 2 minutes
             self.root.title(f"HCRO Weather - [WARNING] Last Update: {t_disp}")
+            # Print telenet values to help troubleshooting tkinter window not updating
+            print(f"Latest sensor values from tenet: {strftime('%m/%d %H:%M', localtime())}")
+            print(self.sensor_values)
+            print(" -------------------------------- \n\n")
 
         for frame_object in self.frame_objects.items():
             # frame_object[1] is the object, [0] is the dict key
