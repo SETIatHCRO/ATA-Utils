@@ -3,7 +3,6 @@ import argparse
 from SNAPobs.snap_hpguppi import populate_meta as hpguppi_populate_meta
 from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
 from SNAPobs.snap_hpguppi import record_in as hpguppi_record_in
-from SNAPobs.snap_hpguppi import populate_meta as hpguppi_populate_meta
 from SNAPobs.snap_hpguppi import snap_hpguppi_defaults as hpguppi_defaults
 import itertools
 from SNAPobs import snap_config, snap_control
@@ -32,8 +31,8 @@ def sort_rfsoc_config(rfsoc_config):
 	return rfsoc_config_sorted
 	
 
-# sys.path.insert(0, '/home/sonata/miniconda3/bin/')
-sys.path.insert(0, '/home/sonata/dev/ata_snap/sw/ata_snap/scripts/')
+# sys.path.insert(0, '/opt/mnt/miniconda3/bin/')
+sys.path.insert(0, '/home/sonata/src/ata_snap/sw/ata_snap/scripts/')
 import snap_feng_init
 import rfsoc_feng_init
 # sys.path.insert(0, '/home/sonata/dev/ata_snap/sw/ata_snap/src/')
@@ -144,23 +143,22 @@ for ip_ifname, ip in ifnames_ip_dict.items():
 	host = ip_ifname
 	instance = 0
 	if m:
-			host = m.group(1)
-			instance = int(m.group(3)) - 1
+		host = m.group(1)
+		instance = int(m.group(3)) - 1
 	else:
-			if not silent:
-					print('%s: %s does not have -\d+g-\d+ suffix... taking it verbatim'%(ip, ip_ifname))
+		print('%s: %s does not have -\d+g-\d+ suffix... taking it verbatim'%(ip, ip_ifname))
 
-	hpguppi_instance_redis_setchan = hpguppi_defaults.REDISGETGW.substitute(host=host, inst=instance)
+	hpguppi_instance_redis_getchan = hpguppi_defaults.REDISGETGW.substitute(host=host, inst=instance)
 	antnames = None
 	try:
-		antnames = hpguppi_auxillary.get_stream_hostnames_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_instance_redis_setchan)
+		antnames = hpguppi_auxillary.get_stream_hostnames_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_instance_redis_getchan)
 	except:# RuntimeError:
-		print('hpguppi_auxillary.get_stream_hostnames_of_redis_chan failed on {}'.format(hpguppi_instance_redis_setchan))
+		print('hpguppi_auxillary.get_stream_hostnames_of_redis_chan failed on {}'.format(hpguppi_instance_redis_getchan))
 	
 	if antnames is not None:
 		for ant_name in stream_antlo_names:
 			if ant_name in antnames:
-				hpguppi_redis_reset_chans.append(hpguppi_auxillary.redis_set_channel_from_get_channel(hpguppi_instance_redis_setchan))
+				hpguppi_redis_reset_chans.append(hpguppi_auxillary.redis_set_channel_from_get_channel(hpguppi_instance_redis_getchan))
 				antlo_names.extend(antnames)
 				break
 

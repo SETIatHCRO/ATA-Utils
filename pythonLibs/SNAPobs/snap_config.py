@@ -11,7 +11,8 @@ ATA_CFG = ata_helpers.parse_cfg(os.path.join(ATA_SHARE_DIR,
     'ata.cfg'))
 ATA_BASE_OBS_DIR = ATA_CFG['OBSDIR']
 
-_snap_tab = open(os.path.join(ATA_SHARE_DIR, 'ata_snap.tab'))
+_snap_tab_filename = os.getenv("ATA_FENGINE_TAB_FILENAME", 'ata_snap.tab')
+_snap_tab = open(os.path.join(ATA_SHARE_DIR, _snap_tab_filename))
 _snap_tab_names = [name for name in _snap_tab.readline().strip().lstrip("#").split(" ")
         if name]
 ATA_SNAP_TAB = pd.read_csv(_snap_tab, delim_whitespace=True, index_col=False,

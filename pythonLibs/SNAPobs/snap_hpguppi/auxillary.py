@@ -6,9 +6,12 @@ import time
 # Gather antennalo-names for the listed stream hostnames
 def get_antennalo_name_dict_for_stream_hostnames(stream_hostnames):
   ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
-  if not all(snap in list(ATA_SNAP_TAB.snap_hostname) for snap in stream_hostnames):
-      raise RuntimeError("Not all stream hostnames (%s) are provided in the config table (%s)",
-              stream_hostnames, ATA_SNAP_TAB.snap_hostname)
+  not_present = [snap for snap in stream_hostnames if snap not in list(ATA_SNAP_TAB.snap_hostname)]
+  if len(not_present) > 0:
+      raise RuntimeError(
+        "Not all stream hostnames are provided in the config table.",
+        not_present
+      )
   stream_hostnames_ants = [
     ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname == stream_hostname]
       for stream_hostname in stream_hostnames
@@ -18,9 +21,12 @@ def get_antennalo_name_dict_for_stream_hostnames(stream_hostnames):
 # List antennalo-names instead of the given stream names
 def get_antennalo_name_per_stream_hostnames(stream_hostnames):
   ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
-  if not all(snap in list(ATA_SNAP_TAB.snap_hostname) for snap in stream_hostnames):
-      raise RuntimeError("Not all snaps (%s) are provided in the config table (%s)",
-              stream_hostnames, ATA_SNAP_TAB.snap_hostname)
+  not_present = [snap for snap in stream_hostnames if snap not in list(ATA_SNAP_TAB.snap_hostname)]
+  if len(not_present) > 0:
+      raise RuntimeError(
+        "Not all snaps are provided in the config table.",
+        not_present
+      )
   stream_hostnames_ants = [
     ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname == stream_hostname]
       for stream_hostname in stream_hostnames
@@ -30,9 +36,12 @@ def get_antennalo_name_per_stream_hostnames(stream_hostnames):
 # List antenna-names instead of the given stream names
 def get_antenna_name_per_stream_hostnames(stream_hostnames):
   ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
-  if not all(snap in list(ATA_SNAP_TAB.snap_hostname) for snap in stream_hostnames):
-      raise RuntimeError("Not all snaps (%s) are provided in the config table (%s)",
-              stream_hostnames, ATA_SNAP_TAB.snap_hostname)
+  not_present = [snap for snap in stream_hostnames if snap not in list(ATA_SNAP_TAB.snap_hostname)]
+  if len(not_present) > 0:
+      raise RuntimeError(
+        "Not all snaps are provided in the config table.",
+        not_present
+      )
   stream_hostnames_ants = [
     ATA_SNAP_TAB[ATA_SNAP_TAB.snap_hostname == stream_hostname]
       for stream_hostname in stream_hostnames
@@ -51,9 +60,12 @@ def get_stream_hostname_per_antenna_names(antenna_names: list):
 # Gather stream hostnames for the listed antennalo names
 def get_stream_hostname_dict_for_antennalo_names(antenna_names):
   ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
-  if not all(ant in list(ATA_SNAP_TAB.antlo) for ant in antenna_names):
-      raise RuntimeError("Not all antennae (%s) are provided in the config table (%s)",
-              antenna_names, ATA_SNAP_TAB.antlo)
+  not_present = [ant for ant in antenna_names if ant not in list(ATA_SNAP_TAB.antlo)]
+  if len(not_present) > 0:
+      raise RuntimeError(
+        "Not all antennae are provided in the config table.",
+        not_present
+      )
   antenna_names_ants = [
     ATA_SNAP_TAB[ATA_SNAP_TAB.antlo == antenna_name]
       for antenna_name in antenna_names
@@ -63,9 +75,12 @@ def get_stream_hostname_dict_for_antennalo_names(antenna_names):
 # List stream hostnames instead of the listed antennalo names
 def get_stream_hostname_per_antennalo_names(antenna_names):
   ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
-  if not all(ant in list(ATA_SNAP_TAB.antlo) for ant in antenna_names):
-      raise RuntimeError("Not all antennae (%s) are provided in the config table (%s)",
-              antenna_names, ATA_SNAP_TAB.antlo)
+  not_present = [ant for ant in antenna_names if ant not in list(ATA_SNAP_TAB.antlo)]
+  if len(not_present) > 0:
+      raise RuntimeError(
+        "Not all antennae are provided in the config table.",
+        not_present
+      )
   antenna_names_ants = [
     ATA_SNAP_TAB[ATA_SNAP_TAB.antlo == antenna_name]
       for antenna_name in antenna_names

@@ -40,22 +40,25 @@ REDISPOSTPROCSET = 'postprocpype:///set'
 
 redis_obj = redis.Redis(host=REDISHOST)
 
-hashpipe_targets_LoB = {
+hashpipe_targets_LoA = {
 	'seti-node1': [0],
 	'seti-node2': [0,1],
 	'seti-node3': [0,1],
-	'seti-node4': [0,1],
+	'seti-node9': [0,1],
 }
 
-hashpipe_targets_LoC = {
+hashpipe_targets_LoB = {
 	'seti-node5': [0,1],
 	'seti-node6': [0,1],
 	'seti-node7': [0,1],
 	'seti-node8': [0],
 }
 
+hashpipe_targets_LoC = {}
+hashpipe_targets_LoD = {}
+
 def resolve_hashpipe_targets():
-	global hashpipe_targets_LoB, hashpipe_targets_LoC
+	global hashpipe_targets_LoA, hashpipe_targets_LoB
 
 	seti_nodes = [
 		f"seti-node{i}"
@@ -63,8 +66,8 @@ def resolve_hashpipe_targets():
 	]
 	instances = [0, 1]
 
+	hashpipe_targets_LoA = {}
 	hashpipe_targets_LoB = {}
-	hashpipe_targets_LoC = {}
 	for seti_node in seti_nodes:
 		for instance in instances:
 			redis_get_chan = REDISGETGW.substitute(
@@ -80,11 +83,17 @@ def resolve_hashpipe_targets():
 
 			# print(f"{seti_node}.{instance}: {antenna_list}")
 			lo = antenna_list[0][-1]
-			if lo == "B":
+			if lo == "A":
+				hashpipe_targets_LoA[seti_node] = hashpipe_targets_LoA.get(seti_node, [])
+				hashpipe_targets_LoA[seti_node].append(instance)
+			elif lo == "B":
 				hashpipe_targets_LoB[seti_node] = hashpipe_targets_LoB.get(seti_node, [])
 				hashpipe_targets_LoB[seti_node].append(instance)
 			elif lo == "C":
 				hashpipe_targets_LoC[seti_node] = hashpipe_targets_LoC.get(seti_node, [])
 				hashpipe_targets_LoC[seti_node].append(instance)
+			elif lo == "D":
+				hashpipe_targets_LoD[seti_node] = hashpipe_targets_LoD.get(seti_node, [])
+				hashpipe_targets_LoD[seti_node].append(instance)
 
 resolve_hashpipe_targets()
