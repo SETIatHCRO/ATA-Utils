@@ -24,9 +24,11 @@ setuptools.setup(
         'SNAPobs/snap_hpguppi/scripts/meta_marshall.py',
         'SNAPobs/snap_hpguppi/scripts/set_postproc_keys.py',
         'SNAPobs/snap_hpguppi/scripts/set_hashpipe_keys.py',
-        'SNAPobs/snap_hpguppi/scripts/populate_meta.py', 'SNAPobs/snap_hpguppi/scripts/start_record_in_x.py',
+        'SNAPobs/snap_hpguppi/scripts/populate_meta.py',
+        'SNAPobs/snap_hpguppi/scripts/start_record_in_x.py',
         'ATAPointing/pointing_elxel_plot.py',
         'ATAPointing/pointing_azel_table.py',
-        'ATAPointing/pointing_azel_print.py']
+        'ATAPointing/pointing_azel_print.py',
+        'ATATools/scripts/atacheck']
     #entry_points={'console_scripts': ['GPIBLOControl = GPIBLOControl.GPIBLOControl:main']},
 )

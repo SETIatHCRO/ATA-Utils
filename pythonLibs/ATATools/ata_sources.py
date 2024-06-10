@@ -107,3 +107,58 @@ def check_source(sourcename):
     except Exception as e:
         logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
         raise
+
+
+def check_radec(ra, dec):
+    """
+    Get visibility status of a ra, dec pointing
+
+    Parameters
+    ----------
+    ra : float
+        Right ascension [in decimal hours]
+    dec: float
+        Declination [in decimal degrees]
+
+    Returns
+    -------
+    dictionary of Ra/DEC attributes
+
+    Examples
+    --------
+    >>> info = check_radec(23.390774, 58.807776)
+    >>> print(info)
+    {
+        'object': 'RADec[23.390774,58.807776]',
+        'is_up': True,
+        'az': 327.242431640625,
+        'el': 25.636306762695312,
+        'ra': 23.39077256355449,
+        'dec': 58.80778438531889,
+    # Rise and set times in UTC
+        'rise_time_posix': 1718082627,
+        'set_time_posix': 1718061064,
+        'rise_time': datetime.datetime(2024, 6, 11, 5, 10, 27, tzinfo=datetime.timezone.utc),
+        'set_time': datetime.datetime(2024, 6, 10, 23, 11, 4, tzinfo=datetime.timezone.utc)
+    }
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    radec = [ra, dec]
+    try:
+        endpoint = '/source'
+        response = ATARest.get(endpoint, json={'radec': radec})
+
+        if response['rise_time_posix']:
+            response['rise_time'] =\
+                    datetime.fromtimestamp(response['rise_time_posix'],
+                            timezone.utc)
+        if response['set_time_posix']:
+            response['set_time'] =\
+                    datetime.fromtimestamp(response['set_time_posix'],
+                            timezone.utc)
+
+        return response
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise

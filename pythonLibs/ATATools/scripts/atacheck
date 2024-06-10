@@ -28,19 +28,32 @@ def main():
     parser = argparse.ArgumentParser(description=
             '''Display information about a source, including current
             position, rise and set times, etc...''')
-    parser.add_argument('source')
+    parser.add_argument('source', nargs='?',
+            help='source name in ATA database')
+
+    parser.add_argument('--radec', nargs=2,
+            required=False, type=float,
+            help='RA [decimal hours], Dec [decimal degrees] pair')
 
     args = parser.parse_args()
-    source_name = args.source
 
-    source = ata_sources.check_source(args.source)
+    if (args.source is not None) and (args.radec is not None):
+        raise RuntimeError('Provide only "source" or "RA/Dec" pair')
+
+    if args.source:
+        source = ata_sources.check_source(args.source)
+    elif args.radec:
+        source = ata_sources.check_radec(*args.radec)
 
     output_str="\n"
 
     if source['is_up']:
         output_str += "%s is up.\n" %source['object']
     else:
-        output_str += "%s is not up.\n" %source['object']
+        if 'rise_time' not in source:
+            output_str += "%s is never up.\n" %source['object']
+        else:
+            output_str += "%s is not up.\n" %source['object']
 
     # Ra Dec line
     output_str += "RA, Dec = %.6f, %.6f\n" %(source['ra'],
@@ -58,30 +71,32 @@ def main():
     output_str += " (LST %s).\n" %lst_now_str
 
     # Rise time line
-    rises_str = "Rises > 16.5 deg"
-    # make it match the above line
-    rises_str += " "*(len(azel_str) - len(rises_str))
-    source_rise_time = source['rise_time'].astimezone(PST_TZ) + LEAP_SEC_DT
-    source_rise_time_no_ls = source['rise_time'].astimezone(PST_TZ)
-    rises_str += ": %s" %source_rise_time.strftime(DATETIME_FMT)
-    lst_rise = Time(source_rise_time_no_ls, 
-            location=OBSERVATORY).sidereal_time('mean')
-    lst_rise_str = lst_rise.to_string(sep=":", precision=2, pad=True)
-    output_str += rises_str
-    output_str += " (LST %s).\n" %lst_rise_str
+    if 'rise_time' in source:
+        rises_str = "Rises > 16.5 deg"
+        # make it match the above line
+        rises_str += " "*(len(azel_str) - len(rises_str))
+        source_rise_time = source['rise_time'].astimezone(PST_TZ) + LEAP_SEC_DT
+        source_rise_time_no_ls = source['rise_time'].astimezone(PST_TZ)
+        rises_str += ": %s" %source_rise_time.strftime(DATETIME_FMT)
+        lst_rise = Time(source_rise_time_no_ls,
+                location=OBSERVATORY).sidereal_time('mean')
+        lst_rise_str = lst_rise.to_string(sep=":", precision=2, pad=True)
+        output_str += rises_str
+        output_str += " (LST %s).\n" %lst_rise_str
 
     # Set time line
-    set_str = "Sets  < 16.5 deg"
-    # make it match the above line
-    set_str += " "*(len(azel_str) - len(set_str))
-    source_set_time = source['set_time'].astimezone(PST_TZ) + LEAP_SEC_DT
-    source_set_time_no_ls = source['set_time'].astimezone(PST_TZ)
-    set_str += ": %s" %source_set_time.strftime(DATETIME_FMT)
-    lst_set = Time(source_set_time_no_ls, 
-            location=OBSERVATORY).sidereal_time('mean')
-    lst_set_str = lst_set.to_string(sep=":", precision=2, pad=True)
-    output_str += set_str
-    output_str += " (LST %s).\n" %lst_set_str
+    if 'set_time' in source:
+        set_str = "Sets  < 16.5 deg"
+        # make it match the above line
+        set_str += " "*(len(azel_str) - len(set_str))
+        source_set_time = source['set_time'].astimezone(PST_TZ) + LEAP_SEC_DT
+        source_set_time_no_ls = source['set_time'].astimezone(PST_TZ)
+        set_str += ": %s" %source_set_time.strftime(DATETIME_FMT)
+        lst_set = Time(source_set_time_no_ls,
+                location=OBSERVATORY).sidereal_time('mean')
+        lst_set_str = lst_set.to_string(sep=":", precision=2, pad=True)
+        output_str += set_str
+        output_str += " (LST %s).\n" %lst_set_str
 
     # Now let's print
     print(output_str)
