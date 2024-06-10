@@ -186,7 +186,6 @@ def populate_meta(stream_hostnames: StringList, antlo_names: StringList,
             ignore_control)
     ants_obs_params = _get_obs_params(antlo_names)
     source_list = [aop['SOURCE'] for antname, aop in ants_obs_params.items()]
-    ant0_obs_params = ants_obs_params[antlo_names[0]]
 
     if len(set(skyfreq_mapping.values())) != 1:
         sys.stderr.write("WARNING: antennas are tuned to different freqs, "
@@ -215,14 +214,21 @@ def populate_meta(stream_hostnames: StringList, antlo_names: StringList,
     else:
         reference_antenna_name = reference_antenna_name_default
 
+    reference_antlo_name = [antlo for antlo in antlo_names if antlo.startswith(reference_antenna_name)]
+    if len(reference_antlo_name) == 0:
+        reference_antlo_name = antlo_names[0]
+        sys.stderr.write(f"WARNING: reference antenna ({reference_antenna_name}) not involved in observation. Falling back to first antenna: {reference_antlo_name}")
+    else:
+        reference_antlo_name = reference_antlo_name[0]
+    antref_obs_params = ants_obs_params[reference_antlo_name]
     lo_obsfreq = skyfreq_mapping[reference_stream_hostname]
     centre_channel = fengine_meta_keyvalues['FENCHAN']/2
-    source     = ant0_obs_params['SOURCE']
-    ra_hrs  = ant0_obs_params['RA'][0] # hours
+    source     = antref_obs_params['SOURCE']
+    ra_hrs  = antref_obs_params['RA'][0] # hours
     ra      = ra_hrs * 360 / 24 # convert from hours to degrees
-    dec     = ant0_obs_params['RA'][1] #ant0_obs_params['DEC']
-    az      = ant0_obs_params['AZ'][0]
-    el      = ant0_obs_params['AZ'][1] #ant0_obs_params['EL']
+    dec     = antref_obs_params['RA'][1] #antref_obs_params['DEC']
+    az      = antref_obs_params['AZ'][0]
+    el      = antref_obs_params['AZ'][1] #antref_obs_params['EL']
     source =  source.replace(' ', '_')
     if dut1 is True or dut1 is None:
         # get dut1 at the beginning of today
