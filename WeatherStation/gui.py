@@ -6,7 +6,6 @@ update_loop function uses updateData.py
 '''
 
 import tkinter as tk
-from tkinter import ttk
 from update_data import TelnetLink
 from time import time, strftime, localtime
 
@@ -34,9 +33,6 @@ class WeatherInterface():
     def __init__(self):
         # GUI window (root) setup
         self.root = tk.Tk()
-        #self.root.state('zoomed')
-
-
         self.root.winfo_width()
         self.root.title("HCRO Weather")
         self.root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
@@ -47,7 +43,7 @@ class WeatherInterface():
         self.button_frame.rowconfigure(1, weight=1)
         self.button_frame.columnconfigure(3, weight=1)
 
-        # self.background = tk.PhotoImage(file = "background.png")
+        #self.background = tk.PhotoImage(file = "background.png")
 
         add_menu_buttons(
             interface=self,
@@ -62,7 +58,7 @@ class WeatherInterface():
         for frameObject in (Summary, WS1, WS2):
             new_object = frameObject(parent=self.root, interface=self)
             self.frame_objects[frameObject.__name__] = new_object
-            new_object.frame.grid(row=0, column=0, sticky="nsew")
+            new_object.frame.place(x=0, y=0, relwidth=1, relheight=1)
 
         # Display summary page first, can be later changed using the gui buttons
         self.show_frame("Summary")
@@ -72,11 +68,12 @@ class WeatherInterface():
         ''' Display the tk frame 'frame_name' by putting it on top of the others. '''
 
         frame = self.frame_objects[frame_name].frame
-        frame.grid(row=0, column=0, sticky='nsew')
+        frame.place(x=0, y=0, relwidth=1, relheight=0.75)
         frame.tkraise()
 
         self.button_frame.tkraise()
-        self.button_frame.grid(row=1, column=0, sticky='ew')
+        self.button_frame.place(relx=0.5, rely=0.85, relwidth=1, relheight=0.2, anchor=tk.CENTER)
+
 
 
     def updatevalues(self):
@@ -84,14 +81,15 @@ class WeatherInterface():
 
         dict_ws1 = self.telnet_link_1.read_values()
         dict_ws2 = self.telnet_link_2.read_values()
-        self.sensor_values = {**dict_ws1, **dict_ws2} # Merge the 2 dicts        
-        
+        self.sensor_values = {**dict_ws1, **dict_ws2} # Merge the 2 dicts
+
         # Update title bar with last updated time:
         current_unix_time = time()
         t_disp_WS1 = self.sensor_values['WS1_update_display_time']
         t_disp_WS2 = self.sensor_values['WS2_update_display_time']
         t_unix_WS1 = self.sensor_values['WS1_update_unix_time']
         t_unix_WS2 = self.sensor_values['WS2_update_unix_time']
+
         # Use the oldest of the two WS time to be conservative:
         if t_unix_WS1 < t_unix_WS2:
             t_disp = t_disp_WS1
@@ -115,7 +113,7 @@ class WeatherInterface():
             self.clear_widgets(frame=current_frame_object.frame)
             #background_image = tk.Label(current_frame_object.frame, image=self.background)
             #background_image.place(x=0, y=0, relwidth=1, relheight=1)
-            current_frame_object.updtate_frame_values()
+            current_frame_object.update_frame_values()
 
 
     def clear_widgets(self,frame):
@@ -141,22 +139,21 @@ def add_menu_buttons(interface, button_frame):
         text = 'Main',
         font = (FONT,FONTSIZE),
         command = lambda: interface.show_frame("Summary"))
-    summary_button.grid(row=0, column=0, sticky='ew', padx=(int(WINDOW_WIDTH/10), 20))
+    summary_button.place(relx=0.25, rely=0.5, relwidth=0.2, relheight=0.8, anchor=tk.CENTER)
 
     ws1_button = tk.Button(
         button_frame,
         text = 'WS1',
         font = (FONT,FONTSIZE),
         command = lambda: interface.show_frame("WS1"))
-    ws1_button.grid(row=0, column=1, padx=20, sticky='ew')
+    ws1_button.place(relx=0.5, rely=0.5, relwidth=0.2, relheight=0.8, anchor=tk.CENTER)
 
     ws2_button = tk.Button(
         button_frame,
         font = (FONT,FONTSIZE),
         text = 'WS2',
         command = lambda: interface.show_frame("WS2"))
-    ws2_button.grid(row=0, column=2, padx=20, sticky='ew')
-
+    ws2_button.place(relx=0.75, rely=0.5, relwidth=0.2, relheight=0.8, anchor=tk.CENTER)
 
 
 class Summary():
@@ -164,16 +161,18 @@ class Summary():
 
     def __init__(self, parent, interface):
         self.frame = tk.Frame(parent)
-        self.frame.rowconfigure(5, weight=1) # Configure tk grid layout
-        self.frame.columnconfigure(3, weight=1)
         self.interface = interface
 
-        # Add horizontal spaces in the GUI
-        for row_idx in range(self.frame.grid_size()[1]):
-            self.frame.grid_rowconfigure(row_idx, minsize=30)
+        # Row/column distances for place() function
+        self.column0 = 0.04
+        self.column1 = 0.25
+        self.column2 = 0.7
+        self.row0 = 0.05
+        self.row1 = 0.20
+        self.row2 = 0.5
+        self.row3 = 0.65
 
-
-    def updtate_frame_values(self):
+    def update_frame_values(self):
         ''' 
         Called by WeatherInterface.updatevalues() to update the tk frame values 
         once they are pulled from telnet.
@@ -187,91 +186,70 @@ class Summary():
             self.frame,
             font=(FONT, FONTSIZE),
             text="WS1:")
-        tmp_label.grid(row=0, column=0, sticky='w',padx=(int(WINDOW_WIDTH/10), 10))
+        tmp_label.place(relx=self.column0, rely=self.row0)
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg = REDHEX,
             text=f"T: {values_dict['WS1_AirTemp']}{DEGREESIGN}C")
-        tmp_label.grid(row=0, column=1, sticky='w')
+        tmp_label.place(relx=self.column1, rely=self.row0)
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg = BLUEHEX,
             text=f"H: {values_dict['WS1_RelHumidity']}%")
-        tmp_label.grid(row=0, column=2, sticky='w', padx=(0, 50))
+        tmp_label.place(relx=self.column2, rely=self.row0)
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg=GREENHEX,
             text=f"W: {'{:.1f}'.format(float(values_dict['WS1_WindSpeedAvg'])*3.6)}km/h")
-        tmp_label.grid(row=1, column=1, sticky='w')
+        tmp_label.place(relx=self.column1, rely=self.row1)
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg=GREENHEX,
             text=f"Dir: {values_dict['WS1_WindDirAvg']}{DEGREESIGN}")
-        tmp_label.grid(row=1, column=2, sticky='w')
+        tmp_label.place(relx=self.column2, rely=self.row1)
 
         # WS2:
         tmp_label = tk.Label(
                     self.frame,
                     font=(FONT, FONTSIZE),
                     text="WS2:")
-        tmp_label.grid(row=3, column=0, sticky='w',padx=(int(WINDOW_WIDTH/10), 5))
+        tmp_label.place(relx=self.column0, rely=self.row2)
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg=REDHEX,
             text=f"T: {values_dict['WS2_AirTemp']}{DEGREESIGN}C")
-        tmp_label.grid(row=3, column=1, sticky='w')
+        tmp_label.place(relx=self.column1, rely=self.row2)
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg=BLUEHEX,
             text=f"H:{values_dict['WS2_RelHumidity']}%")
-        tmp_label.grid(row=3, column=2, sticky='w')
+        tmp_label.place(relx=self.column2, rely=self.row2)
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg=GREENHEX,
             text=f"W: {'{:.1f}'.format(float(values_dict['WS2_WindSpeedAvg'])*3.6)}km/h")
-        tmp_label.grid(row=4, column=1, sticky='w')
+        tmp_label.place(relx=self.column1, rely=self.row3)
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             fg=GREENHEX,
             text=f"Dir: {values_dict['WS2_WindDirAvg']}{DEGREESIGN}")
-        tmp_label.grid(row=4, column=2, sticky='w')
-
-        # Horizontal line between WS data
-        tmp_separator = ttk.Separator(
-            self.frame,
-            orient='horizontal')
-        tmp_separator.grid(
-            row=2,
-            column=0,
-            columnspan=3,
-            ipadx=100,
-            sticky='ew')
-
-        tmp_separator = ttk.Separator(
-            self.frame,
-            orient='horizontal')
-        tmp_separator.grid(
-            row=5,
-            column=0,
-            columnspan=3,
-            ipadx=100,
-            sticky='ew')
+        tmp_label.place(relx=self.column2, rely=self.row3)
 
 
 class WS1():
@@ -282,9 +260,10 @@ class WS1():
         self.frame.rowconfigure(3, weight=1)
         self.frame.columnconfigure(2, weight=1)
         self.interface = interface
+        self.column = 0.01 # for text alignment
 
 
-    def updtate_frame_values(self):
+    def update_frame_values(self):
         ''' 
         Called by WeatherInterface.updatevalues() to update the tk frame values 
         once they are pulled from telnet.
@@ -296,32 +275,34 @@ class WS1():
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
-            text=f"Vaisala WXT530 Id: {values_dict['WS1_id']}")
-        tmp_label.grid(row=0, column=0, sticky='w', pady =(50,0))
+            text=f"Vaisala WXT530 Id: {values_dict['WS1_id']}",
+            #bg='grey'
+            )
+        tmp_label.place(relx=self.column, rely=0.06)
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             text=f"Heating Temperature: {values_dict['WS1_HeatingTemp']}{DEGREESIGN}C")
-        tmp_label.grid(row=1, column=0, sticky='w')
+        tmp_label.place(relx=self.column, rely=0.23)
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             text=f"Heating Voltage: {values_dict['WS1_HeatingVoltage']}V")
-        tmp_label.grid(row=2, column=0, sticky='w')
+        tmp_label.place(relx=self.column, rely=0.4)
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             text=f"Supply Voltage: {values_dict['WS1_SupplyVoltage']}V")
-        tmp_label.grid(row=3, column=0, sticky='w')
+        tmp_label.place(relx=self.column, rely=0.57)
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             text=f"Reference Voltage: {values_dict['WS1_refVoltage']}V")
-        tmp_label.grid(row=4, column=0, sticky='w')
+        tmp_label.place(relx=self.column, rely=0.74)
 
 
 class WS2():
@@ -332,9 +313,10 @@ class WS2():
         self.frame.rowconfigure(3, weight=1)
         self.frame.columnconfigure(2, weight=1)
         self.interface = interface
+        self.column = 0.01 # place() text alignment
 
 
-    def updtate_frame_values(self):
+    def update_frame_values(self):
         ''' 
         Called by WeatherInterface.updatevalues() to update the tk frame values 
         once they are pulled from telnet.
@@ -347,31 +329,31 @@ class WS2():
             self.frame,
             font=(FONT, FONTSIZE),
             text=f"Vaisala WXT530 Id: {values_dict['WS2_id']}")
-        tmp_label.grid(row=0, column=0, sticky='w', pady =(50,0))
+        tmp_label.place(relx=self.column, rely=0.06)
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             text=f"Heating Temperature: {values_dict['WS2_HeatingTemp']}{DEGREESIGN}C")
-        tmp_label.grid(row=1, column=0, sticky='w')
+        tmp_label.place(relx=self.column, rely=0.23)
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             text=f"Heating Voltage: {values_dict['WS2_HeatingVoltage']}V")
-        tmp_label.grid(row=2, column=0, sticky='w')
+        tmp_label.place(relx=self.column, rely=0.4)
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             text=f"Supply Voltage: {values_dict['WS2_SupplyVoltage']}V")
-        tmp_label.grid(row=3, column=0, sticky='w')
+        tmp_label.place(relx=self.column, rely=0.57)
 
         tmp_label = tk.Label(
             self.frame,
             font=(FONT, FONTSIZE),
             text=f"Reference Voltage: {values_dict['WS2_refVoltage']}V")
-        tmp_label.grid(row=4, column=0, sticky='w')
+        tmp_label.place(relx=self.column, rely=0.74)
 
 
 def update_loop(weather_interface):
@@ -379,5 +361,5 @@ def update_loop(weather_interface):
 
     weather_interface.updatevalues()
 
-     # Function will be called again in 20s to make it recurrent
+    # Function will be called every 20s to make it recurrent
     weather_interface.root.after(20000, lambda: update_loop(weather_interface))
