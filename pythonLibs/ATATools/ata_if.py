@@ -5,7 +5,8 @@ import threading
 import warnings
 
 from ATATools import logger_defaults
-from SNAPobs import snap_defaults, snap_config, snap_control
+from ata_snap import ata_snap_fengine, ata_rfsoc_fengine
+from SNAPobs.snap_config import get_ata_cfg
 
 
 # TODO: move and put in a config file
@@ -235,8 +236,12 @@ def _tune_if_by_module_threaded(ant_mapping_per_module):
 
     gain_module = ant_mapping_per_module['gain-module'].unique()[0]
 
-    rfsoc = snap_control.init_snaps(unique_rfsoc)[0]
-    snap_control.get_system_information([rfsoc])
+    rfsoc = ata_rfsoc_fengine.AtaRfsocFengine(unique_rfsoc, pipeline_id = 0)
+    ata_cfg = get_ata_cfg()
+    rfsoc_fpg_file = ata_cfg['RFSOCFPG']
+    rfsoc.fpga.get_system_information(rfsoc_fpg_file)
+    logger.info("Initialized RFSoC: %s" %unique_rfsoc)
+
     #rfsoc = testRfsoc(unique_rfsoc)
 
     ant_mapping_per_module['meas_rms'] = [0.]*len(ant_mapping_per_module)
@@ -250,6 +255,7 @@ def _tune_if_by_module_threaded(ant_mapping_per_module):
             x, y = _get_adc(rfsoc, pipeline_id-1) #TODO: implement!
             rms_x = np.std(x)
             rms_y = np.std(y)
+            logger.info("RMS values for x,y: %.3f %.3f" %(rms_x, rms_y))
 
             tmp_mask = ant_mapping_per_module.hostname ==\
                     str(unique_rfsoc) + "-ctrl-%i" %pipeline_id
@@ -394,10 +400,10 @@ def _set_attn_by_module(gain_module, chanlist, attenlist):
     command += "'"
 
     logger.info(command)
-    #process = subprocess.Popen(command, stdout=subprocess.PIPE,
-    #        stderr=subprocess.PIPE, shell=True)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, shell=True)
 
-    #stdout, stderr = process.communicate()
+    stdout, stderr = process.communicate()
 
 
 
@@ -428,7 +434,7 @@ def _get_attn_by_module(gain_module, chanlist):
     chanlist  = np.array(chanlist)
 
     logger = logger_defaults.getModuleLogger(__name__)
-    command = "ssh sonata@%s.hcro.org "%gain_module
+    command = "ssh sonata@%s "%gain_module
     command += "'python attenuatorMain.py"
     command += " -n "
     command += " ".join(["%i"%i for i in chanlist])
