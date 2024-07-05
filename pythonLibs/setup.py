@@ -15,8 +15,8 @@ setuptools.setup(
     packages=['ATAdb', 'ATATools','ATAobs','SNAPobs','SNAPobs.snap_dada', 'SNAPobs.snap_hpguppi', 
               'OnOffCalc','OnOffCalc.flux','OnOffCalc.yFactor','OnOffCalc.misc','OnOffCalc.filterArray'],
     include_package_data=True,
-    author='Dr. Janusz S. Kulpa',
-    author_email='kulpaj.dev@gmail.com',
+    author='Dr. Wael Farah',
+    author_email='wfarah@seti.org',
     keywords=['ATA'],
     long_description=long_description,
     url="https://github.com/SETIatHCRO/ATA-Utils/",
@@ -29,6 +29,9 @@ setuptools.setup(
         'ATAPointing/pointing_elxel_plot.py',
         'ATAPointing/pointing_azel_table.py',
         'ATAPointing/pointing_azel_print.py',
-        'ATATools/scripts/atacheck']
+        'ATATools/scripts/atacheck',
+        'ATATools/scripts/ataiftune',
+        'ATATools/scripts/atasetifgain',
+        'ATATools/scripts/atagetifgain']
     #entry_points={'console_scripts': ['GPIBLOControl = GPIBLOControl.GPIBLOControl:main']},
 )

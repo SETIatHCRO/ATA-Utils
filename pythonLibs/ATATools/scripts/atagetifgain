@@ -1,0 +1,78 @@
+#!/usr/bin/env python
+from ATATools.ata_if import get_attenuation, _get_attn_by_module
+from ATATools import logger_defaults
+
+import numpy as np
+import argparse
+import logging
+import sys,os
+
+ALL_LOS = ['a', 'b', 'c', 'd']
+ALL_POLS = ['x', 'y']
+ALL_CHANS = list(range(1,17))
+
+def main():
+    parser = argparse.ArgumentParser(description=
+             "Get attenuation for a given antenna, LO and pol")
+    parser.add_argument('ants', nargs="+",
+            help="Antenna names")
+    parser.add_argument('-l', '--lo', nargs="+",
+            help="LO names", default=ALL_LOS)
+    parser.add_argument('-p', '--pol', nargs="+",
+            help="Polarizations", default=ALL_POLS)
+    parser.add_argument('-g', '--use_module_name', action='store_true',
+            help="Replace antenna by gainmodule,\n"\
+                 "e.g. 'atagetifgain gain-module1 -g -c 1 2 3', to get\n"\
+                 "the gain on module 1 for channels 1 2 3")
+    parser.add_argument('-c', '--chans', nargs="?", type=int, 
+            default=ALL_CHANS,
+            help="Gain module channel list (only needed with -g flag)")
+    parser.add_argument('-x', '--print_attens', action='store_true',
+            help="Print only attenuations and not whole table")
+    parser.add_argument('-v', '--verbose', action='count', default=0,
+            help="Verbosity")
+
+
+    args = parser.parse_args()
+
+    if args.verbose == 1:
+        logger = logger_defaults.getProgramLogger(
+                os.path.basename(sys.argv[0]),
+                loglevel=logging.INFO)
+    elif args.verbose > 1:
+        logger = logger_defaults.getProgramLogger(
+                os.path.basename(sys.argv[0]),
+                loglevel=logging.DEBUG)
+
+    if args.use_module_name: #using gain modules instead of antenna names
+        gain_module_list = np.array(args.ants)
+        chan_list = args.chans
+
+        sub_ant_mapping = None
+        for gain_module in gain_module_list:
+            if sub_ant_mapping == None:
+                sub_ant_mapping = _get_attn_by_module(gain_module, chan_list)
+            else:
+                sub_ant_mapping += _get_attn_by_module(gain_module, chan_list)
+
+    else: # using antenna names
+        ant_list = np.array(args.ants)
+        los      = np.array(args.lo)
+        pols     = np.array(args.pol)
+
+        for lo in los:
+            if lo not in ALL_LOS:
+                raise RuntimeError("LO: %s not in default LO list" %lo)
+        for pol in pols:
+            if pol not in ALL_POLS:
+                raise RuntimeError("Pol: %s not in default pol list"%pol)
+
+        sub_ant_mapping = get_attenuation(ant_list, los, pols)
+
+    if args.print_attens:
+        print(sub_ant_mapping.attens.values)
+    else:
+        print(sub_ant_mapping)
+
+if __name__ == "__main__":
+    main()

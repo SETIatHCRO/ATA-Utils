@@ -1,0 +1,71 @@
+#!/usr/bin/env python
+from ATATools.ata_if import set_attenuation, _set_attn_by_module
+from ATATools import logger_defaults
+
+import numpy as np
+import argparse
+import logging
+import sys,os
+
+ALL_LOS = ['a', 'b', 'c', 'd']
+ALL_POLS = ['x', 'y']
+
+def main():
+    parser = argparse.ArgumentParser(description=
+             "Set attenuation for a given antenna, LO and pol")
+    parser.add_argument('atten', nargs=1, type=float,
+            help="attenuation to set")
+    parser.add_argument('ants', nargs="+",
+            help="Antenna names")
+    parser.add_argument('-l', '--lo', nargs="+",
+            help="LO names", default=ALL_LOS)
+    parser.add_argument('-p', '--pol', nargs="+",
+            help="Polarizations", default=ALL_POLS)
+    parser.add_argument('-g', '--use_module_name', action='store_true',
+            help="Replace antenna by gainmodule,\n"\
+                 "e.g. 'atasetifgain 23 gain-module1 -g -c 1 2 3', to set\n"\
+                 "the gain on module 1 to 23 on channels 1 2 3")
+    parser.add_argument('-c', '--chans', nargs="+", type=int,
+            help="Gain module channel list (only needed with -g flag)")
+    parser.add_argument('-v', '--verbose', action='count', default=0,
+            help="Verbosity")
+
+
+    args = parser.parse_args()
+    atten    = args.atten[0] #I know it should be only 1 value
+
+    if args.verbose == 1:
+        logger = logger_defaults.getProgramLogger(
+                os.path.basename(sys.argv[0]),
+                loglevel=logging.INFO)
+    elif args.verbose > 1:
+        logger = logger_defaults.getProgramLogger(
+                os.path.basename(sys.argv[0]),
+                loglevel=logging.DEBUG)
+
+    if args.use_module_name: #using gain modules instead of antenna names
+        gain_module_list = np.array(args.ants)
+        if not args.chans:
+            raise RuntimeError("Pass channel list with '-g' flag")
+        chan_list = args.chans
+
+        for gain_module in gain_module_list:
+            _set_attn_by_module(gain_module, chan_list, 
+                                [atten]*len(chan_list))
+
+    else: # using antenna names
+        ant_list = np.array(args.ants)
+        los      = np.array(args.lo)
+        pols     = np.array(args.pol)
+
+        for lo in los:
+            if lo not in ALL_LOS:
+                raise RuntimeError("LO: %s not in default LO list" %lo)
+        for pol in pols:
+            if pol not in ALL_POLS:
+                raise RuntimeError("Pol: %s not in default pol list"%pol)
+
+        set_attenuation(atten, ant_list, los, pols)
+
+if __name__ == "__main__":
+    main()
