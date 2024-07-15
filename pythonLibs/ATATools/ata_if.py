@@ -383,18 +383,18 @@ def _set_attn_by_module(gain_module, chanlist, attenlist):
     if np.any(attenlist > MAX_ATT):
         warn_chan_list = chanlist[attenlist > MAX_ATT]
         warn_atten     = attenlist[attenlist > MAX_ATT]
-        warnings.warn("Trying to set attenuator on channels %s " 
+        warnings.warn("Trying to set %s on channels %s " 
                       "to values %s, which is more than max [%i]"
-                      %(list(warn_chan_list), list(warn_atten),
+                      %(gain_module, list(warn_chan_list), list(warn_atten),
                         MAX_ATT))
         attenlist[attenlist > MAX_ATT] = MAX_ATT
 
     if np.any(attenlist < MIN_ATT):
         warn_chan_list = chanlist[attenlist < MIN_ATT]
         warn_atten     = attenlist[attenlist < MIN_ATT]
-        warnings.warn("Trying to set attenuator on channels %s " 
+        warnings.warn("Trying to set %s on channels %s " 
                       "to values %s, which is less than min [%i]"
-                      %(list(warn_chan_list), list(warn_atten),
+                      %(gain_module, list(warn_chan_list), list(warn_atten),
                         MIN_ATT))
         attenlist[attenlist < MIN_ATT] = MIN_ATT
 
