@@ -50,8 +50,32 @@ def _round50th(list_n):
 # TODO: Hardcoded for now
 def get_antenna_mapping():
     d = pd.read_csv("/home/sonata/antenna_config_pol.dat", sep='\s+')
+    d.columns = d.columns.str.replace("#", "")
     return d
 
+
+def _select_from(initial_dframe, **kwargs):
+    """
+    Selects according to certain columns from a dataframe,
+    and returns a sub dataframe
+
+    Parameters
+    ----------
+    initial_dframe : Pandas DataFrame
+        Initial dataframe that we want to select columns from
+
+    Returns
+    -------
+    sub_dframe : Pandas DataFrame
+        Pandas DataFrame that we selected according to columns
+    """
+    mask = np.ones(len(initial_dframe), dtype=bool)
+    for key, value in kwargs.items():
+        print(key, value)
+        mask &= np.isin(initial_dframe[key], value)
+
+    sub_dframe = initial_dframe[mask].copy()
+    return sub_dframe
 
 
 def set_attenuation(attn, ant_list, los, pols=ALL_POLS):
@@ -89,13 +113,8 @@ def set_attenuation(attn, ant_list, los, pols=ALL_POLS):
     ant_list = [ant.lower() for ant in ant_list] 
     los      = [lo.lower() for lo in los]
 
-    isin_ant = np.isin(ant_mapping['#ant'], ant_list)
-    isin_lo  = np.isin(ant_mapping['LO'], los)
-    isin_pol = np.isin(ant_mapping['pol'], pols)
-
-    ant_mapping_mask = isin_ant & isin_lo & isin_pol
-
-    sub_ant_mapping = ant_mapping[ant_mapping_mask].copy()
+    sub_ant_mapping = _select_from(ant_mapping, LO=los, pol=pols,
+                                   ant=ant_list)
 
     attens = [attn]*len(sub_ant_mapping)
     _set_attenuation_by_mapping(sub_ant_mapping, attens)
@@ -132,13 +151,8 @@ def get_attenuation(ant_list, los, pols=ALL_POLS):
     ant_list = [ant.lower() for ant in ant_list] 
     los      = [lo.lower() for lo in los]
 
-    isin_ant = np.isin(ant_mapping['#ant'], ant_list)
-    isin_lo  = np.isin(ant_mapping['LO'], los)
-    isin_pol = np.isin(ant_mapping['pol'], pols)
-
-    ant_mapping_mask = isin_ant & isin_lo & isin_pol
-
-    sub_ant_mapping = ant_mapping[ant_mapping_mask].copy()
+    sub_ant_mapping = _select_from(ant_mapping, LO=los, pol=pols,
+                                   ant=ant_list)
 
     sub_ant_mapping = _get_attenuation_by_mapping(sub_ant_mapping)
     logger.info("Output of get_attenuation:\n%s" %sub_ant_mapping)
@@ -178,13 +192,8 @@ def tune_if(ant_list, los, pols=ALL_POLS, desired_rms=RFSOC_RMS):
     ant_list = [ant.lower() for ant in ant_list] 
     los      = [lo.lower() for lo in los]
 
-    isin_ant = np.isin(ant_mapping['#ant'], ant_list)
-    isin_lo  = np.isin(ant_mapping['LO'], los)
-    isin_pol = np.isin(ant_mapping['pol'], pols)
-
-    ant_mapping_mask = isin_ant & isin_lo & isin_pol
-
-    sub_ant_mapping = ant_mapping[ant_mapping_mask].copy()
+    sub_ant_mapping = _select_from(ant_mapping, LO=los, pol=pols,
+                                   ant=ant_list)
 
     sub_ant_mapping['desired_rms'] = [desired_rms] * len(sub_ant_mapping)
     unique_gain_modules = sub_ant_mapping['gain-module'].unique()
@@ -318,7 +327,6 @@ def _get_attenuation_by_mapping(sub_ant_mapping):
 
     Parameters:
     ----------
-
     sub_ant_mapping : Pandas DataFrame
         subset of the antenna mapping table
 
