@@ -1,0 +1,115 @@
+#!/usr/bin/env python
+import argparse
+import matplotlib.pyplot as plt
+import numpy as np
+
+from ATATools import ata_if 
+from SNAPobs.snap_config import get_ata_cfg
+from ata_snap import ata_rfsoc_fengine
+
+# for plotting
+NROWS = 3
+NCOLS = 3
+
+def create_subplots(nplots):
+    total = NROWS * NCOLS
+    figs = []
+    axes = []
+
+    for i in range(nplots // total):
+        fig, ax = plt.subplots(NROWS, NCOLS, figsize=(12,10))
+        figs.append(fig)
+        axes.extend(ax.flatten())
+
+    if (nplots % total):
+        fig, ax = plt.subplots(NROWS, NCOLS, figsize=(12,10))
+        figs.append(fig)
+        axes.extend(ax.flatten())
+
+    return np.array(figs), np.array(axes)
+
+def main():
+    parser = argparse.ArgumentParser(description=
+             "Plot ADC values for given antennas, polarization, and LO")
+    parser.add_argument('ants', nargs="+",
+            help="Antenna names")
+    parser.add_argument('-l', '--lo', nargs="+",
+            help="LO names", default=ALL_LOS)
+    parser.add_argument('-p', '--pol', nargs="+",
+            help="Polarizations", default=ALL_POLS)
+    parser.add_argument('-v', '--verbose', action='count', default=0,
+            help="Verbosity")
+
+    args = parser.parse_args()
+
+    if args.verbose == 1:
+        logger = logger_defaults.getProgramLogger(
+                os.path.basename(sys.argv[0]),
+                loglevel=logging.INFO)
+    elif args.verbose > 1:
+        logger = logger_defaults.getProgramLogger(
+                os.path.basename(sys.argv[0]),
+                loglevel=logging.DEBUG)
+
+    # Get all the antenna mapping configuration
+    ant_mapping = ata_if.get_antenna_mapping()
+
+    # Select antennas to plot
+    sub_ant_mapping = ata_if._select_from(ant_mapping, LO=args.los,
+                                          pol=args.pols, ant=args.ants)
+
+    # Total number of plots to generate
+    nplots = int(len(sub_ant_mapping) / len(args.pols))
+
+    # Now create the figures and axes
+    figs, axes = create_subplots(nplots)
+    
+    unique_rfsocs_pid = sub_ant_mapping.hostname
+    unique_rfsocs_all = [i[:-7] for i in unique_rfsocs_pid]
+    sub_ant_mapping['rfsoc'] = unique_rfsocs_all
+    
+    # Add an 'rfsoc' column with unique rfsoc name for each mapping
+    unique_rfsocs = np.unique(unique_rfsocs_all)
+
+    # for aestethics, rfsoc2 should come before rfsoc11
+    unique_rfsocs = unique_rfsocs[np.argsort([int(i[5:]) 
+                                              for i in unique_rfsocs])]
+
+    iplot = 0
+
+    for unique_rfsoc in unique_rfsocs:
+        unique_rfsoc_mapping = ata_if._select_from(sub_ant_mapping,
+                                                   rfsoc=unique_rfsoc)
+        gain_module = np.unique(unique_rfsoc_mapping['gain-module'])
+        assert len(gain_module) == 1, "We should have 1 gain module here..."
+        gain_module = gain_module[0]
+
+        rfsoc = ata_rfsoc_fengine.AtaRfsocFengine(unique_rfsoc,
+                                                  pipeline_id = 0)
+        ata_cfg = get_ata_cfg()
+        rfsoc_fpg_file = ata_cfg['RFSOCFPG']
+        rfsoc.fpga.get_system_information(rfsoc_fpg_file)
+        logger.info("Initialized RFSoC: %s" %unique_rfsoc)
+
+        unique_rfsocs_pid = unique_rfsoc_mapping.hostname.unique()
+
+        for unique_pid in unique_rfsocs_pid:
+            pipeline_id = int(unique_pid[-1])
+            x, y = ata_if._get_adc(rfsoc, pipeline_id-1)
+            rms_x = np.std(x)
+            rms_y = np.std(y)
+            if 'x' in unique_rfsoc_mapping.pol.values:
+                axes[iplot].hist(x, color='blue')
+                axes[iplot].set_title("ANT NAME")
+            if 'y' in unique_rfsoc_mapping.pol.values:
+                axes[iplot].hist(y, color='red')
+                axes[iplot].set_title("ANT NAME")
+            iplot += 1
+
+    plt.show()
+
+
+
+
+if __name__ == "__main__":
+    main()
