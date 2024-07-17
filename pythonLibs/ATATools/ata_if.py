@@ -69,9 +69,12 @@ def _select_from(initial_dframe, **kwargs):
     sub_dframe : Pandas DataFrame
         Pandas DataFrame that we selected according to columns
     """
+    logger = logger_defaults.getModuleLogger(__name__)
+    logger.debug("Entered '_select_from' with parameters: %s"
+                 %(initial_dframe))
     mask = np.ones(len(initial_dframe), dtype=bool)
     for key, value in kwargs.items():
-        print(key, value)
+        logger.debug(key, value)
         mask &= np.isin(initial_dframe[key], value)
 
     sub_dframe = initial_dframe[mask].copy()
