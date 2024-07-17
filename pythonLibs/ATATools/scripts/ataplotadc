@@ -7,6 +7,11 @@ from ATATools import ata_if
 from SNAPobs.snap_config import get_ata_cfg
 from ata_snap import ata_rfsoc_fengine
 
+from ATATools import logger_defaults
+
+ALL_LOS = ['a', 'b', 'c', 'd']
+ALL_POLS = ['x', 'y']
+
 # for plotting
 NROWS = 3
 NCOLS = 3
@@ -28,6 +33,24 @@ def create_subplots(nplots):
 
     return np.array(figs), np.array(axes)
 
+
+def _get_ant_lo(unique_rfsoc_mapping, pipeline_id):
+    rfsoc_name = unique_rfsoc_mapping.rfsoc.unique()
+    assert len(rfsoc_name) == 1, "only 1 rfsoc... shouldn't get here"
+    rfsoc_name = rfsoc_name[0]
+
+    hn = rfsoc_name + "-ctrl-" + str(pipeline_id)
+    tmp = unique_rfsoc_mapping[unique_rfsoc_mapping.hostname == hn]
+
+    ant = tmp.ant.unique()
+    assert len(ant) == 1, "only 1 antenna... shouldn't get here"
+
+    lo = tmp.LO.unique()
+    assert len(lo) == 1, "only 1 lo... shouldn't get here"
+
+    return ant[0], lo[0]
+
+
 def main():
     parser = argparse.ArgumentParser(description=
              "Plot ADC values for given antennas, polarization, and LO")
@@ -41,6 +64,7 @@ def main():
             help="Verbosity")
 
     args = parser.parse_args()
+    logger = logger_defaults.getModuleLogger(__name__)
 
     if args.verbose == 1:
         logger = logger_defaults.getProgramLogger(
@@ -55,11 +79,11 @@ def main():
     ant_mapping = ata_if.get_antenna_mapping()
 
     # Select antennas to plot
-    sub_ant_mapping = ata_if._select_from(ant_mapping, LO=args.los,
-                                          pol=args.pols, ant=args.ants)
+    sub_ant_mapping = ata_if._select_from(ant_mapping, LO=args.lo,
+                                          pol=args.pol, ant=args.ants)
 
     # Total number of plots to generate
-    nplots = int(len(sub_ant_mapping) / len(args.pols))
+    nplots = int(len(sub_ant_mapping) / len(args.pol))
 
     # Now create the figures and axes
     figs, axes = create_subplots(nplots)
@@ -98,12 +122,28 @@ def main():
             x, y = ata_if._get_adc(rfsoc, pipeline_id-1)
             rms_x = np.std(x)
             rms_y = np.std(y)
+
             if 'x' in unique_rfsoc_mapping.pol.values:
-                axes[iplot].hist(x, color='blue')
-                axes[iplot].set_title("ANT NAME")
+                axes[iplot].hist(x, color='blue', bins=64, alpha=0.5)
+                props = dict(boxstyle='round', facecolor='blue', alpha=0.5)
+                txt = r'$\sigma_x=%i$' % (rms_x, )
+                axes[iplot].text(0.05, 0.95, txt,
+                        transform=axes[iplot].transAxes,
+                        fontsize=14, verticalalignment='top', bbox=props)
+
             if 'y' in unique_rfsoc_mapping.pol.values:
-                axes[iplot].hist(y, color='red')
-                axes[iplot].set_title("ANT NAME")
+                axes[iplot].hist(y, color='red', bins=64, alpha=0.5)
+                props = dict(boxstyle='round', facecolor='red', alpha=0.5)
+                txt = r'$\sigma_y=%i$' % (rms_y, )
+                axes[iplot].text(0.62, 0.95, txt,
+                        transform=axes[iplot].transAxes,
+                        fontsize=14, verticalalignment='top', bbox=props)
+
+            ant, lo = _get_ant_lo(unique_rfsoc_mapping, pipeline_id)
+
+            axes[iplot].set_title("%s%s" %(ant.lower(), lo.upper()),
+                    fontsize=24)
+
             iplot += 1
 
     plt.show()
