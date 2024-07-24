@@ -33,6 +33,7 @@ setuptools.setup(
         'ATATools/scripts/ataiftune',
         'ATATools/scripts/atasetifgain',
         'ATATools/scripts/atagetifgain',
-        'ATATools/scripts/ataplotadc']
+        'ATATools/scripts/ataplotadc',
+        'ATADelayEngine/scripts/atadelayengine']
     #entry_points={'console_scripts': ['GPIBLOControl = GPIBLOControl.GPIBLOControl:main']},
 )

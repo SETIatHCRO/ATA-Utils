@@ -1,0 +1,579 @@
+#!/usr/bin/env python
+import numpy as np
+import toml
+
+import hashlib
+
+import logging
+
+import astropy.constants as const
+from astropy.coordinates import ITRS, SkyCoord, AltAz, EarthLocation
+from astropy.time import Time,TimeDelta
+from astroquery.jplhorizons import Horizons
+import astropy.units as u
+import pandas as pd
+import time, os
+
+import argparse
+
+import requests
+
+from SNAPobs import snap_control, snap_config
+from ATATools import ata_control
+
+from ATATools.ata_rest import ATARestException
+
+ALL_LO = ["a", "b", "c", "d"]
+        
+DEFAULT_REF_ANT = "1C" #1c is a performant antenna
+MAX_SAMP_DELAY = 16384
+CLOCK_FREQ = 2.048e9 #Gsps
+ADC_SAMP_TIME = 1/CLOCK_FREQ
+
+MAX_DELAY = MAX_SAMP_DELAY * ADC_SAMP_TIME #seconds
+ADVANCE_TIME = MAX_DELAY/2
+
+BANDWIDTH = CLOCK_FREQ/2. #Hz
+
+# Needed for JPL Horizons
+location = 'Hat Creek Observatory (Allen Array)'
+
+def compute_uvw(ts, source, ant_coordinates, ref_coordinates):
+    """Computes UVW antenna coordinates with respect to reference
+
+    Args:
+        ts: array of Times to compute the coordinates
+        source: source SkyCoord
+        ant_coordinates: antenna ECEF coordinates.
+             This is indexed as (antenna_number, xyz)
+        ref_coordinates: phasing reference centre coordinates.
+             This is indexed as (xyz)
+
+    Returns:
+        The UVW coordinates in metres of each of the baselines formed
+        between each of the antennas and the phasing reference. This
+        is indexed as (time, antenna_number, uvw)
+    """
+    baselines_itrs = ant_coordinates - ref_coordinates
+
+    # Calculation of vector orthogonal to line-of-sight
+    # and pointing due north.
+    north_radec = [source.ra.deg, source.dec.deg + 90]
+    if north_radec[1] > 90:
+        north_radec[1] = 180 - north_radec[1]
+        north_radec[0] = 180 + north_radec[0]
+    north = SkyCoord(ra=north_radec[0]*u.deg, dec=north_radec[1]*u.deg)
+
+    source_itrs = source.transform_to(ITRS(obstime=Time(ts))).cartesian
+    north_itrs = north.transform_to(ITRS(obstime=Time(ts))).cartesian
+    east_itrs = north_itrs.cross(source_itrs)
+
+    ww = baselines_itrs @ source_itrs.xyz.value
+    vv = baselines_itrs @ north_itrs.xyz.value
+    uu = baselines_itrs @ east_itrs.xyz.value
+    uvw = np.stack((uu.T, vv.T, ww.T), axis=-1)
+
+    return uvw
+
+def compute_uvw_altaz(ts, source, ant_coordinates, ref_coordinates):
+    """Computes UVW antenna coordinates with respect to reference
+       for and altaz source
+
+    Args:
+        ts: Time to compute the coordinates
+        source: source SkyCoord
+        ant_coordinates: antenna ECEF coordinates.
+             This is indexed as (antenna_number, xyz)
+        ref_coordinates: phasing reference centre coordinates.
+             This is indexed as (xyz)
+
+    Returns:
+        The UVW coordinates in metres of each of the baselines formed
+        between each of the antennas and the phasing reference. This
+        is indexed as (time, antenna_number, uvw)
+    """
+    baselines_itrs = ant_coordinates - ref_coordinates
+
+    # Calculation of vector orthogonal to line-of-sight
+    # and pointing due north.
+
+    loc = source.location
+
+    # Vector pointing to north pole
+    N = SkyCoord(ra=0*u.deg, dec=90*u.deg, location = loc,
+            obstime=ts).transform_to(ITRS(obstime=ts))
+    N = N.cartesian.xyz.value
+
+    # This is the source vector
+    V = source.transform_to(ITRS(obstime=ts)).cartesian.xyz.value
+
+    k = N - np.dot(V, N)*V
+
+    # Normalise
+    nn = np.sqrt((k**2).sum())
+    k /= nn
+
+    source_itrs = source.transform_to(ITRS(obstime=Time(ts))).cartesian
+    north_itrs = SkyCoord(ITRS(k)).cartesian
+    east_itrs = north_itrs.cross(source_itrs)
+
+    ww = baselines_itrs @ source_itrs.xyz.value
+    vv = baselines_itrs @ north_itrs.xyz.value
+    uu = baselines_itrs @ east_itrs.xyz.value
+    uvw = np.stack((uu.T, vv.T, ww.T), axis=-1)
+
+    return uvw
+
+
+def parse_toml(toml_dict):
+    """
+    Parse a toml file as a pandas dataframe
+    with columns of [x,y,z]
+    """
+    df = pd.DataFrame()
+    df = df.from_dict(toml_dict['antennas'])[['name','position']]
+    df.index = np.char.upper(list(df['name']))
+    df = df.drop(columns=['name'])
+
+    pos = np.array([i for i in df['position'].values])
+    df = df.drop(columns=['position'])
+    df['x'] = pos[:,0]
+    df['y'] = pos[:,1]
+    df['z'] = pos[:,2]
+    return df
+
+def parse_yaml(yaml_fname):
+    raise NotImplementedError("yaml parsing not implemented yet")
+
+
+def load_bandpass(phases_file_name, antnames):
+    """
+    Load the bandpass calibration phase file while selecting antennas
+    """
+    phases_all = pd.read_csv(phases_file_name, sep=" ", index_col=False)
+
+    phases_x = []
+    phases_y = []
+
+    for ant in np.char.lower(np.array(antnames)):
+        phases_x.append(phases_all[ant+"x"])
+        phases_y.append(phases_all[ant+"y"])
+
+    return phases_x, phases_y
+
+
+def load_fixed_delays(fixed_file_name, antnames):
+    """
+    Load the fixed delay calibration file while selecting antennas
+    """
+    fixed_delays_all = pd.read_csv(fixed_file_name, sep=" ", index_col=None)
+
+    fixed_delays_x = []
+    fixed_delays_y = []
+
+    for ant in np.char.lower(np.array(antnames)):
+        if ant not in list(fixed_delays_all.values[:,0]):
+            raise RuntimeError("Antenna %s not in the fixed delays list!" %ant)
+        fixed_delays_x.append(
+                fixed_delays_all[fixed_delays_all.values[:,0] == ant].values[:,1][0])
+        fixed_delays_y.append(
+                fixed_delays_all[fixed_delays_all.values[:,0] == ant].values[:,2][0])
+
+    fixed_delays_x = np.array(fixed_delays_x)*1e-9
+    fixed_delays_y = np.array(fixed_delays_y)*1e-9
+
+    return fixed_delays_x, fixed_delays_y
+
+
+def update_bandpass(rfsocs, phases_x, phases_y):
+    for rfsoc, phase_calx, phase_caly in zip(rfsocs, phases_x, phases_y):
+        rfsoc.set_phase_calibration(0, -phase_calx)
+        rfsoc.set_phase_calibration(1, -phase_caly)
+
+
+def get_hash(fname):
+    with open(fname, "rb") as f:
+        fhash = hashlib.md5(f.read()).hexdigest()
+    return fhash
+
+
+def unix2jd(unix):
+    """
+    convert unix time second to julian date
+    """
+    jd = unix / 86400 + 2440587.5
+    return jd
+
+def jd2unix(jd):
+    """
+    convert julian date to unix time second
+    """
+    unix = (jd - 2440587.5) * 86400
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description = 'Control and apply delay engine on RFSoC-boards')
+    parser.add_argument('-source_ra', type=float,
+        help = 'Source RA [decimal hours]')
+    parser.add_argument('-source_dec', type=float,
+        help = 'Source Dec [degrees]')
+
+    parser.add_argument('-source_alt', type=float,
+        help = 'Source altitude [degrees]')
+    parser.add_argument('-source_az', type=float,
+        help = 'Source azimuth [degrees]')
+
+    parser.add_argument('-lo', type=str, required=True,
+        help = 'LO letter [a, b, c, d]')
+    parser.add_argument('-telinfo', type=str,
+        required = True,
+        help = 'ITRF (telinfo) file')
+    parser.add_argument('-fixed', required = True, type=str,
+        help = 'Delay file to use')
+    parser.add_argument('-phases', required = True, type=str,
+        help = 'Frequency-dependent phases file to use')
+    parser.add_argument('-refant', type=str,
+        required = False,
+        help = 'Reference antenna [%s]' %DEFAULT_REF_ANT)
+    parser.add_argument('-noadvance', action='store_true', default=False,
+        help = 'Do not advance the delay engine by the fixed term')
+    parser.add_argument('-nophase', action='store_true', default=False,
+        help = 'Do not apply phase solution')
+    parser.add_argument('-zero', action='store_true', default=False,
+        help = 'Simply apply zero delay/phase, ignore everything')
+
+
+    # Parse cmd line arguments
+    args = parser.parse_args()
+
+    assert args.lo in ALL_LO,\
+            "Input correct LO letter (input: %s)" %args.lo
+
+    logname = '/opt/mnt/log/delay_engine_%s.log' %args.lo
+    logging.basicConfig(filename=logname, filemode='a',
+            format='%(asctime)s %(levelname)s:%(message)s',
+            level=logging.INFO)
+
+    logging.info("Started delay engine")
+
+    logging.info("Using LO: %s" %args.lo)
+
+    #fixed_delays_all = pd.read_csv(args.fixed, sep=" ", index_col=None)
+    #phases_all = pd.read_csv(args.phases, sep=" ", index_col=False)
+
+    logging.info("Using file [%s] for fixed delays" %args.fixed)
+    logging.info("Using file [%s] for phase solutions" %args.phases)
+
+    source_type = None
+    # We provided RA/Dec
+    if args.source_ra and args.source_dec:
+        source_type = "radec"
+        logging.info("Using fixed (RA,Dec) = (%.6f, %.6f)"
+                %(args.source_ra, args.source_dec))
+    # We provided alt/az
+    elif args.source_alt and args.source_az:
+        source_type = "altaz"
+        logging.info("Using fixed (alt,az) = (%.6f, %.6f)"
+                %(args.source_alt, args.source_az))
+    # We didn't provide anything, use whatever the reference antenna is
+    # pointing at
+    else:
+        logging.info("Using automatic RA/Dec parsing from the ATA system")
+        source_type = "radec_auto"
+
+
+    # Select LO
+    rfsoc_tab = snap_config.ATA_SNAP_TAB[
+            snap_config.ATA_SNAP_TAB.LO == args.lo]
+    rfsoc_hostnames = []
+
+    rfsoc_hostnames = list(rfsoc_tab.snap_hostname)
+    antnames = [ant.upper() for ant in rfsoc_tab.ANT_name]
+
+    # initialise the rfsoc feng objects
+    rfsocs = snap_control.init_snaps(rfsoc_hostnames)
+    for rfsoc in rfsocs:
+        rfsoc.fpga.get_system_information(snap_config.ATA_CFG['RFSOCFPG'])
+        rfsoc.logger.setLevel(logging.INFO)
+    logging.info("Read FPGA files")
+
+    hash_fixed   = ""
+    hash_phases  = ""
+    hash_telinfo = ""
+
+
+    # Parse phase center coordinates
+    if source_type == "radec":
+        ra = args.source_ra * 360 / 24.
+        dec = args.source_dec
+        source = SkyCoord(ra, dec, unit='deg')
+    elif source_type == "altaz":
+        az = args.source_az
+        alt = args.source_alt
+        source = AltAz(az = az*u.deg, alt = alt*u.deg, location = ata)
+
+
+    #log = open("delay_engine.log", "a")
+    #log.write("rfsoc_engine unix delay delay_rate phase phase_rate\n")
+    #log.write("")
+    #atexit.register(log.close)
+
+    #lo_freq = args.lofreq
+
+    while True:
+        print("New iteration for LO %s" %args.lo)
+        new_hash_telinfo = get_hash(args.telinfo)
+        if new_hash_telinfo != hash_telinfo:
+            logging.info("New telinfo detected, updating values")
+            print("New telinfo detected, updating values")
+            # Get ITRF coordinates of the antennas
+            # and define antenna positions
+            if args.telinfo.endswith("toml") or args.telinfo.endswith("tml"):
+                telinfo = toml.load(args.telinfo)
+                itrf = parse_toml(telinfo)
+                ata = EarthLocation(lat= telinfo['latitude'],
+                        lon= telinfo['longitude'], height= float(telinfo['altitude']))
+                logging.info("Loaded TOML file [%s]" %args.telinfo)
+            elif args.telinfo.endswith("yaml") or args.telinfo.endswith("yml"):
+                telinfo = yaml.load(args.telinfo)
+                itrf = parse_yaml(telinfo)
+                ata = EarthLocation(lat = telinfo['latitude'],
+                        lon= telinfo['longitude'], height= float(telinfo['altitude']))
+            elif args.telinfo.endswith("txt"):
+                itrf = pd.read_csv(args.telinfo,
+                        names=['x', 'y', 'z'], header=None, skiprows=1)
+                # this is hardcoded for now
+                ata = EarthLocation(lat= "40:49:03.0", lon= "-121:28:24.0", height= 1008)
+
+            # Select reference antenna
+            if args.refant:
+                refant = args.refant.upper()
+            elif 'reference_antenna_name' in telinfo:
+                refant = telinfo['reference_antenna_name'].upper()
+            else:
+                refant = DEFAULT_REF_ANT
+
+            logging.info("Using %s as reference antenna" %refant)
+            print("Using %s as reference antenna" %refant)
+            itrf_sub = itrf.loc[antnames]
+            irefant = itrf_sub.index.values.tolist().index(refant)
+            hash_telinfo = new_hash_telinfo
+
+        # checking for new delay solution
+        new_hash_fixed = get_hash(args.fixed)
+        if new_hash_fixed != hash_fixed:
+            logging.info("New delay solution detected, updating fixed delays")
+            print("New delay solution detected, updating fixed delays")
+            fixed_delays_x, fixed_delays_y = load_fixed_delays(args.fixed, antnames)
+            hash_fixed = new_hash_fixed
+
+        # checking for new phase solution
+        new_hash_phases = get_hash(args.phases)
+        if new_hash_phases != hash_phases:
+            logging.info("New phase solution detected, updating bandpass")
+            print("New phase solution detected, updating bandpass")
+            phases_x, phases_y = load_bandpass(args.phases, antnames)
+            hash_phases = new_hash_phases
+            update_bandpass(rfsocs, phases_x, phases_y)
+            print("Phases have been updated")
+            logging.info("Phases have been updated")
+
+        # Parse the LO frequency automatically from the ata_control
+        for i in range(5):
+            try:
+                lo_freq = ata_control.get_sky_freq(args.lo)
+            except requests.exceptions.ConnectionError as e:
+                logging.warning("Connection error obtained on get_sky_freq")
+                print("Connection error obtained on get_sky_freq")
+                time.sleep(1)
+                continue
+            break
+
+        t = np.floor(time.time())
+        tts = [3, 20+3] # Interpolate between t=3 sec and t=20 sec
+        tts = np.array(tts) + t
+
+        ts = Time(tts, format='unix')
+
+        # perform coordinate transformation to uvw
+        if source_type == "radec":
+            uvw1 = compute_uvw(ts[0],  source, itrf_sub[['x','y','z']],
+                    itrf_sub[['x','y','z']].values[irefant])
+            uvw2 = compute_uvw(ts[-1], source, itrf_sub[['x','y','z']],
+                    itrf_sub[['x','y','z']].values[irefant])
+
+        if source_type == "radec_auto":
+            for i in range(5):
+                try:
+                    source_eph = ata_control.get_eph_source([refant.lower()])[refant.lower()]
+                except requests.exceptions.ConnectionError as e:
+                    logging.warning("Connection error obtained on get_eph_source")
+                    print("Connection error obtained on get_eph_source")
+                    time.sleep(1)
+                    continue
+                break
+
+            print("Source ephemeris: %s" %source_eph)
+            try:
+                # Try getting the ra dec of the source using the ephemeris file name
+                # This will fail if we are tracking a non-sidereal source
+                # or a custom RA/Dec pair
+                for i in range(5):
+                    try:
+                        ra1, dec1 = ata_control.get_source_ra_dec(source_eph)
+                        ra2, dec2 = ra1, dec1
+                    except requests.exceptions.ConnectionError as e:
+                        logging.warning("Connection error obtained on get_source_ra_dec")
+                        print("Connection error obtained on get_source_ra_dec")
+                        time.sleep(1)
+                        continue
+                    break
+
+            except ATARestException as e:
+                # Let's try JPL Horizons first
+                target = source_eph
+                tts_jd = unix2jd(tts)
+
+                obj = Horizons(id=target, location=location,
+                        epochs=tts_jd)
+                try:
+                    eph = obj.ephemerides()
+                    ra1, ra2   = eph['RA']
+                    dec1, dec2 = eph['DEC']
+                    # kinda silly but I have to convert to hours
+                    # and then back to convert back to degrees below
+                    ra1, ra2 = ra1 / 360 * 24, ra2 / 360 * 24
+                except ValueError as e:
+                    # JPL Horizons didn't work, so pull the RA/DEC from antenna
+                    # These are a bit off because we are using ra/dec values that have been
+                    # refraction corrected. Offsets are pretty small (sub-arcsecond), so
+                    # not too major for the ATA
+                    logging.warning("Couldn't parse ra/dec from get_source_ra_dec, "\
+                            "using antenna get_ra_dec")
+                    print("Couldn't Couldn't parse ra/dec from get_source_ra_dec, "\
+                            "using antenna get_ra_dec")
+                    for i in range(5):
+                        try:
+                            ra1, dec1 = ata_control.get_ra_dec([refant.lower()])[refant.lower()]
+                            ra2, dec2 = ra1, dec1
+                        except requests.exceptions.ConnectionError as e:
+                            logging.warning("Connection error obtained on get_ra_dec")
+                            print("Connection error obtained on get_ra_dec")
+                            time.sleep(1)
+                            continue
+                        break
+            ra1 *= 360 / 24.
+            ra2 *= 360 / 24.
+            source1 = SkyCoord(ra1, dec1, unit='deg')
+            source2 = SkyCoord(ra2, dec2, unit='deg')
+            logging.info("Obtained source name [%s] and coords (RA,Dec) = (%.6f,%.6f) "\
+                    "from backend" %(source_eph, ra1, dec1))
+            uvw1 = compute_uvw(ts[0],  source1, itrf_sub[['x','y','z']],
+                    itrf_sub[['x','y','z']].values[irefant])
+            uvw2 = compute_uvw(ts[-1], source2, itrf_sub[['x','y','z']],
+                    itrf_sub[['x','y','z']].values[irefant])
+
+        elif source_type == "altaz":
+            source = AltAz(az = az*u.deg, alt = alt*u.deg, location = ata,
+                    obstime = ts[0])
+            uvw1 = compute_uvw_altaz(ts[0],  source, itrf_sub[['x','y','z']],
+                    itrf_sub[['x','y','z']].values[irefant])
+
+            source = AltAz(az = az*u.deg, alt = alt*u.deg, location = ata,
+                    obstime = ts[-1])
+            uvw2 = compute_uvw_altaz(ts[-1], source, itrf_sub[['x','y','z']],
+                    itrf_sub[['x','y','z']].values[irefant])
+
+        logging.info("Calculated uvw now and uvw in future")
+        # "w" coordinate represents the goemetric delay in light-meters
+        w1 = uvw1[...,2]
+        w2 = uvw2[...,2]
+
+        # Add fixed delays + convert to seconds
+        delay1_x = fixed_delays_x + (w1/const.c.value)
+        delay2_x = fixed_delays_x + (w2/const.c.value)
+        delay1_y = fixed_delays_y + (w1/const.c.value)
+        delay2_y = fixed_delays_y + (w2/const.c.value)
+
+
+        # advance all the B-engines forward in time
+        if not args.noadvance:
+            delay1_x += ADVANCE_TIME
+            delay2_x += ADVANCE_TIME
+            delay1_y += ADVANCE_TIME
+            delay2_y += ADVANCE_TIME
+
+        # make sure we're not providing large delays
+        assert np.all((delay1_x < MAX_DELAY) & (delay1_x > 0)),\
+                "Delays are not within 0 and max_delay: %.2e" %MAX_DELAY
+        assert np.all((delay2_x < MAX_DELAY) & (delay2_x > 0)),\
+                "Delays are not within 0 and max_delay: %.2e" %MAX_DELAY
+        assert np.all((delay1_y < MAX_DELAY) & (delay1_y > 0)),\
+                "Delays are not within 0 and max_delay: %.2e" %MAX_DELAY
+        assert np.all((delay2_y < MAX_DELAY) & (delay2_y > 0)),\
+                "Delays are not within 0 and max_delay: %.2e" %MAX_DELAY
+
+        # Compute the delay rate in s/s
+        rate_x = (delay2_x - delay1_x) / (tts[-1] - tts[0])
+        rate_y = (delay2_y - delay1_y) / (tts[-1] - tts[0])
+        
+
+        # Using LO - BW/2 for fringe rate
+        phase_x      = -2 * np.pi * (lo_freq*1e6 - BANDWIDTH/2.) * delay1_x
+        phase_rate_x = -2 * np.pi * (lo_freq*1e6 - BANDWIDTH/2.) * rate_x
+        phase_y      = -2 * np.pi * (lo_freq*1e6 - BANDWIDTH/2.) * delay1_y
+        phase_rate_y = -2 * np.pi * (lo_freq*1e6 - BANDWIDTH/2.) * rate_y
+
+        if args.zero:
+            logging.info("Scratch the above, we're only apply 0 delays")
+            #print("Zeroing all delays/phase")
+            delay1_x = np.zeros_like(delay1_x)
+            rate_x = np.zeros_like(rate_x)
+            phase_x = np.zeros_like(phase_x)
+            phase_rate_x = np.zeros_like(phase_rate_x)
+            delay1_y = np.zeros_like(delay1_y)
+            rate_y = np.zeros_like(rate_y)
+            phase_y = np.zeros_like(phase_y)
+            phase_rate_y = np.zeros_like(phase_rate_y)
+
+
+        # In case we didn't make it in time before
+        # the requested delay time, start a new
+        # iteration as quickly as possible
+        if time.time() > (ts[0].unix - 0.5):
+            logging.warning("The delay time requested [%.2f] was in the"\
+                    "past of this: %.2f!" %(ts[0].unix, time.time()))
+            continue
+
+        retry_fast = False
+        for i,rfsoc in enumerate(rfsocs):
+            try:
+                rfsoc.set_delay_tracking(
+                        [delay1_x[i]*1e9,     delay1_y[i]*1e9],
+                        [rate_x[i]*1e9,       rate_y[i]*1e9],
+                        [phase_x[i],      phase_y[i]],
+                        [phase_rate_x[i], phase_rate_y[i]],
+                        load_time = int(ts[0].unix),
+                        invert_band=False
+                        )
+            # we got an exception on one of the boards,
+            # try and set a delay asap
+            except Exception as e:
+                logging.critical("%s" %e.args[0])
+                logging.critical("rfsoc [%s] returned the above error"\
+                        "retrying to set delays asap!" %rfsoc.host)
+                retry_fast = True
+                break
+            logging.debug("%s %i %.6f %.6f %.6f %.6f" \
+                    %(rfsoc.host, int(ts[0].unix),
+                        delay1_x[i]*1e9, rate_x[i]*1e9, phase_x[i], phase_rate_x[i]))
+        logging.info("Wrote delay/phase values and rates, waiting for 10 seconds")
+
+        if retry_fast:
+            continue
+        time.sleep(10)
+
+
+if __name__ == "__main__":
+    main()
