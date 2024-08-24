@@ -226,6 +226,10 @@ def main():
 
     parser.add_argument('-lo', type=str, required=True,
         help = 'LO letter [a, b, c, d]')
+
+    parser.add_argument('-refant', type=str,
+        required = False,
+        help = 'Reference antenna [%s]' %DEFAULT_REF_ANT)
     parser.add_argument('-telinfo', type=str,
         required = True,
         help = 'ITRF (telinfo) file')
@@ -233,9 +237,6 @@ def main():
         help = 'Delay file to use')
     parser.add_argument('-phases', required = True, type=str,
         help = 'Frequency-dependent phases file to use')
-    parser.add_argument('-refant', type=str,
-        required = False,
-        help = 'Reference antenna [%s]' %DEFAULT_REF_ANT)
     parser.add_argument('-noadvance', action='store_true', default=False,
         help = 'Do not advance the delay engine by the fixed term')
     parser.add_argument('-nophase', action='store_true', default=False,
@@ -426,25 +427,34 @@ def main():
                     except requests.exceptions.ConnectionError as e:
                         logging.warning("Connection error obtained on get_source_ra_dec")
                         print("Connection error obtained on get_source_ra_dec")
+                        print(e)
                         time.sleep(1)
                         continue
                     break
 
             except ATARestException as e:
                 # Let's try JPL Horizons first
-                target = source_eph
-                tts_jd = unix2jd(tts)
+                # ASSUMPTIONS:
+                #     - Source eph name starts with "JPLH_"
+                #     - Spaces are replaced with "_" because the ATA does not
+                #       like spaces in the eph names
+                if source_eph.upper().startswith("JPLH_"):
+                    target = source_eph.replace("_", " ")
+                    target = target.replace("JPLH ", "")
+                    tts_jd = unix2jd(tts)
 
-                obj = Horizons(id=target, location=location,
-                        epochs=tts_jd)
-                try:
+                    obj = Horizons(id=target, location=location,
+                            epochs=tts_jd)
+
                     eph = obj.ephemerides()
                     ra1, ra2   = eph['RA']
                     dec1, dec2 = eph['DEC']
                     # kinda silly but I have to convert to hours
                     # and then back to convert back to degrees below
                     ra1, ra2 = ra1 / 360 * 24, ra2 / 360 * 24
-                except ValueError as e:
+                    print("Got a JPL Horizons source: %s" %target)
+
+                else:
                     # JPL Horizons didn't work, so pull the RA/DEC from antenna
                     # These are a bit off because we are using ra/dec values that have been
                     # refraction corrected. Offsets are pretty small (sub-arcsecond), so
