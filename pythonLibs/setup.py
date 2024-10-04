@@ -34,6 +34,7 @@ setuptools.setup(
         'ATATools/scripts/atasetifgain',
         'ATATools/scripts/atagetifgain',
         'ATATools/scripts/ataplotadc',
+        'ATATools/scripts/atafindnearestcalibrator',
         'ATADelayEngine/atadelayengine']
     #entry_points={'console_scripts': ['GPIBLOControl = GPIBLOControl.GPIBLOControl:main']},
 )

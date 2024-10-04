@@ -1,0 +1,184 @@
+#!/opt/mnt/miniconda3/envs/compiling/bin/python3.11
+import pkgutil
+import pandas as pd
+from astropy.coordinates import SkyCoord
+from astropy.coordinates import ICRS
+from astropy import units
+import numpy as np
+import ATATools.ata_sources as check
+
+import argparse
+import os,sys
+
+
+HELP=\
+"""
+The .dat file and parts of this script were given 
+to me by Tessa Vernstrom
+
+See this:
+https://science.nrao.edu/facilities/vla/observing/callist
+
+For calibration code quality, from the above website:
+
+The key to the calibrator quality code, respectively determined in the 
+A, B, C and D array configuration using a 50 MHz observing bandwidth, is:
+
+- P : <3% amplitude closure errors expected. Great for calibration!
+- S : 3-10% closure errors expected. Good for phase and gain (amplitude) calibration.
+- W : 10-?% closure errors expected. Suitable for calibration of phases only.
+- C : Confused source, probably not good to use for calibration.
+- X : Do not use. Too much resolution or too weak but see CALIB restrictions note below!
+- ? : Source structure unknown
+"""
+
+BANDS = ['X','P','W','S', 's', 'C', '?']
+#C K L P Q U X
+BANDS = ['X','P','W','S', 's', 'C', '?', 'K', 'L', 'Q', 'U']
+
+
+# Get current path
+__location__ = os.path.realpath(
+    os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
+def process_table(tab):
+    """Process the secondary table into something manageable
+    
+    tab ({str}) -- ASCII table of a single secondary
+    """
+    lines = tab.split('\n')
+    name = lines[0].split()[0]
+    pos_j2000 = lines[0].split()[3:5]
+    
+    results = []
+    for l in lines[5:]:
+        bands = {}
+        cols = l.split()
+        if len(cols) <= 5:
+            #print(f"{name} table has not calcodes?")
+            continue
+        if cols[5] not in BANDS:
+            #print(f"{name} might be missing calcode?")
+            continue
+            
+        bands['Band']    = cols[1]
+        bands['Band_cm'] = cols[0]
+        bands['A']       = cols[2]
+        bands['B']       = cols[3] 
+        bands['C']       = cols[4] 
+        bands['D']       = cols[5] 
+        try:
+            bands['Flux']  = cols[6]
+        except IndexError as e:
+            bands['Flux']  = np.nan
+        
+        bands['Position'] = ' '.join(pos_j2000)
+        bands['RA'] = pos_j2000[0]
+        bands['Dec'] = pos_j2000[1]
+        bands['Coord'] = SkyCoord(ra = bands['RA'],
+                                  dec = bands['Dec'],
+                                  frame='icrs')
+        
+        bands['Name'] = name
+    
+        results.append(bands)
+        
+    return results
+
+def main():
+    parser = argparse.ArgumentParser(description=
+            'Find nearest VLA calibrator to a specific sky position')
+
+    parser.add_argument('-c', '--coords', dest='coords', nargs="+", type=float,
+            help="Right Ascension in decimal hours and declination in decimal degrees")
+
+    parser.add_argument('-s', '--source', dest='source', type=str,
+            help="Name of the source in the VLA catalog")
+
+    parser.add_argument('-hh', '--hheellpp', action='store_true',
+            help='show more than this help message and exit')
+
+    parser.add_argument('-b', '--band', dest='band', type=str,
+            help="what band to use [default: X]",
+            default='X')
+
+    parser.add_argument('-d', '--dist', dest='dist', type=float,
+            help="maximum distance from source [default: 10.0 deg]",
+            default=10.0)
+
+    if ('-hh' in sys.argv) or ('--hheellpp' in sys.argv):
+        print(HELP)
+        sys.exit(0)
+
+    args = parser.parse_args()
+
+    
+    inp_band     = args.band # must be in C K L P Q U X
+    max_distance = args.dist # degrees
+    inp_source   = args.source
+    coords       = args.coords
+
+    if coords is not None:
+        if len(coords) != 2:
+            print("Coordinates must consist of: [Right ascension in decimal hours] [Declination in decimal degrees]")
+            sys.exit()
+        else:
+            inp_ra = coords[0] # e.g. 17.04360
+            inp_dec = coords[1] # e.g. 51.868083
+            inp_coord = SkyCoord(ra = inp_ra*units.hour, 
+                            dec = inp_dec*units.degree,
+                            frame='icrs')
+    elif inp_source is not None:
+        cal_dict = check.check_source(inp_source)
+        cal_ra = cal_dict['ra']
+        cal_dec = cal_dict['dec']
+        inp_coord = ICRS(ra=cal_ra*units.hour, dec=cal_dec*units.deg)
+    else:
+        print("The following arguments are required: ra, dec OR source name")
+        sys.exit()
+
+
+    phdat = pkgutil.get_data("ATATools", "data/VLA_Calibratorlist.dat").decode()
+    phdat = phdat.replace("\r", "")
+    results = []
+
+    for i in phdat.split('\n \n'):
+        tab_results =  process_table(i)
+        results = results + tab_results
+
+    # Get all the table
+    df= pd.DataFrame(results)
+
+    # select based on band
+    sel = df[df['Band'] == inp_band].copy()
+
+    # select only the sources that have amplitude closure
+    # of 0-10 % (AKA "P" and "S" according to the VLA website
+    sel = sel[(sel['D'] == 'P') | (sel['D'] == 'S')].copy()
+
+    # now get the coordinate difference
+    diff = []
+    for idx, d in sel.iterrows():
+        t = np.sqrt((d['Coord'].ra - inp_coord.ra)**2 + 
+                    (d['Coord'].dec - inp_coord.dec)**2)
+        diff.append(t.value)
+
+    sel['diff'] = diff
+
+    # select only the ones within max_distance from source
+    sel = sel[sel['diff'] < max_distance].copy()
+
+    # sort in flux
+    sel.sort_values('Flux', ascending=False, inplace=True)
+
+    # now print
+    print("="*79)
+    print("Name | RA | Dec | Code | Flux [Jy] | Sep [deg]")
+    for idx, ii in sel.iterrows():
+        print(ii.Name, "|", ii.RA, "|", ii.Dec, "|", ii.D, 
+                "|", ii.Flux, "|", ii['diff'])
+    print("="*79)
+
+
+if __name__ == "__main__":
+    main()
