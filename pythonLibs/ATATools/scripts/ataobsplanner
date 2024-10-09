@@ -1,0 +1,376 @@
+#!/usr/bin/env python
+import tkinter as tk
+from tkcalendar import DateEntry
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import numpy as np
+
+from parse import parse
+
+from astropy.coordinates import EarthLocation, AltAz, ICRS, SkyCoord
+from astropy import units as u
+from astropy.time import Time, TimeDelta
+
+from pytz import timezone
+
+import ATATools.ata_sources as check
+
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+
+import datetime
+
+# Load custom Matplotlib rc parameters
+exec(open("/home/sonata/utils/rcparams.py", "r").read())
+
+HARD_EL_LIM = 16.5 #degrees
+SOFT_EL_LIM = 20.0 #degrees
+OBSERVING_LOCATION = EarthLocation.from_geodetic(lat=40.8178*u.deg, lon=-121.4733*u.deg)
+
+class ObsPlan(object):
+    def __init__(self, start_time):
+        self.source_list = []
+        self.obs_plan = []
+        self.start_time = start_time
+        self.time_incr = start_time
+
+    def add_obs_block(self, source, duration):
+        # Assume source to
+        if type(source) == str:
+            source_info = check.check_source(source)
+        elif type(target) == SkyCoord:
+            raise NotImplementedError()
+
+        source_info['duration'] = duration
+        source_info['start_time'] = self.time_incr
+        self.time_incr += duration * u.second
+        source_info['end_time'] = self.time_incr
+
+        self.obs_plan.append(source_info)
+
+
+class PlotApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Observing plan plotter")
+
+        # Create a frame for the plot
+        self.frame_plot = tk.Frame(root)
+        self.frame_plot.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        # Create a frame for user input
+        self.frame_input = tk.Frame(root)
+        self.frame_input.pack(side=tk.RIGHT, fill=tk.Y, padx=20, pady=20)
+
+        # Date selection
+        self.date_label = tk.Label(self.frame_input, text="Select Start Date [PST]:", font=("Helvetica", 14))
+        self.date_label.pack(pady=10, anchor='w')
+
+        # Apply a larger font directly to the DateEntry
+        self.date_entry = DateEntry(self.frame_input, width=12, background='darkblue', 
+                                    foreground='white', borderwidth=2, font=("Helvetica", 14))
+        self.date_entry.pack(pady=5, anchor='w')
+
+        # Time input using Spinboxes for hours and minutes
+        self.time_label = tk.Label(self.frame_input, text="Select Time (HH:MM) [PST]:", font=("Helvetica", 14))
+        self.time_label.pack(pady=10, anchor='w')
+
+        self.time_frame = tk.Frame(self.frame_input)  # Container for spinboxes
+        self.time_frame.pack(pady=5, anchor='w')
+
+        # Get time now to fill in defaults
+        dt_now = datetime.datetime.now(tz=timezone(('US/Pacific')))
+        hh_now, mm_now = dt_now.hour, dt_now.minute
+
+        self.hours_spin = tk.Spinbox(self.time_frame, from_=0, to=23, width=5, 
+            format="%02.0f", font=("Helvetica", 14), textvariable=tk.DoubleVar(value=hh_now))
+        self.minutes_spin = tk.Spinbox(self.time_frame, from_=0, to=59, width=5, 
+            format="%02.0f", font=("Helvetica", 14), textvariable=tk.DoubleVar(value=mm_now))
+        self.hours_spin.pack(side=tk.LEFT, padx=(0, 5))
+        self.minutes_spin.pack(side=tk.LEFT)
+
+        # Source Name input
+        self.source_name_label = tk.Label(self.frame_input, text="Source Name:", font=("Helvetica", 14))
+        self.source_name_label.pack(pady=10, anchor='w')
+        self.source_name_entry = tk.Entry(self.frame_input, font=("Helvetica", 14))
+        self.source_name_entry.pack(pady=5, fill=tk.X)
+
+        # Observing Time input
+        self.observing_time_label = tk.Label(self.frame_input, text="Observing Time [sec]:", font=("Helvetica", 14))
+        self.observing_time_label.pack(pady=10, anchor='w')
+        self.observing_time_entry = tk.Entry(self.frame_input, font=("Helvetica", 14))
+        self.observing_time_entry.pack(pady=5, fill=tk.X)
+
+        # Add Entry Button
+        self.add_button = tk.Button(self.frame_input, text="Add Entry", command=self.add_entry, font=("Helvetica", 14))
+        self.add_button.pack(pady=10)
+
+        # Duplicate Entry Button
+        self.duplicate_button = tk.Button(self.frame_input, text="Duplicate Entry[ies]", command=self.duplicate_entry, font=("Helvetica", 14))
+        self.duplicate_button.pack(pady=10)
+
+        # Button to remove selected entries
+        self.remove_button = tk.Button(self.frame_input, text="Remove Entry[ies]", command=self.remove_entry, font=("Helvetica", 14))
+        self.remove_button.pack(pady=5)
+
+        # Frame to hold the listbox and scrollbar
+        self.listbox_frame = tk.Frame(self.frame_input)
+        self.listbox_frame.pack(pady=10, fill=tk.BOTH, expand=True)
+
+        # Listbox to display added entries
+        self.entry_listbox = tk.Listbox(self.listbox_frame, height=15, selectmode=tk.MULTIPLE, font=("Helvetica", 12))
+        self.entry_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Scrollbar for the listbox
+        self.scrollbar = tk.Scrollbar(self.listbox_frame, orient="vertical", command=self.entry_listbox.yview)
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Link the scrollbar with the listbox
+        self.entry_listbox.config(yscrollcommand=self.scrollbar.set)
+
+
+        # Reset Button
+        self.reset_button = tk.Button(self.frame_input, text="Reset All", command=self.reset_all, font=("Helvetica", 14))
+        self.reset_button.pack(side=tk.BOTTOM, pady=5)
+
+        # Generate button at the bottom
+        self.generate_button = tk.Button(self.frame_input, text="Generate Plot", command=self.generate_plot, font=("Helvetica", 14))
+        self.generate_button.pack(side=tk.BOTTOM, pady=5)
+
+        # Create a Matplotlib figure with increased size
+        self.figure, self.ax = plt.subplots(figsize=(10, 6))  # Width: 10 inches, Height: 6 inches
+        self.canvas = FigureCanvasTkAgg(self.figure, master=self.frame_plot)
+        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+        # To store source names and observing times
+        self.entries = []
+
+        # Bind the "Q" key to quit the app
+        self.root.bind("<q>", self.quit_app)
+
+
+        # Initialize dragging variables
+        self.dragging = False
+        self.dragged_index = None
+
+        # Bind mouse events for dragging
+        self.entry_listbox.bind("<Button-1>", self.on_click)
+        self.entry_listbox.bind("<B1-Motion>", self.on_drag)
+        self.entry_listbox.bind("<ButtonRelease-1>", self.on_release)
+
+        # Bind the "Escape" key to reset the selection
+        self.root.bind("<Escape>", self.reset_selection)
+
+    def quit_app(self, event=None):
+        """Close the application."""
+        self.root.destroy()  # Destroy the main window
+
+    def remove_entry(self):
+        """Removes selected entries from the listbox."""
+        selected_indices = list(self.entry_listbox.curselection())  # Get selected indices
+        
+        # Remove selected entries in reverse order to maintain indices
+        for index in reversed(selected_indices):
+            self.entry_listbox.delete(index)
+
+    def add_entry(self):
+        """Adds a source name and observing time to the list."""
+        source_name = self.source_name_entry.get()
+        observing_time = self.observing_time_entry.get()
+
+        if source_name and observing_time:
+            entry = f"{source_name}, {observing_time} sec"
+            self.entries.append(entry)
+
+            # Update the listbox with the new entry
+            self.entry_listbox.insert(tk.END, entry)
+
+            # Clear the input fields after adding
+            self.source_name_entry.delete(0, tk.END)
+            self.observing_time_entry.delete(0, tk.END)
+
+    def duplicate_entry(self):
+        """Duplicates the selected entries in the listbox."""
+        selected_indices = self.entry_listbox.curselection()
+        
+        if selected_indices:  # Check if any entries are selected
+            for index in selected_indices:
+                selected_entry = self.entry_listbox.get(index)
+                # Insert the duplicated entry at the end
+                self.entry_listbox.insert(tk.END, selected_entry)
+        else:
+            print("No entry selected to duplicate.")
+
+    def reset_selection(self, event=None):
+        """Reset the selection of the listbox."""
+        self.entry_listbox.selection_clear(0, tk.END)  # Clear selection
+
+    def on_click(self, event):
+        """Handle mouse click on the listbox."""
+        self.dragging = True
+        self.dragged_index = self.entry_listbox.nearest(event.y)  # Get the index of the clicked item
+
+    def on_drag(self, event):
+        """Handle dragging of listbox items."""
+        if self.dragging:
+            current_index = self.entry_listbox.nearest(event.y)  # Get the index of the item currently under the mouse
+            if current_index != self.dragged_index:
+                # Move the item if the indices are different
+                item_text = self.entry_listbox.get(self.dragged_index)
+                self.entry_listbox.delete(self.dragged_index)
+                self.entry_listbox.insert(current_index, item_text)
+                self.dragged_index = current_index  # Update the index of the dragged item
+
+    def on_release(self, event):
+        """Handle mouse release to stop dragging."""
+        self.dragging = False
+        self.dragged_index = None  # Reset the dragged index
+
+    def display_all_entries(self):
+        """Displays all entries in the listbox."""
+        all_entries = self.entry_listbox.get(0, tk.END)  # Get all entries
+        print("All entries in the listbox:")
+        for entry in all_entries:
+            print(entry)
+
+    def generate_plot(self):
+        # Clear the previous plot
+        self.ax.clear()
+
+        # Get user input
+        date_selected = self.date_entry.get()
+        hours = int(self.hours_spin.get())
+        minutes = int(self.minutes_spin.get())
+        time_selected = hours + minutes / 60.0
+
+        # Temporary default title
+        default_title = f"Plot generated on {date_selected} at {hours:02}:{minutes:02}"
+
+        start_time = datetime.datetime.strptime(
+                f"{date_selected} {hours:02}:{minutes:02}", "%m/%d/%y %H:%M")
+
+        start_time = Time(start_time.replace(tzinfo=timezone('US/Pacific')))
+
+        # Create the obs plan
+        obs = ObsPlan(start_time)
+
+        # Cycle through all the entries:
+        for entry in self.entry_listbox.get(0, tk.END):
+            res = parse('{source_name}, {observing_time} sec', entry)
+            source_name = res['source_name']
+            obs_time = int(res['observing_time'])
+
+            obs.add_obs_block(source_name, obs_time)
+
+
+        obs_tracks = []
+
+        t_all = sum([i['duration'] for i in obs.obs_plan]) # seconds
+        obs_times = obs.start_time + t_all * np.linspace(-0.05, 1.05, 500) * u.second
+        obs_times_pdate = obs_times.to_value("plot_date")
+
+        unique_sources = list(set(i['object'] for i in obs.obs_plan))
+        color_cycler = {}
+        tracks = {}
+
+        try:
+            # loop through sources to plot the tracks
+            for isource, source in enumerate(unique_sources):
+                source_info = check.check_source(source)
+                ra = source_info['ra']
+                dec = source_info['dec']
+                source_coords = ICRS(ra=ra*u.hour, dec=dec*u.deg)
+                target = SkyCoord(source_coords)
+
+                altaz = target.transform_to(AltAz(obstime=obs_times, location=OBSERVING_LOCATION))
+                tracks[source_info['object']] = altaz.alt
+
+                #plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=10))
+                #plt.plot(days,y)
+                self.ax.plot(obs_times_pdate, altaz.alt, label=source_info['object'])
+                color_cycler[source_info['object']] = list(mpl.rcParams['axes.prop_cycle'])[isource]['color']
+
+            error_in_plan = 0
+
+            # now loop through the observing plan
+            for obs_block in obs.obs_plan:
+                source_name = obs_block['object']
+                color = color_cycler[source_name]
+                sdate = obs_block['start_time'].to_value("plot_date")
+                edate = obs_block['end_time'].to_value("plot_date")
+                self.ax.fill_betweenx([0,90], edate, sdate, color = color, alpha=0.3)
+                self.ax.axvline(x = sdate, color = 'black', linestyle = ':', alpha=1)
+                self.ax.axvline(x = edate, color = 'black', linestyle = ':', alpha=1)
+
+                el_track = tracks[source_name]
+
+                el_track_seg = el_track[(obs_times_pdate >= sdate) & (obs_times_pdate <= edate)]
+                el_track_seg = el_track_seg.deg
+
+                # if any source has set
+                if np.any(el_track_seg <= HARD_EL_LIM):
+                    error_in_plan = 2
+                    self.ax.fill_betweenx([0,HARD_EL_LIM], edate, sdate, color = 'red', alpha=1)
+                elif np.any(el_track_seg <= SOFT_EL_LIM):
+                    if error_in_plan != 2:
+                        error_in_plan = 1
+                    self.ax.fill_betweenx([0,SOFT_EL_LIM], edate, sdate, color = 'orange', alpha=1)
+
+            self.ax.legend(fontsize=20)
+            self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d:%H:%M'))
+            self.figure.autofmt_xdate()
+
+            if error_in_plan == 2:
+                self.ax.set_title("CHECK PLAN - SOURCE[S] BELOW HORIZON", color='red')
+            elif error_in_plan == 1:
+                self.ax.set_title("Check plan - source[s] can get below horizon", color='orange')
+            else:
+                self.ax.set_title("No errors in plan", color='green')
+
+            self.ax.axhline(y = HARD_EL_LIM, color = 'r', linestyle = '--') 
+            self.ax.axhline(y = SOFT_EL_LIM, color='orange', linestyle='--')
+            self.ax.grid(alpha=0.5)
+            
+            self.ax.set_ylim([-0, 90])
+
+            self.ax.set_ylabel("Elevation [deg]")
+            self.ax.set_xlabel("Time [PST]")
+
+            self.canvas.draw()
+
+        except Exception as e:
+            print("Error:", e)
+
+
+    def reset_all(self):
+        """Resets all input fields and clears the listbox."""
+        # Reset Date and Time fields
+        self.date_entry.set_date(self.date_entry._date.today())
+
+        # Get time now to fill in defaults
+        dt_now = datetime.datetime.now(tz=timezone(('US/Pacific')))
+        hh_now, mm_now = dt_now.hour, dt_now.minute
+
+        self.hours_spin.delete(0, tk.END)
+        self.hours_spin.insert(0, f'{hh_now:02}')
+        self.minutes_spin.delete(0, tk.END)
+        self.minutes_spin.insert(0, f'{mm_now:02}')
+
+        # Reset Source Name and Observing Time fields
+        self.source_name_entry.delete(0, tk.END)
+        self.observing_time_entry.delete(0, tk.END)
+
+        # Clear the Listbox and reset entries
+        self.entry_listbox.delete(0, tk.END)
+        self.entries.clear()
+
+        # Clear the plot
+        self.ax.clear()
+        self.canvas.draw()
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    root.geometry("1400x900")  # Set the window size to 1400x900 pixels
+    app = PlotApp(root)
+    root.mainloop()

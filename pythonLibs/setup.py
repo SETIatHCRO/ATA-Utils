@@ -9,7 +9,8 @@ setuptools.setup(
     name='ATA-Utils-pythonLibs',
     version=version.__version__,
     #install_requires=['ephem','astropy','numpy','tftpy','pyuvdata<=1.4;python_version<"3"','pyuvdata;python_version>"3.5"'],
-    install_requires=['ephem','astropy','numpy','tftpy', 'pandas', 'bottleneck','plotly','dash','requests', 'toml', 'pytz'],
+    install_requires=['ephem','astropy','numpy','tftpy', 'pandas', 'bottleneck','plotly','dash',
+        'requests', 'toml', 'pytz', 'pytk', 'tkcalendar', 'parse'],
     description='python utility scripts for ATA (private repo)',
     license='MIT',
     packages=['ATAdb', 'ATATools','ATAobs','SNAPobs','SNAPobs.snap_dada', 'SNAPobs.snap_hpguppi', 
@@ -35,6 +36,7 @@ setuptools.setup(
         'ATATools/scripts/atagetifgain',
         'ATATools/scripts/ataplotadc',
         'ATATools/scripts/atafindnearestcalibrator',
+        'ATATools/scripts/ataobsplanner',
         'ATADelayEngine/atadelayengine']
     #entry_points={'console_scripts': ['GPIBLOControl = GPIBLOControl.GPIBLOControl:main']},
 )
