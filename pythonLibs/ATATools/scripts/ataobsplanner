@@ -28,26 +28,89 @@ HARD_EL_LIM = 16.5 #degrees
 SOFT_EL_LIM = 20.0 #degrees
 OBSERVING_LOCATION = EarthLocation.from_geodetic(lat=40.8178*u.deg, lon=-121.4733*u.deg)
 
+#Time to start observing script, change frequencies, RF/IF gain set, etc...
+INITIAL_OVERHEAD_TIME = 70 # seconds
+
+# Slew rate:
+SLEW_RATE = 1.5 #deg/sec
+OBS_OVERHEAD = 10 #seconds
+
+INITIAL_AZ, INITIAL_EL = (0, 18) #parked position
+
 class ObsPlan(object):
-    def __init__(self, start_time):
+    def __init__(self, start_time, obs_overhead = False, slew_time = False):
         self.source_list = []
         self.obs_plan = []
         self.start_time = start_time
         self.time_incr = start_time
+        self.obs_overhead = obs_overhead
+        if obs_overhead:
+            self.add_initial_obs_overhead()
+        self.slew_time = slew_time
+        self.current_position = (INITIAL_AZ, INITIAL_EL)
+
+    def add_initial_obs_overhead(self):
+        self.time_incr += INITIAL_OVERHEAD_TIME * u.second
+
 
     def add_obs_block(self, source, duration):
         # Assume source to
-        if type(source) == str:
+        if source.lower().startswith("radec"):
+            source_info = self.parse_radec(source)
+        else:
             source_info = check.check_source(source)
-        elif type(target) == SkyCoord:
-            raise NotImplementedError()
 
         source_info['duration'] = duration
+        # simulate a slew from "current_position" to "new_position"
+        if self.slew_time:
+            new_position = self.get_telescope_position(source_info, self.time_incr)
+            slew_time = self.get_slew_time(self.current_position, new_position)
+            self.time_incr += slew_time * u.second
+            self.current_position = new_position
+
+        # simulate overhead to start an observation
+        if self.obs_overhead:
+            self.time_incr += OBS_OVERHEAD * u.second
+
         source_info['start_time'] = self.time_incr
         self.time_incr += duration * u.second
         source_info['end_time'] = self.time_incr
 
+        if self.slew_time:
+            new_position = self.get_telescope_position(source_info, self.time_incr)
+            self.current_position = new_position
+
         self.obs_plan.append(source_info)
+
+    def parse_radec(self, source):
+        source_info = {}
+        source_info['object'] = source
+
+        # extract radec from source_name
+        res = parse('radec{ra},{dec}', source.lower())
+        try:
+            source_info['ra'] = float(res['ra'])
+            source_info['dec'] = float(res['dec'])
+        except Exception as e:
+            raise Exception("Error in parsing RA/Dec from entry: '%s'" %source)
+        return source_info
+
+    def get_telescope_position(self, source_info, time):
+        ra = source_info['ra']
+        dec = source_info['dec']
+        source_coords = ICRS(ra=ra*u.hour, dec=dec*u.deg)
+        target = SkyCoord(source_coords)
+
+        altaz = target.transform_to(AltAz(obstime=time, location=OBSERVING_LOCATION))
+        return (altaz.az.deg, altaz.alt.deg)
+
+    def get_slew_time(self, position_1, position_2):
+        az1, el1 = position_1
+        az2, el2 = position_2
+        #max(180, abs(delta_az)) is an assumption, but good enough
+        distance = np.sqrt(min(180, abs(az2 - az1)) ** 2 + (el2 - el1)**2) # degrees
+        time = distance / SLEW_RATE
+        return time
 
 
 class PlotApp:
@@ -65,19 +128,19 @@ class PlotApp:
 
         # Date selection
         self.date_label = tk.Label(self.frame_input, text="Select Start Date [PST]:", font=("Helvetica", 14))
-        self.date_label.pack(pady=10, anchor='w')
+        self.date_label.pack(pady=2, anchor='w')
 
         # Apply a larger font directly to the DateEntry
         self.date_entry = DateEntry(self.frame_input, width=12, background='darkblue', 
                                     foreground='white', borderwidth=2, font=("Helvetica", 14))
-        self.date_entry.pack(pady=5, anchor='w')
+        self.date_entry.pack(pady=2, anchor='w')
 
         # Time input using Spinboxes for hours and minutes
         self.time_label = tk.Label(self.frame_input, text="Select Time (HH:MM) [PST]:", font=("Helvetica", 14))
-        self.time_label.pack(pady=10, anchor='w')
+        self.time_label.pack(pady=2, anchor='w')
 
         self.time_frame = tk.Frame(self.frame_input)  # Container for spinboxes
-        self.time_frame.pack(pady=5, anchor='w')
+        self.time_frame.pack(pady=1, anchor='w')
 
         # Get time now to fill in defaults
         dt_now = datetime.datetime.now(tz=timezone(('US/Pacific')))
@@ -92,15 +155,29 @@ class PlotApp:
 
         # Source Name input
         self.source_name_label = tk.Label(self.frame_input, text="Source Name:", font=("Helvetica", 14))
-        self.source_name_label.pack(pady=10, anchor='w')
+        self.source_name_label.pack(pady=5, anchor='w')
         self.source_name_entry = tk.Entry(self.frame_input, font=("Helvetica", 14))
-        self.source_name_entry.pack(pady=5, fill=tk.X)
+        self.source_name_entry.pack(pady=2, fill=tk.X)
 
         # Observing Time input
         self.observing_time_label = tk.Label(self.frame_input, text="Observing Time [sec]:", font=("Helvetica", 14))
-        self.observing_time_label.pack(pady=10, anchor='w')
+        self.observing_time_label.pack(pady=5, anchor='w')
         self.observing_time_entry = tk.Entry(self.frame_input, font=("Helvetica", 14))
-        self.observing_time_entry.pack(pady=5, fill=tk.X)
+        self.observing_time_entry.pack(pady=2, fill=tk.X)
+
+        # Frame to hold the checkboxes
+        self.checkbox_frame = tk.Frame(self.frame_input)
+        self.checkbox_frame.pack(pady=5)
+
+        # Checkboxes for "Initial Overhead" and "Slew Time"
+        self.obs_overhead_var = tk.IntVar()
+        self.slew_time_var = tk.IntVar()
+
+        self.obs_overhead_check = tk.Checkbutton(self.checkbox_frame, text="Observation Overhead", variable=self.obs_overhead_var, font=("Helvetica", 12))
+        self.obs_overhead_check.grid(row=0, column=0, padx=5)
+
+        self.slew_time_check = tk.Checkbutton(self.checkbox_frame, text="Slew Time", variable=self.slew_time_var, font=("Helvetica", 12))
+        self.slew_time_check.grid(row=0, column=1, padx=5)
 
         # Add Entry Button
         self.add_button = tk.Button(self.frame_input, text="Add Entry", command=self.add_entry, font=("Helvetica", 14))
@@ -149,6 +226,11 @@ class PlotApp:
         # Bind the "Q" key to quit the app
         self.root.bind("<q>", self.quit_app)
 
+        # Bind the "Q" key to delete the selected entry
+        self.root.bind("<d>", self.remove_entry)
+
+        # Bind the "BackSpace" key to delete the selected entry
+        self.root.bind("<BackSpace>", self.remove_entry)
 
         # Initialize dragging variables
         self.dragging = False
@@ -162,11 +244,15 @@ class PlotApp:
         # Bind the "Escape" key to reset the selection
         self.root.bind("<Escape>", self.reset_selection)
 
+        # Error display label
+        self.error_label = tk.Label(self.frame_input, text="", fg="red", font=("Helvetica", 12))
+        self.error_label.pack(pady=5)
+
     def quit_app(self, event=None):
         """Close the application."""
         self.root.destroy()  # Destroy the main window
 
-    def remove_entry(self):
+    def remove_entry(self, event=None):
         """Removes selected entries from the listbox."""
         selected_indices = list(self.entry_listbox.curselection())  # Get selected indices
         
@@ -235,6 +321,10 @@ class PlotApp:
             print(entry)
 
     def generate_plot(self):
+        self.clear_error()
+        self.root.config(cursor="watch")
+        self.root.update()
+
         # Clear the previous plot
         self.ax.clear()
 
@@ -249,24 +339,39 @@ class PlotApp:
 
         start_time = datetime.datetime.strptime(
                 f"{date_selected} {hours:02}:{minutes:02}", "%m/%d/%y %H:%M")
+        pacific = timezone('US/Pacific')
 
-        start_time = Time(start_time.replace(tzinfo=timezone('US/Pacific')))
+        localized_time = pacific.localize(start_time)
+
+        start_time = Time(localized_time)
 
         # Create the obs plan
-        obs = ObsPlan(start_time)
+        obs = ObsPlan(start_time, self.obs_overhead_var.get(),
+                self.slew_time_var.get())
 
         # Cycle through all the entries:
         for entry in self.entry_listbox.get(0, tk.END):
             res = parse('{source_name}, {observing_time} sec', entry)
             source_name = res['source_name']
-            obs_time = int(res['observing_time'])
-
-            obs.add_obs_block(source_name, obs_time)
+            try:
+                obs_time = int(res['observing_time'])
+            except ValueError as e:
+                self.display_error("Input correct obstime for source %s" %source_name)
+                self.root.config(cursor="")
+                self.root.update()
+                raise
+            try:
+                obs.add_obs_block(source_name, obs_time)
+            except Exception as e:
+                self.root.config(cursor="")
+                self.root.update()
+                self.display_error(str(e))
+                raise
 
 
         obs_tracks = []
 
-        t_all = sum([i['duration'] for i in obs.obs_plan]) # seconds
+        t_all = (obs.time_incr - obs.start_time).to_value(u.second)
         obs_times = obs.start_time + t_all * np.linspace(-0.05, 1.05, 500) * u.second
         obs_times_pdate = obs_times.to_value("plot_date")
 
@@ -277,7 +382,10 @@ class PlotApp:
         try:
             # loop through sources to plot the tracks
             for isource, source in enumerate(unique_sources):
-                source_info = check.check_source(source)
+                if source.lower().startswith("radec"):
+                    source_info = obs.parse_radec(source)
+                else:
+                    source_info = check.check_source(source)
                 ra = source_info['ra']
                 dec = source_info['dec']
                 source_coords = ICRS(ra=ra*u.hour, dec=dec*u.deg)
@@ -290,6 +398,24 @@ class PlotApp:
                 #plt.plot(days,y)
                 self.ax.plot(obs_times_pdate, altaz.alt, label=source_info['object'])
                 color_cycler[source_info['object']] = list(mpl.rcParams['axes.prop_cycle'])[isource]['color']
+
+            # plot the start and end times, and the overhead fill
+            if self.obs_overhead_var.get() or self.slew_time_var.get():
+                sdate = obs.start_time.to_value("plot_date")
+                edate = obs.time_incr.to_value("plot_date")
+                self.ax.axvline(x = sdate, color = 'black', linestyle = ':', alpha=1)
+                self.ax.axvline(x = edate, color = 'black', linestyle = ':', alpha=1)
+
+                obs_block0 = obs.obs_plan[0]
+                sdate_obs0 = obs_block0['start_time'].to_value("plot_date")
+                self.ax.fill_betweenx([0,90], sdate_obs0, sdate, hatch="//", alpha=0,
+                        label="overhead + slew")
+                edate_obs0 = obs_block0['end_time'].to_value("plot_date")
+
+                for obs_block in obs.obs_plan[1:]:
+                    sdate = obs_block['start_time'].to_value("plot_date")
+                    self.ax.fill_betweenx([0,90], edate_obs0, sdate, hatch="//", alpha=0)
+                    edate_obs0 = obs_block['end_time'].to_value("plot_date")
 
             error_in_plan = 0
 
@@ -317,7 +443,7 @@ class PlotApp:
                         error_in_plan = 1
                     self.ax.fill_betweenx([0,SOFT_EL_LIM], edate, sdate, color = 'orange', alpha=1)
 
-            self.ax.legend(fontsize=20)
+            self.ax.legend(fontsize=18)
             self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d:%H:%M'))
             self.figure.autofmt_xdate()
 
@@ -342,6 +468,8 @@ class PlotApp:
         except Exception as e:
             print("Error:", e)
 
+        self.root.config(cursor="")
+        self.root.update()
 
     def reset_all(self):
         """Resets all input fields and clears the listbox."""
@@ -369,8 +497,19 @@ class PlotApp:
         self.ax.clear()
         self.canvas.draw()
 
+        # Clear any errors
+        self.clear_error()
+
+    def display_error(self, message):
+        """Display an error message in the error label."""
+        self.error_label.config(text=message)
+
+    def clear_error(self):
+        """Clear the error message."""
+        self.error_label.config(text="")
+
 if __name__ == "__main__":
     root = tk.Tk()
-    root.geometry("1400x900")  # Set the window size to 1400x900 pixels
+    root.geometry("1500x900")  # Set the window size to 1450x900 pixels
     app = PlotApp(root)
     root.mainloop()
