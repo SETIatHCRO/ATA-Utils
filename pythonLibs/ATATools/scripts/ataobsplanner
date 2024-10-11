@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import tkinter as tk
+from tkinter import ttk, messagebox
 from tkcalendar import DateEntry
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -11,7 +12,7 @@ from astropy.coordinates import EarthLocation, AltAz, ICRS, SkyCoord
 from astropy import units as u
 from astropy.time import Time, TimeDelta
 
-from pytz import timezone
+import pytz
 
 import ATATools.ata_sources as check
 
@@ -23,6 +24,13 @@ import datetime
 
 # Load custom Matplotlib rc parameters
 exec(open("/home/sonata/utils/rcparams.py", "r").read())
+
+# Global font
+FONT = "Helvetica"
+
+DEFAULT_TIMEZONE = "US/Pacific"
+
+COLOR_CYCLER_LIST = list(mpl.rcParams['axes.prop_cycle'])
 
 HARD_EL_LIM = 16.5 #degrees
 SOFT_EL_LIM = 20.0 #degrees
@@ -36,6 +44,53 @@ SLEW_RATE = 1.5 #deg/sec
 OBS_OVERHEAD = 10 #seconds
 
 INITIAL_AZ, INITIAL_EL = (0, 18) #parked position
+
+
+class AutoCompleteCombobox(ttk.Combobox):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.set_completion_list()
+
+    def set_completion_list(self):
+        """Use our completion list as the drop down selection menu."""
+        completion_list = self['values']
+        self._completion_list = sorted(completion_list)  # sorted list of strings
+        self._hits = []
+        self._hit_index = 0
+        self.position = 0
+        self.bind('<KeyRelease>', self.handle_keyrelease)
+
+    def autocomplete(self, delta=0):
+        """Autocomplete the Combobox, delta may be 0/1/-1 to cycle through possible hits."""
+        if delta:  # need to delete selection otherwise we would fix the current position
+            self.delete(self.position, tk.END)
+        else:  # set position to end so selection starts where the text entry ended
+            self.position = len(self.get())
+        # collect hits
+        _hits = [item for item in self._completion_list if item.lower().startswith(self.get().lower())]
+
+        # if we have a hit, display it
+        if _hits != self._hits:
+            self._hit_index = 0
+            self._hits = _hits
+        if _hits:
+            self._hit_index = (self._hit_index + delta) % len(_hits)
+            self.delete(0, tk.END)
+            self.insert(0, _hits[self._hit_index])
+            self.select_range(self.position, tk.END)
+
+    def handle_keyrelease(self, event):
+        """Event handler for the keyrelease event on this widget."""
+        if event.keysym in ('BackSpace', 'Delete'):
+            self.delete(self.index(tk.INSERT), tk.END) #?
+            self.position = self.index(tk.END)
+            return
+        if event.keysym == 'Return':
+            return
+        elif event.keysym in ('Left', 'Right', 'Up', 'Down'):
+            return  # Do nothing for arrow keys
+        self.autocomplete()
+
 
 class ObsPlan(object):
     def __init__(self, start_time, obs_overhead = False, slew_time = False):
@@ -118,6 +173,17 @@ class PlotApp:
         self.root = root
         self.root.title("Observing plan plotter")
 
+        # Create a menu bar
+        self.menu_bar = tk.Menu(self.root)
+        self.root.config(menu=self.menu_bar)
+
+        # Add Help menu to the menu bar
+        help_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.menu_bar.add_cascade(label="Help", menu=help_menu, font=(FONT, 14))
+        help_menu.add_command(label="How to Use", command=self.show_help, font=(FONT, 14))
+        help_menu.add_separator()
+        help_menu.add_command(label="About", command=self.show_about, font=(FONT, 14))
+
         # Create a frame for the plot
         self.frame_plot = tk.Frame(root)
         self.frame_plot.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
@@ -127,42 +193,64 @@ class PlotApp:
         self.frame_input.pack(side=tk.RIGHT, fill=tk.Y, padx=20, pady=20)
 
         # Date selection
-        self.date_label = tk.Label(self.frame_input, text="Select Start Date [PST]:", font=("Helvetica", 14))
-        self.date_label.pack(pady=2, anchor='w')
+        #self.date_label = tk.Label(self.frame_input, text="Select Start Date:", font=(FONT, 14))
+        #self.date_label.pack(pady=2, anchor='w')
+
+        # Frame for date and timezone
+        self.frame_date_timezone = tk.Frame(self.frame_input)
+        self.frame_date_timezone.pack(pady=0, anchor="w")
+
+        # Timezone selection (dropdown)
+        self.timezone_label = tk.Label(self.frame_date_timezone, text="Select Start Date:", font=(FONT, 14))
+        self.timezone_label.grid(row=0, column=0, padx=0, sticky="w")
+
+        # Populate the dropdown with all timezones using pytz
+        self.timezone_combobox = AutoCompleteCombobox(self.frame_date_timezone, values=pytz.all_timezones, font=(FONT, 14))
+        self.timezone_combobox.option_add('*TCombobox*Listbox.font', (FONT, 14))
+        self.timezone_combobox.grid(row=0, column=1, padx=25, sticky="w")
+        self.timezone_combobox.set(DEFAULT_TIMEZONE)  # Set default value
+
+        # Bind Enter key and FocusOut event
+        self.timezone_combobox.bind("<Return>", self.register_selection)
+        self.timezone_combobox.bind("<FocusOut>", self.register_selection)
+
+        # Bind the event to the combobox selection
+        self.timezone_combobox.bind("<<ComboboxSelected>>", self.on_timezone_selected)
 
         # Apply a larger font directly to the DateEntry
         self.date_entry = DateEntry(self.frame_input, width=12, background='darkblue', 
-                                    foreground='white', borderwidth=2, font=("Helvetica", 14))
+                                    foreground='white', borderwidth=2, font=(FONT, 14))
         self.date_entry.pack(pady=2, anchor='w')
 
         # Time input using Spinboxes for hours and minutes
-        self.time_label = tk.Label(self.frame_input, text="Select Time (HH:MM) [PST]:", font=("Helvetica", 14))
+        self.time_label = tk.Label(self.frame_input, text="Select Time (HH:MM):", font=(FONT, 14))
         self.time_label.pack(pady=2, anchor='w')
 
         self.time_frame = tk.Frame(self.frame_input)  # Container for spinboxes
         self.time_frame.pack(pady=1, anchor='w')
 
         # Get time now to fill in defaults
-        dt_now = datetime.datetime.now(tz=timezone(('US/Pacific')))
+        dt_now = datetime.datetime.now(
+                tz=pytz.timezone(self.timezone_combobox.get()))
         hh_now, mm_now = dt_now.hour, dt_now.minute
 
         self.hours_spin = tk.Spinbox(self.time_frame, from_=0, to=23, width=5, 
-            format="%02.0f", font=("Helvetica", 14), textvariable=tk.DoubleVar(value=hh_now))
+            format="%02.0f", font=(FONT, 14), textvariable=tk.DoubleVar(value=hh_now))
         self.minutes_spin = tk.Spinbox(self.time_frame, from_=0, to=59, width=5, 
-            format="%02.0f", font=("Helvetica", 14), textvariable=tk.DoubleVar(value=mm_now))
+            format="%02.0f", font=(FONT, 14), textvariable=tk.DoubleVar(value=mm_now))
         self.hours_spin.pack(side=tk.LEFT, padx=(0, 5))
         self.minutes_spin.pack(side=tk.LEFT)
 
         # Source Name input
-        self.source_name_label = tk.Label(self.frame_input, text="Source Name:", font=("Helvetica", 14))
+        self.source_name_label = tk.Label(self.frame_input, text="Source Name:", font=(FONT, 14))
         self.source_name_label.pack(pady=5, anchor='w')
-        self.source_name_entry = tk.Entry(self.frame_input, font=("Helvetica", 14))
+        self.source_name_entry = tk.Entry(self.frame_input, font=(FONT, 14))
         self.source_name_entry.pack(pady=2, fill=tk.X)
 
         # Observing Time input
-        self.observing_time_label = tk.Label(self.frame_input, text="Observing Time [sec]:", font=("Helvetica", 14))
+        self.observing_time_label = tk.Label(self.frame_input, text="Observing Time [sec]:", font=(FONT, 14))
         self.observing_time_label.pack(pady=5, anchor='w')
-        self.observing_time_entry = tk.Entry(self.frame_input, font=("Helvetica", 14))
+        self.observing_time_entry = tk.Entry(self.frame_input, font=(FONT, 14))
         self.observing_time_entry.pack(pady=2, fill=tk.X)
 
         # Frame to hold the checkboxes
@@ -173,30 +261,36 @@ class PlotApp:
         self.obs_overhead_var = tk.IntVar()
         self.slew_time_var = tk.IntVar()
 
-        self.obs_overhead_check = tk.Checkbutton(self.checkbox_frame, text="Observation Overhead", variable=self.obs_overhead_var, font=("Helvetica", 12))
+        self.obs_overhead_check = tk.Checkbutton(self.checkbox_frame, text="Observation Overhead", variable=self.obs_overhead_var, font=(FONT, 14))
         self.obs_overhead_check.grid(row=0, column=0, padx=5)
+        self.obs_overhead_check.select()
 
-        self.slew_time_check = tk.Checkbutton(self.checkbox_frame, text="Slew Time", variable=self.slew_time_var, font=("Helvetica", 12))
+        self.slew_time_check = tk.Checkbutton(self.checkbox_frame, text="Slew Time", variable=self.slew_time_var, font=(FONT, 14))
         self.slew_time_check.grid(row=0, column=1, padx=5)
+        self.slew_time_check.select()
+
+        # Frame for entry_buttons
+        self.entry_buttons_frame = tk.Frame(self.frame_input)
+        self.entry_buttons_frame.pack(pady=0)
 
         # Add Entry Button
-        self.add_button = tk.Button(self.frame_input, text="Add Entry", command=self.add_entry, font=("Helvetica", 14))
-        self.add_button.pack(pady=10)
+        self.add_button = tk.Button(self.entry_buttons_frame, text="Add Entry", command=self.add_entry, font=(FONT, 14))
+        self.add_button.grid(row=0, column=0, padx=0)
 
         # Duplicate Entry Button
-        self.duplicate_button = tk.Button(self.frame_input, text="Duplicate Entry[ies]", command=self.duplicate_entry, font=("Helvetica", 14))
-        self.duplicate_button.pack(pady=10)
+        self.duplicate_button = tk.Button(self.entry_buttons_frame, text="Duplicate Entries", command=self.duplicate_entry, font=(FONT, 14))
+        self.duplicate_button.grid(row=0, column=1, padx=0)
 
         # Button to remove selected entries
-        self.remove_button = tk.Button(self.frame_input, text="Remove Entry[ies]", command=self.remove_entry, font=("Helvetica", 14))
-        self.remove_button.pack(pady=5)
+        self.remove_button = tk.Button(self.entry_buttons_frame, text="Remove Entries", command=self.remove_entry, font=(FONT, 14))
+        self.remove_button.grid(row=0, column=2, padx=0)
 
         # Frame to hold the listbox and scrollbar
         self.listbox_frame = tk.Frame(self.frame_input)
         self.listbox_frame.pack(pady=10, fill=tk.BOTH, expand=True)
 
         # Listbox to display added entries
-        self.entry_listbox = tk.Listbox(self.listbox_frame, height=15, selectmode=tk.MULTIPLE, font=("Helvetica", 12))
+        self.entry_listbox = tk.Listbox(self.listbox_frame, height=15, selectmode=tk.MULTIPLE, font=(FONT, 14))
         self.entry_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Scrollbar for the listbox
@@ -207,18 +301,30 @@ class PlotApp:
         self.entry_listbox.config(yscrollcommand=self.scrollbar.set)
 
 
-        # Reset Button
-        self.reset_button = tk.Button(self.frame_input, text="Reset All", command=self.reset_all, font=("Helvetica", 14))
-        self.reset_button.pack(side=tk.BOTTOM, pady=5)
+        # Error display label
+        self.error_label = tk.Label(self.frame_input, text="", fg="red", font=(FONT, 14))
+        self.error_label.pack(pady=5)
+
+
+        # Frame for generate and reset buttons
+        self.gen_reset_buttons_frame = tk.Frame(self.frame_input)
+        self.gen_reset_buttons_frame.pack(pady=0)
 
         # Generate button at the bottom
-        self.generate_button = tk.Button(self.frame_input, text="Generate Plot", command=self.generate_plot, font=("Helvetica", 14))
-        self.generate_button.pack(side=tk.BOTTOM, pady=5)
+        self.generate_button = tk.Button(self.gen_reset_buttons_frame, text="Generate Plot", command=self.generate_plot, font=(FONT, 14))
+        self.generate_button.grid(row=0, column=0, padx=0)
+
+        # Reset Button
+        self.reset_button = tk.Button(self.gen_reset_buttons_frame, text="Reset All", command=self.reset_all, font=(FONT, 14))
+        self.reset_button.grid(row=0, column=1, padx=5)
+
 
         # Create a Matplotlib figure with increased size
         self.figure, self.ax = plt.subplots(figsize=(10, 6))  # Width: 10 inches, Height: 6 inches
         self.canvas = FigureCanvasTkAgg(self.figure, master=self.frame_plot)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        self.ax.axes.get_xaxis().set_visible(False)
+        self.ax.axes.get_yaxis().set_visible(False)
 
         # To store source names and observing times
         self.entries = []
@@ -244,9 +350,56 @@ class PlotApp:
         # Bind the "Escape" key to reset the selection
         self.root.bind("<Escape>", self.reset_selection)
 
-        # Error display label
-        self.error_label = tk.Label(self.frame_input, text="", fg="red", font=("Helvetica", 12))
-        self.error_label.pack(pady=5)
+
+
+    def show_help(self):
+        """Display a larger Help dialog with scrollable content."""
+        help_window = tk.Toplevel(self.root)
+        help_window.title("Help - How to Use")
+        help_window.geometry("1000x400")  # Set size for larger window
+
+        # Create a text widget for the help content
+        help_text_widget = tk.Text(help_window, wrap="word", font=(FONT, 12), padx=10, pady=10)
+        help_text_widget.pack(expand=True, fill=tk.BOTH)
+
+        help_text = (
+            "How to Use the Application:\n\n"
+            "1. Select a timezone from the dropdown menu.\n"
+            "2. Select the start date and time.\n"
+            "3. Enter source names and expected observation times.\n"
+            "4. Use the 'Generate Plot' button to generate a graph for tracks of the input sources.\n"
+            "4. You can reset all inputs by pressing the 'Reset All' button.\n"
+            "5. Check the listbox to manage and add new sources or observing times.\n\n"
+            "Notes:\n\n"
+            "- 'Observation overhead' attempts to simulate the time taken for setting frequencies, RF/IF gain setting, and backend overhead.\n"
+            f"- 'Slew time' assumes a slew rate of {SLEW_RATE} deg/s for the telescope.\n"
+            "- You can input custom RADEC pairs by inputing a source with format:\n"
+            "  'RADECXX.XX,+/-YY.YY' where 'XX.XX' is in decimal hour, and '+/-YY.YY' is in decimal degree"
+        )
+        help_text_widget.insert(tk.END, help_text)
+        help_text_widget.config(state=tk.DISABLED)  # Disable editing of the help content
+
+        # Add a scrollbar to the help text
+        scrollbar = tk.Scrollbar(help_text_widget)
+        help_text_widget.config(yscrollcommand=scrollbar.set)
+        scrollbar.config(command=help_text_widget.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # OK button to close the window
+        ok_button = tk.Button(help_window, text="OK", command=help_window.destroy,
+                font=(FONT, 12))
+        ok_button.pack(pady=10)
+
+
+    def show_about(self):
+        """Display an About dialog."""
+        about_text = (
+            "ATA Observation planner\n"
+            "Version: 1.0\n\n"
+            "This application allows you to generate tracks of sources and manage observing plans.\n"
+            "Developed by: Wael Farah"
+        )
+        messagebox.showinfo("About", about_text)
 
     def quit_app(self, event=None):
         """Close the application."""
@@ -288,6 +441,20 @@ class PlotApp:
         else:
             print("No entry selected to duplicate.")
 
+    def on_timezone_selected(self, event):
+        # Get the selected timezone from the combobox
+        selected_timezone = self.timezone_combobox.get()
+
+        # reset time for given timezone
+        dt_now = datetime.datetime.now(
+                tz=pytz.timezone(self.timezone_combobox.get()))
+        hh_now, mm_now = dt_now.hour, dt_now.minute
+
+        self.hours_spin.delete(0, tk.END)
+        self.hours_spin.insert(0, f'{hh_now:02}')
+        self.minutes_spin.delete(0, tk.END)
+        self.minutes_spin.insert(0, f'{mm_now:02}')
+
     def reset_selection(self, event=None):
         """Reset the selection of the listbox."""
         self.entry_listbox.selection_clear(0, tk.END)  # Clear selection
@@ -321,12 +488,16 @@ class PlotApp:
             print(entry)
 
     def generate_plot(self):
+        if len(self.entry_listbox.get(0, tk.END)) == 0:
+            return
         self.clear_error()
         self.root.config(cursor="watch")
         self.root.update()
 
         # Clear the previous plot
         self.ax.clear()
+        self.ax.axes.get_xaxis().set_visible(True)
+        self.ax.axes.get_yaxis().set_visible(True)
 
         # Get user input
         date_selected = self.date_entry.get()
@@ -339,9 +510,9 @@ class PlotApp:
 
         start_time = datetime.datetime.strptime(
                 f"{date_selected} {hours:02}:{minutes:02}", "%m/%d/%y %H:%M")
-        pacific = timezone('US/Pacific')
+        selected_tz = pytz.timezone(self.timezone_combobox.get())
 
-        localized_time = pacific.localize(start_time)
+        localized_time = selected_tz.localize(start_time)
 
         start_time = Time(localized_time)
 
@@ -397,7 +568,7 @@ class PlotApp:
                 #plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=10))
                 #plt.plot(days,y)
                 self.ax.plot(obs_times_pdate, altaz.alt, label=source_info['object'])
-                color_cycler[source_info['object']] = list(mpl.rcParams['axes.prop_cycle'])[isource]['color']
+                color_cycler[source_info['object']] = COLOR_CYCLER_LIST[isource]['color']
 
             # plot the start and end times, and the overhead fill
             if self.obs_overhead_var.get() or self.slew_time_var.get():
@@ -425,7 +596,7 @@ class PlotApp:
                 color = color_cycler[source_name]
                 sdate = obs_block['start_time'].to_value("plot_date")
                 edate = obs_block['end_time'].to_value("plot_date")
-                self.ax.fill_betweenx([0,90], edate, sdate, color = color, alpha=0.3)
+                self.ax.fill_betweenx([0,90], edate, sdate, color = color, alpha=0.5)
                 self.ax.axvline(x = sdate, color = 'black', linestyle = ':', alpha=1)
                 self.ax.axvline(x = edate, color = 'black', linestyle = ':', alpha=1)
 
@@ -437,11 +608,13 @@ class PlotApp:
                 # if any source has set
                 if np.any(el_track_seg <= HARD_EL_LIM):
                     error_in_plan = 2
-                    self.ax.fill_betweenx([0,HARD_EL_LIM], edate, sdate, color = 'red', alpha=1)
+                    self.ax.fill_betweenx([0,HARD_EL_LIM], edate, sdate, color = 'red', alpha=1,
+                            hatch="X", edgecolor="black")
                 elif np.any(el_track_seg <= SOFT_EL_LIM):
                     if error_in_plan != 2:
                         error_in_plan = 1
-                    self.ax.fill_betweenx([0,SOFT_EL_LIM], edate, sdate, color = 'orange', alpha=1)
+                    self.ax.fill_betweenx([0,SOFT_EL_LIM], edate, sdate, color = 'orange', alpha=1,
+                            hatch="X", edgecolor="black")
 
             self.ax.legend(fontsize=18)
             self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d:%H:%M'))
@@ -457,11 +630,15 @@ class PlotApp:
             self.ax.axhline(y = HARD_EL_LIM, color = 'r', linestyle = '--') 
             self.ax.axhline(y = SOFT_EL_LIM, color='orange', linestyle='--')
             self.ax.grid(alpha=0.5)
+
+            # plot start date
+            self.ax.axvline(x = obs.start_time.to_value("plot_date"),
+                    color = 'black', alpha=1)
             
             self.ax.set_ylim([-0, 90])
 
             self.ax.set_ylabel("Elevation [deg]")
-            self.ax.set_xlabel("Time [PST]")
+            self.ax.set_xlabel("Time [UTC]")
 
             self.canvas.draw()
 
@@ -471,13 +648,24 @@ class PlotApp:
         self.root.config(cursor="")
         self.root.update()
 
+    def register_selection(self, event=None):
+        """Method to register the combobox selection when Enter is pressed or focus is lost."""
+        selected_value = self.timezone_combobox.get()
+        self.timezone_combobox.set(selected_value)
+        # Update feedback label with the selected value
+        #self.feedback_label.config(text=f"Selected Timezone: {selected_value}")
+
     def reset_all(self):
         """Resets all input fields and clears the listbox."""
         # Reset Date and Time fields
         self.date_entry.set_date(self.date_entry._date.today())
 
+        # Reset timezone
+        self.timezone_combobox.set(DEFAULT_TIMEZONE)
+
         # Get time now to fill in defaults
-        dt_now = datetime.datetime.now(tz=timezone(('US/Pacific')))
+        dt_now = datetime.datetime.now(
+                tz=pytz.timezone(self.timezone_combobox.get()))
         hh_now, mm_now = dt_now.hour, dt_now.minute
 
         self.hours_spin.delete(0, tk.END)
@@ -495,10 +683,17 @@ class PlotApp:
 
         # Clear the plot
         self.ax.clear()
+        self.ax.axes.get_xaxis().set_visible(False)
+        self.ax.axes.get_yaxis().set_visible(False)
         self.canvas.draw()
 
         # Clear any errors
         self.clear_error()
+
+        # Check all the overhead
+        self.obs_overhead_check.select()
+        self.slew_time_check.select()
+
 
     def display_error(self, message):
         """Display an error message in the error label."""
@@ -510,6 +705,6 @@ class PlotApp:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    root.geometry("1500x900")  # Set the window size to 1450x900 pixels
+    root.geometry("1550x900")  # Set the window size to 1450x900 pixels
     app = PlotApp(root)
     root.mainloop()
