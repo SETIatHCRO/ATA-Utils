@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+from SNAPobs import snap_config
+from ATATools import ata_control, logger_defaults, ata_if
+
+ant_list = sorted(snap_config.get_rfsoc_active_antlist())
+ata_control.release_antennas(ant_list, False)
