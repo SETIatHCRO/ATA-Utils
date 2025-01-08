@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from multiprocessing.pool import ThreadPool
+import requests
 import threading
 import warnings
 
@@ -22,6 +23,15 @@ MIN_ATT = 0.0
 NPROCS = 10
 
 GET_ADC_CYCLES = 3 #Number of adc sample cycles to get
+
+RESTGW_PORT = 12345 #port number for the restgw on all the gain-modules
+
+class APIError(Exception):
+    """Custom exception for API-related errors."""
+    def __init__(self, status_code, message):
+        super().__init__(f"HTTP {status_code}: {message}")
+        self.status_code = status_code
+        self.message = message
 
 # TODO: replace
 class testRfsoc(object):
@@ -289,7 +299,7 @@ def _tune_if_by_module_threaded(ant_mapping_per_module):
                 ant_mapping_per_module['attn'] + atten_diff)
 
         # apply the attenuation
-        _set_attn_by_module(gain_module,
+        set_attn_by_module(gain_module,
                             list(ant_mapping_per_module.ch),
                             list(ant_mapping_per_module.attn))
 
@@ -319,7 +329,7 @@ def _set_attenuation_by_mapping(sub_ant_mapping, attens):
     for gain_module in unique_gain_modules:
         mask = np.isin(sub_ant_mapping['gain-module'], gain_module)
         ant_mapping_per_module = sub_ant_mapping[mask]
-        _set_attn_by_module(gain_module, 
+        set_attn_by_module(gain_module,
                             list(ant_mapping_per_module.ch), 
                             list(ant_mapping_per_module.attens))
 
@@ -348,7 +358,7 @@ def _get_attenuation_by_mapping(sub_ant_mapping):
     for gain_module in unique_gain_modules:
         mask = np.isin(sub_ant_mapping['gain-module'], gain_module)
         ant_mapping_per_module = sub_ant_mapping[mask]
-        attens = _get_attn_by_module(gain_module, 
+        attens = get_attn_by_module(gain_module,
                             list(ant_mapping_per_module.ch)) 
         logger.debug(attens)
         sub_ant_mapping.loc[mask, 'attens'] = attens
@@ -356,11 +366,11 @@ def _get_attenuation_by_mapping(sub_ant_mapping):
     return sub_ant_mapping
 
 
-def _set_attn_by_module(gain_module, chanlist, attenlist):
+def set_attn_by_module(gain_module, chanlist, attenlist):
     """
     Sets the attenuation for each gain_module, with lists of channels 
     and attenuations
-    This will eventually be replaced by something other than ssh-based
+    Done through a POST request
 
     Parameters:
     -----------
@@ -373,10 +383,9 @@ def _set_attn_by_module(gain_module, chanlist, attenlist):
     attenlist : list of float
         List of attenuations to set for each channel
     """
-    import subprocess 
 
     logger = logger_defaults.getModuleLogger(__name__)
-    logger.debug("Entered '_set_attn_by_module' with parameters: "\
+    logger.debug("Entered 'set_attn_by_module' with parameters: "\
             "%s %s %s"%(gain_module, chanlist, attenlist))
 
     assert len(chanlist) == len(attenlist)
@@ -401,27 +410,27 @@ def _set_attn_by_module(gain_module, chanlist, attenlist):
                         MIN_ATT))
         attenlist[attenlist < MIN_ATT] = MIN_ATT
 
-    logger = logger_defaults.getModuleLogger(__name__)
-    command = "ssh sonata@%s "%gain_module
-    command += "'python attenuatorMain.py"
-    command += " -n "
-    command += " ".join([str(i) for i in chanlist])
-    command += " -a "
-    command += " ".join(["%.1f"%i for i in attenlist])
-    command += "'"
+    # URL for the specific gain-module we are requesting
+    base_url = f"http://{gain_module}:{RESTGW_PORT}/set"
+    payload = {"channels": list(chanlist), "values": list(attenlist)}
 
-    logger.info(command)
-    process = subprocess.Popen(command, stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE, shell=True)
+    # Attempt the SET request
+    logger.debug(f"Attempting POST request on {endpoint} with payload: {payload}")
+    response = requests.post(endpoint, json=payload)
 
-    stdout, stderr = process.communicate()
+    if response.status_code == 200:
+        logger.debug(f"Success, POST request returned status code: 200")
+        attens = response.json().get("updated_values"))
+    else:
+        logger.error(f"Error with SET request on {endpoint}")
+        raise APIError(response.status_code, response.text)
 
 
 
-def _get_attn_by_module(gain_module, chanlist):
+def get_attn_by_module(gain_module, chanlist=None):
     """
     Gets the attenuation for each gain_module, and lists of channels
-    This will eventually be replaced by something other than ssh-based
+    Done through a GET request
 
     Parameters:
     -----------
@@ -436,53 +445,30 @@ def _get_attn_by_module(gain_module, chanlist):
     attens : list of float
         List of attenuations
     """
-    import subprocess 
 
     logger = logger_defaults.getModuleLogger(__name__)
-    logger.debug("Entered '_get_attn_by_module' with parameters: "\
+    logger.debug("Entered 'get_attn_by_module' with parameters: "\
             "%s %s"%(gain_module, chanlist))
 
-    chanlist  = np.array(chanlist)
+    if not gain_module.endswith(".hcro.org"):
+        gain_module += ".hcro.org"
 
-    logger = logger_defaults.getModuleLogger(__name__)
-    command = "ssh sonata@%s "%gain_module
-    command += "'python attenuatorMain.py"
-    command += " -n "
-    command += " ".join(["%i"%i for i in chanlist])
-    command += " -g "
-    command += "'"
+    # URL for the specific gain-module we are requesting
+    base_url = f"http://{gain_module}:{RESTGW_PORT}/get"
+    if chanlist:
+        channel_query = ",".join(map(str, chanlist))
+        channel_query_dict = {"channels": channel_query}
+    else: #requested all channels
+        channel_query_dict = None
 
-    logger.info(command)
-    process = subprocess.Popen(command, stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE, shell=True)
+    # Attempt the GET request
+    logger.debug(f"Attempting GET request on {endpoint}")
+    response = requests.get(endpoint, params=channel_query_dict)
 
-    stdout, stderr = process.communicate()
-    logger.debug("return of getatten subprocess:\n%s" %stdout)
-    ch_if_attn = _translate_if_output(stdout) #output if dictionary
-    logger.debug("translated output:\n%s" %ch_if_attn)
-
-    attens = []
-    for chan in chanlist:
-        attens += [float(ch_if_attn[str(chan)])]
-    return attens
-
-def _translate_if_output(stdout):
-    # python 2 output
-    # stdout of shape: '(1, 13.5)\n(2, 14.0)\n(9, 7.5)\n(10, 0.5)\n(13, 5.5)\n(14, 3.5)
-    # python 3 output
-    # stdout of shape: 1 15.0\n2 15.0\n11 15.0\n12 15.0\n
-
-    ret = stdout.decode().strip()
-
-    pairs = ret.split("\n")
-    retdict = {}
-    for i in pairs:
-        if i.startswith("("):
-            tmp = i.strip("(").strip(")")
-            tmp = tmp.replace(" ","").split(",")
-        else:
-            tmp = i.split(" ")
-
-        retdict[tmp[0]] = tmp[1]
-    #print(retdict)
-    return retdict
+    if response.status_code == 200:
+        logger.debug(f"Success, GET request returned status code: 200")
+        attens = response.json().get("values"))
+        return attens
+    else:
+        logger.error(f"Error with GET request on {endpoint}")
+        raise APIError(response.status_code, response.text)
