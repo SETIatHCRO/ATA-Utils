@@ -9,6 +9,8 @@ from ATATools import logger_defaults
 from ata_snap import ata_snap_fengine, ata_rfsoc_fengine
 from SNAPobs.snap_config import get_ata_cfg
 
+import time
+
 
 # TODO: move and put in a config file
 RFSOC_RMS = 1024
@@ -20,7 +22,7 @@ INIT_ATT = 23
 MAX_ATT = 31.5
 MIN_ATT = 0.0
 
-NPROCS = 10
+NPROCS = 3
 
 GET_ADC_CYCLES = 3 #Number of adc sample cycles to get
 
@@ -215,7 +217,9 @@ def tune_if(ant_list, los, pols=ALL_POLS, desired_rms=RFSOC_RMS):
     # now let's divide the table into their respective gain modules
     for gain_module in unique_gain_modules:
         mask = np.isin(sub_ant_mapping['gain-module'], gain_module)
-        ant_mappings_per_module.append(sub_ant_mapping[mask].copy())
+        ant_mapping_per_module = sub_ant_mapping[mask].copy()
+        #_tune_if_by_module_threaded(ant_mapping_per_module)
+        ant_mappings_per_module.append(ant_mapping_per_module)
 
     pool = ThreadPool(processes = NPROCS)
     pool.map(_tune_if_by_module_threaded, ant_mappings_per_module)
@@ -261,7 +265,21 @@ def _tune_if_by_module_threaded(ant_mapping_per_module):
     rfsoc = ata_rfsoc_fengine.AtaRfsocFengine(unique_rfsoc, pipeline_id = 0)
     ata_cfg = get_ata_cfg()
     rfsoc_fpg_file = ata_cfg['RFSOCFPG']
-    rfsoc.fpga.get_system_information(rfsoc_fpg_file)
+
+    for i in range(5):
+        try:
+            rfsoc.fpga.get_system_information(rfsoc_fpg_file)
+            failed = False
+            break
+        except Exception as e:
+            failed = True
+            logger.error(e)
+            logger.error("Trying again in 0.5s...")
+            time.sleep(0.5)
+
+    if failed:
+        raise e
+
     logger.info("Initialized RFSoC: %s" %unique_rfsoc)
 
     #rfsoc = testRfsoc(unique_rfsoc)
@@ -411,18 +429,18 @@ def set_attn_by_module(gain_module, chanlist, attenlist):
         attenlist[attenlist < MIN_ATT] = MIN_ATT
 
     # URL for the specific gain-module we are requesting
-    base_url = f"http://{gain_module}:{RESTGW_PORT}/set"
-    payload = {"channels": list(chanlist), "values": list(attenlist)}
+    baseurl = f"http://{gain_module}:{RESTGW_PORT}/set"
+    payload = {"channels": chanlist.tolist(), "values": attenlist.tolist()}
 
     # Attempt the SET request
-    logger.debug(f"Attempting POST request on {endpoint} with payload: {payload}")
-    response = requests.post(endpoint, json=payload)
+    logger.debug(f"Attempting POST request on {baseurl} with payload: {payload}")
+    response = requests.post(baseurl, json=payload)
 
     if response.status_code == 200:
         logger.debug(f"Success, POST request returned status code: 200")
-        attens = response.json().get("updated_values"))
+        attens = response.json().get("updated_values")
     else:
-        logger.error(f"Error with SET request on {endpoint}")
+        logger.error(f"Error with SET request on {baseurl}")
         raise APIError(response.status_code, response.text)
 
 
@@ -454,7 +472,7 @@ def get_attn_by_module(gain_module, chanlist=None):
         gain_module += ".hcro.org"
 
     # URL for the specific gain-module we are requesting
-    base_url = f"http://{gain_module}:{RESTGW_PORT}/get"
+    baseurl = f"http://{gain_module}:{RESTGW_PORT}/get"
     if chanlist:
         channel_query = ",".join(map(str, chanlist))
         channel_query_dict = {"channels": channel_query}
@@ -462,13 +480,13 @@ def get_attn_by_module(gain_module, chanlist=None):
         channel_query_dict = None
 
     # Attempt the GET request
-    logger.debug(f"Attempting GET request on {endpoint}")
-    response = requests.get(endpoint, params=channel_query_dict)
+    logger.debug(f"Attempting GET request on {baseurl}")
+    response = requests.get(baseurl, params=channel_query_dict)
 
     if response.status_code == 200:
         logger.debug(f"Success, GET request returned status code: 200")
-        attens = response.json().get("values"))
+        attens = response.json().get("values")
         return attens
     else:
-        logger.error(f"Error with GET request on {endpoint}")
+        logger.error(f"Error with GET request on {baseurl}")
         raise APIError(response.status_code, response.text)
