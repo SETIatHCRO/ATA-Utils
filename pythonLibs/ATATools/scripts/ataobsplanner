@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 import tkinter as tk
+import sys,os
 from tkinter import ttk, messagebox
+from tkinter import messagebox
+
 from tkcalendar import DateEntry
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -13,6 +16,7 @@ from astropy import units as u
 from astropy.time import Time, TimeDelta
 
 import pytz
+import json
 
 import ATATools.ata_sources as check
 
@@ -488,6 +492,7 @@ class PlotApp:
             print(entry)
 
     def generate_plot(self):
+        self.save_to_json()
         if len(self.entry_listbox.get(0, tk.END)) == 0:
             return
         self.clear_error()
@@ -703,8 +708,91 @@ class PlotApp:
         """Clear the error message."""
         self.error_label.config(text="")
 
+    def save_to_json(self):
+        # Get the selected date
+        selected_date = self.date_entry.get()
+
+        # Get the selected time (hours and minutes)
+        selected_hours = self.hours_spin.get()
+        selected_minutes = self.minutes_spin.get()
+
+        # Get the timezone
+        selected_timezone = self.timezone_combobox.get()
+
+        # Check the state of the "Initial Overhead" and "Slew Time" checkboxes
+        overhead_toggled = self.obs_overhead_var.get()  # 1 if checked, 0 if unchecked
+        slew_time_toggled = self.slew_time_var.get()  # 1 if checked, 0 if unchecked
+
+        # Get all the sources in the listbox
+        sources = self.entry_listbox.get(0, tk.END)  # Get all the items in the listbox
+
+        # Create a dictionary with all the information
+        data = {
+            "start_date": selected_date,
+            "start_time": f"{selected_hours}:{selected_minutes}",
+            "timezone": selected_timezone,
+            "initial_overhead": bool(overhead_toggled),
+            "slew_time": bool(slew_time_toggled),
+            "sources": list(sources)
+        }
+
+        # Save to a JSON file
+        filename = f"session_data_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        with open(filename, 'w') as json_file:
+            json.dump(data, json_file, indent=4)
+        
+        print(f"Data saved to {filename}")
+
+    def load_from_json(self):
+        # Open the JSON file
+        try:
+            filename = tk.filedialog.askopenfilename(
+                title="Select JSON File",
+                filetypes=(("JSON files", "*.json"), ("All files", "*.*")))#, 
+            if not filename:
+                return  # User cancelled the file selection
+
+            with open(filename, 'r') as json_file:
+                data = json.load(json_file)
+
+            # Populate the widgets with the loaded data
+
+            # Set the start date in the DateEntry widget
+            self.date_entry.set_date(data['start_date'])
+
+            # Set the start time in the Spinboxes for hours and minutes
+            hours, minutes = map(int, data['start_time'].split(':'))
+            self.hours_spin.delete(0, tk.END)
+            self.hours_spin.insert(0, hours)
+            self.minutes_spin.delete(0, tk.END)
+            self.minutes_spin.insert(0, minutes)
+
+            # Set the timezone in the Combobox
+            if data['timezone'] in self.timezone_combobox['values']:
+                self.timezone_combobox.set(data['timezone'])
+            else:
+                messagebox.showwarning("Timezone Warning", f"Timezone '{data['timezone']}' not found!")
+
+            # Set the checkbox values
+            self.obs_overhead_var.set(int(data['initial_overhead']))  # 1 or 0
+            self.slew_time_var.set(int(data['slew_time']))
+
+            # Clear the listbox and add the saved sources
+            self.entry_listbox.delete(0, tk.END)
+            for source in data['sources']:
+                self.entry_listbox.insert(tk.END, source)
+
+            messagebox.showinfo("Success", "Data loaded successfully!")
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load data: {e}")
+
 if __name__ == "__main__":
     root = tk.Tk()
     root.geometry("1550x900")  # Set the window size to 1450x900 pixels
     app = PlotApp(root)
+    #print(sys.argv)
+    #if len(sys.argv) > 1:
+    #    filename = sys.argv[1]
+    #    app.load_from_json(filename)
     root.mainloop()

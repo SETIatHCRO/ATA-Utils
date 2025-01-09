@@ -4,26 +4,6 @@ from datetime import datetime, timezone, timedelta
 import pytz
 import argparse
 
-from astropy.coordinates import EarthLocation
-from astropy import units as u
-from astropy.time import Time
-from astropy.utils.iers import LeapSeconds
-
-DATETIME_FMT = "%a %b %d %H:%M:%S %Z %Y"
-
-#LONGITUDE = 149 + 33./60 + 0.5/60/60
-#LATITUDE  = -(30 + 18./60 + 46.385/3600)
-LONGITUDE = "-121:28:14.65"
-LATITUDE  = "40:49:02.75"
-ALTITUDE  = 1019.222
-OBSERVATORY = EarthLocation(lon=LONGITUDE, 
-        lat=LATITUDE, height=ALTITUDE)
-
-PST_TZ = pytz.timezone('US/PACIFIC')
-
-LEAP_SEC    = LeapSeconds.auto_open()['tai_utc'][-1]
-LEAP_SEC_DT = timedelta(seconds=float(LEAP_SEC))
-
 def main():
     parser = argparse.ArgumentParser(description=
             '''Display information about a source, including current
@@ -40,63 +20,12 @@ def main():
     if (args.source is not None) and (args.radec is not None):
         raise RuntimeError('Provide only "source" or "RA/Dec" pair')
 
+    dt = datetime.now(pytz.timezone('US/PACIFIC'))
+
     if args.source:
-        source = ata_sources.check_source(args.source)
+        output_str = ata_sources.check_source_str(dt, sourcename=args.source)
     elif args.radec:
-        source = ata_sources.check_radec(*args.radec)
-
-    output_str="\n"
-
-    if source['is_up']:
-        output_str += "%s is up.\n" %source['object']
-    else:
-        if 'rise_time' not in source:
-            output_str += "%s is never up.\n" %source['object']
-        else:
-            output_str += "%s is not up.\n" %source['object']
-
-    # Ra Dec line
-    output_str += "RA, Dec = %.6f, %.6f\n" %(source['ra'],
-            source['dec'])
-
-    # Az El line
-    datenow = datetime.now(PST_TZ) + LEAP_SEC_DT
-    datenow_no_ls = datetime.now(PST_TZ)
-    azel_str = "Az, El = (%.3f, %.3f)" %(source['az'], 
-            source['el'])
-    output_str += azel_str
-    lst_now = Time(datenow_no_ls, location=OBSERVATORY).sidereal_time('mean')
-    lst_now_str = lst_now.to_string(sep=":", precision=2, pad=True)
-    output_str += ": %s" %datenow.strftime(DATETIME_FMT)
-    output_str += " (LST %s).\n" %lst_now_str
-
-    # Rise time line
-    if 'rise_time' in source:
-        rises_str = "Rises > 16.5 deg"
-        # make it match the above line
-        rises_str += " "*(len(azel_str) - len(rises_str))
-        source_rise_time = source['rise_time'].astimezone(PST_TZ) + LEAP_SEC_DT
-        source_rise_time_no_ls = source['rise_time'].astimezone(PST_TZ)
-        rises_str += ": %s" %source_rise_time.strftime(DATETIME_FMT)
-        lst_rise = Time(source_rise_time_no_ls,
-                location=OBSERVATORY).sidereal_time('mean')
-        lst_rise_str = lst_rise.to_string(sep=":", precision=2, pad=True)
-        output_str += rises_str
-        output_str += " (LST %s).\n" %lst_rise_str
-
-    # Set time line
-    if 'set_time' in source:
-        set_str = "Sets  < 16.5 deg"
-        # make it match the above line
-        set_str += " "*(len(azel_str) - len(set_str))
-        source_set_time = source['set_time'].astimezone(PST_TZ) + LEAP_SEC_DT
-        source_set_time_no_ls = source['set_time'].astimezone(PST_TZ)
-        set_str += ": %s" %source_set_time.strftime(DATETIME_FMT)
-        lst_set = Time(source_set_time_no_ls,
-                location=OBSERVATORY).sidereal_time('mean')
-        lst_set_str = lst_set.to_string(sep=":", precision=2, pad=True)
-        output_str += set_str
-        output_str += " (LST %s).\n" %lst_set_str
+        output_str = ata_sources.check_source_str(dt, radec=args.radec)
 
     # Now let's print
     print(output_str)
