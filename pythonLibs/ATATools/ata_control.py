@@ -705,6 +705,37 @@ def get_dets(antlist):
 
     return retdict
 
+
+def get_lnas(ant_list):
+    """
+    Get status of LNAs for a list of antennas
+
+    Parameters
+    ----------
+    ant_list : list
+        List of antenna names, e.g. ['1a', '2b']
+
+    Returns
+    -------
+    Dict
+        A dictionary mapping with keys being antenna names, and
+        values being another dictionary with keys being 'x', 'y',
+        and 'on'.
+    """
+    logger = logger_defaults.getModuleLogger(__name__)
+
+    antstr = ",".join(ant_list)
+    endpoint = f'/antennas/{antstr}/lnas'
+
+    try:
+        lna_status = ATARest.get(endpoint)
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+    return lna_status
+
+
 def try_on_lna(singleantstr):
     """
     check if the LNA for given antenna is on. 
