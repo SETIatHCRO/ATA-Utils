@@ -22,7 +22,7 @@ INIT_ATT = 23
 MAX_ATT = 31.5
 MIN_ATT = 0.0
 
-NPROCS = 3
+NPROCS = 6
 
 GET_ADC_CYCLES = 3 #Number of adc sample cycles to get
 
@@ -221,8 +221,8 @@ def tune_if(ant_list, los, pols=ALL_POLS, desired_rms=RFSOC_RMS):
         #_tune_if_by_module_threaded(ant_mapping_per_module)
         ant_mappings_per_module.append(ant_mapping_per_module)
 
-    pool = ThreadPool(processes = NPROCS)
-    pool.map(_tune_if_by_module_threaded, ant_mappings_per_module)
+    with ThreadPool(processes = NPROCS) as pool:
+        pool.map(_tune_if_by_module_threaded, ant_mappings_per_module)
 
 
 def _get_adc(rfsoc, pipeline_id):
