@@ -137,3 +137,24 @@ def ephem_to_txt(save_as, ephem_file):
 
     return(ephemtxt)
 
+
+def text_to_ephem(ephem_name):
+    """
+    Text file to ephemeris
+
+    Opposite of ephem_to_txt. 
+
+    Parameters
+    ----------
+    save_as    : string
+                 file name to load the array from
+
+    Returns
+    -------
+    ephem    : numpy_array
+               Returns an array with 4 columns for time in TAI ns, azimuth, elevation 
+               and inverse radius of the source
+    """
+    ephem = np.loadtxt(ephem_name)
+
+    return(ephem)
