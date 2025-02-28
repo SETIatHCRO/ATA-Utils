@@ -61,7 +61,7 @@ def generate_ephem_el_swivel(az_start, el_start, el_end, t_start, t_span,  steps
 
 
 
-def generate_ephem_az_swivel(az_start, az_end, el_start, t_start, t_span,  steps, invr):
+def generate_ephem_az_swivel(el_start, az_start, az_end, t_start, t_span,  steps, invr):
     """
     Swivel along Azimuth
 
@@ -70,12 +70,12 @@ def generate_ephem_az_swivel(az_start, az_end, el_start, t_start, t_span,  steps
 
     Parameters 
     ----------
+    el_start : float
+               elevation start
     az_start : float
                azimuth start
     az_end   : float
                azimuth end
-    el_start : float
-               elevation start
     t_start  : float
                start time of the swivel. Note that it will be in ATA TAI seconds
     t_span   : float
