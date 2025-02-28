@@ -1,4 +1,5 @@
 import setuptools
+import glob
 import version
 import sys
 
@@ -30,14 +31,6 @@ setuptools.setup(
         'ATAPointing/pointing_elxel_plot.py',
         'ATAPointing/pointing_azel_table.py',
         'ATAPointing/pointing_azel_print.py',
-        'ATATools/scripts/atacheck',
-        'ATATools/scripts/ataiftune',
-        'ATATools/scripts/atasetifgain',
-        'ATATools/scripts/atagetifgain',
-        'ATATools/scripts/ataplotadc',
-        'ATATools/scripts/atafindnearestcalibrator',
-        'ATATools/scripts/ataobsplanner',
-        'ATATools/scripts/atareleaseants',
-        'ATADelayEngine/atadelayengine']
+        'ATADelayEngine/atadelayengine'] + glob.glob('ATATools/scripts/ata*')
     #entry_points={'console_scripts': ['GPIBLOControl = GPIBLOControl.GPIBLOControl:main']},
 )

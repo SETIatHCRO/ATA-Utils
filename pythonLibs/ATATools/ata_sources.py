@@ -283,3 +283,109 @@ def check_source_str(dt, radec=None, sourcename=None):
 
     # Now let's return
     return output_str
+
+
+def list_catalog(owner=None, category=None):
+    """
+    List ATA source catalog for a given owner and category
+
+    Parameters
+    ----------
+    owner : str
+        Name of owner
+    category : str
+        Name of source category
+
+    Returns
+    -------
+    list of dictionaries with the database entries for source catalog
+
+    Examples
+    --------
+    >>> catalog = list_catalog(owner="wfarah", category="frb")
+    >>> e = catalog[0]
+    >>> print(e["Owner"], e["Source"], e["RA"], e["Decl"])
+    wfarah frb180916 1.9666666 65.7363888888
+    """
+    json = {}
+    if owner:
+        json['owner'] = owner
+    if category:
+        json['category'] = category
+
+    try:
+        endpoint = '/catalog'
+        response = ATARest.get(endpoint, json=json)
+
+        return response
+
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+
+def add_catalog_entry(owner, category, source, ra, dec):
+    """
+    Add sources to the ATA source catalog
+
+    Parameters
+    ----------
+    owner : str
+        Name of owner
+    category : str
+        Name of source category
+    source : str
+        Name of source
+    ra : float
+        Right Ascension of source [decimal hours]
+    dec : float
+        Declination of source [decimal degrees]
+
+    Examples
+    --------
+    >>> add_catalog_entry(owner="wfarah", category="test", 
+    >>>        source='testsource', ra=12.345, dec=-15.243)
+    """
+
+    logger = logger_defaults.getModuleLogger(__name__)
+    json = {"owner": owner, "category": category, "source": source,
+            "ra": float(ra), "dec": float(dec)}
+
+    try:
+        endpoint = '/catalog'
+        response = ATARest.post(endpoint, json=json)
+
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
+
+
+def delete_catalog_entry(owner, category, source):
+    """
+    Delete source from the ATA source catalog
+
+    Parameters
+    ----------
+    owner : str
+        Name of owner
+    category : str
+        Name of source category
+    source : str
+        Name of source
+
+    Examples
+    --------
+    >>> delete_catalog_entry(owner="wfarah", category="test", 
+    >>>        source='testsource')
+    """
+
+    logger = logger_defaults.getModuleLogger(__name__)
+    json = {"owner": owner, "category": category, "source": source}
+
+    try:
+        endpoint = '/catalog'
+        response = ATARest.delete(endpoint, json=json)
+
+    except Exception as e:
+        logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
+        raise
