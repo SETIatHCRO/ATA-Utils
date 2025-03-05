@@ -157,10 +157,9 @@ def _proc_feng_destips(
 
             # remove -40, -100g-1, -100g-2
             m = re.match(r'(.*)-\d+g.*', ip_ifname)
-            if m:
+            if m and ip_ifname[-1] in ["1", "2"]:
                 host = m.group(1)
-                if ip_ifname[-1] in ["1", "2"]:
-                    instance = int(ip_ifname[-1])-1
+                instance = int(ip_ifname[-1])-1
             else:
                 if not silent:
                     print('%s: %s does not have -\d+g.* suffix... taking it verbatim'%(ip_string, ip_ifname))
