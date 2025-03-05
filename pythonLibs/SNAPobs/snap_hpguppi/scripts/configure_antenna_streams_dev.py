@@ -54,6 +54,9 @@ parser.add_argument('-s', '--stop-all-eth-first', action='store_true',
 										help='Stop the ethernet output of every snap (listed in ATA_SNAP_TAB) before configuring')
 parser.add_argument('-p', '--prog-snaps', action='store_true',
 										help='Program the snaps being configured')
+parser.add_argument('-f', '--fpg-filepath', type=str,
+										help='Override the fpg-filepath used if `prog-snaps`.',
+										default=None)
 parser.add_argument('-S', '--sync-only', action='store_true',
 										help='Skip configuring the snaps (will still sync them)')
 parser.add_argument('-g', '--groupings', nargs='+', type=str,
@@ -171,6 +174,7 @@ if args.stop_all_eth_first:
 	if not args.dry_run:
 		fengs = snap_control.init_snaps(antstream_hostname_list_to_silence)
 		snap_control.stop_snaps(fengs)
+		snap_control.disconnect_snaps(fengs)
 
 if not args.dry_run:
 	hpguppi_record_in.record_in(hashpipe_targets=hpguppi_redis_reset_chans, reset=True)
@@ -196,7 +200,7 @@ if not args.sync_only:
 
 			if stream_hostname.startswith('frb-snap'):
 				assert multi_group_config is None, 'SNAP configuration has not been expanded to support a single multi-group configuration file.'
-				fpgfile = snap_config.get_ata_cfg()['SNAPFPG']
+				fpgfile = args.fpg_filepath or snap_config.get_ata_cfg()['SNAPFPG']
 								
 				print('{} Reprogramming/configuring snap as FEngine #{:02d} {}'.format('v'*5, feng_id, 'v'*5))
 				print('snap_feng_init.py {} {} {} -i {} {}{}{}{}'.format(
@@ -221,7 +225,7 @@ if not args.sync_only:
 				print('{} Reprogramming/configuring snap as FEngine #{:02d} {}\n'.format('^'*5, feng_id, '^'*5))
 			
 			elif stream_hostname.startswith('rfsoc'):
-				fpgfile = snap_config.get_ata_cfg()['RFSOCFPG']
+				fpgfile = args.fpg_filepath or snap_config.get_ata_cfg()['RFSOCFPG']
 				# take stream_hostname up until last 
 				rfsoc_hostname_re_match = re.match(rfsoc_hostname_regex, stream_hostname)
 				rfsoc_boardname = rfsoc_hostname_re_match.group('boardname')

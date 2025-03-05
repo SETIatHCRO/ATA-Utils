@@ -40,6 +40,16 @@ REDISPOSTPROCSET = 'postprocpype:///set'
 
 redis_obj = redis.Redis(host=REDISHOST)
 
+seti_node_hostnames = [
+	f"seti-node{i}"
+	for i in range(1, 10)
+]
+
+seti_node_instances = [
+	i
+	for i in range(0, 2)
+]
+
 hashpipe_targets_LoA = {
 	'seti-node1': [0],
 	'seti-node2': [0,1],
@@ -60,15 +70,11 @@ hashpipe_targets_LoD = {}
 def resolve_hashpipe_targets():
 	global hashpipe_targets_LoA, hashpipe_targets_LoB
 
-	seti_nodes = [
-		f"seti-node{i}"
-		for i in range(1, 10)
-	]
 	instances = [0, 1]
 
 	hashpipe_targets_LoA = {}
 	hashpipe_targets_LoB = {}
-	for seti_node in seti_nodes:
+	for seti_node in seti_node_hostnames:
 		for instance in instances:
 			redis_get_chan = REDISGETGW.substitute(
 				host=seti_node, inst=instance

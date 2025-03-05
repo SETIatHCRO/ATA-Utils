@@ -2,11 +2,11 @@ import re
 import yaml
 import socket
 import numpy as np
-import os, sys
-from string import Template
+import os, sys, ipaddress
 from typing import List
+from dataclasses import dataclass
 
-from SNAPobs import snap_defaults, snap_config
+from SNAPobs import snap_config
 from ATATools import ata_control
 
 from datetime import datetime
@@ -14,11 +14,17 @@ from astropy.time import Time as astropy_Time
 
 from SNAPobs.snap_hpguppi import snap_hpguppi_defaults as hpguppi_defaults
 from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
-from SNAPobs.snap_hpguppi import record_in as hpguppi_record_in
 
 from ATATools.ata_rest import ATARestException
 
 ATA_SNAP_TAB = snap_config.get_ata_snap_tab()
+
+@dataclass
+class StreamDestinationInfo:
+    hashpipe_target_hostname: str
+    hashpipe_target_instance: int
+    ip_address_string: str
+    channel_list: List[int] 
 
 def _get_stream_mapping(stream_hosts, ignore_control=False):
     """
@@ -114,6 +120,62 @@ def _get_obs_params(antlo_list):
 
     return _gather_ants(radec, azel, source)
 
+def _proc_feng_destips(
+    channel_selection_mapping,
+    silent=False
+):
+    """
+    returns 
+        hashpipe target {hostname, instance}
+
+    """
+    ordered_stream_destinations = []
+    for ip_string in sorted(channel_selection_mapping.keys()):
+        channel_list = channel_selection_mapping[ip_string]
+
+        ipv4 = ipaddress.IPv4Address(ip_string)
+        if ipv4.is_multicast:
+            for hostname in hpguppi_defaults.seti_node_hostnames:
+                for instance in hpguppi_defaults.seti_node_instances:
+                    ibv_multicast_group = hpguppi_auxillary.redis_hget_retry(
+                        hpguppi_defaults.redis_obj,
+                        hpguppi_defaults.REDISSETGW.substitute(host=hostname, inst=instance),
+                        "IBVMCGRP"
+                    )
+                    if ibv_multicast_group == ip_string:
+                        ordered_stream_destinations.append(
+                            StreamDestinationInfo(
+                                hashpipe_target_hostname=hostname,
+                                hashpipe_target_instance=instance,
+                                ip_address_string=ip_string,
+                                channel_list=channel_list,
+                            )
+                        )
+        else:
+            ip_ifname = socket.gethostbyaddr(ip_string)[0]
+            instance = 0
+
+            # remove -40, -100g-1, -100g-2
+            m = re.match(r'(.*)-\d+g.*', ip_ifname)
+            if m:
+                host = m.group(1)
+                if ip_ifname[-1] in ["1", "2"]:
+                    instance = int(ip_ifname[-1])-1
+            else:
+                if not silent:
+                    print('%s: %s does not have -\d+g.* suffix... taking it verbatim'%(ip_string, ip_ifname))
+                host = ip_ifname
+            
+            ordered_stream_destinations.append(
+                StreamDestinationInfo(
+                    hashpipe_target_hostname=host,
+                    hashpipe_target_instance=instance,
+                    ip_address_string=ip_string,
+                    channel_list=channel_list,
+                )
+            )
+
+    return ordered_stream_destinations
 
 StringList = List[str]# Deprecated in 3.9, can rather use list[str]
 def populate_meta(stream_hostnames: StringList, antlo_names: StringList, 
@@ -234,17 +296,19 @@ def populate_meta(stream_hostnames: StringList, antlo_names: StringList,
         # get dut1 at the beginning of today
         dut1 = astropy_Time(datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)).get_delta_ut1_utc().value
 
-    # logic to deal with multi-instance hashpipes
-    # if the gethostbyaddr(ip0) == gethostbyaddr(ip1), assume that
-    # ip0 is inst 0, and ip1 is inst 1
-    prev_host = "" 
-    prev_inst = 0
+    # # logic to deal with multi-instance hashpipes
+    # # if the gethostbyaddr(ip0) == gethostbyaddr(ip1), assume that
+    # # ip0 is inst 0, and ip1 is inst 1
+    # prev_host = "" 
+    # prev_inst = 0
 
-    # sort the ips by hostname, so that the inst++ works properly, assuming
-    # that sequential instances have lexically sequential hostnames
-    ifnames_ip_dict = {socket.gethostbyaddr(ip)[0]:ip for ip in mapping.keys()}
-    ifnames_sorted = sorted(ifnames_ip_dict.keys())
-    mapping_chan_lists = [chan_lst for chan_lst in mapping.values()]
+    # # sort the ips by hostname, so that the inst++ works properly, assuming
+    # # that sequential instances have lexically sequential hostnames
+    # ifnames_ip_dict = {socket.gethostbyaddr(ip)[0]:ip for ip in mapping.keys()}
+    # ifnames_sorted = sorted(ifnames_ip_dict.keys())
+    # mapping_chan_lists = [chan_lst for chan_lst in mapping.values()]
+
+    stream_destinations = _proc_feng_destips(mapping, silent=silent)
 
     report_dict = {
         'nchan'     : n_chans,
@@ -261,9 +325,13 @@ def populate_meta(stream_hostnames: StringList, antlo_names: StringList,
     for antname in antlo_names:
         report_dict['antennae'].append({antname:stream_hostname_dict[antname]})
 
-    for ip_enumer, ip_ifname in enumerate(ifnames_sorted):
-        ip = ifnames_ip_dict[ip_ifname]
-        chan_lst = mapping_chan_lists[ip_enumer] # keep channel listing as per specification of dests
+    # for ip_enumer, ip_ifname in enumerate(ifnames_sorted):
+    #     ip = ifnames_ip_dict[ip_ifname]
+    #     chan_lst = mapping_chan_lists[ip_enumer] # keep channel listing as per specification of dests
+    for stream_dest_info in stream_destinations:
+        ip = stream_dest_info.ip_address_string
+        chan_lst = stream_dest_info.channel_list
+        channel_name = hpguppi_defaults.REDISSETGW.substitute(host=stream_dest_info.hashpipe_target_hostname, inst=stream_dest_info.hashpipe_target_instance)
 
         n_packets_per_dest = int(np.ceil(n_chans_per_dest / max_packet_nchan))
         n_chans_per_pkt  = n_chans_per_dest // n_packets_per_dest
@@ -278,28 +346,28 @@ def populate_meta(stream_hostnames: StringList, antlo_names: StringList,
         if not silent:
             print(ip, schan, band_centre_chan)
         
-        # remove -40, -100g-1, -100g-2
-        m = re.match(r'(.*)-\d+g.*', ip_ifname)
-        if m:
-            host = m.group(1)
-        else:
-            if not silent:
-                print('%s: %s does not have -\d+g.* suffix... taking it verbatim'%(ip, ip_ifname))
-            host = ip_ifname
-        if not silent:
-            print(host)
+        # # remove -40, -100g-1, -100g-2
+        # m = re.match(r'(.*)-\d+g.*', ip_ifname)
+        # if m:
+        #     host = m.group(1)
+        # else:
+        #     if not silent:
+        #         print('%s: %s does not have -\d+g.* suffix... taking it verbatim'%(ip, ip_ifname))
+        #     host = ip_ifname
+        # if not silent:
+        #     print(host)
 
-        if host == prev_host:
-            inst = prev_inst + 1
-        else:
-            inst = 0
+        # if host == prev_host:
+        #     inst = prev_inst + 1
+        # else:
+        #     inst = 0
         
-        prev_inst = inst
-        prev_host = host
-        if hpguppi_daq_instance > -1:
-            channel_name = hpguppi_defaults.REDISSETGW.substitute(host=host, inst=hpguppi_daq_instance)
-        else:
-            channel_name = hpguppi_defaults.REDISSETGW.substitute(host=host, inst=inst)
+        # prev_inst = inst
+        # prev_host = host
+        # if hpguppi_daq_instance > -1:
+        #     channel_name = hpguppi_defaults.REDISSETGW.substitute(host=host, inst=hpguppi_daq_instance)
+        # else:
+        #     channel_name = hpguppi_defaults.REDISSETGW.substitute(host=host, inst=inst)
 
         antlo_names_string = ','.join(antlo_names)
         # these are instance specific
@@ -391,7 +459,7 @@ def populate_meta(stream_hostnames: StringList, antlo_names: StringList,
 
         report_dict['dests'].append({
             'ip':ip,
-            'hostname':ip_ifname,
+            'hostname':stream_dest_info.hashpipe_target_hostname,
             'obsfreq':obsfreq,
             'schan':schan,
             'redis_channel':channel_name,
