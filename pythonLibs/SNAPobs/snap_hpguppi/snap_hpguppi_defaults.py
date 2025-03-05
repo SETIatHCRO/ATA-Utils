@@ -68,12 +68,14 @@ hashpipe_targets_LoC = {}
 hashpipe_targets_LoD = {}
 
 def resolve_hashpipe_targets():
-	global hashpipe_targets_LoA, hashpipe_targets_LoB
+	global hashpipe_targets_LoA, hashpipe_targets_LoB, hashpipe_targets_LoC, hashpipe_targets_LoD
 
 	instances = [0, 1]
 
 	hashpipe_targets_LoA = {}
 	hashpipe_targets_LoB = {}
+	hashpipe_targets_LoC = {}
+	hashpipe_targets_LoD = {}
 	for seti_node in seti_node_hostnames:
 		for instance in instances:
 			redis_get_chan = REDISGETGW.substitute(
