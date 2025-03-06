@@ -14,6 +14,7 @@ from astropy.time import Time as astropy_Time
 
 from SNAPobs.snap_hpguppi import snap_hpguppi_defaults as hpguppi_defaults
 from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
+from SNAPobs.snap_hpguppi import record_in as hpguppi_record_in
 
 from ATATools.ata_rest import ATARestException
 
@@ -155,11 +156,11 @@ def _proc_feng_destips(
             ip_ifname = socket.gethostbyaddr(ip_string)[0]
             instance = 0
 
-            # remove -40, -100g-1, -100g-2
-            m = re.match(r'(.*)-\d+g.*', ip_ifname)
-            if m and ip_ifname[-1] in ["1", "2"]:
+            # handle "seti-node4-100g-2.hcro.org" pattern
+            m = re.match(f"(.*?)-\d+g-(\d).*", ip_ifname)
+            if m and m.group(2) in ["1", "2"]:
                 host = m.group(1)
-                instance = int(ip_ifname[-1])-1
+                instance = int(m.group(2))-1
             else:
                 if not silent:
                     print('%s: %s does not have -\d+g.* suffix... taking it verbatim'%(ip_string, ip_ifname))

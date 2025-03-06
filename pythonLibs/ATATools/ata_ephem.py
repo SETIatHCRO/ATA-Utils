@@ -5,7 +5,7 @@ This module implements functions to create ATA ephemeris files
 import numpy as np
 
 
-def generate_ephem_el_swivel(az_start, el_start, el_end, t_start, t_span,  steps, invr):
+def generate_ephem_el_swivel(az, el_start, el_end, t_start, t_span,  steps, invr):
     """
     Swivel along Elevation
 
@@ -14,7 +14,7 @@ def generate_ephem_el_swivel(az_start, el_start, el_end, t_start, t_span,  steps
 
     Parameters 
     ----------
-    az_start : float
+    az       : float
                azimuth start
     el_start : float
                elevation start
@@ -53,7 +53,7 @@ def generate_ephem_el_swivel(az_start, el_start, el_end, t_start, t_span,  steps
     
     ir = np.array(steps*[invr])
     
-    az = np.array(steps*[az_start])
+    az = np.array(steps*[az])
 
     ephem = ((np.array([tai, az, el, ir], dtype=object)))
     
@@ -61,7 +61,7 @@ def generate_ephem_el_swivel(az_start, el_start, el_end, t_start, t_span,  steps
 
 
 
-def generate_ephem_az_swivel(el_start, az_start, az_end, t_start, t_span,  steps, invr):
+def generate_ephem_az_swivel(el, az_start, az_end, t_start, t_span,  steps, invr):
     """
     Swivel along Azimuth
 
@@ -70,7 +70,7 @@ def generate_ephem_az_swivel(el_start, az_start, az_end, t_start, t_span,  steps
 
     Parameters 
     ----------
-    el_start : float
+    el       : float
                elevation start
     az_start : float
                azimuth start
@@ -109,7 +109,7 @@ def generate_ephem_az_swivel(el_start, az_start, az_end, t_start, t_span,  steps
     
     ir = np.array(steps*[invr])
     
-    el = np.array(steps*[el_start])
+    el = np.array(steps*[el])
 
     ephem = ((np.array([tai, az, el, ir], dtype=object)))
     
