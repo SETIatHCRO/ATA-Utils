@@ -13,8 +13,6 @@ import casperfpga
 from SNAPobs import snap_control
 from ATATools import ata_control
 
-from numpy import unique, sum
-
 from SNAPobs import snap_defaults, snap_config
 
 from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
@@ -313,14 +311,14 @@ while(True):
           for dest_details in interface:
             start_chan = min(dest_details['start_chan'], start_chan) if start_chan is not None else dest_details['start_chan']
             n_chan = max(dest_details['n_chans'], n_chan)
-            destIps.append(dest_details['dest'])
+            if dest_details['dest'] not in destIps:
+              destIps.append(dest_details['dest'])
             max_nchan_per_packet = max(dest_details['packet_nchan'], max_nchan_per_packet)
             if stream_is_8bit is None:
               stream_is_8bit = dest_details['is_8bit']
             elif stream_is_8bit != dest_details['is_8bit']:
               print('Incosistent sample bit depth in streams detected!')
-        
-        destIps = unique(destIps)
+
         n_chan = n_chan*len(destIps) # assume each destination receives the same number of channels
 
         feng_id_hostname_dict = {get_feng_id(hostname_feng_dict[hostname]):hostname for hostname in groups[i]}
