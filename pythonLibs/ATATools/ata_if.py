@@ -379,7 +379,12 @@ def _get_attenuation_by_mapping(sub_ant_mapping):
         attens = get_attn_by_module(gain_module,
                             list(ant_mapping_per_module.ch)) 
         logger.debug(attens)
-        sub_ant_mapping.loc[mask, 'attens'] = attens
+        for chan, attn in attens.items():
+            sub_ant_mapping.loc[
+                    (sub_ant_mapping['ch'] == int(chan)) &
+                      (sub_ant_mapping['gain-module'] == gain_module),
+                    'attens'] = attn
+        #sub_ant_mapping.loc[mask, 'attens'] = attens
 
     return sub_ant_mapping
 

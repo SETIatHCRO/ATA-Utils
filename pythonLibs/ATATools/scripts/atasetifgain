@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from ATATools.ata_if import set_attenuation, _set_attn_by_module
+from ATATools.ata_if import set_attenuation, set_attn_by_module
 from ATATools import logger_defaults
 
 import numpy as np
@@ -50,7 +50,7 @@ def main():
         chan_list = args.chans
 
         for gain_module in gain_module_list:
-            _set_attn_by_module(gain_module, chan_list, 
+            set_attn_by_module(gain_module, chan_list,
                                 [atten]*len(chan_list))
 
     else: # using antenna names
