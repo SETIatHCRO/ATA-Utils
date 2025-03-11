@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+from ATATools import ata_sources
+from ATATools import logger_defaults
+
+from tabulate import tabulate
+
+import numpy as np
+import argparse
+import logging
+import sys,os
+
+KEYS_TO_DISPLAY = ["Owner", "Category", "Source", "RA", "Decl"]
+
+def main():
+    parser = argparse.ArgumentParser(description=
+            "List ata source catalog")
+    parser.add_argument('-o', '--owner', default=None,
+            help="source catalog owner")
+    parser.add_argument('-c', '--category', default=None,
+            help="source catalog category")
+
+    args = parser.parse_args()
+
+    catalog = ata_sources.list_catalog(owner=args.owner, 
+            category=args.category)
+
+    table = tabulate([{key: entry[key] for key in KEYS_TO_DISPLAY} 
+        for entry in catalog], headers="", tablefmt="plain")
+
+    print(table)
+
+
+if __name__ == "__main__":
+    main()
