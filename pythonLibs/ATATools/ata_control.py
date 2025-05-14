@@ -400,13 +400,15 @@ def track_ephemeris(ephemeris_id, antlist, wait=True):
 
     try:
         antstr = snap_array_helpers.input_to_string(antlist)
-        logger.info('Zeroing az/el offsets for ' + antstr)
-        endpoint = '/antennas/{:s}/offset'.format(antstr)
-        ATARest.put(endpoint, json={'azel': [0.0, 0.0]})
+        #logger.info('Zeroing az/el offsets for ' + antstr)
+        #endpoint = '/antennas/{:s}/offset'.format(antstr)
+        #ATARest.put(endpoint, json={'azel': [0.0, 0.0]})
 
         logger.info('Tracking ephemeris {:s} with {:s}'.format(ephemeris_id, antstr))
         endpoint = '/antennas/{:s}/track'.format(antstr)
-        ATARest.put(endpoint, json={'id': ephemeris_id, 'wait': wait})
+        #ATARest.put(endpoint, json={'id': ephemeris_id, 'wait': wait})
+        ATARest.put(endpoint, json={'id': ephemeris_id, 
+            'wait': wait, 'xoffset': [0.0, 0.0]})
     except Exception as e:
         logger.error('{:s} got error: {:s}'.format(endpoint, str(e)))
         raise
