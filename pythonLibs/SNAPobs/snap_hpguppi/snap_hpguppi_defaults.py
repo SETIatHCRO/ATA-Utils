@@ -7,16 +7,16 @@ NBITS              = 4
 REDISHOST          = 'redishost'
 MAX_CHANS_PER_PKT  = 128
 
-def fengine_meta_key_values(n_bits=8):
-	FEnChan = 4096 if n_bits == 4 else 2048 if n_bits == 8 else 0
+def fengine_meta_key_values(n_bits=8, n_chan=None):
+	if n_chan is None:
+		n_chan = 4096 if n_bits == 4 else 2048 if n_bits == 8 else 0
 	BW			= snap_defaults.bw * 1e6 # in Hz
 	return {
 		'NBITS'	   : n_bits,
-		'FENCHAN'  : FEnChan,
+		'FENCHAN'  : n_chan,
 		'NPOL'     : 2,
-		'TBIN'     : 1/(BW/FEnChan),
-		'N_TIMES_PER_PKT' : 16,
-		'FOFF'		 : BW / (FEnChan * 1e6) # in Mhz
+		'TBIN'     : 1/(BW/n_chan),
+		'FOFF'		 : BW / (n_chan * 1e6) # in Mhz
 	}
 
 
@@ -66,6 +66,16 @@ hashpipe_targets_LoB = {
 
 hashpipe_targets_LoC = {}
 hashpipe_targets_LoD = {}
+
+def hashpipe_targets_union(*hashpipe_target_dicts):
+	union_d = {}
+	for hpt_d in hashpipe_target_dicts:
+		for hpt, instance_list in hpt_d.items():
+			if hpt in union_d:
+				union_d[hpt].extend(instance_list)
+			else:
+				union_d[hpt] = instance_list.copy()
+	return union_d
 
 def resolve_hashpipe_targets():
 	global hashpipe_targets_LoA, hashpipe_targets_LoB, hashpipe_targets_LoC, hashpipe_targets_LoD
