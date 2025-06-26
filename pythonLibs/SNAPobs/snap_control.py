@@ -10,19 +10,24 @@ from .snap_config import get_ata_cfg
 from ata_snap import ata_snap_fengine, ata_rfsoc_fengine
 
 
-def init_snaps(snap_list, load_system_information=False):
+def init_snaps(snap_list, load_system_information=False, ignore_errors=False, successful_snap_list=[]):
     logger = logger_defaults.getModuleLogger(__name__)
     logger.info("Initialising snaps: %s" %snap_list)
     snaps = []
 
     for snap_name in snap_list:
-        if snap_name.startswith("frb-snap"):
-            snaps.append(ata_snap_fengine.AtaSnapFengine(snap_name,
-                transport=casperfpga.KatcpTransport))
-        elif snap_name.startswith("rfsoc"):
-            pipeline_id = int(snap_name[-1])
-            snaps.append(ata_rfsoc_fengine.AtaRfsocFengine(snap_name, 
-                    pipeline_id=pipeline_id-1))
+        try:
+            if snap_name.startswith("frb-snap"):
+                snaps.append(ata_snap_fengine.AtaSnapFengine(snap_name,
+                    transport=casperfpga.KatcpTransport))
+            elif snap_name.startswith("rfsoc"):
+                pipeline_id = int(snap_name[-1])
+                snaps.append(ata_rfsoc_fengine.AtaRfsocFengine(snap_name, 
+                        pipeline_id=pipeline_id-1))
+            successful_snap_list.append(snap_name)
+        except Exception as err:
+            if not ignore_errors:
+                raise RuntimeError(f"Could not instantiate {snap_name}.") from err
 
     if load_system_information:
         get_system_information(snaps)
@@ -45,6 +50,8 @@ def disconnect_snaps(snaps):
     logger = logger_defaults.getModuleLogger(__name__)
     logger.info("disconnecting snaps")
     for snap in snaps:
+        if not snap.fpga.is_connected():
+            continue
         try:
             snap.fpga.disconnect()
         except Exception as e:

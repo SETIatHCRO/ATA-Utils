@@ -102,6 +102,8 @@ def _get_obs_params(antlo_list):
     azel    = {}
     source  = {}
 
+    source_ra_decs = {}
+
     # adding LOs to the dictionary
     for antlo in antlo_list:
         ant = antlo[:2]
@@ -112,12 +114,16 @@ def _get_obs_params(antlo_list):
         try: # Try getting the ra dec of the source using the ephemeris file name
                 # This will fail if we are tracking a non-sidereal source
                 # or a custom RA/Dec pair
-                radec[ant+lo]   = ata_control.get_source_ra_dec(source[ant+lo])
+                if source[ant+lo] not in source_ra_decs:
+                    source_ra_decs[source[ant+lo]] = ata_control.get_source_ra_dec(source[ant+lo])
+
+                radec[ant+lo] = source_ra_decs[source[ant+lo]] 
         except ATARestException as e:
                 # These are a bit off because we are using ra/dec values that have been
                 # refraction corrected. Offsets are pretty small (sub-arcsecond), so
                 # not too major for the ATA
                 radec[ant+lo]   = radec_s[ant]
+                source_ra_decs[source[ant+lo]] = radec_s[ant]
 
     return _gather_ants(radec, azel, source)
 
@@ -130,7 +136,7 @@ def _proc_feng_destips(
         hashpipe target {hostname, instance}
 
     """
-    ordered_stream_destinations = []
+    stream_destinations = []
     for ip_string in sorted(channel_selection_mapping.keys()):
         channel_list = channel_selection_mapping[ip_string]
 
@@ -144,7 +150,7 @@ def _proc_feng_destips(
                         "IBVMCGRP"
                     )
                     if ibv_multicast_group == ip_string:
-                        ordered_stream_destinations.append(
+                        stream_destinations.append(
                             StreamDestinationInfo(
                                 hashpipe_target_hostname=hostname,
                                 hashpipe_target_instance=instance,
@@ -166,7 +172,7 @@ def _proc_feng_destips(
                     print('%s: %s does not have -\d+g.* suffix... taking it verbatim'%(ip_string, ip_ifname))
                 host = ip_ifname
             
-            ordered_stream_destinations.append(
+            stream_destinations.append(
                 StreamDestinationInfo(
                     hashpipe_target_hostname=host,
                     hashpipe_target_instance=instance,
@@ -175,7 +181,7 @@ def _proc_feng_destips(
                 )
             )
 
-    return ordered_stream_destinations
+    return stream_destinations
 
 StringList = List[str]# Deprecated in 3.9, can rather use list[str]
 def populate_meta(stream_hostnames: StringList, antlo_names: StringList, 
@@ -184,6 +190,7 @@ def populate_meta(stream_hostnames: StringList, antlo_names: StringList,
 									hpguppi_daq_instance=-1,
 									n_chans=None,
 									n_bits=hpguppi_defaults.NBITS,
+                                    fengine_n_chan=None,
 									start_chan=None,
 									dests=None,
                                     max_packet_nchan=hpguppi_defaults.MAX_CHANS_PER_PKT,
@@ -193,10 +200,11 @@ def populate_meta(stream_hostnames: StringList, antlo_names: StringList,
                                     default_dir=False,
                                     dut1=False,
                                     additional_metadata=None,
-                                    reference_antenna_name=None
+                                    reference_antenna_name=None,
+                                    skyfreq_mapping: dict=None,
                                     ):
 
-    fengine_meta_keyvalues = hpguppi_defaults.fengine_meta_key_values(n_bits)
+    fengine_meta_keyvalues = hpguppi_defaults.fengine_meta_key_values(n_bits, fengine_n_chan)
 
     if configfile is not None and configfile != '':
         if not os.path.exists(configfile):
@@ -244,8 +252,9 @@ def populate_meta(stream_hostnames: StringList, antlo_names: StringList,
     mapping = _get_channel_selection(dests, start_chan,
             n_chans_per_dest)
 
-    skyfreq_mapping, antname_mapping = _get_stream_mapping(stream_hostnames,
-            ignore_control)
+    if skyfreq_mapping is None:
+        skyfreq_mapping, antname_mapping = _get_stream_mapping(stream_hostnames,
+                ignore_control)
     ants_obs_params = _get_obs_params(antlo_names)
     source_list = [aop['SOURCE'] for antname, aop in ants_obs_params.items()]
 
@@ -309,6 +318,7 @@ def populate_meta(stream_hostnames: StringList, antlo_names: StringList,
     # mapping_chan_lists = [chan_lst for chan_lst in mapping.values()]
 
     stream_destinations = _proc_feng_destips(mapping, silent=silent)
+    stream_destinations.sort(key=lambda destinfo: dests.index(destinfo.ip_address_string))
 
     report_dict = {
         'nchan'     : n_chans,
@@ -395,7 +405,7 @@ def populate_meta(stream_hostnames: StringList, antlo_names: StringList,
                 'PKTNCHAN' : n_chans_per_pkt,
                 'TBIN'     : fengine_meta_keyvalues['TBIN'],
                 'NBITS'    : fengine_meta_keyvalues['NBITS'],
-                'PKTNTIME' : fengine_meta_keyvalues['N_TIMES_PER_PKT'],
+                # 'PKTNTIME' : # static once the instance starts (determines payload reorder compile-time shape)
                 'SYNCTIME' : sync_time,
                 # 'DATADIR'  : DATADIR, # best left to the configuration (numactl grouping of NVMe mounts)
                 'PKTFMT'   : hpguppi_defaults.PKTFMT,

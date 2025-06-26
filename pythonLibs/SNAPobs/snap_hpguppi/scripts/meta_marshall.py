@@ -116,7 +116,7 @@ def read_chan_dest_ips(feng, interface, ignore_null_packets=True):
     interfacesEnabled = eth_get_output_enabled(feng, interface)
   except casperfpga.transport_katcp.KatcpRequestFail:
     print('Failed to query ethernet status of {}[{}]'.format(feng.host, interface))
-    return []
+    return None
   
   if not interfacesEnabled[0]:
     # print('The ethernet output of {}[{}] is disabled'.format(feng.host, interface))
@@ -129,9 +129,11 @@ def read_chan_dest_ips(feng, interface, ignore_null_packets=True):
       feng_headers = feng._read_headers()
     else:
       feng_headers = feng._read_headers(interface)
-  except:
+  except KeyboardInterrupt:
+    raise KeyboardInterrupt
+  except casperfpga.transport_katcp.KatcpRequestFail:
     print('Failed to query headers of {}[{}]'.format(feng.host, interface))
-    return []
+    return None
 
   test_vectors_enabled = feng.fpga.read_int('spec_tvg_tvg_en')
   
@@ -193,14 +195,17 @@ def ata_control_get_safe(antname_nolo_list, get_func):
 streams_to_marshall, antenna_names = generate_stream_antnames_to_marshall()
 antname_nolo_list = list(set([ant[:2] for ant in antenna_names]))
 # Create the AtaSnapFengine list from the names
-fengs = snap_control.init_snaps(streams_to_marshall)#, load_system_information=False)
+active_streams = []
+fengs = snap_control.init_snaps(streams_to_marshall, ignore_errors=False, successful_snap_list=active_streams)#, load_system_information=False)
 hostname_feng_dict = {feng.host:feng for feng in fengs}
+last_instantiated_fengs = time.time()
+period_s_instantiate_fengs = 60 # don't lower this, at < 20 snap_init took exponentially longer each time
 
 
 last_groups = []
 last_destinations = []
-last_skyfreq_mapping, _ = hpguppi_populate_meta._get_stream_mapping(streams_to_marshall)
-last_skyfreq_mapping = collect_values_from_dict(last_skyfreq_mapping, streams_to_marshall)
+skyfreq_mapping_dict, _ = hpguppi_populate_meta._get_stream_mapping(active_streams)
+last_skyfreq_mapping = collect_values_from_dict(skyfreq_mapping_dict, active_streams)
 
 last_az_el, failed_antname_nolo_list = ata_control_get_safe(antname_nolo_list, ata_control.get_az_el)
 safe_antname_nolo_list = list(last_az_el.keys())
@@ -225,17 +230,56 @@ sections_updated = [False for i in range(len(section_strings))]
 while(True):
   # TODO: reconsult the ANT TAB file periodically. This requires a `reload_ata_tab` in snap_config...
 
+  # TODO: try instantiate feng for those that had issues first time around...
+  # if time.time() - last_instantiated_fengs > period_s_instantiate_fengs:
+  #   print("Reinstantiating F-Engine connections...")
+  #   snap_control.disconnect_snaps(fengs)
+  #   streams_to_marshall, antenna_names = generate_stream_antnames_to_marshall()
+  #   antname_nolo_list = list(set([ant[:2] for ant in antenna_names]))
+  #   # Create the AtaSnapFengine list from the names
+  #   active_streams = []
+  #   fengs = snap_control.init_snaps(streams_to_marshall, ignore_errors=True, successful_snap_list=active_streams)#, load_system_information=False)
+  #   hostname_feng_dict = {feng.host:feng for feng in fengs}
+  #   last_instantiated_fengs = time.time()
+
   # Collect the destination
   feng_interface_dest_details = {feng.host:
     [read_chan_dest_ips(feng, interface, ignore_null_packets=True)
       for interface in range(feng.n_interfaces)
     ] for feng in fengs
   }
+  
+  for feng in fengs:
+    if None in feng_interface_dest_details[feng.host]:
+      feng_interface_dest_details.pop(feng.host)
+
+      try:
+        feng.sync_select_input(feng.pps_source)
+        feng.spec_set_pipeline_id()
+        feng._read_parameters_from_fpga()
+        feng._calc_output_ids()
+        print(f"Restarted {feng.host}!")
+      except casperfpga.transport_katcp.KatcpRequestFail as err:
+        pass
+  
+  if len(feng_interface_dest_details) == 0:
+    print(f"No FEngines are responding, sleeping 3 seconds to limit print out")
+    time.sleep(3)
+  
+  feng_n_chans = {
+    feng.host: getattr(feng, "n_chans_f", None)
+    for feng in fengs
+  }
+  if len(set(feng_n_chans.values())) > 1:
+    print(f"FEngines have different numbers of channels: {feng_n_chans}")
+    time.sleep(1)
+    continue
+  feng_n_chan = next(iter(feng_n_chans.values()))
 
   groups = []
   destinations = []
-  skyfreq_mapping, _ = hpguppi_populate_meta._get_stream_mapping(streams_to_marshall)
-  skyfreq_mapping = collect_values_from_dict(skyfreq_mapping, streams_to_marshall)
+  skyfreq_mapping_dict, _ = hpguppi_populate_meta._get_stream_mapping(active_streams)
+  skyfreq_mapping = collect_values_from_dict(skyfreq_mapping_dict, active_streams)
   az_el, failed_antname_nolo_list = ata_control_get_safe(antname_nolo_list, ata_control.get_az_el)
   safe_antname_nolo_list = list(az_el.keys())
   eph_source = ata_control.get_eph_source(safe_antname_nolo_list)
@@ -323,6 +367,7 @@ while(True):
 
         feng_id_hostname_dict = {get_feng_id(hostname_feng_dict[hostname]):hostname for hostname in groups[i]}
         stream_hostnames = [feng_id_hostname_dict[feng_id] for feng_id in sorted(feng_id_hostname_dict.keys())]
+        group_skyfreq_mapping = {s:k for s,k in skyfreq_mapping_dict.items() if s in stream_hostnames}
 
         if new_publication:
           print('n_ant', len(stream_hostnames))
@@ -346,6 +391,7 @@ while(True):
                   None,
                   n_chans=n_chan,
                   n_bits=8 if stream_is_8bit else 4,
+                  fengine_n_chan=feng_n_chan,
                   start_chan=start_chan,
                   dests=destIps,
                   silent=not new_publication,
@@ -354,7 +400,8 @@ while(True):
                   max_packet_nchan=max_nchan_per_packet,
                   dut1=True,
                   additional_metadata=additional_metadata,
-                  reference_antenna_name=reference_antenna_name
+                  reference_antenna_name=reference_antenna_name,
+                  skyfreq_mapping = group_skyfreq_mapping, # avoid redundant _get_stream_mapping call 
         )
         
         if new_publication:

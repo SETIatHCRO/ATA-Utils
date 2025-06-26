@@ -3,6 +3,7 @@ import argparse
 from SNAPobs.snap_hpguppi import populate_meta as hpguppi_populate_meta
 from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
 from SNAPobs.snap_hpguppi import record_in as hpguppi_record_in
+from SNAPobs.snap_hpguppi import populate_meta as hpguppi_populate_meta
 from SNAPobs.snap_hpguppi import snap_hpguppi_defaults as hpguppi_defaults
 import itertools
 from SNAPobs import snap_config, snap_control
@@ -17,6 +18,7 @@ import yaml
 import sync_streams
 
 import os, sys
+from multiprocessing import Pool
 
 def sort_rfsoc_config(rfsoc_config):
 	pipeline_ids = rfsoc_config['pipeline_ids'].copy()
@@ -53,6 +55,9 @@ parser.add_argument('-s', '--stop-all-eth-first', action='store_true',
 										help='Stop the ethernet output of every snap (listed in ATA_SNAP_TAB) before configuring')
 parser.add_argument('-p', '--prog-snaps', action='store_true',
 										help='Program the snaps being configured')
+parser.add_argument('-f', '--fpg-filepath', type=str,
+										help='Override the fpg-filepath used if `prog-snaps`.',
+										default=None)
 parser.add_argument('-S', '--sync-only', action='store_true',
 										help='Skip configuring the snaps (will still sync them)')
 parser.add_argument('-g', '--groupings', nargs='+', type=str,
@@ -146,19 +151,20 @@ for ip_ifname, ip in ifnames_ip_dict.items():
 		host = m.group(1)
 		instance = int(m.group(3)) - 1
 	else:
-		print('%s: %s does not have -\d+g-\d+ suffix... taking it verbatim'%(ip, ip_ifname))
+		if not silent:
+			print('%s: %s does not have -\d+g-\d+ suffix... taking it verbatim'%(ip, ip_ifname))
 
-	hpguppi_instance_redis_getchan = hpguppi_defaults.REDISGETGW.substitute(host=host, inst=instance)
+	hpguppi_instance_redis_setchan = hpguppi_defaults.REDISGETGW.substitute(host=host, inst=instance)
 	antnames = None
 	try:
-		antnames = hpguppi_auxillary.get_stream_hostnames_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_instance_redis_getchan)
+		antnames = hpguppi_auxillary.get_stream_hostnames_of_redis_chan(hpguppi_defaults.redis_obj, hpguppi_instance_redis_setchan)
 	except:# RuntimeError:
-		print('hpguppi_auxillary.get_stream_hostnames_of_redis_chan failed on {}'.format(hpguppi_instance_redis_getchan))
+		print('hpguppi_auxillary.get_stream_hostnames_of_redis_chan failed on {}'.format(hpguppi_instance_redis_setchan))
 	
 	if antnames is not None:
 		for ant_name in stream_antlo_names:
 			if ant_name in antnames:
-				hpguppi_redis_reset_chans.append(hpguppi_auxillary.redis_set_channel_from_get_channel(hpguppi_instance_redis_getchan))
+				hpguppi_redis_reset_chans.append(hpguppi_auxillary.redis_set_channel_from_get_channel(hpguppi_instance_redis_setchan))
 				antlo_names.extend(antnames)
 				break
 
@@ -169,6 +175,7 @@ if args.stop_all_eth_first:
 	if not args.dry_run:
 		fengs = snap_control.init_snaps(antstream_hostname_list_to_silence)
 		snap_control.stop_snaps(fengs)
+		snap_control.disconnect_snaps(fengs)
 
 if not args.dry_run:
 	hpguppi_record_in.record_in(hashpipe_targets=hpguppi_redis_reset_chans, reset=True)
@@ -194,7 +201,7 @@ if not args.sync_only:
 
 			if stream_hostname.startswith('frb-snap'):
 				assert multi_group_config is None, 'SNAP configuration has not been expanded to support a single multi-group configuration file.'
-				fpgfile = snap_config.get_ata_cfg()['SNAPFPG']
+				fpgfile = args.fpg_filepath or snap_config.get_ata_cfg()['SNAPFPG']
 								
 				print('{} Reprogramming/configuring snap as FEngine #{:02d} {}'.format('v'*5, feng_id, 'v'*5))
 				print('snap_feng_init.py {} {} {} -i {} {}{}{}{}'.format(
@@ -219,7 +226,7 @@ if not args.sync_only:
 				print('{} Reprogramming/configuring snap as FEngine #{:02d} {}\n'.format('^'*5, feng_id, '^'*5))
 			
 			elif stream_hostname.startswith('rfsoc'):
-				fpgfile = snap_config.get_ata_cfg()['RFSOCFPG']
+				fpgfile = args.fpg_filepath or snap_config.get_ata_cfg()['RFSOCFPG']
 				# take stream_hostname up until last 
 				rfsoc_hostname_re_match = re.match(rfsoc_hostname_regex, stream_hostname)
 				rfsoc_boardname = rfsoc_hostname_re_match.group('boardname')
@@ -254,48 +261,61 @@ if not args.sync_only:
 		
 	
 	# Batch program the rfsocs
-	for rfsoc_boardname, rfsoc_config in rfsoc_hostname_configurations_dict.items():
-		print('{} Batched reprogramming/configuring RFSoC {} {}'.format('v'*5, rfsoc_boardname, 'v'*5))	
-		rfsoc_hostname = rfsoc_boardname + '-1'
-		
-		print(rfsoc_config)
-		rfsoc_config = sort_rfsoc_config(rfsoc_config)
-		print('rfsoc_feng_init.py {} {} {} -i {} -j {} {}{}{}{}{}'.format(
-				rfsoc_hostname, rfsoc_config['fpga_file'], rfsoc_config['config_yml'],
-				' '.join(map(str, rfsoc_config['feng_ids'])),
-				' '.join(map(str, rfsoc_config['pipeline_ids'])),
-				'-d {} '.format(' '.join([','.join(dests) for dests in rfsoc_config['dests']])) if rfsoc_config['dests'] else '',
-				'-s ' if rfsoc_config['sync'] else '',
-				'--eth_volt ' if rfsoc_config['eth_volt'] else '',
-				'-t ' if rfsoc_config['tvg'] else '',
-				'--noblank ' if rfsoc_config['noblank'] else '',
-				'--skipprog' if rfsoc_config['skip_prog'] else ''
-				)
-			)
-		
-		if args.dry_run:
-			print('*'*5, 'Dry Run', '*'*5)
-		else:
-			for i in range(3):
-				try:
-					rfsoc_feng_init.run(
-						rfsoc_hostname, rfsoc_config['fpga_file'], rfsoc_config['config_yml'],
-						feng_ids = rfsoc_config['feng_ids'],
-						pipeline_ids = rfsoc_config['pipeline_ids'],
-						dests = rfsoc_config['dests'],
-						sync = rfsoc_config['sync'],
-						eth_volt = rfsoc_config['eth_volt'],
-						tvg = rfsoc_config['tvg'],
-						noblank = rfsoc_config['noblank'],
-						skipprog = rfsoc_config['skip_prog']
+	with Pool(len(rfsoc_hostname_configurations_dict)) as pool:
+		async_results = {}
+		for rfsoc_boardname, rfsoc_config in rfsoc_hostname_configurations_dict.items():
+			print('{} Batched reprogramming/configuring RFSoC {} {}'.format('v'*5, rfsoc_boardname, 'v'*5))	
+			rfsoc_hostname = rfsoc_boardname + '-1'
+			
+			print(rfsoc_config)
+			rfsoc_config = sort_rfsoc_config(rfsoc_config)
+			print('rfsoc_feng_init.py {} {} {} -i {} -j {} {}{}{}{}{}'.format(
+					rfsoc_hostname, rfsoc_config['fpga_file'], rfsoc_config['config_yml'],
+					' '.join(map(str, rfsoc_config['feng_ids'])),
+					' '.join(map(str, rfsoc_config['pipeline_ids'])),
+					'-d {} '.format(' '.join([','.join(dests) for dests in rfsoc_config['dests']])) if rfsoc_config['dests'] else '',
+					'-s ' if rfsoc_config['sync'] else '',
+					'--eth_volt ' if rfsoc_config['eth_volt'] else '',
+					'-t ' if rfsoc_config['tvg'] else '',
+					'--noblank ' if rfsoc_config['noblank'] else '',
+					'--skipprog' if rfsoc_config['skip_prog'] else ''
 					)
-					break
-				except BaseException as e:
-					if i == 2:
-						raise e
-					print('Retrying...')
+				)
+			
+			if args.dry_run:
+				print('*'*5, 'Dry Run', '*'*5)
+			else:
+				async_results[rfsoc_boardname] = pool.apply_async(
+					rfsoc_feng_init.run,
+					(
+						rfsoc_hostname, rfsoc_config['fpga_file'], rfsoc_config['config_yml']
+					),
+					{
+						"feng_ids": rfsoc_config['feng_ids'],
+						"pipeline_ids": rfsoc_config['pipeline_ids'],
+						"dests": rfsoc_config['dests'],
+						"sync": rfsoc_config['sync'],
+						"eth_volt": rfsoc_config['eth_volt'],
+						"tvg": rfsoc_config['tvg'],
+						"noblank": rfsoc_config['noblank'],
+						"skipprog": rfsoc_config['skip_prog']
+					}
+				)
 
-		print('{} Batched reprogramming/configuring RFSoC {} {}\n'.format('^'*5, rfsoc_boardname, '^'*5))
+			print('{} Batched reprogramming/configuring RFSoC {} {}\n'.format('^'*5, rfsoc_boardname, '^'*5))
+
+		async_failures = {}
+		for rfsoc_boardname, async_result in async_results.items():
+			try:
+				print(f"Joining async batch programming of {rfsoc_boardname}...")
+				res = async_result.get()
+			except BaseException as err:
+				async_failures[rfsoc_boardname] = err
+		
+		if len(async_failures) > 0:
+			print(f"Failures occurred in asynchronous batch programming:\n{async_failures}")
+			exit(1)
+
 
 if args.dry_run:
 	print('sync_streams.sync({})'.format(stream_hostnames))
