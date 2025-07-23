@@ -140,10 +140,18 @@ class ReserveAntennas(Executable):
 
         # Get LNA status, and raise an exception if any is not on
         self.write_status("Getting LNA status")
-        lnas = ata_control.get_lnas(ant_list)
-        lnas_off = []
+        try:
+            lnas = ata_control.get_lnas(ant_list)
+            lnas_off = []
+        except exception as e:
+            self.write_status("Failed getting LNA status", fg='red')
+            ata_control.release_antennas(ant_list, False)
+            raise e
 
         for ant in ant_list:
+            if ant not in lnas:
+                ata_control.release_antennas(ant_list, False)
+                raise RuntimeError(f"No LNA status for {ant}!")
             if not lnas[ant]['on']:
                 lnas_off.append(ant)
 
