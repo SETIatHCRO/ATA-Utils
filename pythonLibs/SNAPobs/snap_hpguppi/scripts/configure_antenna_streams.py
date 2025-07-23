@@ -1,4 +1,4 @@
-#!/home/sonata/miniconda3/bin/python
+#!/usr/bin/env python
 import argparse
 from SNAPobs.snap_hpguppi import populate_meta as hpguppi_populate_meta
 from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
@@ -15,10 +15,15 @@ import socket
 import re
 import yaml
 
-import sync_streams
-
 import os, sys
 from multiprocessing import Pool
+
+# executable python script imports
+sys.path.append(os.path.join(sys.prefix, 'bin'))
+import sync_streams
+import snap_feng_init
+import rfsoc_feng_init
+
 
 def sort_rfsoc_config(rfsoc_config):
 	pipeline_ids = rfsoc_config['pipeline_ids'].copy()
@@ -31,11 +36,6 @@ def sort_rfsoc_config(rfsoc_config):
 	if rfsoc_config['dests'] is not None:
 		rfsoc_config_sorted['dests'] = [rfsoc_config['dests'][index] for index in original_indices]
 	return rfsoc_config_sorted
-	
-
-sys.path.append(os.path.join(sys.prefix, 'bin'))
-import snap_feng_init
-import rfsoc_feng_init
 
 
 default_cfg_dir="/home/sonata/src/observing_campaign/config_files/"
