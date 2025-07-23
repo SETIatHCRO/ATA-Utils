@@ -11,12 +11,13 @@ setuptools.setup(
     version=version.__version__,
     #install_requires=['ephem','astropy','numpy','tftpy','pyuvdata<=1.4;python_version<"3"','pyuvdata;python_version>"3.5"'],
     install_requires=['ephem','astropy','numpy','tftpy', 'pandas', 'bottleneck','plotly','dash',
-        'requests', 'toml', 'pytz', 'pytk', 'tkcalendar', 'parse',
-        'hashpipe_keyvalues @ pip install git+https://github.com/MydonSolutions/HashpipeKeyValues_py.git'
-        ],
+        'requests', 'toml', 'pytz', 'pytk', 'tkcalendar', 'parse', 'redis', 'matplotlib',
+        'slack-sdk',
+        'hashpipe_keyvalues @ pip install git+https://github.com/MydonSolutions/HashpipeKeyValues_py.git',
+        'odsutils @ git+https://github.com/david-deboer/odsutils.git'],
     description='python utility scripts for ATA (private repo)',
     license='MIT',
-    packages=['ATAdb', 'ATATools','ATAobs','SNAPobs','SNAPobs.snap_dada', 'SNAPobs.snap_hpguppi', 
+    packages=['ATAdb', 'ATATools','ATAobs', 'ATAgui', 'SNAPobs','SNAPobs.snap_dada', 'SNAPobs.snap_hpguppi', 
               'OnOffCalc','OnOffCalc.flux','OnOffCalc.yFactor','OnOffCalc.misc','OnOffCalc.filterArray'],
     include_package_data=True,
     author='Dr. Wael Farah',
@@ -40,6 +41,7 @@ setuptools.setup(
         'ATAPointing/pointing_elxel_plot.py',
         'ATAPointing/pointing_azel_table.py',
         'ATAPointing/pointing_azel_print.py',
+        'ATAgui/scripts/ataobsgui',
         'ATADelayEngine/atadelayengine'] + glob.glob('ATATools/scripts/ata*')
     #entry_points={'console_scripts': ['GPIBLOControl = GPIBLOControl.GPIBLOControl:main']},
 )
