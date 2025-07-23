@@ -15,7 +15,7 @@ import gc
 import argparse
 import logging
 
-from ATAgui import schedule_executor
+from ATAgui.schedule_executor import ScheduleExecutor
 from ATATools.ata_obs_plan import ObsPlan
 from ATATools.ata_obs_plot_app import ObsPlotApp
 from ATATools import ata_sources
@@ -1848,8 +1848,8 @@ class TelescopeSchedulerApp(tk.Tk):
         except Exception as e:
             self.enable_everything()
             self.write_status(e.args, fg='red')
-            self.write_status("Maybe antennas already reserved? Try running 'atareleaseants' command",
-                    fg='red')
+            #self.write_status("Maybe antennas already reserved? Try running 'atareleaseants' command",
+            #        fg='red')
             raise e
 
 
