@@ -15,7 +15,7 @@ _snap_tab_filename = os.getenv("ATA_FENGINE_TAB_FILENAME", 'ata_snap.tab')
 _snap_tab = open(os.path.join(ATA_SHARE_DIR, _snap_tab_filename))
 _snap_tab_names = [name for name in _snap_tab.readline().strip().lstrip("#").split(" ")
         if name]
-ATA_SNAP_TAB = pd.read_csv(_snap_tab, delim_whitespace=True, index_col=False,
+ATA_SNAP_TAB = pd.read_csv(_snap_tab, sep='\s+', index_col=False,
         names=_snap_tab_names, dtype=str)
 _snap_tab.close()
 
@@ -28,7 +28,7 @@ _snap_if = open(os.path.join(ATA_SHARE_DIR, 'ata_if.cfg'))
 _snap_if_names = [name for name in _snap_if.readline().strip().lstrip("#").split(" ")
         if name]
 
-ATA_SNAP_IF = pd.read_csv(_snap_if, delim_whitespace=True, index_col=False,
+ATA_SNAP_IF = pd.read_csv(_snap_if, sep='\s+', index_col=False,
         names=_snap_if_names, dtype=str)
 _snap_if.close()
 
