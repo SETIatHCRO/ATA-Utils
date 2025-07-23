@@ -33,11 +33,9 @@ def sort_rfsoc_config(rfsoc_config):
 	return rfsoc_config_sorted
 	
 
-# sys.path.insert(0, '/opt/mnt/miniconda3/bin/')
-sys.path.insert(0, '/home/sonata/src/ata_snap/sw/ata_snap/scripts/')
+sys.path.append(os.path.join(sys.prefix, 'bin'))
 import snap_feng_init
 import rfsoc_feng_init
-# sys.path.insert(0, '/home/sonata/dev/ata_snap/sw/ata_snap/src/')
 
 
 default_cfg_dir="/home/sonata/src/observing_campaign/config_files/"
