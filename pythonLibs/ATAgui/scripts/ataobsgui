@@ -15,10 +15,7 @@ import gc
 import argparse
 import logging
 
-#from schedule_executor import ScheduleExecutor
 from ATAgui import schedule_executor
-#from ata_obs_plan import ObsPlan #from ATATools.ata_obs_plan import ObsPlan
-#from ata_obs_plot_app import ObsPlotApp #from ATATools.ata_obs_plot_app import ObsPlotApp
 from ATATools.ata_obs_plan import ObsPlan
 from ATATools.ata_obs_plot_app import ObsPlotApp
 from ATATools import ata_sources
