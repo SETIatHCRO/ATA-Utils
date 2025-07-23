@@ -51,10 +51,10 @@ parser = argparse.ArgumentParser(description='Configures snaps'
 				' as per the internal code.')
 parser.add_argument('-s', '--stop-all-eth-first', action='store_true',
 										help='Stop the ethernet output of every snap (listed in ATA_SNAP_TAB) before configuring')
-parser.add_argument('-p', '--prog-snaps', action='store_true',
-										help='Program the snaps being configured')
+parser.add_argument('-P', '--dont-prog-snaps', action='store_true',
+										help='Skip programming the snaps.')
 parser.add_argument('-f', '--fpg-filepath', type=str,
-										help='Override the fpg-filepath used if `prog-snaps`.',
+										help='Override the fpg-filepath (used unless `dont-prog-snaps`).',
 										default=None)
 parser.add_argument('-S', '--sync-only', action='store_true',
 										help='Skip configuring the snaps (will still sync them)')
@@ -208,7 +208,7 @@ if not args.sync_only:
 					'-s ',
 					'--eth_volt ',
 					'-t ' if args.test_vector_enable else '',
-					'--skipprog' if not args.prog_snaps else ''
+					'--skipprog' if args.dont_prog_snaps else ''
 					)
 				)
 				if args.dry_run:
@@ -219,7 +219,7 @@ if not args.sync_only:
 						sync=True,
 						eth_volt=True,
 						tvg=args.test_vector_enable,
-						skipprog=not args.prog_snaps
+						skipprog=args.dont_prog_snaps
 					)
 				print('{} Reprogramming/configuring snap as FEngine #{:02d} {}\n'.format('^'*5, feng_id, '^'*5))
 			
@@ -235,13 +235,13 @@ if not args.sync_only:
 						'fpga_file'		: fpgfile,
 						'config_yml'	: stream_cfgs[sub_id],
 						'feng_ids'		: [feng_id],
-						'pipeline_ids': [rfsoc_pipeline],
-						'dests'				: None,
-						'sync'				: True,
+						'pipeline_ids'	: [rfsoc_pipeline],
+						'dests'			: None,
+						'sync'			: True,
 						'eth_volt'		: True,
-						'tvg'					: args.test_vector_enable,
-						'noblank'			: args.no_blank,
-						'skip_prog'		: not args.prog_snaps
+						'tvg'			: args.test_vector_enable,
+						'noblank'		: args.no_blank,
+						'skip_prog'		: args.dont_prog_snaps
 					}
 					if multi_group_config is not None:
 						rfsoc_hostname_configurations_dict[rfsoc_boardname]['dests']	= [multi_group_config['voltage_output']['dests'][sub_id]]
