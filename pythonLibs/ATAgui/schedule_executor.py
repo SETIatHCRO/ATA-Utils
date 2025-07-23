@@ -149,6 +149,7 @@ class ReserveAntennas(Executable):
 
         # At least 1 antenna has LNA off!
         if lnas_off:
+            ata_control.release_antennas(ant_list, False)
             raise RuntimeError(f"LNAs for {lnas_off} are off!")
 
 
