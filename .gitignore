@@ -9,3 +9,6 @@ FeedSensors_backup
 RFSwitchUtils_backup
 RFSwitchUtils/atten
 RFSwitchUtils/rfswitch
+pythonLibs/build
+pythonLibs/dist
+*.egg-info
