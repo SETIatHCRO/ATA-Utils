@@ -11,7 +11,9 @@ setuptools.setup(
     version=version.__version__,
     #install_requires=['ephem','astropy','numpy','tftpy','pyuvdata<=1.4;python_version<"3"','pyuvdata;python_version>"3.5"'],
     install_requires=['ephem','astropy','numpy','tftpy', 'pandas', 'bottleneck','plotly','dash',
-        'requests', 'toml', 'pytz', 'pytk', 'tkcalendar', 'parse'],
+        'requests', 'toml', 'pytz', 'pytk', 'tkcalendar', 'parse',
+        'hashpipe_keyvalues @ pip install git+https://github.com/MydonSolutions/HashpipeKeyValues_py.git'
+        ],
     description='python utility scripts for ATA (private repo)',
     license='MIT',
     packages=['ATAdb', 'ATATools','ATAobs','SNAPobs','SNAPobs.snap_dada', 'SNAPobs.snap_hpguppi', 
