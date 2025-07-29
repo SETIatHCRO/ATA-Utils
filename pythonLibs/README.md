@@ -3,7 +3,7 @@
 Contains multiple utility projects for use at the Allen Telescope Array. 
 
 To install all necessary parts, run in the main directory
-> sudo pip install .
+> pip install .
 
 ## OnOffCalc
 
