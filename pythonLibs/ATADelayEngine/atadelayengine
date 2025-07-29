@@ -5,14 +5,14 @@ import toml
 import hashlib
 
 import logging
+from datetime import datetime
 
 import astropy.constants as const
 from astropy.coordinates import ITRS, SkyCoord, AltAz, EarthLocation
 from astropy.time import Time,TimeDelta
-from astroquery.jplhorizons import Horizons
 import astropy.units as u
 import pandas as pd
-import time, os
+import time
 
 import argparse
 
@@ -21,10 +21,12 @@ import requests
 from SNAPobs import snap_control, snap_config
 from ATATools import ata_control
 
+
 from ATATools.ata_rest import ATARestException
 
+
 ALL_LO = ["a", "b", "c", "d"]
-        
+
 DEFAULT_REF_ANT = "1C" #1c is a performant antenna
 MAX_SAMP_DELAY = 16384
 CLOCK_FREQ = 2.048e9 #Gsps
@@ -35,8 +37,9 @@ ADVANCE_TIME = MAX_DELAY/2
 
 BANDWIDTH = CLOCK_FREQ/2. #Hz
 
-# Needed for JPL Horizons
-location = 'Hat Creek Observatory (Allen Array)'
+# Get leapseconds now
+_t_utc = Time(datetime.utcnow(), scale='utc')
+LEAP_SECONDS = (_t_utc.tai.value - _t_utc.value).seconds
 
 def compute_uvw(ts, source, ant_coordinates, ref_coordinates):
     """Computes UVW antenna coordinates with respect to reference
@@ -75,55 +78,6 @@ def compute_uvw(ts, source, ant_coordinates, ref_coordinates):
 
     return uvw
 
-def compute_uvw_altaz(ts, source, ant_coordinates, ref_coordinates):
-    """Computes UVW antenna coordinates with respect to reference
-       for and altaz source
-
-    Args:
-        ts: Time to compute the coordinates
-        source: source SkyCoord
-        ant_coordinates: antenna ECEF coordinates.
-             This is indexed as (antenna_number, xyz)
-        ref_coordinates: phasing reference centre coordinates.
-             This is indexed as (xyz)
-
-    Returns:
-        The UVW coordinates in metres of each of the baselines formed
-        between each of the antennas and the phasing reference. This
-        is indexed as (time, antenna_number, uvw)
-    """
-    baselines_itrs = ant_coordinates - ref_coordinates
-
-    # Calculation of vector orthogonal to line-of-sight
-    # and pointing due north.
-
-    loc = source.location
-
-    # Vector pointing to north pole
-    N = SkyCoord(ra=0*u.deg, dec=90*u.deg, location = loc,
-            obstime=ts).transform_to(ITRS(obstime=ts))
-    N = N.cartesian.xyz.value
-
-    # This is the source vector
-    V = source.transform_to(ITRS(obstime=ts)).cartesian.xyz.value
-
-    k = N - np.dot(V, N)*V
-
-    # Normalise
-    nn = np.sqrt((k**2).sum())
-    k /= nn
-
-    source_itrs = source.transform_to(ITRS(obstime=Time(ts))).cartesian
-    north_itrs = SkyCoord(ITRS(k)).cartesian
-    east_itrs = north_itrs.cross(source_itrs)
-
-    ww = baselines_itrs @ source_itrs.xyz.value
-    vv = baselines_itrs @ north_itrs.xyz.value
-    uu = baselines_itrs @ east_itrs.xyz.value
-    uvw = np.stack((uu.T, vv.T, ww.T), axis=-1)
-
-    return uvw
-
 
 def parse_toml(toml_dict):
     """
@@ -141,6 +95,7 @@ def parse_toml(toml_dict):
     df['y'] = pos[:,1]
     df['z'] = pos[:,2]
     return df
+
 
 def parse_yaml(yaml_fname):
     raise NotImplementedError("yaml parsing not implemented yet")
@@ -209,20 +164,47 @@ def jd2unix(jd):
     convert julian date to unix time second
     """
     unix = (jd - 2440587.5) * 86400
+    return unix
+
+
+def create_fixed_ephem(az, el, times):
+    """
+    Creates a custom ephemeris file with fixed az and el
+    at the times provided
+    
+    Parameters
+    ----------
+    az : float
+        azimuth in degrees
+    el : float
+        elevation in degrees
+    times : array_like
+        times, in unix time steps
+
+    Returns
+    -------
+    ephemeris : ndarray
+        An array with 4 columns: TAI [ns], az, el, IR
+    """
+    ephem = np.zeros(shape=(len(times), 4))
+    # Time in TAI [ns]
+    ephem[:,0] = times
+    ephem[:,0] += LEAP_SECONDS #adding leap seconds
+    ephem[:,0] *= 1e9 #seconds to ns
+    
+    # Azimuth
+    ephem[:,1] = np.round(az, 3)
+
+    # Elevation
+    ephem[:,2] = np.round(el, 3)
+
+    # Keep inverse radius the same
+    return ephem
 
 
 def main():
     parser = argparse.ArgumentParser(
         description = 'Control and apply delay engine on RFSoC-boards')
-    parser.add_argument('-source_ra', type=float,
-        help = 'Source RA [decimal hours]')
-    parser.add_argument('-source_dec', type=float,
-        help = 'Source Dec [degrees]')
-
-    parser.add_argument('-source_alt', type=float,
-        help = 'Source altitude [degrees]')
-    parser.add_argument('-source_az', type=float,
-        help = 'Source azimuth [degrees]')
 
     parser.add_argument('-lo', type=str, required=True,
         help = 'LO letter [a, b, c, d]')
@@ -252,6 +234,7 @@ def main():
             "Input correct LO letter (input: %s)" %args.lo
 
     logname = '/opt/mnt/log/delay_engine_%s.log' %args.lo
+    #logname = './test.log'
     logging.basicConfig(filename=logname, filemode='a',
             format='%(asctime)s %(levelname)s:%(message)s',
             level=logging.INFO)
@@ -266,23 +249,6 @@ def main():
     logging.info("Using file [%s] for fixed delays" %args.fixed)
     logging.info("Using file [%s] for phase solutions" %args.phases)
 
-    source_type = None
-    # We provided RA/Dec
-    if args.source_ra and args.source_dec:
-        source_type = "radec"
-        logging.info("Using fixed (RA,Dec) = (%.6f, %.6f)"
-                %(args.source_ra, args.source_dec))
-    # We provided alt/az
-    elif args.source_alt and args.source_az:
-        source_type = "altaz"
-        logging.info("Using fixed (alt,az) = (%.6f, %.6f)"
-                %(args.source_alt, args.source_az))
-    # We didn't provide anything, use whatever the reference antenna is
-    # pointing at
-    else:
-        logging.info("Using automatic RA/Dec parsing from the ATA system")
-        source_type = "radec_auto"
-
 
     # Select LO
     rfsoc_tab = snap_config.ATA_SNAP_TAB[
@@ -291,6 +257,7 @@ def main():
 
     rfsoc_hostnames = list(rfsoc_tab.snap_hostname)
     antnames = [ant.upper() for ant in rfsoc_tab.ANT_name]
+
 
     # initialise the rfsoc feng objects
     rfsocs = snap_control.init_snaps(rfsoc_hostnames)
@@ -304,24 +271,6 @@ def main():
     hash_telinfo = ""
 
 
-    # Parse phase center coordinates
-    if source_type == "radec":
-        ra = args.source_ra * 360 / 24.
-        dec = args.source_dec
-        source = SkyCoord(ra, dec, unit='deg')
-    elif source_type == "altaz":
-        az = args.source_az
-        alt = args.source_alt
-        source = AltAz(az = az*u.deg, alt = alt*u.deg, location = ata)
-
-
-    #log = open("delay_engine.log", "a")
-    #log.write("rfsoc_engine unix delay delay_rate phase phase_rate\n")
-    #log.write("")
-    #atexit.register(log.close)
-
-    #lo_freq = args.lofreq
-
     while True:
         print("New iteration for LO %s" %args.lo)
         new_hash_telinfo = get_hash(args.telinfo)
@@ -334,20 +283,12 @@ def main():
                 telinfo = toml.load(args.telinfo)
                 itrf = parse_toml(telinfo)
                 ata = EarthLocation(lat= telinfo['latitude'],
-                        lon= telinfo['longitude'], height= float(telinfo['altitude']))
+                        lon= telinfo['longitude'], 
+                        height=float(telinfo['altitude']))
                 logging.info("Loaded TOML file [%s]" %args.telinfo)
-            elif args.telinfo.endswith("yaml") or args.telinfo.endswith("yml"):
-                telinfo = yaml.load(args.telinfo)
-                itrf = parse_yaml(telinfo)
-                ata = EarthLocation(lat = telinfo['latitude'],
-                        lon= telinfo['longitude'], height= float(telinfo['altitude']))
-            elif args.telinfo.endswith("txt"):
-                itrf = pd.read_csv(args.telinfo,
-                        names=['x', 'y', 'z'], header=None, skiprows=1)
-                # this is hardcoded for now
-                ata = EarthLocation(lat= "40:49:03.0", lon= "-121:28:24.0", height= 1008)
+            else:
+                raise NotImplementedError("telinfo should be a .toml file")
 
-            # Select reference antenna
             if args.refant:
                 refant = args.refant.upper()
             elif 'reference_antenna_name' in telinfo:
@@ -356,7 +297,8 @@ def main():
                 refant = DEFAULT_REF_ANT
 
             logging.info("Using %s as reference antenna" %refant)
-            print("Using %s as reference antenna" %refant)
+            print("Using % as reference antenna" %refant)
+
             itrf_sub = itrf.loc[antnames]
             irefant = itrf_sub.index.values.tolist().index(refant)
             hash_telinfo = new_hash_telinfo
@@ -391,111 +333,105 @@ def main():
                 continue
             break
 
+
         t = np.floor(time.time())
-        tts = [3, 20+3] # Interpolate between t=3 sec and t=20 sec
+        tts = [3, 20+3] # Interpolate between t=3 
         tts = np.array(tts) + t
 
         ts = Time(tts, format='unix')
 
-        # perform coordinate transformation to uvw
-        if source_type == "radec":
-            uvw1 = compute_uvw(ts[0],  source, itrf_sub[['x','y','z']],
-                    itrf_sub[['x','y','z']].values[irefant])
-            uvw2 = compute_uvw(ts[-1], source, itrf_sub[['x','y','z']],
-                    itrf_sub[['x','y','z']].values[irefant])
-
-        if source_type == "radec_auto":
-            for i in range(5):
-                try:
-                    source_eph = ata_control.get_eph_source([refant.lower()])[refant.lower()]
-                except requests.exceptions.ConnectionError as e:
-                    logging.warning("Connection error obtained on get_eph_source")
-                    print("Connection error obtained on get_eph_source")
-                    time.sleep(1)
-                    continue
-                break
-
-            print("Source ephemeris: %s" %source_eph)
+        for i in range(5):
             try:
-                # Try getting the ra dec of the source using the ephemeris file name
-                # This will fail if we are tracking a non-sidereal source
-                # or a custom RA/Dec pair
-                for i in range(5):
-                    try:
-                        ra1, dec1 = ata_control.get_source_ra_dec(source_eph)
-                        ra2, dec2 = ra1, dec1
-                    except requests.exceptions.ConnectionError as e:
-                        logging.warning("Connection error obtained on get_source_ra_dec")
-                        print("Connection error obtained on get_source_ra_dec")
-                        print(e)
-                        time.sleep(1)
-                        continue
-                    break
+                source_eph = ata_control.get_eph_source([refant.lower()])[refant.lower()]
+            except requests.exceptions.ConnectionError as e:
+                logging.warning("Connection error obtained on get_eph_source")
+                print("Connection error obtained on get_eph_source")
+                time.sleep(1)
+                continue
+            break
+        print("Source ephemeris: %s" %source_eph)
 
+        # We are probably parked
+        # I'll create my own "ephemeris" at the position of the reference
+        # antenna, assuming all other antennas are pointing there
+        if source_eph == "AzEl" or source_eph == "Stay put":
+            az, el = ata_control.get_az_el([refant.lower()])[refant.lower()]
+
+            # Creating a time axis from tts[0]-20 to tts[1]+20 seconds
+            # to create the "fixed" ephemeris file
+            times = np.arange(tts[0]-20, tts[1]+20, 3)
+            ephem = create_fixed_ephem(az, el, times)
+
+        # We have a real source / ephemeris loaded, let's try and get it
+        else:
+            # Now try retrieving the ephemeris file
+            try:
+                ephem = ata_control.retrieve_ephemeris(source_eph)
+                ephem = np.array(ephem)
             except ATARestException as e:
-                # Let's try JPL Horizons first
-                # ASSUMPTIONS:
-                #     - Source eph name starts with "JPLH_"
-                #     - Spaces are replaced with "_" because the ATA does not
-                #       like spaces in the eph names
-                if source_eph.upper().startswith("JPLH_"):
-                    target = source_eph.replace("_", " ")
-                    target = target.replace("JPLH ", "")
-                    tts_jd = unix2jd(tts)
+                # problem retrieving the ephemeris
+                # revert to solution of "AzEl"/"Stay put"
+                print(e)
+                az, el = ata_control.get_az_el([refant.lower()])[refant.lower()]
 
-                    obj = Horizons(id=target, location=location,
-                            epochs=tts_jd)
+                # Creating a time axis from tts[0]-20 to tts[1]+20 seconds
+                # to create the "fixed" ephemeris file
+                times = np.arange(tts[0]-20, tts[1]+20, 3)
+                ephem = create_fixed_ephem(az, el, times)
 
-                    eph = obj.ephemerides()
-                    ra1, ra2   = eph['RA']
-                    dec1, dec2 = eph['DEC']
-                    # kinda silly but I have to convert to hours
-                    # and then back to convert back to degrees below
-                    ra1, ra2 = ra1 / 360 * 24, ra2 / 360 * 24
-                    print("Got a JPL Horizons source: %s" %target)
+        # At this point we have an ephemeris file in 
+        # format of TAI [ns]. Let's convert it to unix timestamp [sec]
+        if len(ephem.shape) != 2:
+            # sometimes the restgw returns an empty list ([]) as ephemeris
+            # so just move on as quickly as possible
+            logging.critical("shape of ephemeris is not 2d array")
+            logging.critical(ephem)
+            continue
 
-                else:
-                    # JPL Horizons didn't work, so pull the RA/DEC from antenna
-                    # These are a bit off because we are using ra/dec values that have been
-                    # refraction corrected. Offsets are pretty small (sub-arcsecond), so
-                    # not too major for the ATA
-                    logging.warning("Couldn't parse ra/dec from get_source_ra_dec, "\
-                            "using antenna get_ra_dec")
-                    print("Couldn't Couldn't parse ra/dec from get_source_ra_dec, "\
-                            "using antenna get_ra_dec")
-                    for i in range(5):
-                        try:
-                            ra1, dec1 = ata_control.get_ra_dec([refant.lower()])[refant.lower()]
-                            ra2, dec2 = ra1, dec1
-                        except requests.exceptions.ConnectionError as e:
-                            logging.warning("Connection error obtained on get_ra_dec")
-                            print("Connection error obtained on get_ra_dec")
-                            time.sleep(1)
-                            continue
-                        break
-            ra1 *= 360 / 24.
-            ra2 *= 360 / 24.
-            source1 = SkyCoord(ra1, dec1, unit='deg')
-            source2 = SkyCoord(ra2, dec2, unit='deg')
-            logging.info("Obtained source name [%s] and coords (RA,Dec) = (%.6f,%.6f) "\
-                    "from backend" %(source_eph, ra1, dec1))
-            uvw1 = compute_uvw(ts[0],  source1, itrf_sub[['x','y','z']],
-                    itrf_sub[['x','y','z']].values[irefant])
-            uvw2 = compute_uvw(ts[-1], source2, itrf_sub[['x','y','z']],
-                    itrf_sub[['x','y','z']].values[irefant])
+        ephem[:,0] *= 1e-9 # ns to seconds
+        ephem[:,0] -= LEAP_SECONDS
 
-        elif source_type == "altaz":
-            source = AltAz(az = az*u.deg, alt = alt*u.deg, location = ata,
-                    obstime = ts[0])
-            uvw1 = compute_uvw_altaz(ts[0],  source, itrf_sub[['x','y','z']],
-                    itrf_sub[['x','y','z']].values[irefant])
 
-            source = AltAz(az = az*u.deg, alt = alt*u.deg, location = ata,
-                    obstime = ts[-1])
-            uvw2 = compute_uvw_altaz(ts[-1], source, itrf_sub[['x','y','z']],
-                    itrf_sub[['x','y','z']].values[irefant])
+        ######################################################################
+        # ASSUMPTION:
+        # -----------
+        # I assume that the ephemeris file can be linearly interpolated 
+        # between the value ts[0] and ts[1]. In other words, complicated 
+        # ephemera that change coordinates in a non-linear way will not be 
+        # properly modelled.
+        # This is a fair assumption, however, because even LEOs orbits are 
+        # pretty linear over 20 seconds
+        ######################################################################
 
-        logging.info("Calculated uvw now and uvw in future")
+        # Interpolate through ephemeris file and find az and elevation 
+        # at ts[0] and ts[-1]
+        if not ephem[0,0] < ts[0].value < ts[1].value < ephem[-1,0]:
+            # This should in theory never happen
+            logging.warning("time range [%i, %i] not within ephemeris bounds"\
+                    " [%i, %i]" %(ts[0].value, ts[1].value, ephem[0,0], 
+                        ephem[-1,0]))
+            print("We're out of range in ephemeris file!!")
+            time.sleep(1)
+            continue
+            
+        az1 = np.interp(ts[0].value, ephem[:,0], ephem[:,1])
+        az2 = np.interp(ts[-1].value, ephem[:,0], ephem[:,1])
+
+        el1 = np.interp(ts[0].value, ephem[:,0], ephem[:,2])
+        el2 = np.interp(ts[-1].value, ephem[:,0], ephem[:,2])
+
+        position1 = SkyCoord(alt=el1 * u.deg, az=az1 * u.deg, 
+                frame=AltAz(obstime=ts[0], location=ata)).transform_to('icrs')
+        position2 = SkyCoord(alt=el2 * u.deg, az=az2 * u.deg, 
+                frame=AltAz(obstime=ts[-1], location=ata)).transform_to('icrs')
+
+        # compute the UVWs for both az/el positions
+        uvw1 = compute_uvw(ts[0],  position1, itrf_sub[['x','y','z']],
+                itrf_sub[['x','y','z']].values[irefant])
+
+        uvw2 = compute_uvw(ts[-1], position2, itrf_sub[['x','y','z']],
+                itrf_sub[['x','y','z']].values[irefant])
+
         # "w" coordinate represents the goemetric delay in light-meters
         w1 = uvw1[...,2]
         w2 = uvw2[...,2]
@@ -505,7 +441,6 @@ def main():
         delay2_x = fixed_delays_x + (w2/const.c.value)
         delay1_y = fixed_delays_y + (w1/const.c.value)
         delay2_y = fixed_delays_y + (w2/const.c.value)
-
 
         # advance all the B-engines forward in time
         if not args.noadvance:
@@ -527,7 +462,6 @@ def main():
         # Compute the delay rate in s/s
         rate_x = (delay2_x - delay1_x) / (tts[-1] - tts[0])
         rate_y = (delay2_y - delay1_y) / (tts[-1] - tts[0])
-        
 
         # Using LO - BW/2 for fringe rate
         phase_x      = -2 * np.pi * (lo_freq*1e6 - BANDWIDTH/2.) * delay1_x
@@ -552,7 +486,7 @@ def main():
         # the requested delay time, start a new
         # iteration as quickly as possible
         if time.time() > (ts[0].unix - 0.5):
-            logging.warning("The delay time requested [%.2f] was in the"\
+            logging.warning("The delay time requested [%.2f] was in the "\
                     "past of this: %.2f!" %(ts[0].unix, time.time()))
             continue
 
@@ -577,7 +511,8 @@ def main():
                 break
             logging.debug("%s %i %.6f %.6f %.6f %.6f" \
                     %(rfsoc.host, int(ts[0].unix),
-                        delay1_x[i]*1e9, rate_x[i]*1e9, phase_x[i], phase_rate_x[i]))
+                        delay1_x[i]*1e9, rate_x[i]*1e9, phase_x[i], 
+                        phase_rate_x[i]))
         logging.info("Wrote delay/phase values and rates, waiting for 10 seconds")
 
         if retry_fast:
