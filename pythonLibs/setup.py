@@ -13,7 +13,7 @@ setuptools.setup(
     install_requires=['ephem','astropy','numpy','tftpy', 'pandas', 'bottleneck','plotly','dash',
         'requests', 'toml', 'pytz', 'pytk', 'tkcalendar', 'parse', 'redis', 'matplotlib',
         'slack-sdk', 'ansible',
-        'hashpipe_keyvalues @ pip install git+https://github.com/MydonSolutions/HashpipeKeyValues_py.git',
+        'hashpipe_keyvalues @ git+https://github.com/MydonSolutions/HashpipeKeyValues_py.git',
         'odsutils @ git+https://github.com/david-deboer/odsutils.git'],
     description='python utility scripts for ATA (private repo)',
     license='MIT',
