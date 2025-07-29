@@ -21,7 +21,7 @@ setuptools.setup(
               'OnOffCalc','OnOffCalc.flux','OnOffCalc.yFactor','OnOffCalc.misc','OnOffCalc.filterArray'],
     include_package_data=True,
     author='Wael Farah, Ross Donnachie',
-    author_email='wfarah@seti.org',
+    author_email='wfarah@seti.org, radonnachie@gmail.com',
     keywords=['ATA'],
     long_description=long_description,
     url="https://github.com/SETIatHCRO/ATA-Utils/",
