@@ -1547,8 +1547,8 @@ class TelescopeSchedulerApp(tk.Tk):
 
         self.tuning_a.delete(0, tk.END)
         self.tuning_b.delete(0, tk.END)
-        #self.tuning_c.delete(0, tk.END)
-        #self.tuning_d.delete(0, tk.END)
+        self.tuning_c.delete(0, tk.END)
+        self.tuning_d.delete(0, tk.END)
 
         self.rf_gain_var.set(1)
         self.if_gain_var.set(1)
