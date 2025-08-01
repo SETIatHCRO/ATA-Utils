@@ -42,9 +42,9 @@ from slack_sdk.errors import SlackApiError
 
 
 DEFAULT_TZ = "US/Pacific"
-PROJECTID_FNAME = "./projects.json"
-BACKENDS_FNAME = "./backends.json"
-POSTPROCESSORS_FNAME = "./postprocessors.json"
+PROJECTID_FNAME = "/opt/mnt/share/projects.json"
+BACKENDS_FNAME = "/opt/mnt/share/backends.json"
+POSTPROCESSORS_FNAME = "/opt/mnt/share/postprocessors.json"
 
 WAIT_FOR_PROMPT_DEFAULT = 600 # assume 10 minutes
 
@@ -1513,7 +1513,7 @@ class TelescopeSchedulerApp(tk.Tk):
     def new_schedule(self):
         if self.listbox.get(0, tk.END) != self.original_listbox:
             response = messagebox.askyesnocancel(title="", 
-                        message="Current schedule is mofified, want to save it?")
+                        message="Current schedule is modified, want to save it?")
             if response == None:
                 # user cancelled
                 return
@@ -1558,7 +1558,7 @@ class TelescopeSchedulerApp(tk.Tk):
     def check_if_modified_and_quit(self):
         if self.listbox.get(0, tk.END) != self.original_listbox:
             response = messagebox.askyesnocancel(title="",
-                        message="Current schedule is mofified, want to save it?")
+                        message="Current schedule is modified, want to save it?")
             if response == None:
                 # User cancelled
                 return
@@ -1577,7 +1577,7 @@ class TelescopeSchedulerApp(tk.Tk):
     def open_schedule(self):
         if self.listbox.get(0, tk.END) != self.original_listbox:
             response = messagebox.askyesnocancel(title="", 
-                        message="Current schedule is mofified, want to save it?")
+                        message="Current schedule is modified, want to save it?")
             if response == None:
                 # user cancelled
                 return
