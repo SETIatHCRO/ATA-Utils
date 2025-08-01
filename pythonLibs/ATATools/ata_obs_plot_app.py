@@ -20,7 +20,7 @@ import pytz
 import json
 
 import ATATools.ata_sources as check
-from ATATools.ata_obs_plan import ObsPlan
+from ATATools.ata_obs_plan import ObsPlan, SLEW_RATE
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -29,7 +29,10 @@ import matplotlib as mpl
 import datetime
 
 # Load custom Matplotlib rc parameters
-exec(open("/opt/mnt/share/rcparams.py", "r").read())
+try:
+    exec(open("/opt/mnt/share/rcparams.py", "r").read())
+except:
+    pass
 
 # Global font
 FONT = "Helvetica"
@@ -41,15 +44,6 @@ COLOR_CYCLER_LIST = list(mpl.rcParams['axes.prop_cycle'])
 HARD_EL_LIM = 16.5 #degrees
 SOFT_EL_LIM = 20.0 #degrees
 OBSERVING_LOCATION = EarthLocation.from_geodetic(lat=40.8178*u.deg, lon=-121.4733*u.deg)
-
-#Time to start observing script, change frequencies, RF/IF gain set, etc...
-#INITIAL_OVERHEAD_TIME = 70 # seconds
-
-# Slew rate:
-#SLEW_RATE = 1.5 #deg/sec
-#OBS_OVERHEAD = 10 #seconds
-
-#INITIAL_AZ, INITIAL_EL = (0, 18) #parked position
 
 
 class AutoCompleteCombobox(ttk.Combobox):
