@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import tkinter as tk
-#import mttkinter.mtTkinter as tk
 from tkinter import ttk
 from tkinter import filedialog, messagebox, font
 from tkinter.scrolledtext import ScrolledText
@@ -601,20 +600,12 @@ class TelescopeSchedulerApp(tk.Tk):
         else:
             self.enable_slack = True
 
-        # Configure the root grid layout to have two columns
-        #self.root.grid_columnconfigure(0, weight=1)  # Left frame
-        #self.root.grid_columnconfigure(1, weight=1)  # Right frame
-
         # Create the left and right frames
         self.frame_left = tk.Frame(self)
         self.frame_right = tk.Frame(self)
 
         self.frame_left.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.frame_right.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-
-        # Place the frames in a grid (equally split)
-        #self.frame_left.grid(row=0, column=0, sticky="nsew")
-        #self.frame_right.grid(row=0, column=1, sticky="nsew")
 
         # Configure the grid to expand both frames equally
         self.frame_left.grid_rowconfigure(0, weight=1)
@@ -623,18 +614,6 @@ class TelescopeSchedulerApp(tk.Tk):
         self.frame_left.grid_columnconfigure(0, weight=1)
         self.frame_right.grid_columnconfigure(0, weight=1)
 
-
-        # Load the PNG image using Pillow
-        #self.image = Image.open("/Users/wael/Downloads/ATA_image.png")
-        #r = 2288 / 1266
-        #w = 600
-        #h = int(w / r)
-        #self.image = self.image.resize((w, h), Image.Resampling.LANCZOS)
-        #self.tk_image = ImageTk.PhotoImage(self.image)
-
-        # Display the image in a Label
-        #self.image_label = tk.Label(self.frame_left, image=self.tk_image)
-        #self.image_label.grid(row=0, column=1, sticky="nsew", padx=0, pady=0)
 
         # Left-hand side (listbox)
         self.listbox = tk.Listbox(self.frame_left, width=75, selectmode=tk.MULTIPLE,
@@ -934,17 +913,6 @@ class TelescopeSchedulerApp(tk.Tk):
         self.to_readonly_disable.append(self.postprocessor_dropdown)
 
 
-        # Frame for integration length
-        #int_length_frame = tk.Frame(self.backend_frame)
-        #int_length_frame.pack(fill=tk.X, padx=5, pady=5)
-
-        #integration_lengths_label = tk.Label(int_length_frame, text="Integration length:")
-        #integration_lengths_label.pack(side=tk.LEFT, padx=5)
-        #self.int_length_entry = tk.Entry(int_length_frame, width=10)
-        #self.int_length_entry.pack(side=tk.LEFT, padx=5)
-        #self.to_enable_disable.append(self.int_length_entry)
-        #self.int_length_entry.config(state=tk.DISABLED)
-
         # Button to add backend setup
         add_backend_button = tk.Button(self.backend_frame, text="Add Backend Setup",
                 command=self.add_backend_setup, font=NORMAL_FONT, bg="lightblue")
@@ -1185,8 +1153,6 @@ class TelescopeSchedulerApp(tk.Tk):
         self.antenna_dropdown.update_options(ant_list)
 
         # get hashpipe recorders
-        #d = hpguppi_defaults.hashpipe_targets_LoA.copy()
-        #d = self.combine_hashpipe_targets(d, hpguppi_defaults.hashpipe_targets_LoB)
         d = {"seti-node%i" %i: [0,1] for i in range(1, 15)}
 
         d_list = hashpipe_targets_to_list(d)
@@ -1603,8 +1569,6 @@ class TelescopeSchedulerApp(tk.Tk):
                 data = json.load(json_file)
 
             self.listbox.delete(0, tk.END)
-            #for entry in data['commands']:
-            #    self.listbox.insert(tk.END, entry)
             for cmd in data['commands']:
                 cmd_type = list(cmd.keys())[0]
                 cmd_dict = cmd[cmd_type]
@@ -1704,7 +1668,6 @@ class TelescopeSchedulerApp(tk.Tk):
         self.enable_everything()
 
     def enable_execute(self):
-        #self.execute_button.config(state=tk.NORMAL)
         self.execute_button_enabled = True
 
 
@@ -1712,7 +1675,6 @@ class TelescopeSchedulerApp(tk.Tk):
         if self.ignore_check_schedule:
             return
         else:
-            #self.execute_button.config(state=tk.DISABLED)
             self.execute_button_enabled = False
 
 
@@ -1751,7 +1713,6 @@ class TelescopeSchedulerApp(tk.Tk):
 
 
     def write_status(self, text, fg='green'):
-        #self.obs_status.config(text=text, fg=fg, font=NORMAL_FONT)
         event = {"event_name": "obs_status",
                 "event_args": {"text": text, "fg": fg, "font": NORMAL_FONT}}
         self.task_queue.put(event)
@@ -1783,8 +1744,6 @@ class TelescopeSchedulerApp(tk.Tk):
         multiprocessing.Process(). So I get everything I need here
         and pass them as context to the function
         """
-        #threading.Thread(target=self._execute_schedule, daemon=True).start()
-
         # Create a pipe to trigger abort
         send_conn, recv_conn = multiprocessing.Pipe()
         self.pipe_conn = send_conn
@@ -1827,12 +1786,10 @@ class TelescopeSchedulerApp(tk.Tk):
             self.write_status("Please run 'Check Schedule' first", fg='red')
             return
 
-        #self.interrupt_flag = False
         self.disable_everything()
 
         # Reserve antennas first
         try:
-            #ant_list   = self.antenna_dropdown.get_selected_options()
             config = {'ant_list': ant_list}
             cmd_type = "RESERVEANTENNAS"
             reserve_antennas = ScheduleExecutor(cmd_type, config, self.write_status)
@@ -1848,8 +1805,6 @@ class TelescopeSchedulerApp(tk.Tk):
         # make sure I can release antennas
         cmd_type = "RELEASEANTENNAS"
         release_antennas = ScheduleExecutor(cmd_type, config, self.write_status)
-
-        #cmds_cfgs = self.sch_listbox_to_list()
 
         # I will initialize all sch lines to make sure
         # all of them are compliant
@@ -1999,7 +1954,6 @@ class TelescopeSchedulerApp(tk.Tk):
             # an interrupt
             except BrokenPipeError as e:
                 pass
-        #self.interrupt_flag = True
 
     def parse_command(self, command, supplement=True):
         res = parse("{cmd_type} -- {cfg_str}", command)
@@ -2081,8 +2035,6 @@ class TelescopeSchedulerApp(tk.Tk):
         for button in self.to_enable_disable + self.to_readonly_disable:
             button.config(state=tk.DISABLED)
 
-        #self.tuning_a.config(state=tk.DISABLED)
-        #self.tuning_b.config(state=tk.DISABLED)
 
 
     def enable_everything(self):
@@ -2099,9 +2051,6 @@ class TelescopeSchedulerApp(tk.Tk):
             button.config(state=tk.NORMAL)
         for button in self.to_readonly_disable:
             button.config(state="readonly")
-
-        #self.tuning_a.config(state=tk.NORMAL)
-        #self.tuning_b.config(state=tk.NORMAL)
 
     def error_loading_json(self):
         err = tk.Tk()
@@ -2201,12 +2150,10 @@ class TelescopeSchedulerApp(tk.Tk):
                 raise RuntimeError("Backend doesn't exist in config")
 
         self.backend_dropdown['values'] = backends
-        #self.update()
 
     def update_postprocessor_combobox(self, event=None):
         self.postprocessor_dropdown.set('')
         self.postprocessor_dropdown['values'] = []
-        #self.update()
 
         project_id = self.projectid_dropdown.get()
         backend = self.backend_dropdown.get()
@@ -2229,7 +2176,6 @@ class TelescopeSchedulerApp(tk.Tk):
                 raise RuntimeError("Postprocessor doesn't exist in config")
 
         self.postprocessor_dropdown['values'] = postprocessors
-        #self.update()
 
 
     def wait_until(self, event=None):
@@ -2246,7 +2192,6 @@ class TelescopeSchedulerApp(tk.Tk):
         localized_time = selected_tz.localize(start_time)
         localized_time_str = localized_time.strftime(WAIT_DTFMT)
 
-        #entry = f"--  WAITUNTIL  -- {localized_time}"
         cmd_type = "WAITUNTIL"
         entry = cmd_type + (12 - len(cmd_type))*" " + f"-- dt: {localized_time_str}"
         self.listbox.insert(tk.END, entry)
