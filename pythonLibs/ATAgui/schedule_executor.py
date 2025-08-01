@@ -18,9 +18,9 @@ from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
 WAIT_DTFMT = "%Y-%m-%dT%Hh%Mm%Ss%z"
 DAQPULSE_DTFMT = "%a %b %d %H:%M:%S %Y"
 
-PROJECTID_FNAME = "./projects.json"
-BACKENDS_FNAME = "./backends.json"
-POSTPROCESSORS_FNAME = "./postprocessors.json"
+PROJECTID_FNAME = "/opt/mnt/share/projects.json"
+BACKENDS_FNAME = "/opt/mnt/share/backends.json"
+POSTPROCESSORS_FNAME = "/opt/mnt/share/postprocessors.json"
 
 
 
