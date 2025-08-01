@@ -12,7 +12,7 @@ setuptools.setup(
     #install_requires=['ephem','astropy','numpy','tftpy','pyuvdata<=1.4;python_version<"3"','pyuvdata;python_version>"3.5"'],
     install_requires=['ephem','astropy','numpy','tftpy', 'pandas', 'bottleneck','plotly','dash',
         'requests', 'toml', 'pytz', 'pytk', 'tkcalendar', 'parse', 'redis', 'matplotlib',
-        'slack-sdk', 'ansible',
+        'slack-sdk', 'ansible', 'pyuvdata', 'python-casacore',
         'hashpipe_keyvalues @ git+https://github.com/MydonSolutions/HashpipeKeyValues_py.git',
         'odsutils @ git+https://github.com/david-deboer/odsutils.git'],
     description='python utility scripts for ATA (private repo)',
