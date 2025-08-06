@@ -38,7 +38,7 @@ def sort_rfsoc_config(rfsoc_config):
 	return rfsoc_config_sorted
 
 
-default_cfg_dir="/home/sonata/src/observing_campaign/config_files/"
+default_cfg_dir="/opt/mnt/share/"
 default_cfg_stem="ataconfig_setinode_sub"
 default_stream_subs=[
 	'1aA,1fA,1cA',	# snaps 1,2,10
