@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
 set -x #echo on
 
-LOA=`python -c "import sys; from SNAPobs import snap_config; print(','.join(['%s%s' %(s,sys.argv[1]) for s in snap_config.get_rfsoc_active_antlist()]))" A`
-LOB=`python -c "import sys; from SNAPobs import snap_config; print(','.join(['%s%s' %(s,sys.argv[1]) for s in snap_config.get_rfsoc_active_antlist()]))" B`
-LOC=`python -c "import sys; from SNAPobs import snap_config; print(','.join(['%s%s' %(s,sys.argv[1]) for s in snap_config.get_rfsoc_active_antlist()]))" C`
-LOD=`python -c "import sys; from SNAPobs import snap_config; print(','.join(['%s%s' %(s,sys.argv[1]) for s in snap_config.get_rfsoc_active_antlist()]))" D`
+ANTLIST=`python -c "import sys; from SNAPobs import snap_config; print(','.join([s for s in snap_config.get_rfsoc_active_antlist()]))"`
+IFS=',' read -r -a ANTARR <<< "$ANTLIST"
+
+printf -v LOA "%sA," "${ANTARR[@]}"
+LOA="${LOA%,}"
+printf -v LOB "%sB," "${ANTARR[@]}"
+LOB="${LOB%,}"
+printf -v LOC "%sC," "${ANTARR[@]}"
+LOC="${LOC%,}"
+printf -v LOD "%sD," "${ANTARR[@]}"
+LOD="${LOD%,}"
 
 configure_antenna_streams.py -g \
 ${LOA} \
