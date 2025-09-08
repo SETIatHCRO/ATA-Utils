@@ -60,8 +60,9 @@ LOGGING_ERROR_COLOR = ["red", "dark red"]
 
 WAIT_DTFMT = "%Y-%m-%dT%Hh%Mm%Ss%z"
 
-ODS_DEFAULTS = "/opt/mnt/share/ods_defaults.json"
-ODS_WRITE    = "/opt/mnt/share/ods_upload/ods.json"
+ODS_DEFAULTS = "/opt/mnt/share/ods_defaults_B.json"
+ODS_PROJECT = "/opt/mnt/share/ods_project/ods_gui.json"
+ODS_UPLOAD = "/opt/mnt/share/ods_upload/ods.json"
 
 def sign(a):
     if a == 0:
@@ -1919,8 +1920,7 @@ class TelescopeSchedulerApp(tk.Tk):
         obs = self.generate_obs_plan(cmds_cfgs)
 
         # not to be confused with obs :)
-        ods = ods_engine.ODS(output='ERROR')
-        ods.get_defaults_dict(ODS_DEFAULTS)
+        ods = ods_engine.ODS(conlog='ERROR', defaults=ODS_DEFAULTS)
         ods_list = []
 
         for obs_entry in obs.obs_plan:
@@ -1936,7 +1936,8 @@ class TelescopeSchedulerApp(tk.Tk):
         if ods_list:
             try:
                 ods.add_from_list(ods_list)
-                ods.post_ods(ODS_WRITE)
+                ods.post_ods(ODS_PROJECT)
+                ods.assemble_ods(ODS_PROJECT, post_to=ODS_UPLOAD)
             except:  #anything
                 pass
             #tstamp = str(round(time.time(), 2))
