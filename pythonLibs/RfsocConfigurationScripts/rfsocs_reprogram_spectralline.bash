@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -x #echo on
 
-ANTLIST=`python -c "import sys; from SNAPobs import snap_config; print(','.join([s for s in snap_config.get_rfsoc_active_antlist()]))"`
+ANTLIST=`python -c "import os; os.environ['ATA_SNAPOBS_HPGUPPPI_DEFAULTS_RESOLVE_HPT'] = 'False'; from SNAPobs import snap_config; print(','.join([s for s in snap_config.get_rfsoc_active_antlist()]))"`
 IFS=',' read -r -a ANTARR <<< "$ANTLIST"
 
 printf -v LOA "%sA," "${ANTARR[@]}"

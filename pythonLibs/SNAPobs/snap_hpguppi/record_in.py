@@ -261,23 +261,24 @@ def record_in(
 
             if universal_synctime is False: # 
                 channel_sync_times = _get_sync_time_for_streams(stream_hostnames)
-                channel_synct_times_setlen = len(set(channel_sync_times))
-                if channel_synct_times_setlen == 0:
+                channel_sync_times_setlen = len(set(channel_sync_times))
+                if channel_sync_times_setlen == 0:
                     print(
                         'Hpguppi channel',
                         get_channel,
                         'has no stream_hostnames, excluding from observation.'
                     )
                     continue
-                elif channel_synct_times_setlen > 1:
+                elif channel_sync_times_setlen > 1:
                     error_statement = (
                         'Hpguppi channel {} has the following'
-                        'stream_hostnames, with non-uniform sync-times:\n'
+                        ' stream_hostnames, with non-uniform sync-times:\n'
                     ).format(get_channel)
-                    for i in range(len(stream_hostnames)):
-                        error_statement += "{} {}\n".format(
-                            stream_hostnames[i],
-                            channel_sync_times[i]
+                    for i, hostname in enumerate(stream_hostnames):
+                        error_statement += "{}: {} {}\n".format(
+                            i,
+                            hostname,
+                            channel_sync_times[i] if i < len(channel_sync_times) else None
                         )
                     error_statement = (
                         'Cannot reliably start a recording: {}'.format(

@@ -21,7 +21,7 @@ else:
 #hosts = ['rfsoc6-ctrl-1', 'rfsoc7-ctrl-1']
 #hosts = ['rfsoc10-ctrl-1']
 #fpgfile = '/opt/mnt/share/test_onehundredgbe_jumbo_2021-11-01_1154.fpg'
-fpgfile = snap_config.ATA_CFG['DEPROGFPG']
+fpgfile = os.getenv('DEPROGFPG', snap_config.ATA_CFG['DEPROGFPG'])
 
 def reprog(host):
 	cfpga = casperfpga.CasperFpga(host, transport=casperfpga.KatcpTransport)

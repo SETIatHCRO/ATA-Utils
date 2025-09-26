@@ -149,8 +149,7 @@ for ip_ifname, ip in ifnames_ip_dict.items():
 		host = m.group(1)
 		instance = int(m.group(3)) - 1
 	else:
-		if not silent:
-			print('%s: %s does not have -\d+g-\d+ suffix... taking it verbatim'%(ip, ip_ifname))
+		print('%s: %s does not have -\d+g-\d+ suffix... taking it verbatim'%(ip, ip_ifname))
 
 	hpguppi_instance_redis_setchan = hpguppi_defaults.REDISGETGW.substitute(host=host, inst=instance)
 	antnames = None
@@ -311,8 +310,14 @@ if not args.sync_only:
 				async_failures[rfsoc_boardname] = err
 		
 		if len(async_failures) > 0:
-			print(f"Failures occurred in asynchronous batch programming:\n{async_failures}")
-			exit(1)
+			print(f"\nERROR\nFailures occurred in asynchronous batch programming:\n{async_failures}")
+			for rfsoc_boardname, _ in async_failures.items():
+				stream_hostnames = [
+					h
+					for h in stream_hostnames
+					if not h.startswith(rfsoc_boardname)
+				]
+			print("Removed related pipelines from subsequent syncronization operation.")
 
 
 if args.dry_run:

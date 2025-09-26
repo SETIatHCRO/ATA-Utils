@@ -1,3 +1,4 @@
+import os
 import redis
 from string import Template
 from SNAPobs import snap_defaults
@@ -77,7 +78,7 @@ def hashpipe_targets_union(*hashpipe_target_dicts):
 				union_d[hpt] = instance_list.copy()
 	return union_d
 
-def resolve_hashpipe_targets():
+def resolve_hashpipe_targets(silent=False):
 	global hashpipe_targets_LoA, hashpipe_targets_LoB, hashpipe_targets_LoC, hashpipe_targets_LoD
 
 	instances = [0, 1]
@@ -94,7 +95,8 @@ def resolve_hashpipe_targets():
 
 			antenna_list = hpguppi_aux.get_antennae_of_redis_chan(
 				redis_obj,
-				redis_get_chan
+				redis_get_chan,
+				silent=silent
 			)
 			if len(antenna_list) == 0:
 				continue
@@ -114,4 +116,5 @@ def resolve_hashpipe_targets():
 				hashpipe_targets_LoD[seti_node] = hashpipe_targets_LoD.get(seti_node, [])
 				hashpipe_targets_LoD[seti_node].append(instance)
 
-resolve_hashpipe_targets()
+if os.getenv("ATA_SNAPOBS_HPGUPPPI_DEFAULTS_RESOLVE_HPT", 'True').lower() == 'true':
+	resolve_hashpipe_targets(silent=os.getenv("ATA_SNAPOBS_HPGUPPPI_DEFAULTS_SILENT", 'False').lower() == 'true')

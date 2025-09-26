@@ -152,7 +152,7 @@ def redis_hget_retry(redis_obj, redis_chan, key, retry_count=5):
     retry_count -= 1
   return value
 
-def get_antennae_of_redis_chan(redis_obj, redis_chan):
+def get_antennae_of_redis_chan(redis_obj, redis_chan, silent=False):
   antennae_names = redis_hget_retry(redis_obj, redis_chan, 'ANTNAMES')
   if antennae_names is None:
     antennae_names = []
@@ -169,12 +169,13 @@ def get_antennae_of_redis_chan(redis_obj, redis_chan):
     key_enum += 1
     ant_names = redis_hget_retry(redis_obj, redis_chan, 'ANTNMS%02d'%key_enum)
     if ant_names is None:
-      print(
-        ('Could only collect {}/{} antennae, '
-          '{} does not exist in channel {}').format(
-          len(antennae_names), antennae_count, 'ANTNMS%02d'%key_enum, redis_chan
+      if not silent:
+        print(
+          ('Could only collect {}/{} antennae, '
+            '{} does not exist in channel {}').format(
+            len(antennae_names), antennae_count, 'ANTNMS%02d'%key_enum, redis_chan
+          )
         )
-      )
       break
     antennae_names += ant_names.split(',')
   return antennae_names
