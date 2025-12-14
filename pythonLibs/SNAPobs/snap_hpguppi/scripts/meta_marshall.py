@@ -1,21 +1,18 @@
 #!/home/sonata/miniconda3/bin/python
 from SNAPobs.snap_hpguppi import populate_meta as hpguppi_populate_meta
-import socket
 import time
 import traceback
 from datetime import datetime, timezone
-from string import Template
 
-import ata_snap
 from ata_snap import ata_snap_fengine, ata_rfsoc_fengine
-import struct
 import casperfpga
 from SNAPobs import snap_control
 from ATATools import ata_control
 
-from SNAPobs import snap_defaults, snap_config
+from SNAPobs import snap_config
 
 from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
+from SNAPobs.snap_hpguppi import snap_hpguppi_defaults as hpguppi_defaults
 
 import tomli as tomllib # from python 3.11 tomllib is a standard package
 
@@ -210,6 +207,11 @@ last_skyfreq_mapping = collect_values_from_dict(skyfreq_mapping_dict, active_str
 last_az_el, failed_antname_nolo_list = ata_control_get_safe(antname_nolo_list, ata_control.get_az_el)
 safe_antname_nolo_list = list(last_az_el.keys())
 last_eph_source = ata_control.get_eph_source(safe_antname_nolo_list)
+last_hashpipe_ipbind_mapping = {
+  (hostname, instance): None
+  for hostname in hpguppi_defaults.seti_node_hostnames
+  for instance in hpguppi_defaults.seti_node_instances
+}
 
 last_reference_antenna_name = None
 
@@ -222,8 +224,9 @@ section_strings = [
   'Grouping',  
   'Destinations', 
   'Frequency',
-  'AzEl',
-  'Source' 
+  # 'AzEl',
+  'Source',
+  'Hashpipe IP Bindings'
 ]
 sections_updated = [False for i in range(len(section_strings))]
 
@@ -261,7 +264,7 @@ while(True):
         print(f"Restarted {feng.host}!")
       except casperfpga.transport_katcp.KatcpRequestFail as err:
         pass
-  
+
   if len(feng_interface_dest_details) == 0:
     print(f"No FEngines are responding, sleeping 3 seconds to limit print out")
     time.sleep(3)
@@ -283,6 +286,16 @@ while(True):
   az_el, failed_antname_nolo_list = ata_control_get_safe(antname_nolo_list, ata_control.get_az_el)
   safe_antname_nolo_list = list(az_el.keys())
   eph_source = ata_control.get_eph_source(safe_antname_nolo_list)
+  hashpipe_ipbind_mapping = {
+    (hostname, instance): hpguppi_auxillary.redis_hget_retry(
+      hpguppi_defaults.redis_obj,
+      hpguppi_defaults.REDISGETGW.substitute(host=hostname, inst=instance),
+      "DESTIP",
+      retry_count = 1
+    )
+    for hostname in hpguppi_defaults.seti_node_hostnames
+    for instance in hpguppi_defaults.seti_node_instances
+  }
 
   for streamname, dest_details in feng_interface_dest_details.items():
     if dest_details not in destinations:
@@ -304,7 +317,8 @@ while(True):
     destinations == last_destinations,
     list_el_approx_equal(skyfreq_mapping, last_skyfreq_mapping),
     # all([list_el_approx_equal(az_el[ant_name], last_az_el[ant_name]) for ant_name in safe_antname_nolo_list]),
-    all([eph_source[ant_name] == last_eph_source[ant_name] for ant_name in safe_antname_nolo_list])
+    all(eph_source[ant_name] == last_eph_source[ant_name] for ant_name in safe_antname_nolo_list),
+    all(ipbind == last_hashpipe_ipbind_mapping.get(h, None) for h, ipbind in hashpipe_ipbind_mapping.items())
   ]
   if all(same) and (not have_published or (time.time() - last_published > 10)) : # Seems stable, but haven't published
     new_publication = not have_published and all(sections_updated[0:1])
@@ -314,7 +328,8 @@ while(True):
       if updated:
         updated_section_strings.append(section_strings[section_idx])
       sections_updated[section_idx] = False
-    print('Updated sections:', ', '.join(updated_section_strings))
+    if any(sections_updated):
+      print('Updated sections:', ', '.join(updated_section_strings))
 
     if new_publication:
       print('### Start of updates ###')
@@ -361,7 +376,7 @@ while(True):
             if stream_is_8bit is None:
               stream_is_8bit = dest_details['is_8bit']
             elif stream_is_8bit != dest_details['is_8bit']:
-              print('Incosistent sample bit depth in streams detected!')
+              print('Inconsistent sample bit depth in streams detected!')
 
         n_chan = n_chan*len(destIps) # assume each destination receives the same number of channels
 
@@ -374,6 +389,7 @@ while(True):
           print('start_chan', start_chan)
           print('n_chan', n_chan)
           print('destIps', destIps)
+          print('hashpipe_ipbind_mapping', hashpipe_ipbind_mapping)
 
           meta_args = '-s {} -a {} -C {} -c {} -d {} --silent'.format(
             ' '.join(stream_hostnames), 
@@ -388,12 +404,13 @@ while(True):
         hpguppi_populate_meta.populate_meta(
                   stream_hostnames,
                   hpguppi_auxillary.get_antennalo_name_per_stream_hostnames(stream_hostnames),
-                  None,
+                  configfile=None,
                   n_chans=n_chan,
                   n_bits=8 if stream_is_8bit else 4,
                   fengine_n_chan=feng_n_chan,
                   start_chan=start_chan,
                   dests=destIps,
+                  hashpipe_ipbind_mapping=hashpipe_ipbind_mapping,
                   silent=not new_publication,
                   zero_obs_startstop=False,
                   dry_run=False,
@@ -440,3 +457,4 @@ while(True):
   last_az_el = az_el
   last_eph_source = eph_source
   last_reference_antenna_name = reference_antenna_name
+  last_hashpipe_ipbind_mapping = hashpipe_ipbind_mapping

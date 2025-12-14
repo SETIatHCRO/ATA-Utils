@@ -129,6 +129,7 @@ def _get_obs_params(antlo_list):
 
 def _proc_feng_destips(
     channel_selection_mapping,
+    hashpipe_ipbind_mapping,
     silent=False
 ):
     """
@@ -140,24 +141,17 @@ def _proc_feng_destips(
     for ip_string in sorted(channel_selection_mapping.keys()):
         channel_list = channel_selection_mapping[ip_string]
 
-        ipv4 = ipaddress.IPv4Address(ip_string)
-        if ipv4.is_multicast:
-            for hostname in hpguppi_defaults.seti_node_hostnames:
-                for instance in hpguppi_defaults.seti_node_instances:
-                    ibv_multicast_group = hpguppi_auxillary.redis_hget_retry(
-                        hpguppi_defaults.redis_obj,
-                        hpguppi_defaults.REDISSETGW.substitute(host=hostname, inst=instance),
-                        "IBVMCGRP"
-                    )
-                    if ibv_multicast_group == ip_string:
-                        stream_destinations.append(
-                            StreamDestinationInfo(
-                                hashpipe_target_hostname=hostname,
-                                hashpipe_target_instance=instance,
-                                ip_address_string=ip_string,
-                                channel_list=channel_list,
-                            )
+        if ipaddress.IPv4Address(ip_string).is_multicast:
+            for (hostname, instance), ip_binding in hashpipe_ipbind_mapping.items():
+                if ip_binding == ip_string:
+                    stream_destinations.append(
+                        StreamDestinationInfo(
+                            hashpipe_target_hostname=hostname,
+                            hashpipe_target_instance=instance,
+                            ip_address_string=ip_string,
+                            channel_list=channel_list,
                         )
+                    )
         else:
             ip_ifname = socket.gethostbyaddr(ip_string)[0]
             instance = 0
@@ -187,12 +181,12 @@ StringList = List[str]# Deprecated in 3.9, can rather use list[str]
 def populate_meta(stream_hostnames: StringList, antlo_names: StringList, 
 									configfile: str=None,
 									ignore_control=False,
-									hpguppi_daq_instance=-1,
 									n_chans=None,
 									n_bits=hpguppi_defaults.NBITS,
                                     fengine_n_chan=None,
 									start_chan=None,
 									dests=None,
+									hashpipe_ipbind_mapping=None,
                                     max_packet_nchan=hpguppi_defaults.MAX_CHANS_PER_PKT,
 									silent=False,
 									zero_obs_startstop=True,
@@ -253,8 +247,10 @@ def populate_meta(stream_hostnames: StringList, antlo_names: StringList,
             n_chans_per_dest)
 
     if skyfreq_mapping is None:
-        skyfreq_mapping, antname_mapping = _get_stream_mapping(stream_hostnames,
-                ignore_control)
+        skyfreq_mapping, antname_mapping = _get_stream_mapping(
+            stream_hostnames,
+            ignore_control
+        )
     ants_obs_params = _get_obs_params(antlo_names)
     source_list = [aop['SOURCE'] for antname, aop in ants_obs_params.items()]
 
@@ -317,7 +313,7 @@ def populate_meta(stream_hostnames: StringList, antlo_names: StringList,
     # ifnames_sorted = sorted(ifnames_ip_dict.keys())
     # mapping_chan_lists = [chan_lst for chan_lst in mapping.values()]
 
-    stream_destinations = _proc_feng_destips(mapping, silent=silent)
+    stream_destinations = _proc_feng_destips(mapping, hashpipe_ipbind_mapping, silent=silent)
     stream_destinations.sort(key=lambda destinfo: dests.index(destinfo.ip_address_string))
 
     report_dict = {

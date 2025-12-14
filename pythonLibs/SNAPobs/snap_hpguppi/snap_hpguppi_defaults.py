@@ -43,7 +43,7 @@ redis_obj = redis.Redis(host=REDISHOST)
 
 seti_node_hostnames = [
 	f"seti-node{i}"
-	for i in range(1, 10)
+	for i in range(1, 14+1)
 ]
 
 seti_node_instances = [

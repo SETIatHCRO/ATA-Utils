@@ -13,10 +13,12 @@ LOC="${LOC%,}"
 printf -v LOD "%sD," "${ANTARR[@]}"
 LOD="${LOD%,}"
 
+fpg_file="/opt/mnt/share/zrf_volt_64c_8t_8ant_xczu49dr_2025-08-01_0644.fpg"
+
 ### all 4 tunings and 28 antenna...
 configure_antenna_streams.py -g \
 ${LOA} \
 ${LOB} \
 ${LOC} \
 ${LOD} \
--C ataconfig_beamformer_16MHz $@
+-C ataconfig_beamformer_16MHz -f ${fpg_file} $@
