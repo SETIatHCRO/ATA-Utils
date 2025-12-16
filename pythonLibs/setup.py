@@ -38,6 +38,7 @@ setuptools.setup(
         'RfsocConfigurationScripts/rfsocs_reprogram_continuum.bash',
         'RfsocConfigurationScripts/rfsocs_reprogram_spectralline.bash',
         'RfsocConfigurationScripts/rfsocs_set_equilizers.bash',
+        'RfsocConfigurationScripts/set_rfsoc_equilizers.py',
         'ATAPointing/pointing_elxel_plot.py',
         'ATAPointing/pointing_azel_table.py',
         'ATAPointing/pointing_azel_print.py',

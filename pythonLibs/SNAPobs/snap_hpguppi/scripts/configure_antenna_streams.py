@@ -1,14 +1,10 @@
 #!/usr/bin/env python
 import argparse
-from SNAPobs.snap_hpguppi import populate_meta as hpguppi_populate_meta
 from SNAPobs.snap_hpguppi import auxillary as hpguppi_auxillary
 from SNAPobs.snap_hpguppi import record_in as hpguppi_record_in
-from SNAPobs.snap_hpguppi import populate_meta as hpguppi_populate_meta
 from SNAPobs.snap_hpguppi import snap_hpguppi_defaults as hpguppi_defaults
 import itertools
 from SNAPobs import snap_config, snap_control
-from string import Template
-from ata_snap import ata_snap_fengine
 import casperfpga
 import redis
 import socket
@@ -38,51 +34,45 @@ def sort_rfsoc_config(rfsoc_config):
 	return rfsoc_config_sorted
 
 
-default_cfg_dir="/opt/mnt/share/"
-default_cfg_stem="ataconfig_setinode_sub"
-default_stream_subs=[
-	'1aA,1fA,1cA',	# snaps 1,2,10
-	'2aA,4jA,2hA',	# snaps 3,4,5 
-	'1kA,5cA,1hA'		# snaps 6,9,11
-]
-
 ############ Hands off from here on
-parser = argparse.ArgumentParser(description='Configures snaps'
-				' as per the internal code.')
+parser = argparse.ArgumentParser(description='Configures snaps as per the internal code.',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('-s', '--stop-all-eth-first', action='store_true',
-										help='Stop the ethernet output of every snap (listed in ATA_SNAP_TAB) before configuring')
+										help='Stop the ethernet output of every snap (listed in ATA_SNAP_TAB) before configuring.')
 parser.add_argument('-P', '--dont-prog-snaps', action='store_true',
 										help='Skip programming the snaps.')
 parser.add_argument('-f', '--fpg-filepath', type=str,
-										help='Override the fpg-filepath (used unless `dont-prog-snaps`).',
+										help='Override the fpg-filepath (used unless `dont-prog-snaps`). Overrules `fpg-key`.',
 										default=None)
+parser.add_argument('-F', '--fpg-key', type=str,
+										help='The key to the fpg-filepath in the ata.cfg file.',
+										default="RFSOCFPG")
 parser.add_argument('-S', '--sync-only', action='store_true',
 										help='Skip configuring the snaps (will still sync them)')
 parser.add_argument('-g', '--groupings', nargs='+', type=str,
-										help='The sub-grouping of DSP source streams as comma (,) separated lists ["{}"]'.format('", "'.join(default_stream_subs)),
-										default=default_stream_subs)
+										help='The sub-grouping of DSP source streams as comma (,) separated lists.',
+										default=[])
 parser.add_argument('-G', '--hostname-groupings', nargs='*', type=str,
-										help='The sub-grouping of DSP source stream hostnames as comma (,) separated lists [] (hostnames can be regex, overrules groupings)',
+										help='The sub-grouping of DSP source stream hostnames as comma (,) separated lists [] (hostnames can be regex, overrules groupings).',
 										default=[])
 parser.add_argument('-d', '--config-directory', type=str,
-										help='The root directory of the sub-grouping configuration yaml files ["{}"]'.format(default_cfg_dir),
-										default=default_cfg_dir)
+										help='The root directory of the sub-grouping configuration yaml files.',
+										default=snap_config.ATA_SHARE_DIR)
 parser.add_argument('-c', '--config-stem', type=str,
-										help='The stem of the sub-grouping configuration yaml files (1 indexed) ["{}"]'.format(default_cfg_stem),
-										default=default_cfg_stem)
+										help='The stem of the sub-grouping configuration yaml files (1 indexed).')
 parser.add_argument('-C', '--group-config-stem', type=str,
-										help='The stem of the collective configuration yaml file (1 for all groups) [{}]'.format(None),
+										help='The stem of the collective configuration yaml file (1 for all groups).',
 										default=None)
 parser.add_argument('-t', '--test-vector-enable', action='store_true',
-										help='Configure the antenna streams to send test vectors [False]',
+										help='Configure the antenna streams to send test vectors.',
 										default=False)
 parser.add_argument('--no-blank', action='store_true',
-										help='Do not blank out un-configured pipelines',
+										help='Do not blank out un-configured pipelines.',
 										default=False)
 parser.add_argument('--dry-run', action='store_true',
 										help='Don\'t actually configure anything.')
 parser.add_argument('--redishost', type=str, default='redishost',
-										help='The redishost\'s name [\'redishost\'].')
+										help='The redishost\'s name.')
 args = parser.parse_args()
 
 redis_obj = redis.Redis(args.redishost)
@@ -198,7 +188,7 @@ if not args.sync_only:
 
 			if stream_hostname.startswith('frb-snap'):
 				assert multi_group_config is None, 'SNAP configuration has not been expanded to support a single multi-group configuration file.'
-				fpgfile = args.fpg_filepath or snap_config.get_ata_cfg()['SNAPFPG']
+				fpgfile = args.fpg_filepath or snap_config.get_ata_cfg()[args.fpg_key]
 								
 				print('{} Reprogramming/configuring snap as FEngine #{:02d} {}'.format('v'*5, feng_id, 'v'*5))
 				print('snap_feng_init.py {} {} {} -i {} {}{}{}{}'.format(
@@ -223,7 +213,7 @@ if not args.sync_only:
 				print('{} Reprogramming/configuring snap as FEngine #{:02d} {}\n'.format('^'*5, feng_id, '^'*5))
 			
 			elif stream_hostname.startswith('rfsoc'):
-				fpgfile = args.fpg_filepath or snap_config.get_ata_cfg()['RFSOCFPG']
+				fpgfile = args.fpg_filepath or snap_config.get_ata_cfg()[args.fpg_key]
 				# take stream_hostname up until last 
 				rfsoc_hostname_re_match = re.match(rfsoc_hostname_regex, stream_hostname)
 				rfsoc_boardname = rfsoc_hostname_re_match.group('boardname')

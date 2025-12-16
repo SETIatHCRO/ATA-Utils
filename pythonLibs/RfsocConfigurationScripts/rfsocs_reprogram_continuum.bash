@@ -18,4 +18,4 @@ ${LOA} \
 ${LOB} \
 ${LOC} \
 ${LOD} \
--C ataconfig_beamformer_8bit_4tunings $@
+-C ataconfig_fengine_destinations_continuum $@

@@ -22,6 +22,7 @@ else:
 #hosts = ['rfsoc10-ctrl-1']
 #fpgfile = '/opt/mnt/share/test_onehundredgbe_jumbo_2021-11-01_1154.fpg'
 fpgfile = os.getenv('DEPROGFPG', snap_config.ATA_CFG['DEPROGFPG'])
+assert os.path.exists(fpgfile), f"File not found: `{fpgfile}`"
 
 def reprog(host):
 	cfpga = casperfpga.CasperFpga(host, transport=casperfpga.KatcpTransport)
