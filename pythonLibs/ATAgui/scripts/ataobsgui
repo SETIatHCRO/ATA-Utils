@@ -60,7 +60,7 @@ LOGGING_ERROR_COLOR = ["red", "dark red"]
 
 WAIT_DTFMT = "%Y-%m-%dT%Hh%Mm%Ss%z"
 
-ODS_DEFAULTS = "/opt/mnt/share/ods_defaults_B.json"
+ODS_DEFAULTS = "$ods_defaults_ata_B.json"
 ODS_PROJECT = "/opt/mnt/share/ods_project/ods_gui.json"
 ODS_UPLOAD = "/opt/mnt/share/ods_upload/ods.json"
 
@@ -1935,7 +1935,7 @@ class TelescopeSchedulerApp(tk.Tk):
 
         if ods_list:
             try:
-                ods.add_from_list(ods_list)
+                ods.add(ods_list)
                 ods.post_ods(ODS_PROJECT)
                 ods.assemble_ods(ODS_PROJECT, post_to=ODS_UPLOAD)
             except:  #anything
