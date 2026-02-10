@@ -414,7 +414,6 @@ def populate_meta(stream_hostnames: StringList, antlo_names: StringList,
                 'DEC_STR'  : dec,       # Rawspec expects these keys (rawspec_rawutils.c#L155-L186)
                 'AZ'       : az,
                 'EL'       : el,
-                'ANTNAMES' : antlo_names_string[0:71],
                 'XPCTGBPS' : '{:.3f}GBps {:.3f}Gbps'.format(expected_GBps, expected_GBps*8),
                 'REFANTNM' : reference_antenna_name
             }
@@ -423,7 +422,7 @@ def populate_meta(stream_hostnames: StringList, antlo_names: StringList,
             key_val["TUNING"] = f"Lo{antlo_names[0][-1]}"
 
         # manage limited entry length
-        if(len(antlo_names_string) >= 71): #79 - len('ANTNMS##')
+        if True:
             key_enum = 0
             antlo_names_left = antlo_names.copy()
             while(len(antlo_names_left) > 0):
@@ -432,9 +431,6 @@ def populate_meta(stream_hostnames: StringList, antlo_names: StringList,
                 while(len(antlo_names_left_string) >= 71): #79 - len('ANTNMS##')
                     num_antnames -= 1
                     antlo_names_left_string = ','.join(antlo_names_left[0:num_antnames])
-
-                if key_enum == 0:
-                    key_val['ANTNAMES'] = antlo_names_left_string
 
                 key_val['ANTNMS%02d' % key_enum] = antlo_names_left_string
                 antlo_names_left = antlo_names_left[num_antnames:]

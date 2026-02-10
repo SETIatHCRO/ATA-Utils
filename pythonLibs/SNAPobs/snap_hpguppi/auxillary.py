@@ -153,20 +153,16 @@ def redis_hget_retry(redis_obj, redis_chan, key, retry_count=5):
   return value
 
 def get_antennae_of_redis_chan(redis_obj, redis_chan, silent=False):
-  antennae_names = redis_hget_retry(redis_obj, redis_chan, 'ANTNAMES')
-  if antennae_names is None:
-    antennae_names = []
-  else:
-    antennae_names = antennae_names.split(',')
   
   antennae_count = redis_hget_retry(redis_obj, redis_chan, 'NANTS')
   if antennae_count is None:
     antennae_count = 0
   else:
     antennae_count = int(antennae_count)
+
+  antennae_names = []
   key_enum = 0
   while(antennae_count > len(antennae_names)):
-    key_enum += 1
     ant_names = redis_hget_retry(redis_obj, redis_chan, 'ANTNMS%02d'%key_enum)
     if ant_names is None:
       if not silent:
@@ -178,6 +174,7 @@ def get_antennae_of_redis_chan(redis_obj, redis_chan, silent=False):
         )
       break
     antennae_names += ant_names.split(',')
+    key_enum += 1
   return antennae_names
 
 def get_stream_hostnames_of_redis_chan(redis_obj, redis_chan):
