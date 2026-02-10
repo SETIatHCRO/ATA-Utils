@@ -29,6 +29,7 @@ setuptools.setup(
         'SNAPobs/snap_hpguppi/scripts/meta_marshall.py',
         'SNAPobs/snap_hpguppi/scripts/set_postproc_keys.py',
         'SNAPobs/snap_hpguppi/scripts/set_hashpipe_keys.py',
+        'SNAPobs/snap_hpguppi/scripts/get_hashpipe_keys.py',
         'SNAPobs/snap_hpguppi/scripts/populate_meta.py',
         'SNAPobs/snap_hpguppi/scripts/sync_streams.py',
         'SNAPobs/snap_hpguppi/scripts/configure_antenna_streams.py',
