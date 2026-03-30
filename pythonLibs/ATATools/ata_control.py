@@ -154,7 +154,14 @@ def get_ant_pos(ant_list):
 
     retval = {}
     for antname in ant_list:
-        loc = ant_locs[antname]
+        loc = ant_locs.get(
+            antname,
+            {
+                'N': None,
+                'E': None,
+                'U': None,
+            }
+        )
         retval[antname] = [loc['N'], loc['E'], loc['U']]
 
     return retval
@@ -207,7 +214,10 @@ def get_ra_dec(ant_list):
 
     retdict = {}
     for ant in ant_list:
-        pos = antpos[ant]
+        pos = antpos.get(
+            ant, 
+            None
+        )
         if pos:
             retdict[ant] = [pos['ra'], pos['dec']]
         else:
@@ -235,7 +245,7 @@ def get_az_el(ant_list):
 
     retdict = {}
     for ant in ant_list:
-        pos = antpos[ant]
+        pos = antpos.get(ant, None)
         if pos:
             retdict[ant] = [pos['az'], pos['el']]
         else:
@@ -922,7 +932,7 @@ def get_freq(ant_list, lo='a'):
         raise
         
     for ant in ant_list:
-        focusfreq = focuses[ant]
+        focusfreq = focuses.get(ant, None)
         if not focusfreq:
             focusfreq = "NaN"
         else:
