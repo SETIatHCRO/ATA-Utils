@@ -281,7 +281,7 @@ def get_eph_source(antlist):
 
     retdict = {}
     for ant in antlist:
-        pos = sources[ant]
+        pos = sources.get(ant, None)
         if pos:
             retdict[ant] = pos
         else:
