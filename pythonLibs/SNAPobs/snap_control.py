@@ -28,6 +28,8 @@ def init_snaps(snap_list, load_system_information=False, ignore_errors=False, su
         except Exception as err:
             if not ignore_errors:
                 raise RuntimeError(f"Could not instantiate {snap_name}.") from err
+            else:
+                snaps.append(None)
 
     if load_system_information:
         get_system_information(snaps)

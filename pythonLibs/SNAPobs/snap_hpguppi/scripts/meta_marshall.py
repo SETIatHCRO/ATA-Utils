@@ -76,14 +76,6 @@ def packet_header_dict_from_Q(Q):
   header['last'] = bool(Q >> 58)
   return header
 
-def read_feng_chan_dest_ips(feng, ignore_null_packets=True):
-  per_interface = [read_chan_dest_ips(feng, interface, ignore_null_packets=ignore_null_packets)
-        for interface in range(feng.n_interfaces)]
-  ret = per_interface[0]
-  for interface in range(1, feng.n_interfaces):
-    ret.extend(per_interface[interface])
-  return ret
-
 def calc_n_words(feng):
   return feng.n_chans_f * feng.n_times_per_packet * feng.n_pols // feng.tge_n_samples_per_word // feng.packetizer_granularity
 
@@ -112,7 +104,7 @@ def read_chan_dest_ips(feng, interface, ignore_null_packets=True):
   try:
     interfacesEnabled = eth_get_output_enabled(feng, interface)
   except casperfpga.transport_katcp.KatcpRequestFail:
-    print('Failed to query ethernet status of {}[{}]'.format(feng.host, interface))
+    # print('Failed to query ethernet status of {}[{}]'.format(feng.host, interface))
     return None
   
   if not interfacesEnabled[0]:
@@ -193,11 +185,13 @@ streams_to_marshall, antenna_names = generate_stream_antnames_to_marshall()
 antname_nolo_list = list(set([ant[:2] for ant in antenna_names]))
 # Create the AtaSnapFengine list from the names
 active_streams = []
-fengs = snap_control.init_snaps(streams_to_marshall, ignore_errors=False, successful_snap_list=active_streams)#, load_system_information=False)
-hostname_feng_dict = {feng.host:feng for feng in fengs}
+stream_map_feng = dict(zip(
+  streams_to_marshall,
+  snap_control.init_snaps(streams_to_marshall, ignore_errors=True, successful_snap_list=active_streams)#, load_system_information=False)
+))
+hostname_feng_dict = {feng.host:feng for feng in stream_map_feng.values() if feng is not None}
 last_instantiated_fengs = time.time()
-period_s_instantiate_fengs = 60 # don't lower this, at < 20 snap_init took exponentially longer each time
-
+period_s_instantiate_fengs = 30
 
 last_groups = []
 last_destinations = []
@@ -233,26 +227,44 @@ sections_updated = [False for i in range(len(section_strings))]
 while(True):
   # TODO: reconsult the ANT TAB file periodically. This requires a `reload_ata_tab` in snap_config...
 
-  # TODO: try instantiate feng for those that had issues first time around...
-  # if time.time() - last_instantiated_fengs > period_s_instantiate_fengs:
-  #   print("Reinstantiating F-Engine connections...")
-  #   snap_control.disconnect_snaps(fengs)
-  #   streams_to_marshall, antenna_names = generate_stream_antnames_to_marshall()
-  #   antname_nolo_list = list(set([ant[:2] for ant in antenna_names]))
-  #   # Create the AtaSnapFengine list from the names
-  #   active_streams = []
-  #   fengs = snap_control.init_snaps(streams_to_marshall, ignore_errors=True, successful_snap_list=active_streams)#, load_system_information=False)
-  #   hostname_feng_dict = {feng.host:feng for feng in fengs}
-  #   last_instantiated_fengs = time.time()
+  # try instantiate feng for those that had issues first time around...
+  if (time.time() - last_instantiated_fengs) > period_s_instantiate_fengs and None in stream_map_feng.values():
+    print(f"Retrying F-Engine connections...: {[k for k, v in stream_map_feng.items() if v is None]}")
+
+    # snap_control.disconnect_snaps(fengs)
+    # streams_to_marshall, antenna_names = generate_stream_antnames_to_marshall()
+    # antname_nolo_list = list(set([ant[:2] for ant in antenna_names]))
+
+    # Create the AtaSnapFengine list from the names
+    streams_missing = [
+      k
+      for k, v in stream_map_feng.items()
+      if v is None
+    ]
+    stream_map_feng_ext = dict(zip(
+      streams_missing,
+      snap_control.init_snaps(streams_missing, ignore_errors=True)#, load_system_information=False)
+    ))
+    stream_map_feng.update(stream_map_feng_ext)
+
+    hostname_feng_dict = {feng.host:feng for feng in stream_map_feng.values() if feng is not None}
+    active_streams = [k for k, v in stream_map_feng.items() if v is not None]
+    last_instantiated_fengs = time.time()
 
   # Collect the destination
-  feng_interface_dest_details = {feng.host:
-    [read_chan_dest_ips(feng, interface, ignore_null_packets=True)
-      for interface in range(feng.n_interfaces)
-    ] for feng in fengs
+  feng_interface_dest_details = {
+    feng.host: [
+      read_chan_dest_ips(feng, feng.output_id, ignore_null_packets=True)
+      # for interface in range(feng.n_interfaces)
+    ] 
+    for feng in stream_map_feng.values()
+    if feng is not None
   }
   
-  for feng in fengs:
+  for feng in stream_map_feng.values():
+    if feng is None:
+      continue
+
     if None in feng_interface_dest_details[feng.host]:
       feng_interface_dest_details.pop(feng.host)
 
@@ -261,7 +273,7 @@ while(True):
         feng.spec_set_pipeline_id()
         feng._read_parameters_from_fpga()
         feng._calc_output_ids()
-        print(f"Restarted {feng.host}!")
+        print(f"Revived connection to {feng.host}!")
       except casperfpga.transport_katcp.KatcpRequestFail as err:
         pass
 
@@ -271,7 +283,8 @@ while(True):
   
   feng_n_chans = {
     feng.host: getattr(feng, "n_chans_f", None)
-    for feng in fengs
+    for feng in stream_map_feng.values()
+    if feng is not None
   }
   if len(set(feng_n_chans.values())) > 1:
     print(f"FEngines have different numbers of channels: {feng_n_chans}")
