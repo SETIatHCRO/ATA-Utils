@@ -39,7 +39,7 @@ class TelnetLink():
 
 
         # Transform the telnet byte string to a python list
-        raw_values = telnet_data.decode().split(',')
+        raw_values = telnet_data.decode("ascii", errors="ignore").split(',')
 
         # Data to extract and length of WS data unit to remove.
         # Format: (Name in telnet, charcter length of "unit" string
