@@ -1,0 +1,48 @@
+Pulsar search: active : v3
+SP search : active : v2
+v4 : Version before the without GPU (no heimdall)
+v5:: Version with PRESTO and single_pulse_search.py package.
+v6: A good working verion but does not remove zero DM candidates. Next version. 
+V7 : With PRESTO, removes zerodm candidates (Next version should have ploting based on the candidate DM and SNR)
+V8 : Copy before cleaning and better plotting tool
+V9 : Better plot with DM vs SNR plot 
+V10: Heimdall command improved with rfi_no_narrow placed 
+V11: Heimdall Error check if it fails. ML model passed to FRBcand output for priortization  
+
+
+PlotCand: active v1
+v1: Basic version
+v2: With improve diagnostic plot 
+v3 : Also with DM vs phase 
+v4: Fixed a bug with candidate found at the edge of the file, copied this for next version with negative DM
+plots
+v5 : Save copy before centing pulse change 
+v6: Centering pulse such that we only need to see one plot.(Did not work, very well) (active)
+v7: Save before a new version which is to use new python module to plot (without DSPSR and PSRCHIVE). 
+v8: New plotting tool which is much better than DSPSR. It centers the pulse along with also providinging other necessary products. 
+
+SPANDAK is a bigger wrapper which will SP_search_BL or other inside
+The reason to have a separate wrapper is to do negative DM search enable.
+v1: Version which can do both sub-band search and neg-DM but not both together.  
+v2: Sub-band using bldice, (save before changing the save to "fil_multidice"
+v3: sub-banding using fil_multidice
+
+
+waterfaller_vg_v1.py : basic
+waterfaller_vg_v2.py : DM-vs-time plot uses original data while waterfall and time-series uses downsampled data. 
+waterfaller_vg_v3.py : DM-vs-time uses subbanded and downsample data. The zooming on the pulse is fixed to be width*128 bins. 
+waterfaller_vg_v4.py : Added on-pulse spectra on the side of the dedisperse waterfall along with a t-test comparison with off-pulse spectra. 
+                       Also added DM-vs-SNR for the on-pulse and off-pulse region. The plots are much better. 
+    			The only thing I want to add is zoom on the DM-vs-SNR region based on the Cordes and MacLaughlin paper's 
+			equation number 13.
+waterfaller_vg_v5.py : The output is based on the the three catagories (A, B, C) and others.   		       
+waterfaller_vg_v6.py : Two changes (1) scaleing was failing for masked file so instead of using from spectra class, scalling is done
+			outside now, (2) based on the number of nbins, polynomial gets removed for each channel.   		
+waterfaller_vg_v7.py : Negative DM plotting enabled based on the source name first two letters (e.g. nT,nF,nTnF). _		
+waterfaller_vg_v8.py : Off-pulse are taken from the both side of the pulse while earlier it was only from the left half
+waterfaller_vg_v9.py : Added csv file option. If --logs <csv file> provided, metadata for each candidate will be stored. 
+waterfaller_vg_v10.py : Zap channels with off-pulse signal higher than 4 times the std of the entire spectra. Also zap 5% of the band on both side (top and bottom).
+waterfaller_vg_v11.py : Probability from the ML algorithm added. A B C catagory parameters were changed a little bit (this version was used for the first 1000 C band files).
+waterfaller_vg_v12.py: All the channels which have 50% zeros in them are flagged. This should reduce number of B candidates   
+
+ 

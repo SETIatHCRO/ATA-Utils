@@ -1,0 +1,2 @@
+python extract_spectra.py /mnt_blpd9/datax/incoming/vishal/ --total_samples 100000 --save_name /datax/scratch/vgajjar/spectra_data.npz
+python create_model.py 4000 8000 --RFI_samples /datax/scratch/vgajjar/spectra_data.npz --save_model /datax/scratch/vgajjar/full_data_model --save_confusion_matrix /datax/scratch/vgajjar/confusion_matrix.png

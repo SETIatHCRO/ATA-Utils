@@ -1,0 +1,23 @@
+*.DS_Store
+*pycache
+psr
+*.pyc
+*.local
+*.pytest*
+*.vscode
+*.ipynb_checkpoints
+*report*
+dominic-connor-FRB.py
+breakthrough
+*.h5
+*.ipynb
+*.np*
+debugging plots/
+waterfaller_functions
+fetch_functions/*
+simulateFRBclassification/cand_plot_commands
+simulateFRBclassification/scratch_space
+simulateFRBclassification/vnc_commands.txt
+papers
+*.png
+simulateFRBclassification/vscode_remote_workspace.code-workspace
