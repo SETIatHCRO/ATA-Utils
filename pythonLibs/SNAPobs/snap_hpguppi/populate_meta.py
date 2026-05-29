@@ -291,11 +291,14 @@ def populate_meta(stream_hostnames: StringList, antlo_names: StringList,
     lo_obsfreq = skyfreq_mapping[reference_stream_hostname]
     centre_channel = fengine_meta_keyvalues['FENCHAN']/2
     source     = antref_obs_params['SOURCE']
-    ra_hrs  = antref_obs_params['RA'][0] # hours
-    ra      = ra_hrs * 360 / 24 # convert from hours to degrees
-    dec     = antref_obs_params['RA'][1] #antref_obs_params['DEC']
-    az      = antref_obs_params['AZ'][0]
-    el      = antref_obs_params['AZ'][1] #antref_obs_params['EL']
+    try:
+        ra_hrs  = antref_obs_params['RA'][0] # hours
+        ra      = ra_hrs * 360 / 24 # convert from hours to degrees
+        dec     = antref_obs_params['RA'][1] #antref_obs_params['DEC']
+        az      = antref_obs_params['AZ'][0]
+        el      = antref_obs_params['AZ'][1] #antref_obs_params['EL']
+    except BaseException as err:
+        raise RuntimeError(f"Failed to access RA/Dec for reference antenna '{reference_antlo_name}'. Usually due to unsupported source registered for antenna. See full ATA-control return-values: {ants_obs_params}") from err
     source =  source.replace(' ', '_')
     if dut1 is True or dut1 is None:
         # get dut1 at the beginning of today
