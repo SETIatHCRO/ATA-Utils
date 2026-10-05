@@ -35,6 +35,10 @@ import re
 
 import os
 import tempfile
+try:
+    import requests
+except Exception:
+    requests = None
 
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
@@ -63,6 +67,14 @@ WAIT_DTFMT = "%Y-%m-%dT%Hh%Mm%Ss%z"
 ODS_DEFAULTS = "$ods_defaults_ata_B.json"
 ODS_PROJECT = "/opt/mnt/share/ods_project/ods_gui.json"
 ODS_UPLOAD = "/opt/mnt/share/ods_upload/ods.json"
+
+NOTION_PULL = True # If you want it to fall back to just the SNAP call, set this to False.
+NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
+DATABASE_ID = os.environ.get("NOTION_DISH_STATUS_ID")
+NOTION_SORTS = [{"property": "Antenna", "direction": "ascending"}]
+# These are the tokens to pull Antenna statuses from the following page:
+# https://www.notion.so/kaput-grin-9e2/2b1761a43502800fbebdc85bd5bd1936?v=2b1761a435028006aed6000c23eceef3
+# If there is ever a change or an error with Notion, talk to Blayne Griffin and/or Sofia Sheikh to update
 
 def sign(a):
     if a == 0:
@@ -117,6 +129,171 @@ def send_slack_message(token, channel, text):
         # Handle the exception if there was an error
         raise e
 
+
+def parse_title_text(prop):
+    if not isinstance(prop, dict):
+        return ""
+
+    title_items = prop.get("title", [])
+    if title_items:
+        return "".join(item.get("plain_text", "") for item in title_items).strip()
+
+    rich_text_items = prop.get("rich_text", [])
+    if rich_text_items:
+        return "".join(item.get("plain_text", "") for item in rich_text_items).strip()
+
+    return ""
+
+
+def _normalize_notion_property_title(title):
+    text = str(title or "").strip().lower()
+    text = re.sub(r"[^a-z0-9]+", " ", text)
+    return " ".join(text.split())
+
+
+def get_notion_property(properties, *candidate_titles):
+    if not isinstance(properties, dict):
+        return {}
+
+    normalized_key_map = {
+        _normalize_notion_property_title(key): value
+        for key, value in properties.items()
+    }
+
+    for title in candidate_titles:
+        normalized_title = _normalize_notion_property_title(title)
+        if normalized_title in normalized_key_map:
+            match = normalized_key_map.get(normalized_title)
+            if isinstance(match, dict):
+                return match
+
+    for title in candidate_titles:
+        normalized_title = _normalize_notion_property_title(title)
+        if not normalized_title:
+            continue
+        title_tokens = set(normalized_title.split())
+        for normalized_key, value in normalized_key_map.items():
+            if not isinstance(value, dict):
+                continue
+            if normalized_title in normalized_key or normalized_key in normalized_title:
+                return value
+            key_tokens = set(normalized_key.split())
+            if title_tokens and key_tokens and title_tokens.issubset(key_tokens):
+                return value
+
+    return {}
+
+
+def parse_active_value(prop):
+    if not isinstance(prop, dict):
+        return False
+
+    if "checkbox" in prop:
+        return bool(prop.get("checkbox"))
+
+    formula_prop = prop.get("formula") or {}
+    if isinstance(formula_prop, dict):
+        if "boolean" in formula_prop:
+            return bool(formula_prop.get("boolean"))
+        formula_string = str(formula_prop.get("string", "")).strip().lower()
+        if formula_string in {"true", "yes", "active", "enabled", "1"}:
+            return True
+
+    select_name = (prop.get("select") or {}).get("name", "")
+    status_name = (prop.get("status") or {}).get("name", "")
+    text_value = parse_title_text(prop)
+
+    candidate = (select_name or status_name or text_value).strip().lower()
+    candidate = " ".join(candidate.split())
+    return candidate in {"true", "yes", "active", "active array", "enabled", "1"}
+
+
+def parse_observing_status(prop):
+    if not isinstance(prop, dict):
+        return ""
+
+    multi_select_items = prop.get("multi_select") or []
+    if isinstance(multi_select_items, list):
+        names = []
+        for item in multi_select_items:
+            if not isinstance(item, dict):
+                continue
+            name = str(item.get("name", "")).strip().lower()
+            if name:
+                names.append(" ".join(name.split()))
+        if names:
+            return names[0]
+
+    select_name = (prop.get("select") or {}).get("name", "")
+    status_name = (prop.get("status") or {}).get("name", "")
+    formula_string = str((prop.get("formula") or {}).get("string", "")).strip().lower()
+    text_value = parse_title_text(prop)
+
+    value = (select_name or status_name or formula_string or text_value).strip().lower()
+    return " ".join(value.split())
+
+
+def get_notion_antenna_data(default_antennas):
+    if requests is None:
+        raise RuntimeError("requests package is unavailable")
+
+    url = f"https://api.notion.com/v1/databases/{DATABASE_ID}/query"
+    headers = {
+        "Authorization": f"Bearer {NOTION_TOKEN}",
+        "Notion-Version": "2022-06-28",
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "sorts": NOTION_SORTS,
+        "page_size": 100,
+    }
+    antenna_state = {}
+
+    while True:
+        response = requests.post(url, headers=headers, json=payload, timeout=15)
+        response.raise_for_status()
+        data = response.json()
+
+        # NOTE: This is where you change Notion columns.
+        for page in data.get("results", []):
+            properties = page.get("properties", {})
+            antenna_prop = get_notion_property(properties, "Antenna", "Dish", "Ant")
+            active_prop = get_notion_property(properties, "Active Array?", "Active Array", "Active")
+            status_prop = get_notion_property(properties, "Observing Status", "Status", "Observing")
+
+            antenna = parse_title_text(antenna_prop).strip().lower()
+            if not antenna:
+                continue
+
+            active_array = parse_active_value(active_prop)
+            observing_status = parse_observing_status(status_prop)
+            if not observing_status:
+                observing_status = "clear to use" if active_array else "n/a"
+
+            antenna_state[antenna] = {
+                "active": bool(active_array),
+                "observing_status": observing_status,
+            }
+
+        if not data.get("has_more"):
+            break
+
+        payload["start_cursor"] = data.get("next_cursor")
+
+    if not antenna_state:
+        raise RuntimeError("Notion returned no antenna rows")
+
+    ordered = sorted(set(default_antennas) | set(antenna_state.keys()))
+    status_by_antenna = {
+        ant: antenna_state.get(ant, {}).get("observing_status", "n/a")
+        for ant in ordered
+    }
+    active_antennas = [ant for ant in ordered if antenna_state.get(ant, {}).get("active", False)]
+    if not active_antennas:
+        raise RuntimeError("Notion returned zero active antennas")
+    return ordered, active_antennas, status_by_antenna
+
 class ObsPlotAppSecondary(tk.Toplevel):
     def __init__(self, parent, obs):
         super().__init__(parent)
@@ -162,13 +339,17 @@ class ExceptionProcess(multiprocessing.Process):
 
 class DropdownWithCheckboxes(tk.Frame):
     def __init__(self, parent, options, text="Select options",
-                 bg="lightgrey", width=80, height=150):
+                 bg="lightgrey", width=80, height=150, columns=1):
         super().__init__(parent)
-        
+
         # Initialize options and create BooleanVars to track each checkbox's state
         self.options = options
         self.vars = {}
-        
+        self.option_colors = {}
+        self.disabled_options = set()
+        self.legend_items = []
+        self.column_headers = []
+
         # Button to toggle the dropdown menu
         self.button = tk.Button(self, text=text, command=self.toggle_menu,
                                 font=NORMAL_FONT, bg=bg)
@@ -180,6 +361,7 @@ class DropdownWithCheckboxes(tk.Frame):
 
         self.height = height
         self.width  = width
+        self.columns = max(1, int(columns))
 
         # Add initial checkboxes
         self.create_menu()
@@ -213,7 +395,9 @@ class DropdownWithCheckboxes(tk.Frame):
         # Populate checkboxes
         self.update_options(self.options)
 
-    def update_options(self, options):
+    def update_options(self, options, selected_options=None, option_colors=None,
+                       disabled_options=None, legend_items=None,
+                       column_headers=None):
         # Clear existing checkboxes and variables
         for widget in self.inner_frame.winfo_children():
             widget.destroy()
@@ -221,12 +405,72 @@ class DropdownWithCheckboxes(tk.Frame):
 
         # Add new options and their checkboxes
         self.options = options
-        for option in self.options:
-            var = tk.BooleanVar(value=True)
-            self.vars[option] = var
-            chk = tk.Checkbutton(self.inner_frame, text=option, variable=var,
-                    font=NORMAL_FONT)
-            chk.pack(anchor="w", padx=5)
+        self.option_colors = option_colors or {}
+        self.disabled_options = set(disabled_options or [])
+        self.legend_items = legend_items or []
+        self.column_headers = column_headers or []
+
+        if self.legend_items:
+            legend_frame = tk.Frame(self.inner_frame)
+            legend_frame.pack(fill="x", anchor="w", padx=6, pady=(4, 8))
+
+            legend_title = tk.Label(legend_frame, text="Legend", font=FILL_FONT)
+            legend_title.pack(anchor="w")
+
+            for color, label in self.legend_items:
+                row = tk.Frame(legend_frame)
+                row.pack(anchor="w", pady=1)
+
+                swatch = tk.Label(row, bg=color, width=2, relief=tk.SOLID, bd=1)
+                swatch.pack(side="left", padx=(0, 6))
+
+                legend_label = tk.Label(row, text=label, fg=color, font=FILL_FONT)
+                legend_label.pack(side="left")
+
+            sep = ttk.Separator(self.inner_frame, orient="horizontal")
+            sep.pack(fill="x", padx=4, pady=(2, 6))
+
+        if self.columns <= 1:
+            options_by_column = [self.options]
+        else:
+            n_rows = max(1, (len(self.options) + self.columns - 1) // self.columns)
+            options_by_column = [
+                self.options[col * n_rows:(col + 1) * n_rows]
+                for col in range(self.columns)
+            ]
+
+        for col_idx, col_options in enumerate(options_by_column):
+            col_frame = tk.Frame(self.inner_frame)
+            col_frame.pack(side="left", anchor="n", padx=(0, 16))
+
+            if col_idx < len(self.column_headers):
+                hdr = tk.Label(col_frame, text=self.column_headers[col_idx],
+                        font=FILL_FONT, anchor="center")
+                hdr.pack(fill="x", padx=5, pady=(0, 4))
+                sep = ttk.Separator(col_frame, orient="horizontal")
+                sep.pack(fill="x", padx=2, pady=(0, 6))
+
+            for option in col_options:
+                if selected_options is None:
+                    default_checked = True
+                else:
+                    default_checked = option in selected_options
+
+                if option in self.disabled_options:
+                    default_checked = False
+
+                var = tk.BooleanVar(value=default_checked)
+                self.vars[option] = var
+
+                fg = self.option_colors.get(option, "black")
+                chk = tk.Checkbutton(col_frame, text=option, variable=var,
+                        font=NORMAL_FONT, fg=fg, activeforeground=fg,
+                        disabledforeground=fg)
+
+                if option in self.disabled_options:
+                    chk.config(state=tk.DISABLED)
+
+                chk.pack(anchor="w", padx=5)
 
         # Update the scroll region to fit content
         self.update_scrollregion()
@@ -692,6 +936,20 @@ class TelescopeSchedulerApp(tk.Tk):
         #self.listbox.bind("<B1-Motion>", self.on_drag)
         #self.listbox.bind("<ButtonRelease-1>", self.on_release)
 
+        # Create a queue for thread communication to the main GUI update method
+        self.task_queue = multiprocessing.Queue() #queue.Queue()
+
+        logging.basicConfig(
+            level=logging.INFO,  # Set the minimum logging level
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Log format
+            handlers=[
+                logging.FileHandler("app.log"),  # Log to a file
+                logging.StreamHandler()         # Log to the console
+            ]
+        )
+
+        self.logger = logging.getLogger("ATAObsSchedulerLogger")
+
         # Right-hand side (Divided into 4 parts)
         self.setup_right_frame()
 
@@ -744,22 +1002,9 @@ class TelescopeSchedulerApp(tk.Tk):
         # Add log
         self.log_window = LogWindow(self)
 
-        logging.basicConfig(
-            level=logging.INFO,  # Set the minimum logging level
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Log format
-            handlers=[
-                logging.FileHandler("app.log"),  # Log to a file
-                logging.StreamHandler()         # Log to the console
-            ]
-        )
-
-        self.logger = logging.getLogger("ATAObsSchedulerLogger")
-
-        # Create a queue for thread communication to the main GUI update method
-        self.task_queue = multiprocessing.Queue() #queue.Queue()
-
         # Now start it
         self.after(100, self.gui_process_queue)
+        self.after(300, self.refresh_ant_targets)
 
         if self.debug:
             self.write_status("Running scheduler in debug mode")
@@ -824,19 +1069,20 @@ class TelescopeSchedulerApp(tk.Tk):
 
         options = ["tmp1", "tmp2"]
         self.antenna_dropdown = DropdownWithCheckboxes(antenna_inner_frame, options,
-                                          text="Antennas", bg="lightblue")
+                          text="Antennas", bg="lightblue",
+                          width=450, height=470, columns=4)
         self.antenna_dropdown.pack(side=tk.LEFT, padx=5, pady=5)
         self.to_enable_disable.append(self.antenna_dropdown.button)
 
         self.targets_dropdown = DropdownWithCheckboxes(antenna_inner_frame, options,
-                                          text="Recorders", bg="lightblue", width=150)
+                          text="Recorders", bg="lightblue",
+                          width=720, height=230, columns=4)
         self.targets_dropdown.pack(side=tk.LEFT, padx=5, pady=5)
         self.to_enable_disable.append(self.targets_dropdown.button)
 
-        self.antenna_button = tk.Button(antenna_inner_frame, 
+        self.antenna_button = tk.Button(antenna_inner_frame,
                 text="Refresh", font=NORMAL_FONT, bg="lightblue",
                 command=self.refresh_ant_targets)
-        self.refresh_ant_targets()
 
         self.antenna_button.pack(padx=5, pady=5)
         self.to_enable_disable.append(self.antenna_button)
@@ -1149,15 +1395,95 @@ class TelescopeSchedulerApp(tk.Tk):
         return combined
 
     def refresh_ant_targets(self):
-        # get antenna list
-        ant_list = sorted(snap_config.get_rfsoc_active_antlist())
-        self.antenna_dropdown.update_options(ant_list)
+        previous_selection = set(self.antenna_dropdown.get_selected_options())
+        selected_antennas = None
+
+        ant_list = []
+        option_colors = {}
+        legend_items = []
+        disabled_options = set()
+        excluded_auto_select = set()
+
+        if NOTION_PULL:
+            try:
+                ant_list, active_antennas, status_by_antenna = get_notion_antenna_data(
+                        sorted(snap_config.get_rfsoc_active_antlist()))
+
+                # NOTE: This is where you define the logic for pulling from Notion
+                # If we change the labels on Notion, this is what will need to be changed.
+                # The colors are defined here so you only have to define once for it to be changed.
+
+                good_color = "green4"
+                disabled_color = "gray40"
+                monitor_color = "goldenrod3"
+                remove_color = "red3"
+                bad_cal_color = "magenta4"
+
+                for antenna in ant_list:
+                    status = status_by_antenna.get(antenna, "").strip().lower()
+                    if antenna not in active_antennas:
+                        option_colors[antenna] = disabled_color
+                        disabled_options.add(antenna)
+                    elif status == "clear to use":
+                        option_colors[antenna] = good_color
+                    elif status in {"y-pol hardware issue", "keep an eye"}:
+                        option_colors[antenna] = monitor_color
+                    elif status == "remove from all scripts":
+                        option_colors[antenna] = remove_color
+                        excluded_auto_select.add(antenna)
+                    elif status in {"x-pol hardware issue", "remove from calibration procedure"}:
+                        option_colors[antenna] = bad_cal_color
+                        # excluded_auto_select.add(antenna)
+                        # Remove bad calibrators *after* taking data. Fine to take data with them, just remove them from computing
+                    else:
+                        option_colors[antenna] = good_color
+
+                legend_items = [
+                    (good_color, "Clear to Use!"),
+                    (remove_color, "Remove Completely"),
+                    (monitor_color, "Y-pol Hardware Issue (Take Data, Remove from Calibration)"),
+                    (bad_cal_color, "X-pol Hardware Issue (Take Data, Remove from Calibration)"),
+                    (disabled_color, "Inactive"),
+                ]
+
+                if previous_selection:
+                    selected_antennas = (previous_selection & set(ant_list)
+                            - disabled_options - excluded_auto_select)
+                else:
+                    selected_antennas = (set(active_antennas) - disabled_options
+                            - excluded_auto_select)
+
+                self.write_status(
+                        f"Notion antenna refresh loaded {len(ant_list)} antennas")
+            except Exception as e:
+                ant_list = sorted(snap_config.get_rfsoc_active_antlist())
+                option_colors = {ant: "black" for ant in ant_list}
+                legend_items = [("black", "SNAP active antenna")]
+                disabled_options = set()
+                selected_antennas = previous_selection or set(ant_list)
+                self.write_status(
+                        f"Notion antenna refresh failed. Using SNAP list ({e})",
+                        fg='orange')
+        else:
+            ant_list = sorted(snap_config.get_rfsoc_active_antlist())
+            option_colors = {ant: "black" for ant in ant_list}
+            legend_items = [("black", "SNAP active antenna")]
+            selected_antennas = previous_selection or set(ant_list)
+
+        self.antenna_dropdown.update_options(
+                ant_list,
+            selected_options=selected_antennas,
+                option_colors=option_colors,
+                disabled_options=disabled_options,
+                legend_items=legend_items)
 
         # get hashpipe recorders
         d = {"seti-node%i" %i: [0,1] for i in range(1, 15)}
 
         d_list = hashpipe_targets_to_list(d)
-        self.targets_dropdown.update_options(d_list)
+        self.targets_dropdown.update_options(
+            d_list,
+            column_headers=["LoA", "LoB", "LoC", "LoD"])
 
 
     def register_oic(self):
