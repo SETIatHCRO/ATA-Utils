@@ -2,73 +2,76 @@
 
 This script accepts csvs with targets, then executes an observation with the ATA.
 This script has several capabilities:
-It re-orders targets based on current altitude, to ensure little to no atmospheric scattering
+It re-orders targets based on current altitude, to ensure decreased atmospheric scattering
 It also pushes all targets to ODS to ensure protection from SpaceX satellites.
-Sun, Moon, and Planet avoidances can also be turned on.
+Sun, Moon, and Planet avoidances can be turned on.
 When an observation is finished, it will mark each target as observed.
 If it reaches the end of the csv, it will attempt to cycle back through to make sure it didn't miss anything.
+Start and End times can be configured before or during an observation.
 """
 
 #TODO: Blayne - Bring in the new obs planning logic and target selection stuff.
 # Find a better way to plan the whole session at the beginning, so there isn't as much waiting in the middle.
 
-# CHANGE THESE VALUES FOR YOUR Observation ==========================================================================================================================================================
+# CHANGE THESE VALUES FOR YOUR OBSERVATION ==========================================================================================================================================================
 
 # NOTE: You can either change these values manually for your individualized script, or you can use the GUI.
 
 PROJECT_NAME = 'testingtime'  # Name of the project. Used in file names and logging
 PROJECT_FOLDER = ''  # Folder path for your project.
 # NOTE: e.g. 'exotica' or 'p068'
+# NOTE: This folder will have subfolders made inside of it. Make sure it's correct.
 
 # Define scan length
 # 300 seconds is 5 minutes
-OBS_TIME = 300 #305 #610 #925 # In seconds
-# The ATA will automatically add a short buffer.
+OBS_TIME = 5*60 #300 # In seconds
+# The script will automatically add a short buffer so the system can handle it
 
 # The csv_name variable defines the table of targets you want observed. Please ensure it is in the following format:
-# NOTE: ID | Plaintext Name | Horizons Name | Solar System Flag | RA (hours) | DEC | RA (deg) | RA (solsys) | DEC (solsys) | Obs Time |
-# Please see the README for more details.
+# NOTE: ID | Plaintext Name | Horizons Name | Solar System Flag | RA (hours) | DEC | RA (deg) | Obs Time |
+# Please see the README for more details. Some aliases are allowed, but it is recommended to follow this guide.
 CSV_NAME = 'demo_targets.csv'
-#CSV_NAME = '/home/sonata/rfsoc_obs_scripts/survey_gui_code/survey_targets.csv' # Move this file into the same folder as this script
 # NOTE: e.g. 'exotica_targets.csv'
 
 # This file has the ID, Plaintext Name, Solar System Flag, some identifying features if desired (e.g. columns for Sample Type), and columns for each frequency used.
 # NOTE: FREQUENCY COLUMNS SHOULD BE NAMED LIKE: cfreq_1336mhz
 OBSERVED_LIST = 'demo_observed.csv'
-#OBSERVED_LIST = '/home/sonata/rfsoc_obs_scripts/survey_gui_code/observed_survey.csv'
 # NOTE: e.g. 'observed_exotica.csv'
 
 # Here is where you will remove bad antennas from the observation
 # Define antennas to remove
 REMOVE_ANT = []
 # NOTE: e.g. REMOVE_ANT = ["2b", "2l", "4e"]
-# REMOVE_ANT = [] # For if no antennae need to be removed
+# REMOVE_ANT = [] # For if no antennas need to be removed
 
 SEFD_WEIGHTING = True # This is for antenna weighting. If False, it uses uniform weights. If True, it uses SEFD-based weights.
 
 # ODS requires a 20 minute lead time before it can activate. If your observation is faster than that time, I would suggest adding the wait
-# This will load your targets into the ODS software, then wait for that lead time to complete before beginning the actual observations
+# This will load your targets into the ODS database, then wait for that lead time to complete before beginning the actual observations
 # ODS lead-time control is configured here for easy access.
 # Default operation uses 20 minutes. Testing mode can optionally use a shorter lead.
 ODS_LEAD_TIME_MINUTES = 20
 TESTING_ODS_LEAD_TIME_MINUTES = 1
-# QUEUE_WAIT = False # Default is True.
+
 QUEUE_WAIT = True # Default is True.
 ODS_PUSH = True
-#ODS_PUSH = True
 
 PREFER_RA_UNITS = 'deg' # hours or deg
-
+# Don't worry about this, just tells the script which to try first.
 
 
 # Set each to True to avoid.
-MOON_AVOIDANCE = True
-SUN_AVOIDANCE = True
-PLANET_AVOIDANCE = False
+MOON_AVOIDANCE = True # Avoid the moon
+SUN_AVOIDANCE = True # Avoid the sun, KEEP ON!
+PLANET_AVOIDANCE = False # Avoid the planets
 
 # Working-table declination filter for sidereal (Solar System Flag == 0) sources.
 # Any sidereal source with DEC below this limit is removed from the working copy.
 DEC_LIMIT = -28.0
+
+ALT_MIN = 21
+#ALT_MIN = 16.5
+ALT_MAX = 85
 
 # Bright-body protection controls
 # Keep Sun/Moon protection wider than planet protection by default.
@@ -83,11 +86,12 @@ PLANET_HORIZONS_IDS = {
     "Uranus": "799",
     "Neptune": "899",
 }
+# Pluto is not included :(
 
 SKIP_PAUSE_SECONDS = 10 # Define how long it waits before moving on to the next target after a skip
 
 # How often to rebuild the LST-sorted target table during an observation (seconds)
-REORDER_INTERVAL_SECONDS = 3600 # 3600 seconds is 1 hour
+REORDER_INTERVAL_SECONDS = 1*60*60 # 3600 seconds is 1 hour
 
 REARRANGE_BY_LST = True # Rearrange the target list by local sidereal time
 
@@ -100,20 +104,21 @@ MAX_END_OF_LIST_RETRIES = "Max" # Number of times it will try to refresh (use "M
 END_OF_LIST_RETRY_WAIT_SECONDS = 30 # When the script reaches the very end, it will wait this time then refresh
 
 # Only touch this if you're testing the code. This deactivates the hpguppi recording and the "mark as observed" function
-RECORDING = False # For when on a private machine or when on the ATA and you don't want to record. Default is True.
-TESTING = True # For when not on the ATA. Default is False.
+RECORDING = False # For when you do or don't want to record in the GUI.
+TESTING = True # For when not on the ATA or testing an observation. Default is True so the array isn't moved by accident.
 
 MARKING = False # For marking as observed. Default is True.
 SORT_BY_OBSERVED = True # If False, treat every target as unobserved in file-based checks and track only in-memory.
 USE_TARGET_OBS_TIME_OVERRIDE = False # If True, use per-target "Obs Time" from target CSV when provided.
 TESTING_OBS_TIME_SECONDS = 60 # Testing-mode scan duration; overrides per-target/default scan duration.
 
-# Pacific timezone handling (DST-aware).
+# Pacific timezone handling (Daylight Savings aware).
 PACIFIC_TZ_NAME = "America/Los_Angeles"
 
 ACTIVE_RECORDERS = {
     f"seti-node{i}": [0, 1] for i in range(1, 15)
 }
+# For 4 tunings
 
 # Tracks whether recorder selection came explicitly from GUI config.
 # - False: standalone/default behavior (fallback to full original recorder map)
@@ -133,64 +138,23 @@ DEFAULT_TUNING_RECORDER_MAPS = [
     {'seti-node8': [0,1], 'seti-node9': [0,1], 'seti-node10': [0,1], 'seti-node11': [0]},
     {'seti-node11': [1], 'seti-node12': [0,1], 'seti-node13': [0,1], 'seti-node14': [0,1]},
 ]
+# Manually defining the seti nodes
 
 TUNING_LABELS = ["LoA", "LoB", "LoC", "LoD"] # These are the headers for the recorders section. Might rename to 'tunings', but unsure.
 
-# ============================================================================================================================================================================================
-
-# ODS Settings
-# ODS reservation timing controls
-# Slew model:
-# - ATA nominal rates used for conservative time budgeting between queued targets
-# - We intentionally bias high (multiplier + extra seconds) to reduce under-protection risk
-ODS_SLEW_AZ_RATE_DEG_PER_SEC = 3.0
-ODS_SLEW_EL_RATE_DEG_PER_SEC = 1.0
-ODS_SLEW_CONSERVATIVE_MULTIPLIER = 1.30
-ODS_SLEW_EXTRA_BUFFER_SECONDS = 30
-# Additional conservative pre-observation timing model:
-# - Always budget at least this many seconds for slew even if geometric estimate is smaller.
-# - Add fixed ATA operation/setup overhead before scan starts.
-ODS_ASSUME_LONG_SLEW_SECONDS = 240
-ODS_ATA_OPERATIONS_SECONDS = 120
-# Reservation model:
-# - Reserve slightly wider than planned scan slot so small timing jitter stays protected
-# - Reserve 5 minutes before and 5 minutes after each planned observation.
-#   Example: 5-minute observation -> 15-minute ODS reservation window centered on the observation.
-ODS_RESERVATION_BUFFER_SECONDS = 300
-# Comparison check tolerances:
-# - Early grace allows observation to begin slightly before reserved start
-# - Late grace allows slight overrun past reserved end
-ODS_WINDOW_EARLY_GRACE_SECONDS = 30
-ODS_WINDOW_LATE_GRACE_SECONDS = 30
-# Recovery model:
-# - If mismatch is detected, repush a near-now window with extra future margin
-ODS_MISMATCH_RECOVERY_EXTRA_SECONDS = 120
-# Future drift model:
-# - If a queued future window is close to expiring, proactively repush it
-ODS_FUTURE_DRIFT_REPUSH_THRESHOLD_SECONDS = 120
-
-
-# NOTE: Sort-by-observed toggle controls whether fully observed targets are skipped.
-# - True  -> use observed-list checks and skip targets observed at all active frequencies
-# - False -> bypass observed-list checks
-BYPASS_OBSERVED_CHECK = (not SORT_BY_OBSERVED)
-
-# Global status callback (set by GUI)
-_status_callback = None
-_urgent_callback = None
 
 # Target CSV column aliases for versatility.
 TARGET_COLUMN_ALIASES = {
-    "Plaintext Name": ["Plaintext Name", "Plaintext", "Plaintext_Name", "Name", "Target", "Target Name", "Source", "Source Name"],
+    "Plaintext Name": ["Plaintext Name", "Plaintext", "Plaintext_Name", "Name", "Target", "Target Name", "Source", "Source Name", "target_name"],
     "Horizons Name": ["Horizons Name", "Horizons_Name", "Horizons", "JPL Horizons", "Horizons ID", "JPL Name"],
-    "ID": ["ID", "Id", "id", "Target ID", "Source ID", "ID#"],
+    "ID": ["ID", "Id", "id", "Target ID", "Source ID", "ID#", "target_id"],
     "Solar System Flag": ["Solar System Flag", "SolarSystemFlag", "Solar System", "Solsys Flag", "solsys_flag", "Solar Flag"],
-    "RA (hours)": ["RA (hours)", "RA hours", "RA_Hours", "RA (hr)", "RA hr"],
-    "RA (deg)": ["RA (deg)", "RA deg", "RA_Deg", "RA (degrees)", "RA degrees"],
+    "RA (hours)": ["RA (hours)", "RA hours", "RA_Hours", "RA (hr)", "RA hr", "target_ra_hours"],
+    "RA (deg)": ["RA (deg)", "RA deg", "RA_Deg", "RA (degrees)", "RA degrees", "target_ra_deg"],
     "RA (solsys)": ["RA (solsys)", "RA_solsys", "RA Solsys", "Solar RA", "Solar System RA"],
-    "DEC": ["DEC", "Dec", "dec", "DEC (deg)", "Dec (deg)", "Declination"],
+    "DEC": ["DEC", "Dec", "dec", "DEC (deg)", "Dec (deg)","DEC (degree)", "Declination", "target_dec"],
     "DEC (solsys)": ["DEC (solsys)", "DEC_solsys", "DEC Solsys", "Solar DEC", "Solar System DEC"],
-    "Obs Time": ["Obs Time", "ObsTime", "Observation Time", "Scan Time", "Duration"],
+    "Obs Time": ["Obs Time", "ObsTime", "Observation Time", "Scan Time", "Duration", "obs_time"],
 }
 
 TARGET_REQUIRED_CANONICAL_COLUMNS = [
@@ -199,7 +163,50 @@ TARGET_REQUIRED_CANONICAL_COLUMNS = [
     "Solar System Flag",
     "DEC",
 ]
+# TODO: These are the columns you NEED in some way.
+# ID is a unique index value per target. Each entry MUST be unique, or it will skip over.
+# If you are observing one target several times, each observation needs its own unique ID.
+# The Plaintext Name is the printout name for you. If you're observing an Horizons target, you'll need the Horizons column.
+# Solar System Flag tells the script if it should use RA/DEC or query its coords with JPL Horizons.
+
 TARGET_REQUIRED_RA_ANY_OF = ["RA (hours)", "RA (deg)"]
+# Even if you only have solar system targets, your csv still needs (empty) RA/DEC columns so it has somewhere to put values to track.
+
+# ============================================================================================================================================================================================
+
+# ODS Settings
+# ATA slew rate
+ODS_SLEW_AZ_RATE_DEG_PER_SEC = 3.0
+ODS_SLEW_EL_RATE_DEG_PER_SEC = 1.0
+ODS_SLEW_CONSERVATIVE_MULTIPLIER = 1.30
+ODS_SLEW_EXTRA_BUFFER_SECONDS = 30
+
+# Budget additional time for the ODS reservation
+ODS_ASSUME_LONG_SLEW_SECONDS = 240
+ODS_ATA_OPERATIONS_SECONDS = 120
+
+# Reserve a buffer on either side of the observation
+ODS_RESERVATION_BUFFER_SECONDS = 5*60
+
+ODS_WINDOW_EARLY_GRACE_SECONDS = 30
+ODS_WINDOW_LATE_GRACE_SECONDS = 30
+
+# If there's a mismatch, it will try to recover.
+ODS_MISMATCH_RECOVERY_EXTRA_SECONDS = 120
+
+# Repush threshold for ODS
+ODS_FUTURE_DRIFT_REPUSH_THRESHOLD_SECONDS = 300
+
+
+# Sort-by-observed toggle controls whether fully observed targets are skipped.
+# - True  -> use observed-list checks and skip targets observed at all active frequencies
+# - False -> bypass observed-list checks
+BYPASS_OBSERVED_CHECK = (not SORT_BY_OBSERVED)
+# Mainly just for faster testing, most people can disregard
+
+# Global status callback (set by GUI)
+_status_callback = None
+_urgent_callback = None
 
 _HORIZONS_ENABLED = True
 _HORIZONS_WARNING_SHOWN = False
@@ -223,12 +230,16 @@ def set_urgent_callback(callback):
     _urgent_callback = callback
 
 
-# Active tuning frequencies in MHz used across observation and ODS planning
-active_tuning_freqs = [1336, 2008, 4536, 8336]
+# Active tuning frequencies in MHz used across observation and ODS planning.
+# Populate this from the actual selected tunings at runtime; do not assume a fixed
+# four-frequency set for all observations.
+active_tuning_freqs = []
 
 
+# NOTE TODO: Blayne, fix this to update to new ODS requirements
+# Especially need to make sure that it works for all 4 tunings
 def _make_ods_bands_for_active_tunings(frequencies_mhz=None):
-    """Build the list-of-band-dicts format used by ODS."""
+    """Builds dicts of the used bands for ODS."""
     if frequencies_mhz is None:
         frequencies_mhz = globals().get("active_tuning_freqs", []) or []
 
@@ -243,7 +254,7 @@ def _make_ods_bands_for_active_tunings(frequencies_mhz=None):
         parsed_freqs.append(freq_value)
 
     if not parsed_freqs:
-        parsed_freqs = [1336.0, 2008.0, 4536.0, 8336.0]
+        return []
 
     bands = []
     for freq_mhz in parsed_freqs:
@@ -292,6 +303,7 @@ import argparse
 import logging
 import csv
 import os
+import re
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 import pandas as pd
@@ -311,6 +323,9 @@ from utils_beamforming import push_ods
 from utils_beamforming import sleep_with_continuous_updates_seconds
 from utils_beamforming import resolve_path_from_script
 from utils_beamforming import normalize_hashpipe_targets
+from utils_beamforming import _normalize_csv_key
+from utils_beamforming import parse_hours_value
+from utils_beamforming import parse_degrees_value
 from utils_beamforming import parse_positive_int_seconds
 from utils_beamforming import resolve_scan_duration_seconds
 from utils_beamforming import estimate_ods_slew_seconds
@@ -429,8 +444,7 @@ def _format_ods_push_summary(
 
     return (
         f"Pushing ODS from {_format_clock_local(start_local)} to {_format_clock_local(end_local)} "
-        f"(Obs length {obs_label}, Reservation length {res_label}) on {date_label}"
-    )
+        f"(Obs length {obs_label}, Reservation length {res_label}) on {date_label}")
 
 
 def _format_local_window_label(start_utc: datetime, end_utc: datetime) -> str:
@@ -441,8 +455,7 @@ def _format_local_window_label(start_utc: datetime, end_utc: datetime) -> str:
     tz_label = start_local.strftime("%Z") or "local"
     return (
         f"{_format_clock_local(start_local)} to {_format_clock_local(end_local)} "
-        f"{tz_label} on {date_label}"
-    )
+        f"{tz_label} on {date_label}")
 
 
 
@@ -463,10 +476,8 @@ def _build_active_tuning_maps(active_recorders: dict, explicit_selection: bool =
         3: d_lod_full,
     }
 
-    # Standalone/default behavior: use full original structure when no explicit
-    # recorder selection was provided.
-    # GUI behavior: when selection was explicit, honor it exactly (including
-    # empty or invalid selections) and return no active maps.
+    # Standalone/default behavior: use full original structure when no explicit recorder selection was provided.
+    # GUI behavior: when selection was explicit, honor it exactly and return no active maps.
     if not normalized:
         if explicit_selection:
             return [], [], {}
@@ -580,8 +591,12 @@ def _target_has_unobserved_frequency(observed_list_path: str, source_id, frequen
 
 def _get_optional_column_values(df: pd.DataFrame, column_name: str):
     """Return column values when present, else a length-matched list of None."""
-    if column_name in df.columns:
-        return list(df[column_name])
+    if df is None or not isinstance(df, pd.DataFrame):
+        return [None] * 0
+    lookup = {_normalize_csv_key(col): col for col in df.columns}
+    actual = lookup.get(_normalize_csv_key(column_name))
+    if actual is not None:
+        return list(df[actual])
     return [None] * len(df)
 
 
@@ -592,7 +607,7 @@ def _normalize_preferred_ra_units() -> str:
         return "hours"
     if pref in ("deg", "degree", "degrees", "d"):
         return "deg"
-    _log_status(f"Unrecognized PREFER_RA_UNITS='{PREFER_RA_UNITS}', defaulting to 'deg'.")
+    _log_status(f"Unrecognized PREFER_RA_UNITS='{PREFER_RA_UNITS}', defaulting to 'deg'.") # NOTE TODO: I don't think this is right actually
     return "deg"
 
 
@@ -604,13 +619,25 @@ def _resolve_sidereal_ra_pair(ra_hours_value, ra_deg_value, source_name: str = "
     if (not ra_hours_ok) and (not ra_deg_ok):
         return None
 
+    where = f" ({context})" if str(context or "").strip() else ""
+
     if ra_hours_ok:
-        ra_hours = float(ra_hours_value)
+        try:
+            parsed_ra_hours = parse_hours_value(ra_hours_value, field_label=f"RA(hours) for {source_name}{where}")
+        except ValueError as exc:
+            _log_status(f"Error: {exc}")
+            return None
+        ra_hours = float(parsed_ra_hours if parsed_ra_hours is not None else ra_hours_value)
     else:
         ra_hours = None
 
     if ra_deg_ok:
-        ra_deg = float(ra_deg_value)
+        try:
+            parsed_ra_deg = parse_degrees_value(ra_deg_value, field_label=f"RA(deg) for {source_name}{where}")
+        except ValueError as exc:
+            _log_status(f"Error: {exc}")
+            return None
+        ra_deg = float(parsed_ra_deg if parsed_ra_deg is not None else ra_deg_value)
     else:
         ra_deg = None
 
@@ -626,8 +653,7 @@ def _resolve_sidereal_ra_pair(ra_hours_value, ra_deg_value, source_name: str = "
             where = f" ({context})" if str(context or "").strip() else ""
             _log_status(
                 f"Warning: RA(hours) and RA(deg) disagree for {source_name}{where}; "
-                f"using RA(hours)={ra_hours:.6f} and RA(deg)={ra_deg:.6f} as provided."
-            )
+                f"using RA(hours)={ra_hours:.6f} and RA(deg)={ra_deg:.6f} as provided.")
 
     return ra_hours, ra_deg
 
@@ -643,13 +669,13 @@ def _format_ra_preferred_text(ra_hours: float, ra_deg: float) -> str:
 def _resolve_target_column_map(columns) -> dict:
     """Resolve canonical target-column names to available CSV headers using aliases."""
     column_values = [] if columns is None else list(columns)
-    available = {str(col).strip(): col for col in column_values}
+    available = {_normalize_csv_key(col): col for col in column_values}
     resolved = {}
     for canonical, aliases in TARGET_COLUMN_ALIASES.items():
         for alias in aliases:
-            alias_text = str(alias).strip()
-            if alias_text in available:
-                resolved[canonical] = available[alias_text]
+            alias_key = _normalize_csv_key(alias)
+            if alias_key in available:
+                resolved[canonical] = available[alias_key]
                 break
     return resolved
 
@@ -671,8 +697,7 @@ def _format_alias_list(canonical_name: str) -> str:
 def _format_target_column_requirements() -> str:
     """Return a readable description of required target columns and accepted aliases."""
     lines = [
-        "Required target columns (aliases accepted):",
-    ]
+        "Required target columns (aliases accepted):",]
     for col in TARGET_REQUIRED_CANONICAL_COLUMNS:
         lines.append(f"- {col}: {_format_alias_list(col)}")
 
@@ -695,22 +720,19 @@ def _validate_required_target_columns(target_df: pd.DataFrame, context_label: st
     # Reject ambiguous RA headers early so operators must specify units.
     ambiguous_ra_headers = [
         col for col in target_df.columns
-        if str(col).strip().lower() == "ra"
-    ]
+        if str(col).strip().lower() == "ra"]
     if ambiguous_ra_headers:
         message = (
             f"{context_label} column validation failed: ambiguous RA column header(s) "
             f"detected: {ambiguous_ra_headers}. "
             "Use unit-specific RA headers only: 'RA (hours)' or 'RA (deg)'. "
             "Please rename the RA column before continuing.\n"
-            f"{_format_target_column_requirements()}"
-        )
+            f"{_format_target_column_requirements()}")
         return False, message
 
     missing_required = [
         col for col in TARGET_REQUIRED_CANONICAL_COLUMNS
-        if col not in target_df.columns
-    ]
+        if col not in target_df.columns]
 
     has_ra_column = any(col in target_df.columns for col in TARGET_REQUIRED_RA_ANY_OF)
 
@@ -723,14 +745,12 @@ def _validate_required_target_columns(target_df: pd.DataFrame, context_label: st
     if not has_ra_column:
         problems.append(
             "missing sidereal RA columns: at least one of "
-            f"{TARGET_REQUIRED_RA_ANY_OF} is required"
-        )
+            f"{TARGET_REQUIRED_RA_ANY_OF} is required")
 
     message = (
         f"{context_label} column validation failed ({'; '.join(problems)}). "
         f"Available columns: {target_df.columns.tolist()}\n"
-        f"{_format_target_column_requirements()}"
-    )
+        f"{_format_target_column_requirements()}")
     return False, message
 
 
@@ -760,8 +780,7 @@ def _warn_horizons_disabled_once(reason: str):
     note = (
         "WARNING: Horizons Name column (or alias) not found. JPL Horizons queries are disabled for this run. "
         "Solar-system targets will use fallback coordinates when available and may be skipped otherwise. "
-        "NOTE: revisit this no-Horizons behavior later."
-    )
+        "NOTE: revisit this no-Horizons behavior later.")
     detail = str(reason or "").strip()
     message = f"{note} ({detail})" if detail else note
     _log_status(message)
@@ -776,8 +795,7 @@ def _resolve_solar_system_coordinates_without_horizons(
     ra_hours_value,
     ra_deg_value,
     dec_value,
-    context: str = "",
-):
+    context: str = "",):
     """Resolve Solar-System coordinates when Horizons lookups are unavailable."""
     if is_valid_finite_float(ra_solsys_value) and is_valid_finite_float(dec_solsys_value):
         return float(ra_solsys_value), float(dec_solsys_value)
@@ -786,8 +804,7 @@ def _resolve_solar_system_coordinates_without_horizons(
         ra_hours_value,
         ra_deg_value,
         source_name=source_name,
-        context=context or "solar-system fallback",
-    )
+        context=context or "solar-system fallback",)
     if sidereal_pair is None or (not is_valid_finite_float(dec_value)):
         return None, None
 
@@ -807,23 +824,20 @@ def _validate_csv_columns_preflight(active_tuning_freqs) -> None:
 
     target_ok, target_validation_message = _validate_required_target_columns(
         target_df,
-        context_label="Target CSV preflight",
-    )
+        context_label="Target CSV preflight",)
     if not target_ok:
         raise ValueError(target_validation_message)
 
     if "Horizons Name" not in target_df.columns:
         _warn_horizons_disabled_once(
-            "No Horizons Name column (or alias) detected during preflight validation"
-        )
+            "No Horizons Name column (or alias) detected during preflight validation")
 
     # Observed-list schema is required only when we actively consult or update it.
     requires_observed_list = (not BYPASS_OBSERVED_CHECK) or bool(MARKING and RECORDING and (not TESTING))
     if not requires_observed_list:
         _log_status(
             "Preflight CSV validation: observed-list frequency-column check skipped "
-            "(observed-list read/write not active in this run mode)."
-        )
+            "(observed-list read/write not active in this run mode).")
         return
 
     try:
@@ -831,37 +845,43 @@ def _validate_csv_columns_preflight(active_tuning_freqs) -> None:
     except Exception as e:
         raise RuntimeError(f"Failed to read observed CSV for preflight validation: {OBSERVED_LIST} | {e}")
 
-    observed_required_cols = ['ID']
-    normalized_freqs = []
-    for freq in (active_tuning_freqs or []):
-        try:
-            normalized_freqs.append(int(freq))
-        except (TypeError, ValueError):
-            continue
+    observed_key_lookup = {_normalize_csv_key(col): col for col in observed_df.columns}
+    observed_freq_keys = {
+        _normalize_csv_key(col)
+        for col in observed_df.columns
+        if re.fullmatch(r"cfreq_\d+mhz", str(col).strip(), flags=re.IGNORECASE)}
 
-    if normalized_freqs:
-        freq_cols = [f"cfreq_{freq}mhz" for freq in sorted(set(normalized_freqs))]
-        observed_required_cols.extend(freq_cols)
+    required_col_keys = {'id'}
+    if observed_freq_keys:
+        required_col_keys.update(observed_freq_keys)
+    else:
+        normalized_freqs = []
+        for freq in (active_tuning_freqs or []):
+            try:
+                normalized_freqs.append(int(freq))
+            except (TypeError, ValueError):
+                continue
+        if normalized_freqs:
+            required_col_keys.update(
+                _normalize_csv_key(f"cfreq_{freq}mhz") for freq in sorted(set(normalized_freqs)))
 
-    missing_observed_cols = [col for col in observed_required_cols if col not in observed_df.columns]
+    missing_observed_cols = sorted(required_col_keys - observed_key_lookup.keys())
     if missing_observed_cols:
         raise ValueError(
             "Observed CSV missing required columns before run start. "
-            f"Missing: {missing_observed_cols} | Required: {observed_required_cols} | "
-            f"Available: {observed_df.columns.tolist()}"
-        )
+            f"Missing: {missing_observed_cols} | Required: {sorted(required_col_keys)} | "
+            f"Available: {observed_df.columns.tolist()}")
 
     _log_status(
-        "Preflight CSV validation passed: target and observed-list required columns are present."
-    )
+        "Preflight CSV validation passed: target and observed-list required columns are present.")
 
 
 def _resolve_planned_slew_seconds(
     from_coords,
     to_ra_deg,
     to_dec_deg,
-    reference_time_utc,
-) -> int:
+    reference_time_utc,) -> int:
+
     """Return conservative planned slew seconds with a long-slew floor."""
     long_slew_floor = max(0, int(ODS_ASSUME_LONG_SLEW_SECONDS))
     estimated_slew = 0
@@ -878,8 +898,7 @@ def _resolve_planned_slew_seconds(
                 az_rate_deg_per_sec=ODS_SLEW_AZ_RATE_DEG_PER_SEC,
                 el_rate_deg_per_sec=ODS_SLEW_EL_RATE_DEG_PER_SEC,
                 conservative_multiplier=ODS_SLEW_CONSERVATIVE_MULTIPLIER,
-                extra_buffer_seconds=ODS_SLEW_EXTRA_BUFFER_SECONDS,
-            )
+                extra_buffer_seconds=ODS_SLEW_EXTRA_BUFFER_SECONDS,)
         except Exception:
             estimated_slew = 0
 
@@ -899,9 +918,8 @@ def _ensure_target_ods_protection(
     scan_seconds: int,
     reservation_buffer: timedelta,
     ods_reservations_by_target: dict,
-    pre_obs_seconds_override=None,
-):
-    """Verify current target is inside its ODS reservation window; recover if not.
+    pre_obs_seconds_override=None,):
+    """Verify current target is inside its ODS reservation window; Recover if not.
 
     Returns:
     - (True, reason) when protected (existing window valid or recovery push succeeded)
@@ -952,14 +970,12 @@ def _ensure_target_ods_protection(
                 _log_status(
                     f"ODS window check OK for {source_name}: projected "
                     f"{_format_local_window_label(planned_obs_start_utc, planned_obs_end_utc)} "
-                    f"within reserved {_format_local_window_label(res_start_utc, res_end_utc)}."
-                )
+                    f"within reserved {_format_local_window_label(res_start_utc, res_end_utc)}.")
                 return True, "existing reservation covers projected observation window"
             _log_status(
                 f"ODS window mismatch for {source_name}: projected operation "
                 f"{_format_local_window_label(planned_obs_start_utc, planned_obs_end_utc)} not safely within "
-                f"{_format_local_window_label(res_start_utc, res_end_utc)}. Attempting recovery push."
-            )
+                f"{_format_local_window_label(res_start_utc, res_end_utc)}. Attempting recovery push.")
         else:
             _log_status(f"ODS reservation for {source_name} is malformed. Attempting recovery push.")
     else:
@@ -974,8 +990,7 @@ def _ensure_target_ods_protection(
     # conservative pre-observation operations plus the scan.
     recovery_res_start_utc = now_utc - reservation_buffer
     recovery_res_end_utc = now_utc + timedelta(
-        seconds=pre_obs_seconds + target_scan_seconds + max(0, int(ODS_MISMATCH_RECOVERY_EXTRA_SECONDS))
-    ) + reservation_buffer
+        seconds=pre_obs_seconds + target_scan_seconds + max(0, int(ODS_MISMATCH_RECOVERY_EXTRA_SECONDS))) + reservation_buffer
 
     recovered_obs_start_utc = now_utc + timedelta(seconds=pre_obs_seconds)
     recovered_obs_end_utc = recovered_obs_start_utc + timedelta(seconds=target_scan_seconds)
@@ -989,14 +1004,12 @@ def _ensure_target_ods_protection(
             res_end_utc=recovery_res_end_utc,
             frequencies_mhz=globals().get("active_tuning_freqs", active_tuning_freqs),
             project_name=PROJECT_NAME,
-            project_folder=PROJECT_FOLDER,
-        )
+            project_folder=PROJECT_FOLDER,)
         if not push_ok:
             _log_status(
                 f"ODS recovery push failed for {source_name}: push_ods returned False | "
                 f"target_ra_deg={float(ra_deg):.6f}, target_dec_deg={float(dec_deg):.6f}, "
-                f"requested_window={_format_local_window_label(recovery_res_start_utc, recovery_res_end_utc)}"
-            )
+                f"requested_window={_format_local_window_label(recovery_res_start_utc, recovery_res_end_utc)}")
             log_urgent(f"ODS protection FAILED for {source_name}; continuing observation unprotected", color="#D50000")
             return (False, "recovery push returned False for requested reservation window",)
 
@@ -1009,8 +1022,7 @@ def _ensure_target_ods_protection(
             "scan_seconds": target_scan_seconds,
             "ra_deg": float(ra_deg),
             "dec_deg": float(dec_deg),
-            "recovered": True,
-        }
+            "recovered": True,}
         log_ods_reservation_vs_plan(
             source_name=source_name,
             res_start_utc=recovery_res_start_utc,
@@ -1019,20 +1031,17 @@ def _ensure_target_ods_protection(
             planned_obs_end_utc=recovered_obs_end_utc,
             context="recovery repush",
             testing=TESTING,
-            logger=_log_status,
-        )
+            logger=_log_status,)
         _log_status(
             f"ODS recovery push succeeded for {source_name}: "
-            f"{_format_local_window_label(recovery_res_start_utc, recovery_res_end_utc)}"
-        )
+            f"{_format_local_window_label(recovery_res_start_utc, recovery_res_end_utc)}")
         log_urgent(f"ODS protection recovered for {source_name}", color="#E69F00")
         return True, "recovery push succeeded"
     except Exception as e:
         _log_status(
             f"ODS recovery push failed for {source_name}: {e} | "
             f"target_ra_deg={float(ra_deg):.6f}, target_dec_deg={float(dec_deg):.6f}, "
-            f"requested_window={_format_local_window_label(recovery_res_start_utc, recovery_res_end_utc)}"
-        )
+            f"requested_window={_format_local_window_label(recovery_res_start_utc, recovery_res_end_utc)}")
         log_urgent(f"ODS protection FAILED for {source_name}; continuing observation unprotected", color="#D50000")
         return False, f"recovery push raised exception: {e}"
 
@@ -1040,16 +1049,9 @@ def _ensure_target_ods_protection(
 def _refresh_drifting_future_ods_windows(
     current_source_key: str,
     ods_reservations_by_target: dict,
-    reservation_buffer: timedelta,
-):
+    reservation_buffer: timedelta,):
     """Detect future reservations drifting out of window and repush them.
-
-    This is best-effort and never raises: observations continue even if repush fails.
-
-    Why this exists:
-    - Queueing happens ahead of actual observing.
-    - Real-world delays can cause future reserved windows to approach expiry.
-    - We proactively refresh those windows so queued targets remain protected.
+    Will try its best to push ODS, but will still take data if it fails
     """
     if not ODS_PUSH:
         return
@@ -1084,16 +1086,14 @@ def _refresh_drifting_future_ods_windows(
             needs_repush = True
             reason = (
                 f"window nearing/past expiry (now={_to_pacific(now_utc).strftime('%Y-%m-%d %H:%M:%S %Z')}, "
-                f"window={_format_local_window_label(res_start_utc, res_end_utc)})"
-            )
+                f"window={_format_local_window_label(res_start_utc, res_end_utc)})")
 
         if not needs_repush:
             continue
 
         if ra_deg is None or dec_deg is None:
             _log_status(
-                f"Future ODS drift detected for {target_name} ({reason}) but missing RA/DEC; cannot repush."
-            )
+                f"Future ODS drift detected for {target_name} ({reason}) but missing RA/DEC; cannot repush.")
             continue
 
         try:
@@ -1104,13 +1104,11 @@ def _refresh_drifting_future_ods_windows(
         # Repush near-now window to re-establish practical protection coverage.
         new_res_start_utc = now_utc - reservation_buffer
         new_res_end_utc = now_utc + timedelta(
-            seconds=pre_obs_seconds + scan_seconds + max(0, int(ODS_MISMATCH_RECOVERY_EXTRA_SECONDS))
-        ) + reservation_buffer
+            seconds=pre_obs_seconds + scan_seconds + max(0, int(ODS_MISMATCH_RECOVERY_EXTRA_SECONDS))) + reservation_buffer
 
         _log_status(
             f"Future ODS drift detected for {target_name}: {reason}. "
-            f"Repushing updated window {_format_local_window_label(new_res_start_utc, new_res_end_utc)}."
-        )
+            f"Repushing updated window {_format_local_window_label(new_res_start_utc, new_res_end_utc)}.")
         try:
             push_ok = push_ods(
                 source=target_name,
@@ -1120,8 +1118,7 @@ def _refresh_drifting_future_ods_windows(
                 res_end_utc=new_res_end_utc,
                 frequencies_mhz=globals().get("active_tuning_freqs", active_tuning_freqs),
                 project_name=PROJECT_NAME,
-                project_folder=PROJECT_FOLDER,
-            )
+                project_folder=PROJECT_FOLDER,)
             if not push_ok:
                 _log_status(f"Future ODS repush failed for {target_name}: push_ods returned False")
                 continue
@@ -1140,8 +1137,7 @@ def _refresh_drifting_future_ods_windows(
                 planned_obs_end_utc=reservation.get("obs_end_utc"),
                 context="future-window repush",
                 testing=TESTING,
-                logger=_log_status,
-            )
+                logger=_log_status,)
             _log_status(f"Future ODS repush succeeded for {target_name}.")
             log_urgent(f"Future ODS window refreshed for {target_name}", color="#E69F00")
         except Exception as e:
@@ -1168,10 +1164,9 @@ def _ensure_obs_time_column(target_df):
         return target_df
 
     obs_time_by_name = (
-        base_df[['Plaintext Name', 'Obs Time']] # NOTE: Add aliases for Obs Time
+        base_df[['Plaintext Name', 'Obs Time']]
         .drop_duplicates(subset=['Plaintext Name'], keep='first')
-        .set_index('Plaintext Name')['Obs Time']
-    )
+        .set_index('Plaintext Name')['Obs Time'])
     enriched_df = target_df.copy()
     enriched_df['Obs Time'] = enriched_df['Plaintext Name'].map(obs_time_by_name)
     return enriched_df
@@ -1206,8 +1201,7 @@ def _filter_working_target_table(target_df, active_tuning_freqs, context_label: 
             is_unobserved = _target_has_unobserved_frequency(
                 OBSERVED_LIST,
                 source_id,
-                active_tuning_freqs,
-            )
+                active_tuning_freqs,)
             keep_mask.append(bool(is_unobserved))
             if not is_unobserved:
                 removed_observed_count += 1
@@ -1220,8 +1214,7 @@ def _filter_working_target_table(target_df, active_tuning_freqs, context_label: 
         f"{context_label}: full_rows={total_rows}, "
         f"removed_dec_below_limit={removed_low_dec_count} (DEC<{DEC_LIMIT} for sidereal), "
         f"removed_already_observed={removed_observed_count}, "
-        f"working_rows={len(working_df)}"
-    )
+        f"working_rows={len(working_df)}")
     return working_df
 
 
@@ -1234,8 +1227,7 @@ def _write_working_target_copy(target_df):
         target_df.to_csv(working_copy_path, index=False)
         _log_status(
             f"Updated working target copy: {working_copy_path} "
-            f"(source CSV from GUI/config: {CSV_NAME})"
-        )
+            f"(source CSV from GUI/config: {CSV_NAME})")
     except Exception as exc:
         _log_status(f"Warning: could not write working target copy: {exc}")
 
@@ -1253,8 +1245,7 @@ def _write_full_archive_target_copy(target_df_full, snapshot_label: str = "curre
         target_df_full.to_csv(archive_copy_path, index=False)
         _log_status(
             f"Updated full archive target copy: {archive_copy_path} "
-            f"(rows={len(target_df_full)}, source CSV from GUI/config: {CSV_NAME})"
-        )
+            f"(rows={len(target_df_full)}, source CSV from GUI/config: {CSV_NAME})")
     except Exception as exc:
         _log_status(f"Warning: could not write full archive target copy: {exc}")
 
@@ -1383,8 +1374,7 @@ def _get_planet_positions(scan_start: str):
             eph = obj.ephemerides()
             positions[str(planet_name)] = {
                 "ra": float(eph["RA"][0]),
-                "dec": float(eph["DEC"][0]),
-            }
+                "dec": float(eph["DEC"][0]),}
         except Exception as e:
             _log_status(f"Planet position query failed for {planet_name} ({planet_id}): {e}")
     return positions
@@ -1500,7 +1490,7 @@ def request_stop(reason: str = ""):
 def request_resume():
     """Clear a pending stop-after-current-scan request."""
     _log_status("Stop Cancelled through the GUI. Continuing observations.")
-    log_urgent("Observation Resumed", color = "#009E73")
+    log_urgent("Observation Resumed", color = "#009E73") # NOTE: See if there's a way to make this temporary
     _stop_obs_event.clear()
 
 # When the Abort button is pressed, this is pushed.
@@ -1558,6 +1548,7 @@ def configure_and_run(cfg: dict = None):
 def _check_stop():
     """Check control events and terminate appropriately when requested."""
     global ant_list
+    # If the event isn't set, it skips all these commands and keeps going.
     if _exit_event.is_set():
         # If antennas reserved, release them before exiting (best-effort)
         try:
@@ -1593,6 +1584,7 @@ def _check_stop():
         except Exception as err:
             _log_status("Error releasing Antennas. Please run the following command from obs@control.")
             _log_status("python fxconf.py sagive bfa none [antnames]")
+            _log_status("Check with fxconf.rb sals")
             _log_status(f"Error releasing antennas during interrupt: {err}")
         _log_observed_targets("Targets observed this session")
         _clear_observed_targets()
@@ -1809,10 +1801,9 @@ def _initialize_runtime():
 
     effective_default_scan_seconds = TESTING_OBS_TIME_SECONDS if TESTING else (parse_positive_int_seconds(OBS_TIME) or 300)
     if TESTING == True:
-        print(
+        _log_status(
             f"TESTING mode active: all scans will run for {TESTING_OBS_TIME_SECONDS} seconds. "
-            f"Configured/default OBS_TIME remains {OBS_TIME} seconds for non-testing runs."
-        )
+            f"Configured/default OBS_TIME remains {OBS_TIME} seconds for non-testing runs.")
 
     log_urgent("Script Running...", color = "#009E73")
 
@@ -1852,22 +1843,21 @@ def _initialize_runtime():
     CSV_NAME = resolved_csv
     OBSERVED_LIST = resolved_observed
 
-    print("The following are the user inputs for this observation script:")
-    print(f"Project Name: {PROJECT_NAME}")
-    print(f"Configured default observation time (seconds): {OBS_TIME}")
-    print(f"Effective default scan time this run (seconds): {effective_default_scan_seconds}")
-    print(f"Target List CSV: {CSV_NAME}")
-    print("CSV file columns:")
+    _log_status("The following are the user inputs for this observation script:")
+    _log_status(f"Project Name: {PROJECT_NAME}")
+    _log_status(f"Configured default observation time (seconds): {OBS_TIME}")
+    _log_status(f"Effective default scan time this run (seconds): {effective_default_scan_seconds}")
+    _log_status(f"Target List CSV: {CSV_NAME}")
+    _log_status("CSV file columns:")
     try:
         target_preview_df = pd.read_csv(CSV_NAME)
-        print(target_preview_df.columns.tolist())
+        _log_status(target_preview_df.columns.tolist())
         target_preview_df, target_preview_map = _apply_target_column_aliases(target_preview_df, log_aliases=False)
         global _HORIZONS_ENABLED
         _HORIZONS_ENABLED = "Horizons Name" in target_preview_df.columns
         if not _HORIZONS_ENABLED:
             _warn_horizons_disabled_once(
-                "No Horizons Name column (or alias) detected in target CSV"
-            )
+                "No Horizons Name column (or alias) detected in target CSV")
     except Exception as e:
         # Provide a clearer message for common pandas errors (missing file or wrong format)
         if isinstance(e, FileNotFoundError):
@@ -1875,22 +1865,22 @@ def _initialize_runtime():
         # pandas.ParserError is common when file isn't a CSV (e.g. accidentally a .py)
         import pandas as _pd
         if isinstance(e, _pd.errors.ParserError):
-            raise RuntimeError(f"Error parsing target CSV at {CSV_NAME}: {e}\nCheck that the file is a valid CSV and not a different file type.") from e
+            raise RuntimeError(f"Error parsing target CSV at {CSV_NAME}: {e}\nCheck that the file is a valid CSV and not a different file type like .xlsx.") from e
         raise
-    print(f"Observed List CSV: {OBSERVED_LIST}")
+    _log_status(f"Observed List CSV: {OBSERVED_LIST}")
     try:
-        print(pd.read_csv(OBSERVED_LIST).columns.tolist())
+        _log_status(pd.read_csv(OBSERVED_LIST).columns.tolist())
     except Exception as e:
         # Provide a clearer message for common pandas errors (missing file or wrong format)
         if isinstance(e, FileNotFoundError):
             raise FileNotFoundError(f"Observed list CSV not found at resolved path: {OBSERVED_LIST}") from e
         import pandas as _pd
         if isinstance(e, _pd.errors.ParserError):
-            raise RuntimeError(f"Error parsing observed list CSV at {OBSERVED_LIST}: {e}\nCheck that the file is a valid CSV and not a different file type.") from e
+            raise RuntimeError(f"Error parsing observed list CSV at {OBSERVED_LIST}: {e}\nCheck that the file is a valid CSV and not a different file type like .xlsx.") from e
         raise
 
     # Validate CSV name agreement between target CSV and observed list CSV
-    print("\nValidating CSV name agreement...")
+    _log_status("\nValidating CSV name agreement...")
     if TESTING:
         _log_status(
             "Testing mode active: skipping strict target/observed-list name agreement validation. "
@@ -1899,15 +1889,14 @@ def _initialize_runtime():
         try:
             import utils_beamforming
             validation_result = utils_beamforming.validate_csv_name_agreement(
-                CSV_NAME, OBSERVED_LIST, raise_on_error=False
-            )
+                CSV_NAME, OBSERVED_LIST, raise_on_error=False)
 
             if validation_result['agreement']:
-                print("All target names match between target CSV and observed list CSV")
+                _log_status("All target names match between target CSV and observed list CSV")
             else:
-                print("\n" + "="*70)
+                _log_status("\n" + "="*70)
                 _log_status("WARNING: CSV NAME MISMATCH DETECTED")
-                print("="*70)
+                _log_status("="*70)
 
                 if validation_result['missing_in_observed']:
                     _log_status(f"\n{len(validation_result['missing_in_observed'])} target(s) in TARGET CSV but NOT in OBSERVED CSV:")
@@ -1938,15 +1927,15 @@ def _initialize_runtime():
             if not TESTING:
                 raise
 
-    print(f"\nAntennas to Remove: {REMOVE_ANT}")
-    print(f"Recording: {RECORDING}")
-    print(f"Testing Mode: {TESTING}")
+    _log_status(f"\nAntennas to Remove: {REMOVE_ANT}")
+    _log_status(f"Recording: {RECORDING}")
+    _log_status(f"Testing Mode: {TESTING}")
 
     if TESTING == True:
-        print("TESTING MODE CURRENTLY ACTIVE. ANTENNAE WILL NOT RECORD")
+        _log_status("TESTING MODE CURRENTLY ACTIVE. ANTENNAE WILL NOT RECORD")
 
     if TESTING == False:
-        print("Importing ATA specific functions and beginning script")
+        _log_status("Importing ATA specific functions and beginning script")
         # Expose these names at module scope so 'main()' and other functions
         # can use them whether the script is run standalone or via the GUI.
         global hpguppi_defaults, hpguppi_record, hpguppi_auxillary
@@ -1973,8 +1962,7 @@ def _initialize_runtime():
         candidates = [
             project_folder_value,
             os.path.join(script_dir, project_folder_value),
-            os.path.join(rfsoc_root, project_folder_value),
-        ]
+            os.path.join(rfsoc_root, project_folder_value),]
         resolved_project_root = None
         for candidate in candidates:
             if os.path.isdir(candidate):
@@ -1992,7 +1980,7 @@ def _initialize_runtime():
             "Please select a subfolder such as p068, survey, or testingtime.")
 
     os.makedirs(project_root_dir, exist_ok=True)
-    print(f"Project root directory set to: {project_root_dir}")
+    _log_status(f"Project root directory set to: {project_root_dir}")
 
     # Create subdirectories within the project folder
     output_dir = os.path.join(project_root_dir, f"{PROJECT_NAME}_working", "")
@@ -2036,7 +2024,7 @@ def _initialize_runtime():
     obs_end = (pd.to_datetime(obs_start) + timedelta(hours=6)).strftime('%Y-%m-%d %H:%M')
 
     total_obs_time = pd.to_datetime(obs_end) - pd.to_datetime(obs_start)
-    print(f"Observation beginning at {obs_start} (Or {hcro_obs_start} local time)")
+    _log_status(f"Observation beginning at {obs_start} (Or {hcro_obs_start} local time)")
     print(f"Each scan will last {effective_default_scan_seconds} seconds ({obs_time_minutes:.3} minutes or {obs_time_hours:.3} hours).")
 
 def _main_thread_wrapper():
@@ -2124,8 +2112,8 @@ def build_rearranged_table(active_tuning_freqs=None):
     # When SORT_BY_OBSERVED is enabled, trim out fully observed targets before
     # the mass query to reduce Horizons workload.
     target_list_df = pd.read_csv(CSV_NAME) # This csv has RA's for Sidereal and Solar targets in the same column, but the Horizons Name column differentiates.
-    print("Columns of target list:")
-    print(target_list_df.columns.tolist())
+    #print("Columns of target list:")
+    #print(target_list_df.columns.tolist())
 
     query_target_df = target_list_df
     if not BYPASS_OBSERVED_CHECK:
@@ -2143,8 +2131,7 @@ def build_rearranged_table(active_tuning_freqs=None):
                 is_unobserved = _target_has_unobserved_frequency(
                     OBSERVED_LIST,
                     source_id,
-                    active_tuning_freqs,
-                )
+                    active_tuning_freqs,)
                 keep_mask.append(bool(is_unobserved))
                 if not is_unobserved:
                     removed_observed_count += 1
@@ -2154,18 +2141,15 @@ def build_rearranged_table(active_tuning_freqs=None):
             _log_status(
                 "Mass Horizons query prefilter (observed-list): "
                 f"input_rows={len(target_list_df)}, removed_already_observed={removed_observed_count}, "
-                f"query_rows={len(query_target_df)}"
-            )
+                f"query_rows={len(query_target_df)}")
         else:
             _log_status(
                 "Mass Horizons query prefilter skipped: target CSV is missing Plaintext Name/ID "
-                "after alias mapping."
-            )
+                "after alias mapping.")
 
     if len(query_target_df) == 0:
         _log_status(
-            "Mass Horizons query skipped: no targets remain after observed-list prefilter."
-        )
+            "Mass Horizons query skipped: no targets remain after observed-list prefilter.")
         return query_target_df.reset_index(drop=True)
 
     query_target_path = os.path.join(output_dir, f"{PROJECT_NAME}_mass_horizons_query_input.csv")
@@ -2192,8 +2176,7 @@ def build_rearranged_table(active_tuning_freqs=None):
     lst_ra_deg = lst.deg
     _log_status(f"LST for reference: {lst_ra_hours:.4f} hours | {lst_ra_deg:.2f} degrees")
 
-    # Use each target's RA/DEC and the current observatory location/time to compute
-    # altitude "right now", then sort by altitude descending.
+    # Use each target's RA/DEC and the current observatory epoch to compute altitude "right now", then sort by altitude descending.
     # Top rows are the most vertical targets at this moment.
     dec_col = 'DEC' if 'DEC' in results_df.columns else ('DEC (deg)' if 'DEC (deg)' in results_df.columns else None)
     if dec_col is None:
@@ -2282,8 +2265,7 @@ def main():
         # Get antenna list and separate into 4 tunings
         ant_list = _normalize_antennas(snap_config.get_rfsoc_active_antlist())
         ant_list_initial_active_snapshot = list(ant_list)
-        # NOTE: Maybe print used antennas in this section too?
-        # THIS IS WHERE YOU REMOVE BAD ANTENNAS ========================================================================================================================
+
         requested_removed = _normalize_antennas(REMOVE_ANT)
         ant_list_removed_snapshot = [ant for ant in requested_removed if ant in ant_list_initial_active_snapshot]
         if requested_removed: # Only process if list is not empty
@@ -2313,9 +2295,7 @@ def main():
             ant_list_removed_snapshot = [ant for ant in requested_removed if ant in ant_list_initial_active_snapshot]
             requested_not_active = [ant for ant in requested_removed if ant not in ant_list_initial_active_snapshot]
             if requested_not_active:
-                _log_status(
-                    "Requested removed antennas not in simulated active list: "
-                    f"{requested_not_active}")
+                _log_status(f"Requested removed antennas not in simulated active list: {requested_not_active}")
 
             ant_list = [ant for ant in ant_list_initial_active_snapshot if ant not in set(ant_list_removed_snapshot)]
             ant_list_used_snapshot = _normalize_antennas(ant_list)
@@ -2342,7 +2322,7 @@ def main():
         # If not present locally, try to import from survey_gui if available (optional)
         if not observing_status_map:
             try:
-                import survey_gui as _sg
+                import beamforming_gui as _sg
                 observing_status_map = getattr(_sg, 'OBSERVING_STATUS_BY_ANTENNA', None) or getattr(_sg, 'observing_status_by_antenna', None)
             except Exception:
                 observing_status_map = None
@@ -2387,8 +2367,9 @@ def main():
         _check_stop()
         # Register and reserve antennas
         antennas_for_log = sorted(str(ant).strip() for ant in list(ant_list))
-        _log_status(f"About to reserve antennas: {antennas_for_log} (count={len(antennas_for_log)})") #NOTE: It prints used antennas!
+        _log_status(f"About to reserve antennas: {antennas_for_log} (count={len(antennas_for_log)})")
         ata_control.reserve_antennas(ant_list)
+
         # Standalone script mode keeps legacy atexit release behavior.
         # GUI-controlled mode intentionally skips this so GUI close/X/Ctrl+C does not auto-release antennas.
         if not _GUI_CONTROLLED:
@@ -2407,25 +2388,20 @@ def main():
         freqs_b = [2008]*4
         freqs_c = [4536]*4
         freqs_d = [8336]*4
+        # I filled this in with Exotica ranges to save time. Should still be able to handle other values
         _log_status(f"Antennas reserved (simulated): {antennas_for_log} (count={len(antennas_for_log)})")
         _check_stop()
-
-        # assert type(freq_mhz) == int
-
-        # source_entries = pd.read_csv(observed_list)
-        # cfreq_name = "cfreq_%imhz" %freq_mhz
 
         _log_status(f"Center frequencies set to {freqs_a[0]} MHz, {freqs_b[0]} MHz, {freqs_c[0]} MHz, and {freqs_d[0]} MHz for testing.")
 
     _check_stop()
     active_tuning_maps, active_tuning_indices, d = _build_active_tuning_maps(
         ACTIVE_RECORDERS,
-        explicit_selection=_ACTIVE_RECORDERS_EXPLICIT,
-    )
+        explicit_selection=_ACTIVE_RECORDERS_EXPLICIT,)
     tuning_map_by_index = {
         tuning_index: tuning_map
-        for tuning_index, tuning_map in zip(active_tuning_indices, active_tuning_maps)
-    }
+        for tuning_index, tuning_map in zip(active_tuning_indices, active_tuning_maps)}
+
     d_loa = tuning_map_by_index.get(0, {})
     d_lob = tuning_map_by_index.get(1, {})
     d_loc = tuning_map_by_index.get(2, {})
@@ -2444,8 +2420,7 @@ def main():
     active_tuning_freqs = [
         base_tuning_freqs[tuning_index]
         for tuning_index in active_tuning_indices
-        if tuning_index < len(base_tuning_freqs) and base_tuning_freqs[tuning_index] is not None
-    ]
+        if tuning_index < len(base_tuning_freqs) and base_tuning_freqs[tuning_index] is not None]
 
     active_tuning_labels = [TUNING_LABELS[tuning_index] for tuning_index in active_tuning_indices if tuning_index < len(TUNING_LABELS)]
     _log_status(f"Tunings in use: {active_tuning_labels if active_tuning_labels else []}")
@@ -2455,7 +2430,7 @@ def main():
     # Fail fast on CSV schema issues before any queueing/ODS waiting can begin.
     _validate_csv_columns_preflight(active_tuning_freqs)
 
-    if TESTING == False and all(freq_list for freq_list in (freqs_a, freqs_b, freqs_c, freqs_d)): #NOTE: Does this require all 4 tunings? TODO
+    if TESTING == False and all(freq_list for freq_list in (freqs_a, freqs_b, freqs_c, freqs_d)):
         f = np.array([freqs_a[0], freqs_b[0], freqs_c[0], freqs_d[0]]) / 1e3 # Put the frequencies into an array, convert to GHz
         primary_beamwidths = primary_beam_diameter(f)
         synthesized_beamwidths = synthesized_beam_diameter(f)
@@ -2479,8 +2454,7 @@ def main():
         rearranged_tbl = build_rearranged_table(active_tuning_freqs=active_tuning_freqs)
     elif REARRANGE_BY_LST and (not _HORIZONS_ENABLED):
         _warn_horizons_disabled_once(
-            "LST reorder requires Horizons query path; falling back to CSV order for this run"
-        )
+            "LST reorder requires Horizons query path; falling back to CSV order for this run")
         _log_status("LST rearrange requested but Horizons is disabled. Using target CSV order as-is.")
         rearranged_tbl = pd.read_csv(CSV_NAME)
     else:
@@ -2498,22 +2472,19 @@ def main():
     horizons_available = "Horizons Name" in target_df_full.columns
     if not horizons_available:
         _warn_horizons_disabled_once(
-            "Main loop running without Horizons Name column; JPL Horizons calls will be skipped"
-        )
+            "Main loop running without Horizons Name column; JPL Horizons calls will be skipped")
 
     # Build and persist the filtered working copy used by the scheduler/loop.
     target_df = _filter_working_target_table(
         target_df_full,
         active_tuning_freqs=active_tuning_freqs,
-        context_label="Initial target filter",
-    )
+        context_label="Initial target filter",)
     _write_working_target_copy(target_df)
 
     # Post-reorder guard: reuse the same required-column + alias validation used in preflight.
     target_ok, target_validation_message = _validate_required_target_columns(
         target_df,
-        context_label="Reordered working target table",
-    )
+        context_label="Reordered working target table",)
     if not target_ok:
         _log_status(f"ERROR: {target_validation_message}")
         raise ValueError(target_validation_message)
@@ -2590,21 +2561,19 @@ def main():
                 or skipped_sun_targets
                 or skipped_moon_targets
                 or skipped_planet_targets
-                or skipped_data_targets
-            )
+                or skipped_data_targets)
+
             if not has_transient_skips:
                 _log_status(
                     "No transient altitude/sun/moon skips are pending. "
-                    "Ending observation loop without refresh retry."
-                )
+                    "Ending observation loop without refresh retry.")
                 break
 
             # Check retry limit (skip check if MAX_END_OF_LIST_RETRIES is "Max" for infinite retries)
             if str(MAX_END_OF_LIST_RETRIES).lower() != "max" and end_of_list_retry_count >= max(0, int(MAX_END_OF_LIST_RETRIES)):
                 _log_status(
                     f"Reached max end-of-list retries ({MAX_END_OF_LIST_RETRIES}). "
-                    "Ending observation loop to avoid refresh lock."
-                )
+                    "Ending observation loop to avoid refresh lock.")
                 _log_transient_skipped_targets("Final transient skipped targets")
                 break
 
@@ -2612,15 +2581,13 @@ def main():
             retry_limit_str = "unlimited" if str(MAX_END_OF_LIST_RETRIES).lower() == "max" else str(MAX_END_OF_LIST_RETRIES)
             _log_status(
                 f"End-of-list refresh retry {end_of_list_retry_count}/{retry_limit_str} "
-                "starting."
-            )
+                "starting.")
             _log_transient_skipped_targets("Skipped targets before end-of-list refresh")
 
             wait_seconds = max(0, int(END_OF_LIST_RETRY_WAIT_SECONDS))
             if wait_seconds > 0:
                 _log_status(
-                    f"Waiting {wait_seconds} seconds before retry refresh so moving targets can move."
-                )
+                    f"Waiting {wait_seconds} seconds before retry refresh so moving targets can move.")
                 _check_stop()
                 wait_with_stop(wait_seconds, allow_stop=True)
                 _check_stop()  # Process stop if triggered during end-of-list retry wait
@@ -2630,8 +2597,7 @@ def main():
                 rearranged_tbl = build_rearranged_table(active_tuning_freqs=active_tuning_freqs)
             elif REARRANGE_BY_LST and (not _HORIZONS_ENABLED):
                 _warn_horizons_disabled_once(
-                    "End-of-list reorder requested but Horizons is disabled; reloading CSV order"
-                )
+                    "End-of-list reorder requested but Horizons is disabled; reloading CSV order")
                 _log_status("End-of-list retry: Horizons disabled, reloading target CSV order as-is.")
                 rearranged_tbl = pd.read_csv(CSV_NAME)
             else:
@@ -2648,8 +2614,8 @@ def main():
             target_df = _filter_working_target_table(
                 target_df_full,
                 active_tuning_freqs=active_tuning_freqs,
-                context_label="End-of-list refresh filter",
-            )
+                context_label="End-of-list refresh filter",)
+
             _write_working_target_copy(target_df)
             plain_names = list(target_df['Plaintext Name'])
             horizons_name = list(target_df['Horizons Name']) if horizons_available else [None] * len(target_df)
@@ -2682,8 +2648,7 @@ def main():
                 rearranged_tbl = build_rearranged_table(active_tuning_freqs=active_tuning_freqs)
             else:
                 _warn_horizons_disabled_once(
-                    "Periodic reorder requested but Horizons is disabled; reloading CSV order"
-                )
+                    "Periodic reorder requested but Horizons is disabled; reloading CSV order")
                 _log_status("Periodic reorder: Horizons disabled, reloading target CSV order as-is.")
                 rearranged_tbl = pd.read_csv(CSV_NAME)
             archive_df_full = _load_full_target_table_for_archive(log_aliases=False)
@@ -2696,8 +2661,9 @@ def main():
             target_df = _filter_working_target_table(
                 target_df_full,
                 active_tuning_freqs=active_tuning_freqs,
-                context_label="Periodic refresh filter",
-            )
+                context_label="Periodic refresh filter",)
+
+            # NOTE: Make sure this section works with aliases
             _write_working_target_copy(target_df)
             plain_names = list(target_df['Plaintext Name'])
             horizons_name = list(target_df['Horizons Name']) if horizons_available else [None] * len(target_df)
@@ -2731,6 +2697,7 @@ def main():
                 "This row will pause the queue and will not be marked as observed.")
 
         # Skip if already observed in this run (in-memory) or in the persistent observed list
+        # NOTE TODO: Find a way to ignore this in some way to observe the same target over and over again
         if source_identity_key in observed_target_ids_seen:
             print(f"Target {source_label} already observed in this run (in-memory). Skipping.")
             _check_stop()
@@ -2749,6 +2716,7 @@ def main():
                     _check_stop()
                     i += 1
                     continue
+
         # Redefine the time and start of the loop for each iteration
         scan_start = datetime.now(timezone.utc).replace(second=0, microsecond=0).strftime('%Y-%m-%d %H:%M')
         scan_end = (pd.to_datetime(scan_start) + timedelta(minutes=60)).strftime('%Y-%m-%d %H:%M')
@@ -2758,8 +2726,7 @@ def main():
         current_scan_observing_time = Time(scan_start)
         current_scan_altaz_frame = AltAz(
             location=current_scan_observing_location,
-            obstime=current_scan_observing_time,
-        )
+            obstime=current_scan_observing_time,)
 
         _check_stop()
         _log_status("\n==================== Top of the loop ====================")
@@ -2772,16 +2739,15 @@ def main():
             default_obs_seconds=OBS_TIME,
             use_target_obs_time_override=USE_TARGET_OBS_TIME_OVERRIDE,
             testing=TESTING,
-            testing_obs_time_seconds=TESTING_OBS_TIME_SECONDS,
-        )
+            testing_obs_time_seconds=TESTING_OBS_TIME_SECONDS,)
+
         nominal_scan_seconds = int(scan_timing["nominal_seconds"])
         effective_scan_seconds = int(scan_timing["effective_seconds"])
         duration_source = scan_timing["duration_source"]
         if TESTING:
             _log_status(
                 f"Scan timing for {source}: would use {nominal_scan_seconds}s from {duration_source}; "
-                f"TESTING override active -> using {effective_scan_seconds}s."
-            )
+                f"TESTING override active -> using {effective_scan_seconds}s.")
         else:
             _log_status(
                 f"Scan timing for {source}: using {effective_scan_seconds}s from {duration_source}.")
@@ -2796,14 +2762,13 @@ def main():
                 default_obs_seconds=OBS_TIME,
                 use_target_obs_time_override=True,
                 testing=TESTING,
-                testing_obs_time_seconds=TESTING_OBS_TIME_SECONDS,
-            )
+                testing_obs_time_seconds=TESTING_OBS_TIME_SECONDS,)
+
             effective_scan_seconds = int(wait_row_timing["effective_seconds"])
             _log_status(
                 f"Schedule wait marker detected at {source_label}. "
                 f"Wait duration: {effective_scan_seconds}s (from {wait_row_timing['duration_source']}). "
-                "Queue planning will account for this wait before observing continues."
-            )
+                "Queue planning will account for this wait before observing continues.")
 
         # Ensure the queue variable exists regardless of ODS_PUSH setting
         targets_to_queue = []
@@ -2824,8 +2789,8 @@ def main():
                 queue_source_id = source_ids[queue_idx]
                 queue_source_key = _normalize_target_id_key(queue_source_id)
                 queue_source_identity_key = (
-                    queue_source_key if queue_source_key else f"name:{str(queue_source).strip().lower()}"
-                )
+                    queue_source_key if queue_source_key else f"name:{str(queue_source).strip().lower()}")
+
                 queue_source_label = _format_name_id_label(queue_source, queue_source_id)
                 print(f"Beginning queue check for target: {queue_source_label}")
                 _check_stop()
@@ -2837,21 +2802,19 @@ def main():
                         default_obs_seconds=OBS_TIME,
                         use_target_obs_time_override=USE_TARGET_OBS_TIME_OVERRIDE,
                         testing=TESTING,
-                        testing_obs_time_seconds=TESTING_OBS_TIME_SECONDS,
-                    )
+                        testing_obs_time_seconds=TESTING_OBS_TIME_SECONDS,)
+
                     queue_wait_seconds = max(1, int(queue_wait_timing["effective_seconds"]))
                     queue_plan_entries.append(("wait", queue_wait_seconds, queue_source_label))
                     _log_status(
                         f"Queue planner accounted schedule wait row {queue_source_label} "
-                        f"(+{queue_wait_seconds}s timeline offset)."
-                    )
+                        f"(+{queue_wait_seconds}s timeline offset).")
                     queue_idx += 1
                     continue
 
                 # Step 2: Check if this target has been previously observed
                 if BYPASS_OBSERVED_CHECK or (
-                    _target_has_unobserved_frequency(OBSERVED_LIST, queue_source_id, active_tuning_freqs)
-                ):
+                    _target_has_unobserved_frequency(OBSERVED_LIST, queue_source_id, active_tuning_freqs)):
                     print(f"Target {queue_source_label} has not yet been observed.")
                 else:
                     print(f"Target {queue_source_label} already observed. Skipping queue candidate.")
@@ -2867,8 +2830,7 @@ def main():
                 if queue_flag is None:
                     print(
                         f"Error: target {queue_source} has unexpected Solar System Flag "
-                        f"value '{solsys_flag[queue_idx]}'. Soft-skipping until next refresh."
-                    )
+                        f"value '{solsys_flag[queue_idx]}'. Soft-skipping until next refresh.")
                     _record_skipped_target(queue_source, "data")
                     queue_idx += 1
                     continue
@@ -2880,13 +2842,11 @@ def main():
                         queue_ra_deg, queue_dec, queue_name_to_query = _get_instantaneous_solar_system_coordinates(
                             queue_source,
                             this_horizons_name,
-                            scan_start,
-                        )
+                            scan_start,)
                         if (not is_valid_finite_float(queue_ra_deg)) or (not is_valid_finite_float(queue_dec)):
                             print(
                                 f"Error querying instantaneous Horizons coordinates for {queue_source} "
-                                f"({queue_name_to_query}). Soft-skipping until next refresh."
-                            )
+                                f"({queue_name_to_query}). Soft-skipping until next refresh.")
                             _record_skipped_target(queue_source, "data")
                             queue_idx += 1
                             continue
@@ -2899,20 +2859,18 @@ def main():
                             ra_hours_value=ra_hours_list[queue_idx],
                             ra_deg_value=ra_deg_list[queue_idx],
                             dec_value=dec_list[queue_idx],
-                            context="queue solar fallback",
-                        )
+                            context="queue solar fallback",)
+
                         if (not is_valid_finite_float(queue_ra_deg)) or (not is_valid_finite_float(queue_dec)):
                             print(
                                 f"No Horizons Name / fallback coordinates available for Solar System target {queue_source}. "
-                                "Soft-skipping until next refresh."
-                            )
+                                "Soft-skipping until next refresh.")
                             _record_skipped_target(queue_source, "data")
                             queue_idx += 1
                             continue
                         _log_status(
                             f"Solar-system queue fallback active for {queue_source}: using non-Horizons coordinates. "
-                            "NOTE: revisit no-Horizons Solar-System strategy."
-                        )
+                            "NOTE: revisit no-Horizons Solar-System strategy.")
                 else:
                     print(f"Target {queue_source} is a Sidereal target. Using RA/DEC from CSV.")
                     queue_ra_hours = ra_hours_list[queue_idx]
@@ -2923,14 +2881,12 @@ def main():
                         queue_ra_hours,
                         queue_ra_deg,
                         source_name=str(queue_source),
-                        context="queue",
-                    )
+                        context="queue",)
                     if resolved_queue_ra is None:
                         print(
                             f"Error: invalid sidereal RA for {queue_source} "
                             f"(RA_hours={queue_ra_hours}, RA_deg={queue_ra_deg}). "
-                            "Soft-skipping until next refresh."
-                        )
+                            "Soft-skipping until next refresh.")
                         _record_skipped_target(queue_source, "data")
                         queue_idx += 1
                         continue
@@ -2939,8 +2895,7 @@ def main():
                 if (not is_valid_finite_float(queue_ra_deg)) or (not is_valid_finite_float(queue_dec)):
                     print(
                         f"Error: invalid RA/DEC for {queue_source} "
-                        f"(RA={queue_ra_deg}, DEC={queue_dec}). Soft-skipping until next refresh."
-                    )
+                        f"(RA={queue_ra_deg}, DEC={queue_dec}). Soft-skipping until next refresh.")
                     _record_skipped_target(queue_source, "data")
                     queue_idx += 1
                     continue
@@ -2953,7 +2908,7 @@ def main():
                 altaz_coord = coord.transform_to(current_scan_altaz_frame)
                 queue_alt = altaz_coord.alt.value
 
-                if not (85 > queue_alt > 21): # NOTE TODO: Set this to variables I can define at the top, in case this changes
+                if not (ALT_MAX > queue_alt > ALT_MIN): # NOTE TODO: Set this to variables I can define at the top, in case this changes
                     _log_status(f"Target {queue_source} is out of altitude bounds ({queue_alt:.1f} degrees). Skipping.")
                     _record_skipped_target(queue_source, "altitude")
                     queue_idx += 1
@@ -2969,14 +2924,12 @@ def main():
                         obs_location=obs_location,
                         testing=TESTING,
                         ata_sources_module=(None if TESTING else ata_sources),
-                        logger=print,
-                    )
+                        logger=print,)
 
                     if not isinstance(sun, dict) or 'ra' not in sun or 'dec' not in sun:
                         print(
                             f"Error: could not determine Sun position for {queue_source}. "
-                            "Soft-skipping until next refresh."
-                        )
+                            "Soft-skipping until next refresh.")
                         _record_skipped_target(queue_source, "sun")
                         queue_idx += 1
                         continue
@@ -2990,8 +2943,7 @@ def main():
                     if separation_from_sun < MIN_SUN_MOON_SEPARATION_DEGREES:
                         print(
                             f"Target {queue_source} is too close to the Sun "
-                            f"({separation_from_sun:.2f} degrees < {MIN_SUN_MOON_SEPARATION_DEGREES}). Skipping."
-                        )
+                            f"({separation_from_sun:.2f} degrees < {MIN_SUN_MOON_SEPARATION_DEGREES}). Skipping.")
                         _record_skipped_target(queue_source, "sun")
                         queue_idx += 1
                         continue
@@ -3004,14 +2956,12 @@ def main():
                         obs_location=obs_location,
                         testing=TESTING,
                         ata_sources_module=(None if TESTING else ata_sources),
-                        logger=print,
-                    )
+                        logger=print,)
 
                     if not isinstance(moon, dict) or 'ra' not in moon or 'dec' not in moon:
                         print(
                             f"Error: could not determine Moon position for {queue_source}. "
-                            "Soft-skipping until next refresh."
-                        )
+                            "Soft-skipping until next refresh.")
                         _record_skipped_target(queue_source, "moon")
                         queue_idx += 1
                         continue
@@ -3025,8 +2975,7 @@ def main():
                     if separation_from_moon < MIN_SUN_MOON_SEPARATION_DEGREES:
                         print(
                             f"Target {queue_source} is too close to the Moon "
-                            f"({separation_from_moon:.2f} degrees < {MIN_SUN_MOON_SEPARATION_DEGREES}). Skipping."
-                        )
+                            f"({separation_from_moon:.2f} degrees < {MIN_SUN_MOON_SEPARATION_DEGREES}). Skipping.")
                         _record_skipped_target(queue_source, "moon")
                         queue_idx += 1
                         continue
@@ -3038,8 +2987,7 @@ def main():
                         planet_name, separation_deg = closest_planet
                         print(
                             f"Target {queue_source} is too close to {planet_name} "
-                            f"({separation_deg:.2f} degrees < {MIN_PLANET_SEPARATION_DEGREES}). Skipping."
-                        )
+                            f"({separation_deg:.2f} degrees < {MIN_PLANET_SEPARATION_DEGREES}). Skipping.")
                         _record_skipped_target(queue_source, "planet")
                         queue_idx += 1
                         continue
@@ -3053,8 +3001,7 @@ def main():
                     default_obs_seconds=OBS_TIME,
                     use_target_obs_time_override=USE_TARGET_OBS_TIME_OVERRIDE,
                     testing=TESTING,
-                    testing_obs_time_seconds=TESTING_OBS_TIME_SECONDS,
-                )
+                    testing_obs_time_seconds=TESTING_OBS_TIME_SECONDS,)
                 queue_scan_seconds = int(queue_scan_timing["effective_seconds"])
 
                 _check_stop()
@@ -3067,16 +3014,14 @@ def main():
                         queue_source_identity_key,
                         queue_ra_deg,
                         queue_dec,
-                        queue_scan_seconds,
-                    )
+                        queue_scan_seconds,)
                     targets_to_queue.append(queue_target_entry)
                     queue_plan_entries.append(("target", queue_target_entry))
                     _log_status(f"Target {queue_source_label} added to queue (new push).")
                 else:
                     _log_status(
                         f"Target {queue_source_label} already pushed earlier by ID; "
-                        "skipping duplicate push."
-                    )
+                        "skipping duplicate push.")
 
                 if queue_count >= queue_length:
                     _log_status(f"Reached queue length of {queue_length}. Proceeding with ODS push function.")
@@ -3119,8 +3064,7 @@ def main():
                         f"ODS queue timeline advanced by {queued_wait_seconds}s for schedule wait row "
                         f"{queued_wait_label}. "
                         f"Next target slot starts no earlier than "
-                        f"{ods_schedule_next_start_utc.strftime('%Y-%m-%d %H:%M:%S')} UTC."
-                    )
+                        f"{ods_schedule_next_start_utc.strftime('%Y-%m-%d %H:%M:%S')} UTC.")
                     continue
 
                 # NOTE TODO: Check what this is for and document it.
@@ -3154,8 +3098,7 @@ def main():
                     from_coords=ods_schedule_last_coords,
                     to_ra_deg=queue_ra_deg,
                     to_dec_deg=queue_dec,
-                    reference_time_utc=ods_schedule_next_start_utc,
-                )
+                    reference_time_utc=ods_schedule_next_start_utc,)
                 ata_ops_seconds = max(0, int(ODS_ATA_OPERATIONS_SECONDS))
 
                 obs_start_utc = ods_schedule_next_start_utc + timedelta(seconds=slew_seconds + ata_ops_seconds)
@@ -3168,8 +3111,7 @@ def main():
                 push_succeeded = False
                 _log_status(
                     f"{_format_ods_push_summary(res_start_utc, res_end_utc, queue_scan_seconds)} "
-                    f"for {queued_target_label}"
-                )
+                    f"for {queued_target_label}")
                 try:
                     push_ok = push_ods(
                         source=queued_target,
@@ -3179,8 +3121,7 @@ def main():
                         res_end_utc=res_end_utc,
                         frequencies_mhz=active_tuning_freqs,
                         project_name=PROJECT_NAME,
-                        project_folder=PROJECT_FOLDER,
-                    )
+                        project_folder=PROJECT_FOLDER,)
                     if push_ok:
                         _log_status(f"Successfully pushed {queued_target_label} to ODS.")
                         push_succeeded = True
@@ -3189,15 +3130,13 @@ def main():
                             f"Failed to push {queued_target_label} to ODS: push_ods returned False | "
                             f"ra_deg={float(queue_ra_deg):.6f}, dec_deg={float(queue_dec):.6f}, "
                             f"obs_seconds={int(queue_scan_seconds)}, "
-                            f"reservation={_format_local_window_label(res_start_utc, res_end_utc)}"
-                        )
+                            f"reservation={_format_local_window_label(res_start_utc, res_end_utc)}")
                 except Exception as e:
                     _log_status(
                         f"Failed to push {queued_target_label} to ODS: {e} | "
                         f"ra_deg={float(queue_ra_deg):.6f}, dec_deg={float(queue_dec):.6f}, "
                         f"obs_seconds={int(queue_scan_seconds)}, "
-                        f"reservation={_format_local_window_label(res_start_utc, res_end_utc)}"
-                    )
+                        f"reservation={_format_local_window_label(res_start_utc, res_end_utc)}")
 
                 if not push_succeeded:
                     # Keep this target eligible for a later retry if ODS push failed.
@@ -3219,8 +3158,8 @@ def main():
                     "ata_ops_seconds": ata_ops_seconds,
                     "ra_deg": float(queue_ra_deg),
                     "dec_deg": float(queue_dec),
-                    "recovered": False,
-                }
+                    "recovered": False,}
+
                 # Operator-facing comparison line: planned slot vs reserved window.
                 log_ods_reservation_vs_plan(
                     source_name=queued_target_label,
@@ -3230,8 +3169,7 @@ def main():
                     planned_obs_end_utc=obs_end_utc,
                     context="queue scheduling",
                     testing=TESTING,
-                    logger=_log_status,
-                )
+                    logger=_log_status,)
 
             if pushed_this_round == 0 and targets_to_queue:
                 _log_status("No new ODS pushes were needed from this queue check (all targets were already queued).")
@@ -3280,8 +3218,7 @@ def main():
         if current_flag is None:
             print(
                 f"Error: target {source} has unexpected Solar System Flag value '{solsys_flag[i]}'. "
-                "Soft-skipping until next refresh."
-            )
+                "Soft-skipping until next refresh.")
             _record_skipped_target(source, "data")
             i += 1
             continue
@@ -3294,20 +3231,18 @@ def main():
                 name_to_query = extract_horizons_id(this_horizons_name)
                 print(
                     f"Querying instantaneous Horizons coordinates for target {source} "
-                    f"(ID: {source_ids[i]}) with name {name_to_query}"
-                )
+                    f"(ID: {source_ids[i]}) with name {name_to_query}")
 
                 ra_deg, dec, resolved_horizons_id = _get_instantaneous_solar_system_coordinates(
                     source,
                     this_horizons_name,
-                    scan_start,
-                )
+                    scan_start,)
+
                 if (not is_valid_finite_float(ra_deg)) or (not is_valid_finite_float(dec)):
                     print(
                         f"Error: Could not retrieve instantaneous RA/DEC for {source} "
                         f"(ID: {source_ids[i]}, Horizons: {resolved_horizons_id}). "
-                        "Soft-skipping until next refresh."
-                    )
+                        "Soft-skipping until next refresh.")
                     _record_skipped_target(source, "data")
                     i += 1
                     continue
@@ -3321,20 +3256,18 @@ def main():
                     ra_hours_value=ra_hours_list[i],
                     ra_deg_value=ra_deg_list[i],
                     dec_value=dec_list[i],
-                    context="observe solar fallback",
-                )
+                    context="observe solar fallback",)
+
                 if (not is_valid_finite_float(ra_deg)) or (not is_valid_finite_float(dec)):
                     print(
                         f"No Horizons Name / fallback coordinates available for Solar System target {source}. "
-                        "Soft-skipping until next refresh."
-                    )
+                        "Soft-skipping until next refresh.")
                     _record_skipped_target(source, "data")
                     i += 1
                     continue
                 _log_status(
                     f"Solar-system observe fallback active for {source}: using non-Horizons coordinates. "
-                    "NOTE: revisit no-Horizons Solar-System strategy."
-                )
+                    "NOTE: revisit no-Horizons Solar-System strategy.")
 
             ra_deg = float(ra_deg)
             dec = float(dec)
@@ -3360,8 +3293,7 @@ def main():
                 _log_status(
                     f"Error: invalid Sidereal row values for {source} "
                     f"(RA_hours={ra_hours}, RA_deg={ra_deg}, DEC={dec}). "
-                    "Soft-skipping until next refresh."
-                )
+                    "Soft-skipping until next refresh.")
                 _record_skipped_target(source, "data")
                 i += 1
                 continue
@@ -3370,14 +3302,12 @@ def main():
                 ra_hours,
                 ra_deg,
                 source_name=str(source),
-                context="observe",
-            )
+                context="observe",)
             if resolved_sidereal_ra is None:
                 print(
                     f"Error: invalid Sidereal row values for {source} "
                     f"(RA_hours={ra_hours}, RA_deg={ra_deg}, DEC={dec}). "
-                    "Soft-skipping until next refresh."
-                )
+                    "Soft-skipping until next refresh.")
                 _record_skipped_target(source, "data")
                 i += 1
                 continue
@@ -3416,10 +3346,10 @@ def main():
         dec = float(dec)
         _log_status(f"Current Altitude: {alt} degrees")
         # Need to check this. Make sure it's pulling RA/DEC from only Solsys OR Sidereal, not both
-        if 85 > alt > 21: # NOTE TODO: Make this bound to variables
+        if ALT_MAX > alt > ALT_MIN: # NOTE TODO: Make this bound to variables
             _log_status(f"Altitude is within bounds, tracking source {source}")
         else:
-            _log_status(f"{source} is not within elevation bounds ({alt} not between 21 and 85), so is being skipped.")
+            _log_status(f"{source} is not within elevation bounds ({alt} not between {ALT_MIN} and {ALT_MAX}), so is being skipped.")
             _record_skipped_target(source, "altitude")
             i += 1
             continue
@@ -3435,8 +3365,7 @@ def main():
                 obs_location=obs_location,
                 testing=TESTING,
                 ata_sources_module=(None if TESTING else ata_sources),
-                logger=print,
-            )
+                logger=print,)
             if not isinstance(sun, dict) or 'ra' not in sun or 'dec' not in sun:
                 print(
                     f"Error: could not determine Sun position for {source}. "
@@ -3454,8 +3383,7 @@ def main():
             if separation_from_sun < MIN_SUN_MOON_SEPARATION_DEGREES:
                 print(
                     f"Target {source} is too close to the Sun "
-                    f"({separation_from_sun:.2f} degrees < {MIN_SUN_MOON_SEPARATION_DEGREES}). Skipping."
-                )
+                    f"({separation_from_sun:.2f} degrees < {MIN_SUN_MOON_SEPARATION_DEGREES}). Skipping.")
                 _record_skipped_target(source, "sun")
                 i += 1
                 continue
@@ -3468,13 +3396,11 @@ def main():
                 obs_location=obs_location,
                 testing=TESTING,
                 ata_sources_module=(None if TESTING else ata_sources),
-                logger=print,
-            )
+                logger=print,)
             if not isinstance(moon, dict) or 'ra' not in moon or 'dec' not in moon:
                 print(
                     f"Error: could not determine Moon position for {source}. "
-                    "Soft-skipping until next refresh."
-                )
+                    "Soft-skipping until next refresh.")
                 _record_skipped_target(source, "moon")
                 i += 1
                 continue
@@ -3488,8 +3414,7 @@ def main():
             if separation_from_moon < MIN_SUN_MOON_SEPARATION_DEGREES:
                 print(
                     f"Target {source} is too close to the Moon "
-                    f"({separation_from_moon:.2f} degrees < {MIN_SUN_MOON_SEPARATION_DEGREES}). Skipping."
-                )
+                    f"({separation_from_moon:.2f} degrees < {MIN_SUN_MOON_SEPARATION_DEGREES}). Skipping.")
                 _record_skipped_target(source, "moon")
                 i += 1
                 continue
@@ -3501,8 +3426,7 @@ def main():
                 planet_name, separation_deg = closest_planet
                 print(
                     f"Target {source} is too close to {planet_name} "
-                    f"({separation_deg:.2f} degrees < {MIN_PLANET_SEPARATION_DEGREES}). Skipping."
-                )
+                    f"({separation_deg:.2f} degrees < {MIN_PLANET_SEPARATION_DEGREES}). Skipping.")
                 _record_skipped_target(source, "planet")
                 i += 1
                 continue
@@ -3529,8 +3453,7 @@ def main():
                 dec_deg=dec,
                 scan_seconds=effective_scan_seconds,
                 reservation_buffer=reservation_buffer,
-                ods_reservations_by_target=ods_reservations_by_target,
-            )
+                ods_reservations_by_target=ods_reservations_by_target,)
             if not target_protected: # NOTE TODO: Set this as a variable up top so the user can decide
                 _log_status(
                     f"ODS protection could not be confirmed for {source}; "
@@ -3552,13 +3475,11 @@ def main():
                     scan_start=scan_start,
                     scan_end=scan_end,
                     time_step=time_step,
-                    obs_location=obs_location,
-                )
+                    obs_location=obs_location,)
                 if ra is None or dec_track is None or safe_t is None:
                     _log_status(
                         f"Error: full ephemeris generation failed for {source} ({name_to_query}). "
-                        "Skipping tracking for this pass."
-                    )
+                        "Skipping tracking for this pass.")
                     _record_skipped_target(source, "data")
                     i += 1
                     continue
@@ -3597,13 +3518,11 @@ def main():
                 scan_seconds=effective_scan_seconds,
                 reservation_buffer=reservation_buffer,
                 ods_reservations_by_target=ods_reservations_by_target,
-                pre_obs_seconds_override=0,
-            )
+                pre_obs_seconds_override=0,)
             if not runtime_protected:
                 _log_status(
                     f"Runtime ODS protection could not be confirmed for {source}; "
-                    f"reason: {runtime_protection_reason}; proceeding per policy."
-                )
+                    f"reason: {runtime_protection_reason}; proceeding per policy.")
                 log_urgent(f"Runtime ODS protection unresolved for {source}", color="#D55E00")
 
 
@@ -3629,6 +3548,7 @@ def main():
                 _log_status("SEFD weighting is active for this observation.")
             else:
                 _log_status("Uniform weighting is active for this observation.")
+
             keyval_dict_loa = {'RA_OFF0': ra_hours, 'DEC_OFF0': dec,
                     'RA_OFF1': ra_hours, 'DEC_OFF1': float(dec1[0])}
             keyval_dict_lob = {'RA_OFF0': ra_hours, 'DEC_OFF0': dec,
@@ -3679,8 +3599,8 @@ def main():
 
             obs_start_in = 10
 
-            print("REMOVED POST PROCESSING BLOCK, USE AT OWN RISK")
-            print("Sleeping for 60 seconds instead...")
+            _log_status("REMOVED POST PROCESSING BLOCK, USE AT OWN RISK")
+            _log_status("Sleeping for 60 seconds instead...")
             #hpguppi_record.block_until_post_processing_waiting(d)
             #print('Post proc is done for\n', d)
             _check_stop()
@@ -3690,8 +3610,7 @@ def main():
             _check_stop()
             _log_status(f"\nStarting new observation of {source}")
             # log_urgent(f"Starting new observation of {source}...", color = "#009E73")
-            #print("Remember that you can type 'stop' and press Enter to end the loop after the current scan.")
-            hpguppi_record.record_in(obs_start_in, effective_scan_seconds + 5, hashpipe_targets = d) # ATA recording function - Actual observation
+            hpguppi_record.record_in(obs_start_in, effective_scan_seconds + 5, hashpipe_targets = d) # NOTE: ATA recording function - Actual observation
             # Start recording -- record_in does NOT block
             _log_status("\n")
             if current_flag == 1:
@@ -3749,7 +3668,7 @@ def main():
 
         if RECORDING == True and TESTING == False and (not d or not active_tuning_maps or len(active_tuning_freqs) == 0):
             _log_status("Recording requested but no active recorder nodes/tunings are selected. Skipping recording for this target safely.")
-            _record_observed_target(source, source_id) # Why does it record a skipped target?
+            _record_observed_target(source, source_id)
             _log_observed_targets("Targets observed so far")
             _check_stop()
             wait_with_stop(30, allow_stop=True)
@@ -3772,20 +3691,16 @@ def main():
         if TESTING:
             _log_status(
                 f"Completed scan timing for {source}: nominal(non-testing) {nominal_scan_seconds}s, "
-                f"actual(TESTING) {effective_scan_seconds}s."
-            )
+                f"actual(TESTING) {effective_scan_seconds}s.")
         else:
             _log_status(f"Completed scan timing for {source}: {effective_scan_seconds}s.")
 
         if ODS_PUSH and source_identity_key in ods_reservations_by_target:
             ods_reservations_by_target.pop(source_identity_key, None)
 
-
         i += 1
-
 
 
 if __name__ == "__main__":
     _main_thread_wrapper()
-
 

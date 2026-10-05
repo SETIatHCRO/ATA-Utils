@@ -9,10 +9,10 @@ managing runtime controls such as stop/resume/abort and scheduled auto-stop for 
 
 # These are defaults to automatically load into the GUI
 PROJECT_NAME = 'testingtime' # Project Folder
-OBSERVE_MODULE_NAME = 'observe_beamforming' # Python module name (without .py) used by the GUI to run observations.
+OBSERVE_MODULE_NAME = 'observe_survey' # Python module name (without .py) used by the GUI to run observations.
 OBS_TIME = 300 # Length of time spent on each target in seconds. Default is 300 sec (5 mins)
 CSV_NAME = 'demo_targets.csv' # List of targets
-OBSERVED_LIST = 'demo_observed.csv' # List of targets with columns marking if it has been observed yet.
+OBSERVED_LIST = 'demo_survey.csv' # List of targets with columns marking if it has been observed yet.
 #REMOVE_ANT = ['1c', '2c']
 REMOVE_ANT = ['']
 QUEUE_WAIT = True # Wait for ODS to activate before beginning observation
@@ -24,7 +24,7 @@ TESTING = True # Used when on a local machine. If True, it won't use ATA specifi
 MARKING = False # Whether or not the script will mark as observed.
 SORT_BY_OBSERVED = True # If False, bypass observed-list sorting/filtering and use internal tracking only.
 USE_TARGET_OBS_TIME_OVERRIDE = False # If True, uses per-target "Obs Time" values from CSV when present.
-README_FILE_NAME = "README.txt" # The location of the README text
+README_FILE_NAME = "Beamforming_GUI_README.txt" # The location of the README text
 
 
 MAIN_WINDOW_IMAGE_PATH = "totality.ico"
@@ -646,10 +646,6 @@ class SurveyConfigGUI(ctk.CTk):
         self._recorder_tuning_columns = {label: [] for label in RECORDER_TUNING_LABELS}
         self._load_recorders_from_ata_or_fallback(preserve_selection=False, announce=False)
         self.start_after_value = tk.StringVar(value="")
-        self.start_at_hour_value = tk.StringVar(value="12")
-        self.start_at_minute_value = tk.StringVar(value="00")
-        self.start_at_second_value = tk.StringVar(value="00")
-        self.start_at_timezone_value = tk.StringVar(value="PST")
         self.stop_after_value = tk.StringVar(value="")
         self.stop_at_hour_value = tk.StringVar(value="12")
         self.stop_at_minute_value = tk.StringVar(value="00")
@@ -664,11 +660,6 @@ class SurveyConfigGUI(ctk.CTk):
         self._scheduled_start_remove_ant_list = []
         self._pending_start_after_duration = None
         self._pending_start_after_brief = ""
-        self._pending_start_at_hour = None
-        self._pending_start_at_minute = None
-        self._pending_start_at_second = None
-        self._pending_start_at_timezone = None
-        self._pending_start_at_brief = ""
         self._scheduled_stop_after_id = None
         self._scheduled_stop_description = ""
         self._scheduled_stop_brief = ""
@@ -689,11 +680,6 @@ class SurveyConfigGUI(ctk.CTk):
         self._run_confirmation_panel = None
         self._start_after_entry = None
         self._schedule_start_after_btn = None
-        self._start_at_hour_menu = None
-        self._start_at_minute_menu = None
-        self._start_at_second_menu = None
-        self._start_at_timezone_entry = None
-        self._schedule_start_at_btn = None
         self._clear_scheduled_start_btn = None
         self._stop_after_entry = None
         self._stop_at_hour_menu = None
@@ -864,7 +850,7 @@ class SurveyConfigGUI(ctk.CTk):
                 else "Target order mode: Predetermined CSV schedule (no on-the-fly reorder)"
             ),
             f"Use per-target Obs Time override: {bool(run_configuration.get('USE_TARGET_OBS_TIME_OVERRIDE', False))}",
-            f"Start schedule: {run_configuration.get('START_BRIEF', 'None')}",
+            f"Start After delay: {run_configuration.get('START_AFTER_BRIEF', 'None')}",
             f"Recorder streams selected: {recorder_stream_count}",
         ]
         return primary_lines, secondary_lines
@@ -1070,7 +1056,7 @@ class SurveyConfigGUI(ctk.CTk):
                 errors.append(f"Observed list file not found: {self.observed.get()}")
 
             # Validate that target CSV and observed list CSV have matching names
-            # Detailed validation also happens in observe_beamforming.py at runtime.
+            # (Detailed validation also happens in observe_survey.py at runtime)
             if csv_path and observed_path and os.path.isfile(csv_path) and os.path.isfile(observed_path):
                 try:
                     import utils_beamforming
@@ -1080,7 +1066,7 @@ class SurveyConfigGUI(ctk.CTk):
                         errors.append(f"CSV name mismatch: {mismatch_count} target(s) in target CSV but not in observed list. See terminal output for details.")
                         self._update_status(f"CSV mismatch detected: {mismatch_count} target(s) missing from observed list")
                 except ImportError:
-                    pass  # utils_beamforming not available; checked again at runtime.
+                    pass  # utils_beamforming not available, will be checked at runtime
                 except Exception as e:
                     self._update_status(f"Could not validate CSV names: {str(e)[:80]}")
         else:
@@ -1230,7 +1216,7 @@ class SurveyConfigGUI(ctk.CTk):
         # Define target CSV
         ctk.CTkLabel(
             config_container,
-            text="Target CSV (e.g. demo_targets.csv)",
+            text="Target CSV (e.g. survey_targets.csv)",
             font=NORMAL_FONT,
             text_color=NORMAL_TEXT_COLOR
         ).pack(anchor="w", pady=(4,2))
@@ -2558,7 +2544,6 @@ class SurveyConfigGUI(ctk.CTk):
         """Store a pending Start-After delay to apply on the next Run action."""
         self._cancel_scheduled_start(show_status=False)
         self._cancel_pending_start_after()
-        self._cancel_pending_start_at()
 
         if duration_seconds is None or duration_seconds <= 0:
             self._set_urgent_status("Invalid start delay", color=ALERT_TEXT_COLOR)
@@ -2579,30 +2564,7 @@ class SurveyConfigGUI(ctk.CTk):
         self._pending_start_after_brief = ""
         self._update_start_controls_state()
 
-    def _set_pending_start_at(self, hour: int, minute: int, second: int, timezone_text: str, brief_description: str):
-        """Store a pending Start-At request to resolve when Run is confirmed."""
-        self._cancel_scheduled_start(show_status=False)
-        self._cancel_pending_start_after()
-        self._cancel_pending_start_at()
-        self._pending_start_at_hour = int(hour)
-        self._pending_start_at_minute = int(minute)
-        self._pending_start_at_second = int(second)
-        self._pending_start_at_timezone = str(timezone_text or "")
-        self._pending_start_at_brief = str(brief_description or "")
-        self._set_urgent_status(f"Start At set: {self._pending_start_at_brief}")
-        self._update_status(f"Start At {self._pending_start_at_brief} configured: next Run will begin at that time.")
-        self._update_start_controls_state()
-
-    def _cancel_pending_start_at(self):
-        """Clear any pending Start-At request not yet armed by Run."""
-        self._pending_start_at_hour = None
-        self._pending_start_at_minute = None
-        self._pending_start_at_second = None
-        self._pending_start_at_timezone = None
-        self._pending_start_at_brief = ""
-        self._update_start_controls_state()
-
-    def _schedule_start_request(self, delay_seconds: float, run_configuration: dict, remove_ant_list: list, brief: str, description: str = ""):
+    def _schedule_start_request(self, delay_seconds: float, run_configuration: dict, remove_ant_list: list, brief: str):
         """Arm delayed observation start and store immutable run configuration."""
         if delay_seconds is None or delay_seconds <= 0:
             raise ValueError("Start delay must be greater than zero")
@@ -2616,7 +2578,7 @@ class SurveyConfigGUI(ctk.CTk):
         self._scheduled_start_run_configuration = dict(run_configuration)
         self._scheduled_start_remove_ant_list = list(remove_ant_list or [])
         self._scheduled_start_brief = str(brief or self._format_duration_brief(delay_seconds))
-        self._scheduled_start_description = description or (
+        self._scheduled_start_description = (
             f"Start After {self._scheduled_start_brief} "
             f"(at {local_target.strftime('%Y-%m-%d %H:%M:%S %Z')})"
         )
@@ -2696,9 +2658,9 @@ class SurveyConfigGUI(ctk.CTk):
             messagebox.showwarning("Already Running", "Start delay can only be configured before a run begins.")
             return
 
-        if self._is_start_scheduled or self._pending_start_after_duration is not None or self._pending_start_at_hour is not None:
-            self._set_urgent_status("A start is already scheduled", color=ALERT_TEXT_COLOR)
-            messagebox.showwarning("Start Already Scheduled", "A Start After or Start At request already exists. Clear it first.")
+        if self._is_start_scheduled:
+            self._set_urgent_status("A delayed start is already armed", color=ALERT_TEXT_COLOR)
+            messagebox.showwarning("Start Already Scheduled", "A delayed start is already armed. Clear it first.")
             return
 
         raw_value = self.start_after_value.get().strip()
@@ -2722,43 +2684,9 @@ class SurveyConfigGUI(ctk.CTk):
             lambda: self._set_pending_start_after(seconds, brief),
         )
 
-    def _on_schedule_start_at(self):
-        """Store a Start-At request for the next Run action."""
-        if self._is_running:
-            self._set_urgent_status("Cannot schedule Start At while running", color=ALERT_TEXT_COLOR)
-            messagebox.showwarning("Already Running", "Start scheduling is only available before a run begins.")
-            return
-        if self._is_start_scheduled or self._pending_start_after_duration is not None or self._pending_start_at_hour is not None:
-            self._set_urgent_status("A start is already scheduled", color=ALERT_TEXT_COLOR)
-            messagebox.showwarning("Start Already Scheduled", "A Start After or Start At request already exists. Clear it first.")
-            return
-
-        try:
-            tzinfo, zone_name = self._resolve_timezone_info(self.start_at_timezone_value.get())
-            hour = int(self.start_at_hour_value.get())
-            minute = int(self.start_at_minute_value.get())
-            second = int(self.start_at_second_value.get())
-            if not (0 <= hour <= 23 and 0 <= minute <= 59 and 0 <= second <= 59):
-                raise ValueError("Hour must be 0-23; minute and second must be 0-59.")
-            now_local = datetime.now(tzinfo)
-            target_local = now_local.replace(hour=hour, minute=minute, second=second, microsecond=0)
-            if target_local <= now_local:
-                target_local += timedelta(days=1)
-        except ValueError as exc:
-            self._set_urgent_status("Invalid Start At value", color=ALERT_TEXT_COLOR)
-            messagebox.showerror("Start At Error", str(exc))
-            return
-
-        brief = f"{hour:02d}:{minute:02d}:{second:02d} {zone_name}"
-        full_desc = f"Next Run will start at {target_local.strftime('%Y-%m-%d %H:%M:%S')} {zone_name}."
-        self._show_schedule_confirmation(
-            "Start At", brief, brief, full_desc,
-            lambda: self._set_pending_start_at(hour, minute, second, self.start_at_timezone_value.get(), brief),
-        )
-
     def _on_clear_scheduled_start(self):
         """Clear pending or armed delayed-start state after confirmation."""
-        has_pending = self._pending_start_after_duration is not None or self._pending_start_at_hour is not None
+        has_pending = self._pending_start_after_duration is not None
         has_armed = self._scheduled_start_after_id is not None
         if not has_pending and not has_armed:
             self._set_urgent_status("No scheduled start to clear", color=ALERT_TEXT_COLOR)
@@ -2768,11 +2696,10 @@ class SurveyConfigGUI(ctk.CTk):
             brief = self._scheduled_start_brief or "configured"
             full_desc = self._scheduled_start_description or "Delayed start is armed"
         else:
-            brief = self._pending_start_after_brief or self._pending_start_at_brief or "configured"
-            full_desc = "Pending: " + (
-                f"next Run will start after {self._pending_start_after_duration} seconds"
-                if self._pending_start_after_duration is not None
-                else f"next Run will start at {self._pending_start_at_brief}"
+            brief = self._pending_start_after_brief or "configured"
+            full_desc = (
+                "Pending: next Run will start after "
+                f"{self._pending_start_after_duration} seconds"
             )
 
         self._show_schedule_confirmation(
@@ -2780,20 +2707,18 @@ class SurveyConfigGUI(ctk.CTk):
             brief,
             brief,
             f"This will clear the delayed start: {full_desc}",
-            lambda: (self._cancel_scheduled_start(show_status=True), self._cancel_pending_start_after(), self._cancel_pending_start_at()),
+            lambda: (self._cancel_scheduled_start(show_status=True), self._cancel_pending_start_after()),
         )
 
     def _update_start_controls_state(self):
-        """Enable/disable mutually exclusive start scheduling controls."""
-        has_pending_after = self._pending_start_after_duration is not None
-        has_pending_at = self._pending_start_at_hour is not None
+        """Enable/disable Start-After controls based on pending/armed state."""
+        has_pending = self._pending_start_after_duration is not None
         has_armed = self._scheduled_start_after_id is not None
-        has_any_start_delay = has_pending_after or has_pending_at or has_armed
+        has_any_start_delay = has_pending or has_armed
 
-        for widget in [self._schedule_start_after_btn, self._schedule_start_at_btn]:
+        if self._schedule_start_after_btn is not None:
             try:
-                if widget is not None:
-                    widget.configure(state="disabled" if has_any_start_delay else "normal")
+                self._schedule_start_after_btn.configure(state="disabled" if has_any_start_delay else "normal")
             except Exception:
                 pass
 
@@ -2809,22 +2734,13 @@ class SurveyConfigGUI(ctk.CTk):
             except Exception:
                 pass
 
-        for widget in [self._start_at_hour_menu, self._start_at_minute_menu, self._start_at_second_menu, self._start_at_timezone_entry]:
-            try:
-                if widget is not None:
-                    widget.configure(state="normal")
-            except Exception:
-                pass
-
         if has_armed:
             message = f"Delayed start armed: {self._scheduled_start_description or self._scheduled_start_brief}"
-        elif has_pending_after:
+        elif has_pending:
             message = (
                 "Delayed start pending: next Run begins after "
                 f"{self._pending_start_after_brief or str(self._pending_start_after_duration) + 's'}"
             )
-        elif has_pending_at:
-            message = f"Delayed start pending: next Run begins at {self._pending_start_at_brief}"
         else:
             message = "No start delay configured."
         self.advanced_start_status.set(message)
@@ -3471,11 +3387,6 @@ class SurveyConfigGUI(ctk.CTk):
             # Clear all widget references to avoid stale references to destroyed widgets
             self._start_after_entry = None
             self._schedule_start_after_btn = None
-            self._start_at_hour_menu = None
-            self._start_at_minute_menu = None
-            self._start_at_second_menu = None
-            self._start_at_timezone_entry = None
-            self._schedule_start_at_btn = None
             self._clear_scheduled_start_btn = None
             self._stop_after_entry = None
             self._schedule_stop_after_btn = None
@@ -3624,78 +3535,6 @@ class SurveyConfigGUI(ctk.CTk):
             ctk.CTkLabel(
                 scroll_content,
                 text="Examples: 4 hours, 1h 30m, 45m, or 14400",
-                font=SMALL_FONT,
-                text_color=SMALL_TEXT_COLOR,
-            ).pack(anchor="w", padx=6, pady=(0, 4))
-
-            start_at_row = ctk.CTkFrame(scroll_content, fg_color="transparent")
-            start_at_row.pack(fill="x", padx=6, pady=(0, 4))
-
-            ctk.CTkLabel(
-                start_at_row,
-                text="Start At:",
-                font=SMALL_FONT,
-                text_color=SMALL_TEXT_COLOR,
-            ).pack(side="left", padx=(0, 6))
-
-            self._start_at_hour_menu = ctk.CTkOptionMenu(
-                start_at_row,
-                variable=self.start_at_hour_value,
-                values=[f"{hour:02d}" for hour in range(24)],
-                width=60,
-                fg_color=UI_ENTRY_COLOR,
-                button_color=UI_BORDER_COLOR,
-                button_hover_color=UI_BORDER_COLOR,
-            )
-            self._start_at_hour_menu.pack(side="left", padx=(0, 2))
-            ctk.CTkLabel(start_at_row, text=":", font=NORMAL_FONT, text_color=NORMAL_TEXT_COLOR).pack(side="left")
-
-            self._start_at_minute_menu = ctk.CTkOptionMenu(
-                start_at_row,
-                variable=self.start_at_minute_value,
-                values=[f"{minute:02d}" for minute in range(60)],
-                width=60,
-                fg_color=UI_ENTRY_COLOR,
-                button_color=UI_BORDER_COLOR,
-                button_hover_color=UI_BORDER_COLOR,
-            )
-            self._start_at_minute_menu.pack(side="left", padx=(2, 2))
-            ctk.CTkLabel(start_at_row, text=":", font=NORMAL_FONT, text_color=NORMAL_TEXT_COLOR).pack(side="left")
-
-            self._start_at_second_menu = ctk.CTkOptionMenu(
-                start_at_row,
-                variable=self.start_at_second_value,
-                values=[f"{second:02d}" for second in range(60)],
-                width=60,
-                fg_color=UI_ENTRY_COLOR,
-                button_color=UI_BORDER_COLOR,
-                button_hover_color=UI_BORDER_COLOR,
-            )
-            self._start_at_second_menu.pack(side="left", padx=(2, 6))
-
-            self._start_at_timezone_entry = ctk.CTkEntry(
-                start_at_row,
-                textvariable=self.start_at_timezone_value,
-                width=80,
-                fg_color=UI_ENTRY_COLOR,
-                border_color=UI_BORDER_COLOR,
-                text_color=NORMAL_TEXT_COLOR,
-            )
-            self._start_at_timezone_entry.pack(side="left", padx=(0, 6))
-
-            self._schedule_start_at_btn = ctk.CTkButton(
-                start_at_row,
-                text="Set",
-                command=self._on_schedule_start_at,
-                width=60,
-                corner_radius=BUTTON_CORNER_RADIUS,
-                font=BUTTON_FONT,
-            )
-            self._schedule_start_at_btn.pack(side="left")
-
-            ctk.CTkLabel(
-                scroll_content,
-                text="24-hour format | Timezone: UTC, PST, EST, etc. Only one Start schedule can be active.",
                 font=SMALL_FONT,
                 text_color=SMALL_TEXT_COLOR,
             ).pack(anchor="w", padx=6, pady=(0, 4))
@@ -3997,7 +3836,7 @@ class SurveyConfigGUI(ctk.CTk):
 
             ctk.CTkLabel(
                 content,
-                text=f"Are you sure you want to schedule this {title.lower()}?",
+                text="Are you sure you want to schedule this stop?",
                 font=NORMAL_FONT,
                 text_color=NORMAL_TEXT_COLOR,
             ).pack(anchor="w", padx=0, pady=(4, 12))
@@ -4095,7 +3934,8 @@ class SurveyConfigGUI(ctk.CTk):
             "SORT_BY_OBSERVED": bool(self.sort_by_observed.get()),
             "MARKING": bool(self.marking.get() and self.sort_by_observed.get()),
             "USE_TARGET_OBS_TIME_OVERRIDE": bool(self.use_target_obs_time_override.get()),
-            "START_BRIEF": self._pending_start_after_brief or self._pending_start_at_brief or "None",
+            "START_AFTER_SECONDS": self._pending_start_after_duration,
+            "START_AFTER_BRIEF": self._pending_start_after_brief or "None",
             "GUI_CONTROLLED": True,
         }
 
@@ -4128,32 +3968,6 @@ class SurveyConfigGUI(ctk.CTk):
                     self._report_error("Failed to schedule delayed start", type(exc), exc, exc.__traceback__)
                 return
 
-            if self._pending_start_at_hour is not None:
-                try:
-                    tzinfo, zone_name = self._resolve_timezone_info(self._pending_start_at_timezone)
-                    now_local = datetime.now(tzinfo)
-                    target_local = now_local.replace(
-                        hour=self._pending_start_at_hour,
-                        minute=self._pending_start_at_minute,
-                        second=self._pending_start_at_second,
-                        microsecond=0,
-                    )
-                    if target_local <= now_local:
-                        target_local += timedelta(days=1)
-                    delay_seconds = max(0.001, (target_local - now_local).total_seconds())
-                    brief = self._pending_start_at_brief or target_local.strftime(f"%H:%M:%S {zone_name}")
-                    description = f"Start At {target_local.strftime('%Y-%m-%d %H:%M:%S')} {zone_name}"
-                    self._cancel_pending_start_at()
-                    self._schedule_start_request(delay_seconds, run_configuration, remove_ant_list, brief, description)
-                    messagebox.showinfo(
-                        "Start Scheduled",
-                        f"Observation start has been scheduled for {target_local.strftime('%Y-%m-%d %H:%M:%S')} {zone_name}.",
-                    )
-                except Exception as exc:
-                    self._set_start_scheduled_state(False)
-                    self._report_error("Failed to schedule Start At", type(exc), exc, exc.__traceback__)
-                return
-
             self._start_observation_run(run_configuration, remove_ant_list)
 
         self._show_run_confirmation_panel(run_configuration, _start_confirmed_run)
@@ -4181,7 +3995,6 @@ class SurveyConfigGUI(ctk.CTk):
         """Request immediate Abort of the active observation run. Closes EVERYTHING."""
         self._cancel_scheduled_start(show_status=False)
         self._cancel_pending_start_after()
-        self._cancel_pending_start_at()
         self._cancel_scheduled_stop(show_status=False)
         self._set_urgent_status("Abort requested")
         if self._observe_module is None:
@@ -4199,7 +4012,6 @@ class SurveyConfigGUI(ctk.CTk):
         if messagebox.askyesno("Close GUI", "Are you sure you want to close the GUI?"):
             self._cancel_scheduled_start(show_status=False)
             self._cancel_pending_start_after()
-            self._cancel_pending_start_at()
             self._cancel_scheduled_stop(show_status=False)
             try:
                 if self._observe_module is not None and hasattr(self._observe_module, "request_gui_close"):

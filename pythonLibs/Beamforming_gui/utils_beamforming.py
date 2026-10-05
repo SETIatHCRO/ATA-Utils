@@ -137,6 +137,107 @@ def normalize_hashpipe_targets(targets) -> dict:
     return normalized
 
 
+def _normalize_csv_key(value) -> str:
+    """Normalize CSV keys for case-insensitive, whitespace-tolerant lookups."""
+    if value is None:
+        return ""
+    return str(value).strip().lower()
+
+
+_HMS_PATTERN = re.compile(r"(?P<h>\d+(?:\.\d+)?)h(?P<m>\d+(?:\.\d+)?)m(?P<s>\d+(?:\.\d+)?)s?", re.IGNORECASE)
+_DMS_PATTERN = re.compile(r"(?P<d>\d+(?:\.\d+)?)d(?P<m>\d+(?:\.\d+)?)m(?P<s>\d+(?:\.\d+)?)s?", re.IGNORECASE)
+_COLON_PATTERN = re.compile(r"(?P<a>\d+(?:\.\d+)?):(?P<m>\d+(?:\.\d+)?):(?P<s>\d+(?:\.\d+)?)")
+
+
+def _coerce_sexagesimal_value(value, *, hours_mode: bool = False, strict_unit: bool = True, field_label: str = None):
+    """Coerce a decimal, "H:M:S", "HhMmSs", or "DdMmSs" string into a float.
+
+    The "h/m/s" and "d/m/s" suffixes are explicit unit markers. When one of
+    them is present and disagrees with "hours_mode" (i.e. the column/header
+    this value is destined for), the mismatch is either raised (strict_unit=True)
+    or silently ignored and treated as unparsable (strict_unit=False), so a
+    coordinate typed in the wrong unit for its column never gets silently
+    reinterpreted as the wrong quantity.
+    """
+    if value is None or pd.isna(value):
+        return None
+
+    text = str(value).strip()
+    if not text or text.lower() in {"nan", "inf", "+inf", "-inf"}:
+        return None
+
+    try:
+        numeric = float(text)
+    except (TypeError, ValueError):
+        numeric = None
+    if numeric is not None:
+        return numeric
+
+    cleaned = "".join(text.split())
+    sign = 1.0
+    if cleaned.startswith("-"):
+        sign = -1.0
+        cleaned = cleaned[1:]
+    elif cleaned.startswith("+"):
+        cleaned = cleaned[1:]
+
+    hms_match = re.fullmatch(_HMS_PATTERN, cleaned)
+    dms_match = re.fullmatch(_DMS_PATTERN, cleaned)
+    colon_match = re.fullmatch(_COLON_PATTERN, cleaned)
+
+    if hms_match:
+        explicit_unit = "hours"
+        whole, minutes, seconds = hms_match.group("h"), hms_match.group("m"), hms_match.group("s")
+    elif dms_match:
+        explicit_unit = "degrees"
+        whole, minutes, seconds = dms_match.group("d"), dms_match.group("m"), dms_match.group("s")
+    elif colon_match:
+        # "H:M:S" is ambiguous on its own; the caller's "hours_mode" decides the unit.
+        explicit_unit = None
+        whole, minutes, seconds = colon_match.group("a"), colon_match.group("m"), colon_match.group("s")
+    else:
+        return None
+
+    whole_f = float(whole)
+    minutes_f = float(minutes)
+    seconds_f = float(seconds)
+    if not (0 <= minutes_f < 60) or not (0 <= seconds_f < 60):
+        return None
+
+    requested_unit = "hours" if hours_mode else "degrees"
+    if explicit_unit is not None and explicit_unit != requested_unit:
+        label = f" for {field_label}" if field_label else ""
+        message = (
+            f"Coordinate '{text}'{label} is explicitly in {explicit_unit} (h/m/s or d/m/s suffix), "
+            f"but was expected to be in {requested_unit}. Check that the value and its column header agree."
+        )
+        if strict_unit:
+            raise ValueError(message)
+        return None
+
+    return sign * (whole_f + (minutes_f / 60.0) + (seconds_f / 3600.0))
+
+
+def parse_hours_value(value, *, strict_unit: bool = True, field_label: str = None):
+    """Parse a value as RA hours, accepting "HH:MM:SS.ss" or "HHhMMmSS.sss" strings.
+
+    Raises "ValueError" when "strict_unit" is True and the value carries an
+    explicit "d/m/s" (degrees) suffix instead of an "h/m/s" one.
+    """
+    parsed = _coerce_sexagesimal_value(value, hours_mode=True, strict_unit=strict_unit, field_label=field_label)
+    return float(parsed) if parsed is not None else None
+
+
+def parse_degrees_value(value, *, strict_unit: bool = True, field_label: str = None):
+    """Parse a value as DEC degrees, accepting "+DD:MM:SS.ss" or "+DDdMMmSS.sss" strings.
+
+    Raises "ValueError" when "strict_unit" is True and the value carries an
+    explicit "h/m/s" (hours) suffix instead of a "d/m/s" one.
+    """
+    parsed = _coerce_sexagesimal_value(value, hours_mode=False, strict_unit=strict_unit, field_label=field_label)
+    return float(parsed) if parsed is not None else None
+
+
 def parse_positive_int_seconds(value):
     """Parse a positive integer number of seconds.
 
@@ -166,7 +267,19 @@ def parse_positive_int_seconds(value):
 def is_valid_finite_float(value) -> bool:
     """Return True when a value can be parsed to a finite float."""
     try:
-        return bool(np.isfinite(float(value)))
+        if value is None or pd.isna(value):
+            return False
+        text = str(value).strip()
+        if not text:
+            return False
+        # Non-strict: only checking whether this looks like *a* coordinate at all,
+        # not whether its unit agrees with any particular column.
+        parsed = _coerce_sexagesimal_value(text, hours_mode=True, strict_unit=False)
+        if parsed is None:
+            parsed = _coerce_sexagesimal_value(text, hours_mode=False, strict_unit=False)
+        if parsed is not None:
+            return bool(np.isfinite(parsed))
+        return bool(np.isfinite(float(text)))
     except Exception:
         return False
 
@@ -675,23 +788,26 @@ def is_observed(observed_list, target_id, freq_mhz):
         raise RuntimeError(f"Failed to parse observed list CSV: {e}")
 
     cfreq_name = f"cfreq_{freq_mhz}mhz"
+    column_lookup = {_normalize_csv_key(col): col for col in source_entries.columns}
+    id_col = column_lookup.get('id')
+    cfreq_col = column_lookup.get(_normalize_csv_key(cfreq_name))
 
     # Check if frequency column exists
-    if cfreq_name not in source_entries.columns:
+    if cfreq_col is None:
         raise ValueError(f"Frequency column not found: '{cfreq_name}'. Available columns: {source_entries.columns.tolist()}")
 
-    if 'ID' not in source_entries.columns:
+    if id_col is None:
         raise ValueError(f"Observed CSV missing required 'ID' column. Found: {source_entries.columns.tolist()}")
 
-    id_series = source_entries['ID'].map(_normalize_target_id_text)
+    id_series = source_entries[id_col].map(_normalize_target_id_text)
     row = source_entries.loc[id_series == normalized_target_id]
 
     if row.empty:
-        available_ids = [i for i in source_entries['ID'].map(_normalize_target_id_text).tolist() if i]
+        available_ids = [i for i in source_entries[id_col].map(_normalize_target_id_text).tolist() if i]
         raise ValueError(f"Target ID '{normalized_target_id}' not found in observed list. Available IDs: {available_ids}")
 
     # Return the observation status
-    return int(row[cfreq_name].values[0])
+    return int(row[cfreq_col].values[0])
 
 def mark_as_observed(observed_list, target_id, freq_mhz, source_name=None):
     """
@@ -722,32 +838,36 @@ def mark_as_observed(observed_list, target_id, freq_mhz, source_name=None):
         raise RuntimeError(f"Failed to parse observed list CSV: {e}")
 
     cfreq_name = f"cfreq_{freq_mhz}mhz"
+    column_lookup = {_normalize_csv_key(col): col for col in source_entries.columns}
+    id_col = column_lookup.get('id')
+    cfreq_col = column_lookup.get(_normalize_csv_key(cfreq_name))
 
     # Check if frequency column exists
-    if cfreq_name not in source_entries.columns:
+    if cfreq_col is None:
         raise ValueError(f"Frequency column not found: '{cfreq_name}'. Available columns: {source_entries.columns.tolist()}")
 
-    if 'ID' not in source_entries.columns:
+    if id_col is None:
         raise ValueError(f"Observed CSV missing required 'ID' column. Found: {source_entries.columns.tolist()}")
 
-    id_series = source_entries['ID'].map(_normalize_target_id_text)
+    id_series = source_entries[id_col].map(_normalize_target_id_text)
     mask = id_series == normalized_target_id
     if not mask.any():
-        available_ids = [i for i in source_entries['ID'].map(_normalize_target_id_text).tolist() if i]
+        available_ids = [i for i in source_entries[id_col].map(_normalize_target_id_text).tolist() if i]
         raise ValueError(f"Target ID '{normalized_target_id}' not found in observed list. Available IDs: {available_ids}")
 
     row_index = source_entries.index[mask][0]
     resolved_name = source_name
-    if not resolved_name and 'Plaintext Name' in source_entries.columns:
-        resolved_name = source_entries.at[row_index, 'Plaintext Name']
+    plain_name_col = column_lookup.get('plaintext name')
+    if not resolved_name and plain_name_col is not None:
+        resolved_name = source_entries.at[row_index, plain_name_col]
     target_label = _format_name_id_label(resolved_name, normalized_target_id)
 
     # Check current status
-    current_val = source_entries.loc[mask, cfreq_name].values[0]
+    current_val = source_entries.loc[mask, cfreq_col].values[0]
 
     if current_val == 0:
         # Mark as observed
-        source_entries.loc[mask, cfreq_name] = 1
+        source_entries.loc[mask, cfreq_col] = 1
         source_entries.to_csv(observed_list, index=False)
         print(f"Marked {target_label} as observed at {freq_mhz} MHz")
     elif current_val == 1:
